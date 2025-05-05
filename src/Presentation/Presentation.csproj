@@ -1,0 +1,54 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net9.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<PublishAot>true</PublishAot>
+		<InvariantGlobalization>true</InvariantGlobalization>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<Copyright>Copyright (C) 2025 Kiryuumaru</Copyright>
+		<Company>Kiryuumaru</Company>
+		<Version>0.0.0</Version>
+		<AssemblyTitle>Application Builder Helpers</AssemblyTitle>
+		<AssemblyName>app_sample</AssemblyName>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<FullVersion>0.0.0-alpha.0+build.dev</FullVersion>
+		<AppTag>alpha</AppTag>
+	</PropertyGroup>
+
+	<Target Name="GenerateBuildConstants" BeforeTargets="BeforeCompile">
+		<PropertyGroup>
+			<BuildConstantsContent>$([System.IO.File]::ReadAllText($([System.IO.Path]::Combine($(MSBuildProjectDirectory), 'BuildFiles', 'BuildConstantsFileTemplate.cs'))))</BuildConstantsContent>
+		</PropertyGroup>
+		<PropertyGroup>
+			<BuildConstantsContent>$([System.String]::Copy($(BuildConstantsContent)).Replace('##FULL_VERSION##', $(FullVersion)))</BuildConstantsContent>
+		</PropertyGroup>
+		<PropertyGroup>
+			<BuildConstantsContent>$([System.String]::Copy($(BuildConstantsContent)).Replace('##APP_TAG##', $(AppTag)))</BuildConstantsContent>
+		</PropertyGroup>
+		<WriteLinesToFile File="$(IntermediateOutputPath)Constants.cs" Lines="$(BuildConstantsContent)" Overwrite="true" Encoding="Unicode" />
+		<ItemGroup>
+			<Compile Include="$(IntermediateOutputPath)Constants.cs" />
+		</ItemGroup>
+	</Target>
+
+	<ItemGroup>
+		<Compile Remove="BuildFiles\BuildConstantsFileTemplate.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="BuildFiles\BuildConstantsFileTemplate.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Application\Application.csproj" />
+		<ProjectReference Include="..\Infrastructure.Serilog\Infrastructure.Serilog.csproj" />
+	</ItemGroup>
+
+</Project>
