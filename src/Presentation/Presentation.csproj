@@ -32,6 +32,12 @@
 		<PropertyGroup>
 			<BuildConstantsContent>$([System.String]::Copy($(BuildConstantsContent)).Replace('##APP_TAG##', $(AppTag)))</BuildConstantsContent>
 		</PropertyGroup>
+		<PropertyGroup>
+			<BuildConstantsContent>$([System.String]::Copy($(BuildConstantsContent)).Replace('##APP_NAME##', $(AssemblyName)))</BuildConstantsContent>
+		</PropertyGroup>
+		<PropertyGroup>
+			<BuildConstantsContent>$([System.String]::Copy($(BuildConstantsContent)).Replace('##APP_TITLE##', $(AssemblyTitle)))</BuildConstantsContent>
+		</PropertyGroup>
 		<WriteLinesToFile File="$(IntermediateOutputPath)Constants.cs" Lines="$(BuildConstantsContent)" Overwrite="true" Encoding="Unicode" />
 		<ItemGroup>
 			<Compile Include="$(IntermediateOutputPath)Constants.cs" />

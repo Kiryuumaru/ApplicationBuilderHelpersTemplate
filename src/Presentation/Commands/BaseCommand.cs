@@ -13,7 +13,7 @@ namespace Presentation.Commands;
 public abstract class BaseCommand<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] THostApplicationBuilder> : ApplicationCommand<THostApplicationBuilder>
     where THostApplicationBuilder : IHostApplicationBuilder
 {
-    public abstract IApplicationConstants ApplicationConstants { get; }
+    public IApplicationConstants ApplicationConstants { get; } = new ApplicationConstants();
 
     [CommandOption(
         'l', "log-level",
@@ -60,7 +60,7 @@ public abstract class BaseCommand<[DynamicallyAccessedMembers(DynamicallyAccesse
 
         configuration.SetLogsDumpDirectory(LogsDumpDirectory);
 
-        configuration.SetServiceName(ApplicationConstants.AppNameSnakeCase);
+        configuration.SetServiceName(ApplicationConstants.AppName);
     }
 
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
@@ -74,4 +74,13 @@ public abstract class BaseCommand<[DynamicallyAccessedMembers(DynamicallyAccesse
     {
         return ApplicationConstants.BuildAppBanner(Build.Constants.FullVersion);
     }
+}
+
+internal class ApplicationConstants : IApplicationConstants
+{
+    public string AppName { get; } = Build.Constants.AppName;
+
+    public string AppTitle { get; } = Build.Constants.AppTitle;
+
+    public string AppTag { get; } = Build.Constants.AppTag;
 }

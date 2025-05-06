@@ -12,12 +12,12 @@ public static class CommonConfigurationExtensions
     {
         if (_runtimeGuid == null)
         {
-            _runtimeGuid = Guid.Parse(configuration.GetVarRefValueOrDefault("VEG_RUNTIME_RUNTIME_GUID", Guid.NewGuid().ToString()));
+            _runtimeGuid = Guid.Parse(configuration.GetVarRefValueOrDefault("RUNTIME_RUNTIME_GUID", Guid.NewGuid().ToString()));
         }
         return _runtimeGuid.Value;
     }
 
-    private const string ServiceNameKey = "VEG_RUNTIME_SERVICE_NAME";
+    private const string ServiceNameKey = "RUNTIME_SERVICE_NAME";
     public static string GetServiceName(this IConfiguration configuration)
     {
         return configuration.GetVarRefValue(ServiceNameKey);
@@ -27,7 +27,7 @@ public static class CommonConfigurationExtensions
         configuration[ServiceNameKey] = serviceName;
     }
 
-    private const string LogsDumpDirectoryKey = "VEG_RUNTIME_LOGS_DUMP_DIRECTORY";
+    private const string LogsDumpDirectoryKey = "RUNTIME_LOGS_DUMP_DIRECTORY";
     public static AbsolutePath? GetLogsDumpDirectory(this IConfiguration configuration)
     {
         var logsDumpDirStr = configuration.GetVarRefValueOrDefault(LogsDumpDirectoryKey);
@@ -42,7 +42,7 @@ public static class CommonConfigurationExtensions
         configuration[LogsDumpDirectoryKey] = logsDumpDir?.ToString();
     }
 
-    private const string LoggerLevelKey = "VEG_RUNTIME_LOGGER_LEVEL";
+    private const string LoggerLevelKey = "RUNTIME_LOGGER_LEVEL";
     public static LogLevel GetLoggerLevel(this IConfiguration configuration)
     {
         var loggerLevel = configuration.GetVarRefValueOrDefault(LoggerLevelKey, LogLevel.Information.ToString());
@@ -53,7 +53,7 @@ public static class CommonConfigurationExtensions
         configuration[LoggerLevelKey] = loggerLevel.ToString();
     }
 
-    private const string HomePathKey = "VEG_RUNTIME_HOME_PATH";
+    private const string HomePathKey = "RUNTIME_HOME_PATH";
     public static AbsolutePath GetHomePath(this IConfiguration configuration)
     {
         return configuration.GetVarRefValueOrDefault(HomePathKey, AbsolutePath.Create(Environment.CurrentDirectory));

@@ -2,7 +2,9 @@
 
 public interface IApplicationConstants
 {
-    string AppNameSnakeCase { get; }
+    string AppName { get; }
+
+    string AppTitle { get; }
 
     string AppTag { get; }
 
@@ -17,7 +19,7 @@ public interface IApplicationConstants
             $"     ╚═══╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝ \n" +
             $"                                by meldCX \n" +
             $"\n" +
-            $"   {AppNameSnakeCase}\n" +
+            $"   {AppName}\n" +
             $"   v{appVersion}";
     }
 }

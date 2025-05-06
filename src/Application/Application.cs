@@ -19,7 +19,7 @@ public class Application : ApplicationDependency
         {
             using var scope = sp.CreateScope();
             var applicationConstans = scope.ServiceProvider.GetRequiredService<IApplicationConstants>();
-            client.DefaultRequestHeaders.Add("Client-Agent", applicationConstans.AppNameSnakeCase);
+            client.DefaultRequestHeaders.Add("Client-Agent", applicationConstans.AppName);
         });
 
         services.AddScoped<CmdService>();
