@@ -1,6 +1,9 @@
-﻿using Application.AssetResolver.Services;
+﻿using Application.AssetResolver.Extensions;
+using Application.AssetResolver.Services;
 using Application.Configuration.Interfaces;
+using Application.LocalStore.Extensions;
 using Application.LocalStore.Services;
+using Application.NativeCmd.Extensions;
 using Application.NativeCmd.Services;
 using Application.NativeServiceInstaller.Extensions;
 using ApplicationBuilderHelpers;
@@ -22,13 +25,9 @@ public class Application : ApplicationDependency
             client.DefaultRequestHeaders.Add("Client-Agent", applicationConstans.AppName);
         });
 
-        services.AddScoped<CmdService>();
-
-        services.AddSingleton<LocalStoreConcurrencyService>();
-        services.AddTransient<LocalStoreFactory>();
-
-        services.AddScoped<AssetResolverService>();
-
+        services.AddCmdServices();
+        services.AddLocalStoreServices();
+        services.AddAssetResolverServices();
         services.AddNativeServiceInstallerServices();
     }
 
