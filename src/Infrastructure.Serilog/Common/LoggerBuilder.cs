@@ -62,7 +62,7 @@ internal static class LoggerBuilder
                     rollingInterval: RollingInterval.Hour);
         }
 
-        var defaultLogsDump = configuration.GetHomePath() / "logs" / configuration.GetServiceName().ToLowerInvariant();
+        var defaultLogsDump = configuration.GetLogsPath() / configuration.GetServiceName().ToLowerInvariant();
         loggerConfiguration = loggerConfiguration
             .MinimumLevel.Verbose()
             .WriteTo.File(

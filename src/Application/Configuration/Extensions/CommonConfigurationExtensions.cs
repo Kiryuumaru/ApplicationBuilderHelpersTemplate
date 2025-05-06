@@ -63,11 +63,6 @@ public static class CommonConfigurationExtensions
         configuration[HomePathKey] = dataPath;
     }
 
-    public static AbsolutePath GetDataPath(this IConfiguration configuration)
-    {
-        return GetHomePath(configuration) / ".data";
-    }
-
     public static AbsolutePath GetTempPath(this IConfiguration configuration)
     {
         return GetHomePath(configuration) / "temp";
@@ -98,8 +93,8 @@ public static class CommonConfigurationExtensions
         return GetHomePath(configuration) / "releases";
     }
 
-    public static AbsolutePath GetDaemonsPath(this IConfiguration configuration)
+    public static AbsolutePath GetLogsPath(this IConfiguration configuration)
     {
-        return GetHomePath(configuration) / "daemon";
+        return GetHomePath(configuration) / "logs";
     }
 }

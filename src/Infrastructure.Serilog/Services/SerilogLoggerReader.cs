@@ -241,7 +241,7 @@ internal class SerilogLoggerReader(IConfiguration configuration) : ILoggerReader
         return Task.Run(() =>
         {
             (string? LogStr, DateTime LogDateTime) latestLogTime = (default, default);
-            foreach (var logFile in (_configuration.GetDataPath() / "logs").GetFiles())
+            foreach (var logFile in _configuration.GetLogsPath().GetFiles())
             {
                 try
                 {
@@ -271,7 +271,7 @@ internal class SerilogLoggerReader(IConfiguration configuration) : ILoggerReader
             {
                 return null;
             }
-            return AbsolutePath.Create(_configuration.GetDataPath() / "logs" / $"log-{latestLogTime.LogStr}.jsonl");
+            return AbsolutePath.Create(_configuration.GetLogsPath() / $"log-{latestLogTime.LogStr}.jsonl");
         }, cancellationToken);
     }
 }
