@@ -1,13 +1,13 @@
 ﻿using Application.Configuration.Extensions;
+using Application.Logger.Abstractions;
+using Application.Logger.Common.LogEventPropertyTypes;
 using Application.Logger.Extensions;
-using Infrastructure.Serilog.Abstractions;
-using Infrastructure.Serilog.Common.LogEventPropertyTypes;
-using Infrastructure.Serilog.Models;
+using Application.Logger.Models;
 using Microsoft.Extensions.Configuration;
 using Serilog.Core;
 using Serilog.Events;
 
-namespace Infrastructure.Serilog.Enrichers;
+namespace Application.Logger.Enrichers;
 
 internal class LogGuidEnricher(IConfiguration configuration) : ILogEventEnricher
 {

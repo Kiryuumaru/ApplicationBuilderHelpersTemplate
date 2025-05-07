@@ -9,7 +9,7 @@ using Serilog.Formatting.Compact.Reader;
 using Serilog.Parsing;
 using System.Globalization;
 
-namespace Infrastructure.Serilog.Services;
+namespace Application.Logger.Services;
 
 internal class SerilogLoggerReader(IConfiguration configuration) : ILoggerReader
 {

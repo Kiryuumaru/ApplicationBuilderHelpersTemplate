@@ -1,15 +1,15 @@
-﻿using Serilog;
-using Serilog.Formatting.Compact;
-using Serilog.Events;
-using Application.Configuration.Extensions;
+﻿using Application.Configuration.Extensions;
+using Application.Logger.Enrichers;
+using ApplicationBuilderHelpers;
 using Microsoft.Extensions.Configuration;
-using Infrastructure.Serilog.Enrichers;
 using Microsoft.Extensions.Logging;
+using Serilog;
+using Serilog.Events;
+using Serilog.Formatting.Compact;
 using Serilog.Templates;
 using Serilog.Templates.Themes;
-using ApplicationBuilderHelpers;
 
-namespace Infrastructure.Serilog.Common;
+namespace Application.Logger.Common;
 
 internal static class LoggerBuilder
 {

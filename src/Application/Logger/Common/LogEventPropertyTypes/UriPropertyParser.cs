@@ -1,6 +1,6 @@
-﻿using Infrastructure.Serilog.Abstractions;
+﻿using Application.Logger.Abstractions;
 
-namespace Infrastructure.Serilog.Common.LogEventPropertyTypes;
+namespace Application.Logger.Common.LogEventPropertyTypes;
 
 internal class UriPropertyParser : LogEventPropertyParser<Uri>
 {

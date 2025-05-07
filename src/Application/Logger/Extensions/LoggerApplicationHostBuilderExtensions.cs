@@ -1,22 +1,20 @@
-﻿using Application.Logger.Interfaces;
+﻿using Application.Logger.Common;
+using Application.Logger.Interfaces;
+using Application.Logger.Services;
 using ApplicationBuilderHelpers;
-using Infrastructure.Serilog.Common;
-using Infrastructure.Serilog.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
 
-namespace Infrastructure.Serilog;
+namespace Application.Logger.Extensions;
 
-public class SerilogInfrastructure : ApplicationDependency
+public static class LoggerApplicationHostBuilderExtensions
 {
-    public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
+    public static ApplicationHostBuilder AddLoggerServices(this ApplicationHostBuilder applicationBuilder)
     {
-        base.AddServices(applicationBuilder, services);
-
-        services.AddTransient<ILoggerReader, SerilogLoggerReader>();
+        applicationBuilder.Services.AddTransient<ILoggerReader, SerilogLoggerReader>();
 
         if (applicationBuilder.Builder is WebApplicationBuilder webApplicationBuilder)
         {
@@ -25,7 +23,7 @@ public class SerilogInfrastructure : ApplicationDependency
         }
         else
         {
-            services.AddLogging(config =>
+            applicationBuilder.Services.AddLogging(config =>
             {
                 config.ClearProviders();
                 config.AddSerilog(LoggerBuilder.Configure(new LoggerConfiguration(), applicationBuilder.Configuration).CreateLogger());
@@ -33,13 +31,13 @@ public class SerilogInfrastructure : ApplicationDependency
         }
 
         Log.Logger = LoggerBuilder.Configure(new LoggerConfiguration(), applicationBuilder.Configuration).CreateLogger();
+
+        return applicationBuilder;
     }
 
-    public override void AddMiddlewares(ApplicationHost applicationHost, IHost host)
+    public static void AddLoggerMiddlewares(this ApplicationHost applicationHost)
     {
-        base.AddMiddlewares(applicationHost, host);
-
-        if (host is IApplicationBuilder webApplicationBuilder)
+        if (applicationHost.Host is IApplicationBuilder webApplicationBuilder)
         {
             webApplicationBuilder.UseSerilogRequestLogging();
         }

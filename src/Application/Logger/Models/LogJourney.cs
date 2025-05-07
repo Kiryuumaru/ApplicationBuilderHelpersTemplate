@@ -1,4 +1,4 @@
-﻿namespace Infrastructure.Serilog.Models;
+﻿namespace Application.Logger.Models;
 
 internal class LogJourney
 {

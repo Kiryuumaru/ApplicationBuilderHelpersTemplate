@@ -54,7 +54,6 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Application\Application.csproj" />
-		<ProjectReference Include="..\Infrastructure.Serilog\Infrastructure.Serilog.csproj" />
 		<ProjectReference Include="..\Infrastructure.SQLite.LocalStore\Infrastructure.SQLite.LocalStore.csproj" />
 	</ItemGroup>
 
