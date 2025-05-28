@@ -13,8 +13,8 @@
 		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.5" />
 		<PackageReference Include="ApplicationBuilderHelpers" Version="2.0.18" />
 		<PackageReference Include="CliWrap" Version="3.8.2" />
-		<PackageReference Include="RestfulHelpers" Version="1.8.68" />
-		<PackageReference Include="TransactionHelpers" Version="2.6.27" />
+		<PackageReference Include="RestfulHelpers" Version="1.8.69" />
+		<PackageReference Include="TransactionHelpers" Version="2.6.28" />
 		<PackageReference Include="YamlDotNet" Version="16.3.0" />
 		<PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
 		<PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
