@@ -6,6 +6,7 @@ using ApplicationBuilderHelpers.Attributes;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Presentation.Commands;
@@ -18,10 +19,8 @@ public abstract class BaseCommand<[DynamicallyAccessedMembers(DynamicallyAccesse
     [CommandOption(
         'l', "log-level",
         EnvironmentVariable = "LOG_LEVEL",
-        Description = "Level of logs to show.",
-        FromAmong = ["Trace", "Debug", "Information", "Warning", "Error", "Critical"],
-        CaseSensitive = false)]
-    public string LogLevel { get; set; } = "Information";
+        Description = "Level of logs to show.")]
+    public LogLevel LogLevel { get; set; } = LogLevel.Information;
 
     [CommandOption(
         "logs-dump",
@@ -41,22 +40,13 @@ public abstract class BaseCommand<[DynamicallyAccessedMembers(DynamicallyAccesse
     {
     }
 
-    public override void AddConfiguration(ApplicationHostBuilder applicationBuilder, IConfiguration configuration)
+    public override void AddConfigurations(ApplicationHostBuilder applicationBuilder, IConfiguration configuration)
     {
-        base.AddConfiguration(applicationBuilder, configuration);
+        base.AddConfigurations(applicationBuilder, configuration);
 
         applicationBuilder.Services.Configure<ConsoleLifetimeOptions>(opts => opts.SuppressStatusMessages = true);
 
-        configuration.SetLoggerLevel(LogLevel.ToLowerInvariant() switch
-        {
-            "trace" => Microsoft.Extensions.Logging.LogLevel.Trace,
-            "debug" => Microsoft.Extensions.Logging.LogLevel.Debug,
-            "information" => Microsoft.Extensions.Logging.LogLevel.Information,
-            "warning" => Microsoft.Extensions.Logging.LogLevel.Warning,
-            "error" => Microsoft.Extensions.Logging.LogLevel.Error,
-            "critical" => Microsoft.Extensions.Logging.LogLevel.Critical,
-            _ => throw new NotImplementedException($"{LogLevel} is invalid log level.")
-        });
+        configuration.SetLoggerLevel(LogLevel);
 
         configuration.SetLogsDumpDirectory(LogsDumpDirectory);
 

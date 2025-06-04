@@ -43,7 +43,7 @@ public class CmdService(ILogger<CmdService> logger)
         if (environmentVariables != null)
         {
             osCli = osCli
-            .WithEnvironmentVariables(environmentVariables.ToDictionary());
+                .WithEnvironmentVariables(environmentVariables.ToDictionary());
         }
 
         if (inPipeTarget != null)
