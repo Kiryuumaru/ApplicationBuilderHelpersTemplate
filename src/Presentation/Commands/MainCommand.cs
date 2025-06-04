@@ -36,6 +36,25 @@ public class MainCommand : BaseCommand<HostApplicationBuilder>
             { "AppTag", ApplicationConstants.AppTag }
         });
 
+        logger.LogTrace("Running {AppName} ({AppTitle})", ApplicationConstants.AppName, ApplicationConstants.AppTitle);
+        logger.LogDebug("Running {AppName} ({AppTitle})", ApplicationConstants.AppName, ApplicationConstants.AppTitle);
         logger.LogInformation("Running {AppName} ({AppTitle})", ApplicationConstants.AppName, ApplicationConstants.AppTitle);
+        logger.LogWarning("Running {AppName} ({AppTitle})", ApplicationConstants.AppName, ApplicationConstants.AppTitle);
+        logger.LogError("Running {AppName} ({AppTitle})", ApplicationConstants.AppName, ApplicationConstants.AppTitle);
+        logger.LogCritical("Running {AppName} ({AppTitle})", ApplicationConstants.AppName, ApplicationConstants.AppTitle);
+
+        logger.LogInformation("Boolean (true): {Value}", true);
+        logger.LogInformation("Boolean (false): {Value}", false);
+        logger.LogInformation("Integer: {Value}", 123);
+        logger.LogInformation("Float: {Value}", 123.45f);
+        logger.LogInformation("Double: {Value}", 3.14159);
+        logger.LogInformation("Decimal: {Value}", 99.99m);
+        logger.LogInformation("String: {Value}", "Hello, world!");
+        logger.LogInformation("Null: {Value}", null!);
+        logger.LogInformation("DateTime: {Value}", DateTime.Now);
+        logger.LogInformation("Guid: {Value}", Guid.NewGuid());
+        logger.LogInformation("Object: {@Value}", new { Name = "Test", Age = 42 });
+        logger.LogInformation("Array: {@Value}", new[] { 1, 2, 3 });
+        logger.LogInformation("Enum: {Value}", ConsoleColor.Red);
     }
 }

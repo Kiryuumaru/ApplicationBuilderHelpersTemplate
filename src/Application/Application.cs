@@ -1,5 +1,6 @@
 ﻿using Application.AssetResolver.Extensions;
 using Application.AssetResolver.Services;
+using Application.CommandLineParser.TypeParsers;
 using Application.Configuration.Interfaces;
 using Application.LocalStore.Extensions;
 using Application.LocalStore.Services;
@@ -8,6 +9,7 @@ using Application.NativeCmd.Extensions;
 using Application.NativeCmd.Services;
 using Application.NativeServiceInstaller.Extensions;
 using ApplicationBuilderHelpers;
+using ApplicationBuilderHelpers.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
@@ -16,6 +18,25 @@ namespace Application;
 
 public class Application : ApplicationDependency
 {
+    public override void CommandPreparation(ApplicationBuilder applicationBuilder)
+    {
+        base.CommandPreparation(applicationBuilder);
+
+        applicationBuilder.AddCommandTypeParser<LogLevelTypeParser>();
+    }
+
+    public override void BuilderPreparation(ApplicationHostBuilder applicationBuilder)
+    {
+        base.BuilderPreparation(applicationBuilder);
+    }
+
+    public override void AddConfigurations(ApplicationHostBuilder applicationBuilder, Microsoft.Extensions.Configuration.IConfiguration configuration)
+    {
+        base.AddConfigurations(applicationBuilder, configuration);
+
+        applicationBuilder.AddLoggerConfiguration();
+    }
+
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
     {
         base.AddServices(applicationBuilder, services);
