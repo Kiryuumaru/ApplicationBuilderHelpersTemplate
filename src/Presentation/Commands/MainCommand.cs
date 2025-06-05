@@ -1,4 +1,7 @@
-﻿using Application.Configuration.Interfaces;
+﻿using Application.Common.Extensions;
+using Application.Configuration.Interfaces;
+using Application.LocalStore.Interfaces;
+using Application.LocalStore.Services;
 using Application.Logger.Extensions;
 using ApplicationBuilderHelpers;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,8 +10,12 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
+using YamlDotNet.RepresentationModel;
+using YamlDotNet.Serialization;
 
 namespace Presentation.Commands;
 
@@ -28,7 +35,8 @@ public class MainCommand : BaseCommand<HostApplicationBuilder>
         await base.Run(applicationHost, stoppingToken);
 
         var logger = applicationHost.Services.GetRequiredService<ILogger<MainCommand>>();
-        
+        var localStoreFactory = applicationHost.Services.GetRequiredService<LocalStoreFactory>();
+
         using var _ = logger.BeginScopeMap<MainCommand>(scopeMap: new Dictionary<string, object?>
         {
             { "AppName", ApplicationConstants.AppName },
@@ -56,5 +64,148 @@ public class MainCommand : BaseCommand<HostApplicationBuilder>
         logger.LogInformation("Object: {@Value}", new { Name = "Test", Age = 42 });
         logger.LogInformation("Array: {@Value}", new[] { 1, 2, 3 });
         logger.LogInformation("Enum: {Value}", ConsoleColor.Red);
+
+        var localStore = await localStoreFactory.OpenStore(cancellationToken: stoppingToken);
+
+        await localStore.Set("TestKey", "TestValue", stoppingToken);
+
+        var value = await localStore.Get("TestKey", stoppingToken);
+
+        logger.LogInformation("Retrieved value from local store: {Value}", value.Value);
+
+
+
+
+
+
+
+
+
+
+
+
+
+        var sampleObj1 = new Dictionary<string, object>
+        {
+            { "Val1", "val 1" },
+            { "Val2", 123 },
+            { "Val3", DateTimeOffset.UtcNow }
+        };
+        var sampleObj2 = new SampleClass()
+        {
+            Val1 = "val 1",
+            Val2 = 123,
+            Val3 = DateTimeOffset.UtcNow,
+        };
+
+        //var ss1 = YamlHelpers.Serialize(sampleObj1);
+        //var ss2 = YamlHelpers.Serialize(sampleObj2, new SS());
+
+        //logger.LogInformation("Retrieved value from serialized yaml: {Value}", ss1);
+        //logger.LogInformation("Retrieved value from serialized yaml: {Value}", ss2);
+
+
+        // Setup the input
+        var jsonConverted1 = await YamlJsonConverter.ConvertToJson(Document);
+        var yamlConverted1 = await YamlJsonConverter.ConvertToYaml(jsonConverted1);
+        var jsonConverted2 = await YamlJsonConverter.ConvertToJson(yamlConverted1);
+        var yamlConverted2 = await YamlJsonConverter.ConvertToYaml(jsonConverted2);
+        var jsonConverted3 = await YamlJsonConverter.ConvertToJson(yamlConverted2);
+        var yamlConverted3 = await YamlJsonConverter.ConvertToYaml(jsonConverted3);
+        var jsonConverted4 = await YamlJsonConverter.ConvertToJson(yamlConverted3);
+        var yamlConverted4 = await YamlJsonConverter.ConvertToYaml(jsonConverted4);
+        var jsonConverted5 = await YamlJsonConverter.ConvertToJson(yamlConverted4);
+        var yamlConverted5 = await YamlJsonConverter.ConvertToYaml(jsonConverted5);
+        var jsonConverted6 = await YamlJsonConverter.ConvertToJson(yamlConverted5);
+        var yamlConverted6 = await YamlJsonConverter.ConvertToYaml(jsonConverted6);
+
+        logger.LogInformation("\n\norig:\n{Value}\n", Document);
+
+        logger.LogInformation("Yaml to json 1:\n{Value}\n", jsonConverted1[0].RootElement.ToString());
+
+        logger.LogInformation("Yaml to json n:\n{Value}\n", jsonConverted6[0].RootElement.ToString());
+
+        logger.LogInformation("json to yaml:\n{Value}\n", yamlConverted6);
+
+        var qwe = 1;
+    }
+
+
+
+    private const string Document = """
+        specialDelivery: >+
+          Follow the Yellow Brick
+          Road to the Emerald City.
+          Pay no attention to the
+          man behind the curtain.
+
+
+        """;
+    private const string Document1 = """
+        ---
+        receipt:    Oz-Ware Purchase Invoice
+        date:        2007-08-06
+        customer:
+          given:   Dorothy
+          family:  Gale
+        
+        items:
+        - part_no:   A4786
+          descrip:   Water Bucket (Filled)
+          price:     1.47
+          quantity:  4
+        
+        - part_no:   E1628
+          descrip:   High Heeled "Ruby" Slippers
+          price:     100.27
+          quantity:  1
+        
+        bill-to:  &id001
+          street: |
+            123 Tornado Alley
+            Suite 16
+
+
+
+          city:   East Westville
+          state:  KS
+        
+        ship-to:  *id001
+        
+        specialDelivery:  >+
+          Follow the Yellow Brick
+          Road to the Emerald City.
+          Pay no attention to the
+          man behind the curtain.
+
+        ---
+        receipt:    MelcSS Ware Purchase Invoice
+        date:        2007-08-07
+        customer:
+          given:   Clynt
+          family:  Rupinta
+        
+        items:
+        - part_no:   A4786
+          descrip:   Water Bucket (Filled)
+          price:     1.47
+          quantity:  4
+        """;
+
+    [YamlSerializable]
+    class SampleClass
+    {
+        public required string Val1 { get; set; }
+
+        public required int Val2 { get; set; }
+
+        public required DateTimeOffset Val3 { get; set; }
+    }
+
+    [YamlStaticContext]
+    [YamlSerializable(typeof(SampleClass))]
+    partial class SS : StaticContext
+    {
+
     }
 }

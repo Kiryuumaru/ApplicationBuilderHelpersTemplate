@@ -86,7 +86,7 @@ internal class SQLiteLocalStoreGlobalService(SQLiteGlobalService sqliteGlobalSer
                 Group = group,
                 Data = data,
             };
-            await db.InsertOrReplaceAsync(stock);
+            await db.InsertOrReplaceAsync(stock, typeof(SQLiteDataHolder));
         }
     }
 }

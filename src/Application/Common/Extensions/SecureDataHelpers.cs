@@ -2,6 +2,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 
 namespace Application.Common.Extensions;
 
@@ -82,13 +83,13 @@ public static class SecureDataHelpers
         return Decrypt(encryptedBytes, rsa);
     }
 
-    public static byte[] Encrypt<T>(T obj, RSA rsa, JsonSerializerOptions? jsonSerializerOptions = null)
+    public static byte[] Encrypt<T>(T obj, RSA rsa, JsonTypeInfo<T> jsonTypeInfo)
     {
-        return Encrypt(Encoding.Unicode.GetBytes(JsonSerializer.Serialize(obj, jsonSerializerOptions)), rsa);
+        return Encrypt(Encoding.Unicode.GetBytes(JsonSerializer.Serialize(obj, jsonTypeInfo)), rsa);
     }
 
-    public static T? Decrypt<T>(byte[] encryptedBytes, RSA rsa, JsonSerializerOptions? jsonSerializerOptions = null)
+    public static T? Decrypt<T>(byte[] encryptedBytes, RSA rsa, JsonTypeInfo<T> jsonTypeInfo)
     {
-        return JsonSerializer.Deserialize<T>(Encoding.Unicode.GetString(Decrypt(encryptedBytes, rsa)), jsonSerializerOptions);
+        return JsonSerializer.Deserialize(Encoding.Unicode.GetString(Decrypt(encryptedBytes, rsa)), jsonTypeInfo);
     }
 }

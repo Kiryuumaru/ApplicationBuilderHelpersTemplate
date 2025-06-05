@@ -2,6 +2,7 @@
 using Application.Configuration.Extensions;
 using Microsoft.Extensions.Configuration;
 using SQLite;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Infrastructure.SQLite.Services;
 
@@ -33,7 +34,7 @@ public class SQLiteGlobalService(IConfiguration configuration)
         return db;
     }
 
-    public async Task<SQLiteAsyncConnection> BootstrapTable<T>()
+    public async Task<SQLiteAsyncConnection> BootstrapTable<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>()
          where T : new()
     {
         var db = await Bootstrap();
