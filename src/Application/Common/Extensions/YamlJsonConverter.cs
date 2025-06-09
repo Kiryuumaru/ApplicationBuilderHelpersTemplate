@@ -11,13 +11,6 @@ namespace Application.Common.Extensions;
 
 public static class YamlJsonConverter
 {
-#pragma warning disable IDE0079 // Remove unnecessary suppression
-#pragma warning disable IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
-    static readonly ISerializer serializer = new SerializerBuilder()
-        .Build();
-#pragma warning restore IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
-#pragma warning restore IDE0079 // Remove unnecessary suppression
-
     public static async ValueTask<JsonDocument[]> ConvertToJson(string yamlContent)
     {
         static JsonNode? ConvertYamlNodeToObject(YamlNode node)
@@ -80,6 +73,13 @@ public static class YamlJsonConverter
 
     public static async ValueTask<string> ConvertToYaml(JsonDocument[] jsonDocs)
     {
+#pragma warning disable IDE0079 // Remove unnecessary suppression
+#pragma warning disable IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
+        ISerializer serializer = new SerializerBuilder()
+            .Build();
+#pragma warning restore IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
+#pragma warning restore IDE0079 // Remove unnecessary suppression
+
         static object? ConvertJsonElementToObject(JsonElement element)
         {
             switch (element.ValueKind)
