@@ -20,6 +20,37 @@ public static class YamlJsonConverter
 
     public static async ValueTask<JsonDocument[]> ConvertToJson(string yamlContent)
     {
+        static JsonNode? ConvertYamlNodeToObject(YamlNode node)
+        {
+            switch (node)
+            {
+                case YamlScalarNode scalarNode:
+                    return JsonValue.Create(scalarNode.Value);
+
+                case YamlSequenceNode sequenceNode:
+                    var jsonArray = new JsonArray();
+                    foreach (var child in sequenceNode.Children)
+                    {
+                        jsonArray.Add(ConvertYamlNodeToObject(child));
+                    }
+                    return jsonArray;
+
+                case YamlMappingNode mappingNode:
+                    var jsonObject = new JsonObject();
+                    foreach (var entry in mappingNode.Children)
+                    {
+                        if (entry.Key is YamlScalarNode keyNode)
+                        {
+                            jsonObject.Add(keyNode.Value!, ConvertYamlNodeToObject(entry.Value));
+                        }
+                    }
+                    return jsonObject;
+
+                default:
+                    return null;
+            }
+        }
+
         var input = new StringReader(yamlContent);
 
         var yaml = new YamlStream();
@@ -47,39 +78,50 @@ public static class YamlJsonConverter
         return [.. jsonDocuments];
     }
 
-    static JsonNode? ConvertYamlNodeToObject(YamlNode node)
-    {
-        switch (node)
-        {
-            case YamlScalarNode scalarNode:
-                return JsonValue.Create(scalarNode.Value);
-
-            case YamlSequenceNode sequenceNode:
-                var jsonArray = new JsonArray();
-                foreach (var child in sequenceNode.Children)
-                {
-                    jsonArray.Add(ConvertYamlNodeToObject(child));
-                }
-                return jsonArray;
-
-            case YamlMappingNode mappingNode:
-                var jsonObject = new JsonObject();
-                foreach (var entry in mappingNode.Children)
-                {
-                    if (entry.Key is YamlScalarNode keyNode)
-                    {
-                        jsonObject.Add(keyNode.Value!, ConvertYamlNodeToObject(entry.Value));
-                    }
-                }
-                return jsonObject;
-
-            default:
-                return null;
-        }
-    }
-
     public static async ValueTask<string> ConvertToYaml(JsonDocument[] jsonDocs)
     {
+        static object? ConvertJsonElementToObject(JsonElement element)
+        {
+            switch (element.ValueKind)
+            {
+                case JsonValueKind.Object:
+                    var dictionary = new Dictionary<string, object?>();
+                    foreach (var property in element.EnumerateObject())
+                    {
+                        dictionary[property.Name] = ConvertJsonElementToObject(property.Value);
+                    }
+                    return dictionary;
+
+                case JsonValueKind.Array:
+                    var list = new List<object?>();
+                    foreach (var item in element.EnumerateArray())
+                    {
+                        list.Add(ConvertJsonElementToObject(item));
+                    }
+                    return list;
+
+                case JsonValueKind.String:
+                    return element.GetString();
+
+                case JsonValueKind.Number:
+                    if (element.TryGetInt64(out long longValue))
+                        return longValue;
+                    return element.GetDouble();
+
+                case JsonValueKind.True:
+                    return true;
+
+                case JsonValueKind.False:
+                    return false;
+
+                case JsonValueKind.Null:
+                    return null;
+
+                default:
+                    return null;
+            }
+        }
+
         if (jsonDocs.Length == 0)
             return await ValueTask.FromResult(string.Empty);
 
@@ -97,48 +139,6 @@ public static class YamlJsonConverter
         }
 
         // Join all documents with separators
-        return await ValueTask.FromResult(string.Join("\n---\n", yamlStrings));
-    }
-
-    static object? ConvertJsonElementToObject(JsonElement element)
-    {
-        switch (element.ValueKind)
-        {
-            case JsonValueKind.Object:
-                var dictionary = new Dictionary<string, object?>();
-                foreach (var property in element.EnumerateObject())
-                {
-                    dictionary[property.Name] = ConvertJsonElementToObject(property.Value);
-                }
-                return dictionary;
-
-            case JsonValueKind.Array:
-                var list = new List<object?>();
-                foreach (var item in element.EnumerateArray())
-                {
-                    list.Add(ConvertJsonElementToObject(item));
-                }
-                return list;
-
-            case JsonValueKind.String:
-                return element.GetString();
-
-            case JsonValueKind.Number:
-                if (element.TryGetInt64(out long longValue))
-                    return longValue;
-                return element.GetDouble();
-
-            case JsonValueKind.True:
-                return true;
-
-            case JsonValueKind.False:
-                return false;
-
-            case JsonValueKind.Null:
-                return null;
-
-            default:
-                return null;
-        }
+        return await ValueTask.FromResult(string.Join("---\n", yamlStrings));
     }
 }

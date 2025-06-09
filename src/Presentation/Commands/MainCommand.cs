@@ -119,13 +119,19 @@ public class MainCommand : BaseCommand<HostApplicationBuilder>
         var jsonConverted6 = await YamlJsonConverter.ConvertToJson(yamlConverted5);
         var yamlConverted6 = await YamlJsonConverter.ConvertToYaml(jsonConverted6);
 
-        logger.LogInformation("\n\norig:\n{Value}\n", Document);
-
-        logger.LogInformation("Yaml to json 1:\n{Value}\n", jsonConverted1[0].RootElement.ToString());
-
-        logger.LogInformation("Yaml to json n:\n{Value}\n", jsonConverted6[0].RootElement.ToString());
-
-        logger.LogInformation("json to yaml:\n{Value}\n", yamlConverted6);
+        logger.LogInformation("--------------------------------------------------");
+        logger.LogInformation("\n\norig:\n{Value}", Document);
+        logger.LogInformation("--------------------------------------------------");
+        logger.LogInformation("Yaml to json 1:\n{Value}", jsonConverted1[0].RootElement.ToString());
+        logger.LogInformation("--------------------------------------------------");
+        logger.LogInformation("Yaml to json n:\n{Value}", jsonConverted6[0].RootElement.ToString());
+        logger.LogInformation("--------------------------------------------------");
+        logger.LogInformation("json to yaml 4:\n{Value}", yamlConverted4);
+        logger.LogInformation("--------------------------------------------------");
+        logger.LogInformation("json to yaml 5:\n{Value}", yamlConverted5);
+        logger.LogInformation("--------------------------------------------------");
+        logger.LogInformation("json to yaml 6:\n{Value}", yamlConverted6);
+        logger.LogInformation("--------------------------------------------------");
 
         var qwe = 1;
     }
