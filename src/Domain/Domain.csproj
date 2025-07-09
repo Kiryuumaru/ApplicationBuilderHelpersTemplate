@@ -11,7 +11,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="DisposableHelpers" Version="1.2.111" />
+		<PackageReference Include="DisposableHelpers" Version="1.2.112" />
 	</ItemGroup>
 
 </Project>
