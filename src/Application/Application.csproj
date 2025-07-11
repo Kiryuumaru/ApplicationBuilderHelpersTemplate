@@ -32,8 +32,8 @@
 		<PackageReference Include="ApplicationBuilderHelpers" Version="2.1.6" />
 		<PackageReference Include="AbsolutePathHelpers" Version="0.2.1" />
 		<PackageReference Include="CliWrap" Version="3.9.0" />
-		<PackageReference Include="RestfulHelpers" Version="1.8.74" />
-		<PackageReference Include="TransactionHelpers" Version="2.6.31" />
+		<PackageReference Include="RestfulHelpers" Version="1.8.76" />
+		<PackageReference Include="TransactionHelpers" Version="2.6.32" />
 		<PackageReference Include="YamlDotNet" Version="16.3.0" />
 	</ItemGroup>
 
