@@ -59,15 +59,18 @@ public class MainCommand : BaseCommand<HostApplicationBuilder>
         logger.LogInformation("Array: {@Value}", new[] { 1, 2, 3 });
         logger.LogInformation("Enum: {Value}", ConsoleColor.Red);
 
-        // Open a store with concurrency control - the lock is acquired here and held until disposal
-        using var localStore = await localStoreFactory.OpenStore(cancellationToken: cancellationTokenSource.Token);
+        // Open a store - transaction starts here at Open() and lasts for the entire using scope
+        using var localStore = await localStoreFactory.OpenStore("common_group", cancellationTokenSource.Token);
 
         await localStore.Set("TestKey", "TestValue", cancellationTokenSource.Token);
 
         var value = await localStore.Get("TestKey", cancellationTokenSource.Token);
 
-        logger.LogInformation("Retrieved value from local store: {Value}", value.Value);
+        logger.LogInformation("Retrieved value from local store: {Value}", value);
         
-        // The concurrency lock is automatically released when the using block ends
+        // Explicitly commit the transaction before disposal (optional - will auto-commit on dispose)
+        await localStore.CommitAsync(cancellationTokenSource.Token);
+        
+        // The transaction is automatically committed when the using block ends if not already committed
     }
 }

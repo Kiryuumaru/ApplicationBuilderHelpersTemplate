@@ -2,7 +2,7 @@
   "profiles": {
     "Presentation": {
       "commandName": "Project",
-      "commandLineArgs": "-l traces"
+      "commandLineArgs": "-l trace"
     }
   }
 }

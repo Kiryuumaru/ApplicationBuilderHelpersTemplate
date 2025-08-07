@@ -8,13 +8,14 @@ public class LocalStoreFactory(IServiceProvider serviceProvider)
 {
     public async Task<ConcurrentLocalStore> OpenStore(string group = "common_group", CancellationToken cancellationToken = default)
     {
-        var concurrencyService = serviceProvider.GetRequiredService<LocalStoreConcurrencyService>();
+        // Create a new transient instance of the local store service
         var localStoreService = serviceProvider.GetRequiredService<ILocalStoreService>();
         
-        // Acquire the concurrency lock for this group
-        var concurrencyTicket = await concurrencyService.AcquireAsync(group, cancellationToken);
+        // Open the transaction-scoped service
+        await localStoreService.Open(cancellationToken);
         
-        var localStore = new ConcurrentLocalStore(localStoreService, concurrencyTicket)
+        // Create the local store with the opened service
+        var localStore = new ConcurrentLocalStore(localStoreService)
         {
             Group = group
         };

@@ -1,6 +1,8 @@
-﻿namespace Application.LocalStore.Interfaces;
+﻿using Microsoft.Data.Sqlite;
 
-public interface ILocalStoreService
+namespace Application.LocalStore.Interfaces;
+
+public interface ILocalStoreService : IDisposable
 {
     Task<string> Get(string group, string id, CancellationToken cancellationToken);
 
@@ -9,4 +11,10 @@ public interface ILocalStoreService
     Task Set(string group, string id, string? data, CancellationToken cancellationToken);
 
     Task<bool> Contains(string group, string id, CancellationToken cancellationToken);
+
+    Task Open(CancellationToken cancellationToken);
+
+    Task CommitAsync(CancellationToken cancellationToken);
+
+    Task RollbackAsync(CancellationToken cancellationToken);
 }

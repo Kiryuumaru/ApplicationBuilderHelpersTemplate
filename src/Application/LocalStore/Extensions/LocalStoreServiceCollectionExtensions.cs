@@ -8,9 +8,8 @@ internal static class LocalStoreServiceCollectionExtensions
 {
     public static IServiceCollection AddLocalStoreServices(this IServiceCollection services)
     {
-        services.AddSingleton<LocalStoreConcurrencyService>();
         services.AddScoped<LocalStoreFactory>();
-        services.AddSingleton<ILocalStoreService, SqliteLocalStoreService>();
+        services.AddTransient<ILocalStoreService, SqliteLocalStoreService>();
         return services;
     }
 }

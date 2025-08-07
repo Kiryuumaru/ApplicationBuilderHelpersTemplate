@@ -2,23 +2,27 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Application.LocalStore.Extensions;
+using System.Data;
+using DisposableHelpers.Attributes;
+using AbsolutePathHelpers;
 
 namespace Application.LocalStore.Services;
 
-internal class SqliteLocalStoreService : ILocalStoreService
+[Disposable]
+internal partial class SqliteLocalStoreService : ILocalStoreService
 {
+    private readonly AbsolutePath dbPath;
     private readonly string _connectionString;
-    private readonly SemaphoreSlim _initializationLock = new(1, 1);
-    private bool _isInitialized = false;
+    private readonly SemaphoreSlim _initializationLock = new(1);
+    private static bool _isInitialized = false;
+    
+    // Transaction-scoped state
+    private SqliteConnection? _connection;
+    private SqliteTransaction? _transaction;
 
     public SqliteLocalStoreService(IConfiguration configuration)
     {
-        var dbPath = configuration.GetLocalStoreDbPath();
-        var parentPath = dbPath.Parent;
-        if (parentPath != null && !Directory.Exists(parentPath.ToString()))
-        {
-            Directory.CreateDirectory(parentPath.ToString());
-        }
+        dbPath = configuration.GetLocalStoreDbPath();
         
         // Configure SQLite for optimal concurrency
         var connectionStringBuilder = new SqliteConnectionStringBuilder
@@ -33,6 +37,25 @@ internal class SqliteLocalStoreService : ILocalStoreService
         _connectionString = connectionStringBuilder.ToString();
     }
 
+    public async Task Open(CancellationToken cancellationToken)
+    {
+        if (_connection != null)
+        {
+            throw new InvalidOperationException("Service is already open. Call Close or dispose before opening again.");
+        }
+
+        await EnsureInitializedAsync(cancellationToken);
+        
+        _connection = new SqliteConnection(_connectionString);
+        await _connection.OpenAsync(cancellationToken);
+        _transaction = await _connection.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken) as SqliteTransaction;
+        
+        if (_transaction == null)
+        {
+            throw new InvalidOperationException("Failed to create SQLite transaction");
+        }
+    }
+
     private async Task EnsureInitializedAsync(CancellationToken cancellationToken)
     {
         if (_isInitialized) return;
@@ -41,6 +64,8 @@ internal class SqliteLocalStoreService : ILocalStoreService
         try
         {
             if (_isInitialized) return;
+
+            dbPath.Parent?.CreateDirectory();
 
             using var connection = new SqliteConnection(_connectionString);
             await connection.OpenAsync(cancellationToken);
@@ -56,7 +81,8 @@ internal class SqliteLocalStoreService : ILocalStoreService
                 PRAGMA foreign_keys=ON;
                 PRAGMA synchronous=NORMAL;
                 PRAGMA cache_size=10000;
-                PRAGMA temp_store=memory;";
+                PRAGMA temp_store=memory;
+                PRAGMA busy_timeout=30000;";
             await pragmaCommand.ExecuteNonQueryAsync(cancellationToken);
 
             // Create the table with proper indexes
@@ -93,14 +119,12 @@ internal class SqliteLocalStoreService : ILocalStoreService
 
     public async Task<string> Get(string group, string id, CancellationToken cancellationToken)
     {
-        await EnsureInitializedAsync(cancellationToken);
+        ThrowIfNotOpen();
         
         string rawId = $"{id}__{group}";
         
-        using var connection = new SqliteConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken);
-        
-        using var command = connection.CreateCommand();
+        using var command = _connection!.CreateCommand();
+        command.Transaction = _transaction;
         command.CommandText = "SELECT Data FROM LocalStoreData WHERE RawId = @rawId AND Group = @group";
         command.Parameters.AddWithValue("@rawId", rawId);
         command.Parameters.AddWithValue("@group", group);
@@ -111,12 +135,10 @@ internal class SqliteLocalStoreService : ILocalStoreService
 
     public async Task<string[]> GetIds(string group, CancellationToken cancellationToken)
     {
-        await EnsureInitializedAsync(cancellationToken);
+        ThrowIfNotOpen();
         
-        using var connection = new SqliteConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken);
-        
-        using var command = connection.CreateCommand();
+        using var command = _connection!.CreateCommand();
+        command.Transaction = _transaction;
         command.CommandText = "SELECT RawId FROM LocalStoreData WHERE Group = @group ORDER BY Id";
         command.Parameters.AddWithValue("@group", group);
         
@@ -138,26 +160,20 @@ internal class SqliteLocalStoreService : ILocalStoreService
             }
         }
         
-        return ids.ToArray();
+        return [.. ids];
     }
 
     public async Task Set(string group, string id, string? data, CancellationToken cancellationToken)
     {
-        await EnsureInitializedAsync(cancellationToken);
+        ThrowIfNotOpen();
         
         string rawId = $"{id}__{group}";
-        
-        using var connection = new SqliteConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken);
-        
-        // Use a transaction for consistency
-        using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync(cancellationToken);
         
         if (data == null)
         {
             // Delete the record
-            using var deleteCommand = connection.CreateCommand();
-            deleteCommand.Transaction = transaction;
+            using var deleteCommand = _connection!.CreateCommand();
+            deleteCommand.Transaction = _transaction;
             deleteCommand.CommandText = "DELETE FROM LocalStoreData WHERE RawId = @rawId AND Group = @group";
             deleteCommand.Parameters.AddWithValue("@rawId", rawId);
             deleteCommand.Parameters.AddWithValue("@group", group);
@@ -167,8 +183,8 @@ internal class SqliteLocalStoreService : ILocalStoreService
         else
         {
             // Insert or update the record
-            using var upsertCommand = connection.CreateCommand();
-            upsertCommand.Transaction = transaction;
+            using var upsertCommand = _connection!.CreateCommand();
+            upsertCommand.Transaction = _transaction;
             upsertCommand.CommandText = @"
                 INSERT INTO LocalStoreData (Id, Group, Data, RawId) 
                 VALUES (@id, @group, @data, @rawId)
@@ -185,25 +201,86 @@ internal class SqliteLocalStoreService : ILocalStoreService
             
             await upsertCommand.ExecuteNonQueryAsync(cancellationToken);
         }
-        
-        await transaction.CommitAsync(cancellationToken);
     }
 
     public async Task<bool> Contains(string group, string id, CancellationToken cancellationToken)
     {
-        await EnsureInitializedAsync(cancellationToken);
+        ThrowIfNotOpen();
         
         string rawId = $"{id}__{group}";
         
-        using var connection = new SqliteConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken);
-        
-        using var command = connection.CreateCommand();
+        using var command = _connection!.CreateCommand();
+        command.Transaction = _transaction;
         command.CommandText = "SELECT COUNT(*) FROM LocalStoreData WHERE RawId = @rawId AND Group = @group";
         command.Parameters.AddWithValue("@rawId", rawId);
         command.Parameters.AddWithValue("@group", group);
         
         var count = Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken));
         return count > 0;
+    }
+
+    public async Task CommitAsync(CancellationToken cancellationToken)
+    {
+        ThrowIfNotOpen();
+        
+        if (_transaction != null)
+        {
+            await _transaction.CommitAsync(cancellationToken);
+        }
+    }
+
+    public async Task RollbackAsync(CancellationToken cancellationToken)
+    {
+        ThrowIfNotOpen();
+        
+        if (_transaction != null)
+        {
+            await _transaction.RollbackAsync(cancellationToken);
+        }
+    }
+
+    private void ThrowIfNotOpen()
+    {
+        if (_connection == null || _transaction == null)
+        {
+            throw new InvalidOperationException("Service is not open. Call Open() before using the service.");
+        }
+
+        VerifyNotDisposed();
+    }
+
+    protected void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            try
+            {
+                // Commit the transaction if it hasn't been committed or rolled back
+                if (_transaction?.Connection != null)
+                {
+                    _transaction.Commit();
+                }
+            }
+            catch
+            {
+                // If commit fails, try to rollback
+                try
+                {
+                    if (_transaction?.Connection != null)
+                    {
+                        _transaction.Rollback();
+                    }
+                }
+                catch
+                {
+                    // Ignore rollback failures during disposal
+                }
+            }
+            finally
+            {
+                _transaction?.Dispose();
+                _connection?.Dispose();
+            }
+        }
     }
 }
