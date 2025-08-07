@@ -19,7 +19,8 @@ public abstract class BaseCommand<[DynamicallyAccessedMembers(DynamicallyAccesse
     [CommandOption(
         'l', "log-level",
         EnvironmentVariable = "LOG_LEVEL",
-        Description = "Level of logs to show.")]
+        Description = "Level of logs to show.",
+        FromAmong = [LogLevel.Trace, LogLevel.Debug, LogLevel.Information])]
     public LogLevel LogLevel { get; set; } = LogLevel.Information;
 
     [CommandOption(

@@ -22,7 +22,7 @@ public class Application : ApplicationDependency
     {
         base.CommandPreparation(applicationBuilder);
 
-        applicationBuilder.AddCommandTypeParser<LogLevelTypeParser>();
+        //applicationBuilder.AddCommandTypeParser<LogLevelTypeParser>();
     }
 
     public override void BuilderPreparation(ApplicationHostBuilder applicationBuilder)

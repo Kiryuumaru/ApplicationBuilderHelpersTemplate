@@ -1,7 +1,8 @@
 {
   "profiles": {
     "Presentation": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "commandLineArgs": "-l traces"
     }
   }
 }
