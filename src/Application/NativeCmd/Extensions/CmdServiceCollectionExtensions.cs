@@ -12,7 +12,7 @@ internal static class CmdServiceCollectionExtensions
 {
     public static IServiceCollection AddCmdServices(this IServiceCollection services)
     {
-        services.AddScoped<CmdService>();
+        services.AddScoped<NativeCmdService>();
         return services;
     }
 }

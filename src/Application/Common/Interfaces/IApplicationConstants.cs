@@ -1,4 +1,4 @@
-﻿namespace Application.Configuration.Interfaces;
+﻿namespace Application.Common.Interfaces;
 
 public interface IApplicationConstants
 {
@@ -6,9 +6,11 @@ public interface IApplicationConstants
 
     string AppTitle { get; }
 
-    string AppTag { get; }
+    string AppDescription { get; }
 
-    public string BuildAppBanner(string appVersion)
+    string Version { get; }
+
+    public string BuildAppBanner()
     {
         return
             $"   ██╗   ██╗██╗ █████╗ ███╗   ██╗ █████╗  \n" +
@@ -20,6 +22,6 @@ public interface IApplicationConstants
             $"                                by meldCX \n" +
             $"\n" +
             $"   {AppName}\n" +
-            $"   v{appVersion}";
+            $"   v{Version}";
     }
 }

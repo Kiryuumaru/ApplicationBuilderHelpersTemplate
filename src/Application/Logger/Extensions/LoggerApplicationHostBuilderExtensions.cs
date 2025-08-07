@@ -4,6 +4,7 @@ using Application.Logger.Enrichers;
 using Application.Logger.Interfaces;
 using Application.Logger.Services;
 using ApplicationBuilderHelpers;
+using ApplicationBuilderHelpers.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Configuration;

@@ -1,12 +1,12 @@
-﻿using TransactionHelpers;
-
-namespace Application.LocalStore.Interfaces;
+﻿namespace Application.LocalStore.Interfaces;
 
 public interface ILocalStoreService
 {
-    Task<Result<string>> Get(string group, string id, CancellationToken cancellationToken);
+    Task<string> Get(string group, string id, CancellationToken cancellationToken);
 
-    Task<Result<string[]>> GetIds(string group, CancellationToken cancellationToken);
+    Task<string[]> GetIds(string group, CancellationToken cancellationToken);
 
-    Task<Result> Set(string group, string id, string? data, CancellationToken cancellationToken);
+    Task Set(string group, string id, string? data, CancellationToken cancellationToken);
+
+    Task<bool> Contains(string group, string id, CancellationToken cancellationToken);
 }

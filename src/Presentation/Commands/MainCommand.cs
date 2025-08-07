@@ -1,9 +1,9 @@
 ﻿using Application.Common.Extensions;
-using Application.Configuration.Interfaces;
 using Application.LocalStore.Interfaces;
 using Application.LocalStore.Services;
 using Application.Logger.Extensions;
 using ApplicationBuilderHelpers;
+using ApplicationBuilderHelpers.Attributes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -19,29 +19,23 @@ using YamlDotNet.Serialization;
 
 namespace Presentation.Commands;
 
+[Command(description: "Main subcommand.")]
 public class MainCommand : BaseCommand<HostApplicationBuilder>
 {
-    public MainCommand() : base("Main subcommand.")
-    {
-    }
-
     protected override ValueTask<HostApplicationBuilder> ApplicationBuilder(CancellationToken stoppingToken)
     {
         return new ValueTask<HostApplicationBuilder>(Host.CreateApplicationBuilder());
     }
 
-    protected override async ValueTask Run(ApplicationHost<HostApplicationBuilder> applicationHost, CancellationToken stoppingToken)
+    protected override async ValueTask Run(ApplicationHost<HostApplicationBuilder> applicationHost, CancellationTokenSource cancellationTokenSource)
     {
-        await base.Run(applicationHost, stoppingToken);
-
         var logger = applicationHost.Services.GetRequiredService<ILogger<MainCommand>>();
         var localStoreFactory = applicationHost.Services.GetRequiredService<LocalStoreFactory>();
 
         using var _ = logger.BeginScopeMap<MainCommand>(scopeMap: new Dictionary<string, object?>
         {
             { "AppName", ApplicationConstants.AppName },
-            { "AppTitle", ApplicationConstants.AppTitle },
-            { "AppTag", ApplicationConstants.AppTag }
+            { "AppTitle", ApplicationConstants.AppTitle }
         });
 
         logger.LogTrace("Running {AppName} ({AppTitle})", ApplicationConstants.AppName, ApplicationConstants.AppTitle);
@@ -65,12 +59,15 @@ public class MainCommand : BaseCommand<HostApplicationBuilder>
         logger.LogInformation("Array: {@Value}", new[] { 1, 2, 3 });
         logger.LogInformation("Enum: {Value}", ConsoleColor.Red);
 
-        var localStore = await localStoreFactory.OpenStore(cancellationToken: stoppingToken);
+        // Open a store with concurrency control - the lock is acquired here and held until disposal
+        using var localStore = await localStoreFactory.OpenStore(cancellationToken: cancellationTokenSource.Token);
 
-        await localStore.Set("TestKey", "TestValue", stoppingToken);
+        await localStore.Set("TestKey", "TestValue", cancellationTokenSource.Token);
 
-        var value = await localStore.Get("TestKey", stoppingToken);
+        var value = await localStore.Get("TestKey", cancellationTokenSource.Token);
 
         logger.LogInformation("Retrieved value from local store: {Value}", value.Value);
+        
+        // The concurrency lock is automatically released when the using block ends
     }
 }

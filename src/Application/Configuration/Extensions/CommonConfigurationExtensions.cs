@@ -1,5 +1,6 @@
 ﻿using AbsolutePathHelpers;
 using Application.Common.Extensions;
+using ApplicationBuilderHelpers.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -12,7 +13,7 @@ public static class CommonConfigurationExtensions
     {
         if (_runtimeGuid == null)
         {
-            _runtimeGuid = Guid.Parse(configuration.GetVarRefValueOrDefault("RUNTIME_RUNTIME_GUID", Guid.NewGuid().ToString()));
+            _runtimeGuid = Guid.Parse(configuration.GetRefValueOrDefault("RUNTIME_RUNTIME_GUID", Guid.NewGuid().ToString()));
         }
         return _runtimeGuid.Value;
     }
@@ -20,7 +21,7 @@ public static class CommonConfigurationExtensions
     private const string ServiceNameKey = "RUNTIME_SERVICE_NAME";
     public static string GetServiceName(this IConfiguration configuration)
     {
-        return configuration.GetVarRefValue(ServiceNameKey);
+        return configuration.GetRefValue(ServiceNameKey);
     }
     public static void SetServiceName(this IConfiguration configuration, string serviceName)
     {
@@ -30,7 +31,7 @@ public static class CommonConfigurationExtensions
     private const string LogsDumpDirectoryKey = "RUNTIME_LOGS_DUMP_DIRECTORY";
     public static AbsolutePath? GetLogsDumpDirectory(this IConfiguration configuration)
     {
-        var logsDumpDirStr = configuration.GetVarRefValueOrDefault(LogsDumpDirectoryKey);
+        var logsDumpDirStr = configuration.GetRefValueOrDefault(LogsDumpDirectoryKey);
         if (string.IsNullOrWhiteSpace(logsDumpDirStr))
         {
             return null;
@@ -45,7 +46,7 @@ public static class CommonConfigurationExtensions
     private const string LoggerLevelKey = "RUNTIME_LOGGER_LEVEL";
     public static LogLevel GetLoggerLevel(this IConfiguration configuration)
     {
-        var loggerLevel = configuration.GetVarRefValueOrDefault(LoggerLevelKey, LogLevel.Information.ToString());
+        var loggerLevel = configuration.GetRefValueOrDefault(LoggerLevelKey, LogLevel.Information.ToString());
         return Enum.Parse<LogLevel>(loggerLevel);
     }
     public static void SetLoggerLevel(this IConfiguration configuration, LogLevel loggerLevel)
@@ -56,7 +57,7 @@ public static class CommonConfigurationExtensions
     private const string HomePathKey = "RUNTIME_HOME_PATH";
     public static AbsolutePath GetHomePath(this IConfiguration configuration)
     {
-        return configuration.GetVarRefValueOrDefault(HomePathKey, AbsolutePath.Create(Environment.CurrentDirectory));
+        return configuration.GetRefValueOrDefault(HomePathKey, AbsolutePath.Create(Environment.CurrentDirectory));
     }
     public static void SetHomePath(this IConfiguration configuration, AbsolutePath dataPath)
     {

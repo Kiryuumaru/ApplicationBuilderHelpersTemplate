@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Application.NativeServiceInstaller.Services;
 
-internal class WindowsServiceInstallerService(ILogger<WindowsServiceInstallerService> logger, CmdService cmdService, IConfiguration configuration, AssetResolverService assetResolverService) : INativeServiceInstaller
+internal class WindowsServiceInstallerService(ILogger<WindowsServiceInstallerService> logger, NativeCmdService cmdService, IConfiguration configuration, AssetResolverService assetResolverService) : INativeServiceInstaller
 {
     public async Task Install(string serviceName, string serviceDescription, AbsolutePath executablePath, string[] executableArgs, AbsolutePath workingDirectory, Dictionary<string, string?> environmentVariables, CancellationToken cancellationToken = default)
     {

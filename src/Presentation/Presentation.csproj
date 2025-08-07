@@ -16,54 +16,14 @@
 	<PropertyGroup>
 		<Copyright>Copyright (C) 2025 Kiryuumaru</Copyright>
 		<Company>Kiryuumaru</Company>
-		<Version>0.0.0</Version>
 		<AssemblyTitle>Application Builder Helpers</AssemblyTitle>
 		<AssemblyName>app_sample</AssemblyName>
+		<Description>App adawdawd</Description>
+		<InformationalVersion>0.1.0</InformationalVersion>
 	</PropertyGroup>
 
-	<PropertyGroup>
-		<FullVersion>0.0.0-alpha.0+build.dev</FullVersion>
-		<AppTag>alpha</AppTag>
-	</PropertyGroup>
-
-	<Target Name="GenerateBuildConstants" BeforeTargets="BeforeCompile">
-		<PropertyGroup>
-			<BuildConstantsContent>$([System.IO.File]::ReadAllText($([System.IO.Path]::Combine($(MSBuildProjectDirectory), 'BuildFiles', 'BuildConstantsFileTemplate.cs'))))</BuildConstantsContent>
-		</PropertyGroup>
-		<PropertyGroup>
-			<BuildConstantsContent>$([System.String]::Copy($(BuildConstantsContent)).Replace('##FULL_VERSION##', $(FullVersion)))</BuildConstantsContent>
-		</PropertyGroup>
-		<PropertyGroup>
-			<BuildConstantsContent>$([System.String]::Copy($(BuildConstantsContent)).Replace('##APP_TAG##', $(AppTag)))</BuildConstantsContent>
-		</PropertyGroup>
-		<PropertyGroup>
-			<BuildConstantsContent>$([System.String]::Copy($(BuildConstantsContent)).Replace('##APP_NAME##', $(AssemblyName)))</BuildConstantsContent>
-		</PropertyGroup>
-		<PropertyGroup>
-			<BuildConstantsContent>$([System.String]::Copy($(BuildConstantsContent)).Replace('##APP_TITLE##', $(AssemblyTitle)))</BuildConstantsContent>
-		</PropertyGroup>
-		<WriteLinesToFile File="$(IntermediateOutputPath)Constants.cs" Lines="$(BuildConstantsContent)" Overwrite="true" Encoding="Unicode" />
-		<ItemGroup>
-			<Compile Include="$(IntermediateOutputPath)Constants.cs" />
-		</ItemGroup>
-	</Target>
-
 	<ItemGroup>
-		<Compile Remove="BuildFiles\BuildConstantsFileTemplate.cs" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Include="BuildFiles\BuildConstantsFileTemplate.cs" />
-	</ItemGroup>
-
-	<ItemGroup>
-
-	  <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="9.0.8" />
-
-	  <PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="9.0.8" />
 		<ProjectReference Include="..\Application\Application.csproj" />
-		<ProjectReference Include="..\Infrastructure.SQLite.LocalStore\Infrastructure.SQLite.LocalStore.csproj" />
 	</ItemGroup>
 
 </Project>
-	

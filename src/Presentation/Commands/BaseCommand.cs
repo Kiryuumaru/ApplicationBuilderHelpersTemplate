@@ -1,6 +1,6 @@
 ﻿using AbsolutePathHelpers;
+using Application.Common.Interfaces;
 using Application.Configuration.Extensions;
-using Application.Configuration.Interfaces;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Attributes;
 using Microsoft.Extensions.Configuration;
@@ -11,10 +11,10 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Presentation.Commands;
 
-public abstract class BaseCommand<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] THostApplicationBuilder> : ApplicationCommand<THostApplicationBuilder>
+public abstract class BaseCommand<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] THostApplicationBuilder> : Command<THostApplicationBuilder>
     where THostApplicationBuilder : IHostApplicationBuilder
 {
-    public IApplicationConstants ApplicationConstants { get; } = new ApplicationConstants();
+    public IApplicationConstants ApplicationConstants { get; } = Build.ApplicationConstants.Instance;
 
     [CommandOption(
         'l', "log-level",
@@ -27,18 +27,6 @@ public abstract class BaseCommand<[DynamicallyAccessedMembers(DynamicallyAccesse
         EnvironmentVariable = "LOGS_DUMP",
         Description = "Logs dump to directory.")]
     public AbsolutePath? LogsDumpDirectory { get; set; }
-
-    public override bool ExitOnRunComplete => true;
-
-    protected BaseCommand(string? description = null)
-        : base(description)
-    {
-    }
-
-    protected BaseCommand(string name, string? description = null)
-        : base(name, description)
-    {
-    }
 
     public override void AddConfigurations(ApplicationHostBuilder applicationBuilder, IConfiguration configuration)
     {
@@ -59,18 +47,4 @@ public abstract class BaseCommand<[DynamicallyAccessedMembers(DynamicallyAccesse
 
         base.AddServices(applicationBuilder, services);
     }
-
-    protected string BuildAppBanner()
-    {
-        return ApplicationConstants.BuildAppBanner(Build.Constants.FullVersion);
-    }
-}
-
-internal class ApplicationConstants : IApplicationConstants
-{
-    public string AppName { get; } = Build.Constants.AppName;
-
-    public string AppTitle { get; } = Build.Constants.AppTitle;
-
-    public string AppTag { get; } = Build.Constants.AppTag;
 }

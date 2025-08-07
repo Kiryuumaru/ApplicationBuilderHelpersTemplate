@@ -9,7 +9,7 @@ using System.Text;
 
 namespace Application.NativeCmd.Services;
 
-public class CmdService(ILogger<CmdService> logger)
+public class NativeCmdService(ILogger<NativeCmdService> logger)
 {
     public Command BuildRun(
         string path,
@@ -20,7 +20,7 @@ public class CmdService(ILogger<CmdService> logger)
         PipeTarget? outPipeTarget = default,
         PipeTarget? errPipeTarget = default)
     {
-        using var _ = logger.BeginScopeMap<CmdService>(serviceAction: nameof(BuildRun), scopeMap: new Dictionary<string, object?>()
+        using var _ = logger.BeginScopeMap<NativeCmdService>(serviceAction: nameof(BuildRun), scopeMap: new Dictionary<string, object?>()
         {
             ["CmdPath"] = path,
             ["CmdArgs"] = string.Join(" ", args),
@@ -165,7 +165,7 @@ public class CmdService(ILogger<CmdService> logger)
         PipeSource? inPipeTarget = default,
         CancellationToken stoppingToken = default)
     {
-        using var _ = logger.BeginScopeMap<CmdService>(serviceAction: nameof(RunListenAndLog), scopeMap: new Dictionary<string, object?>()
+        using var _ = logger.BeginScopeMap<NativeCmdService>(serviceAction: nameof(RunListenAndLog), scopeMap: new Dictionary<string, object?>()
         {
             ["CmdPath"] = path,
             ["CmdArgs"] = string.Join(" ", args),
@@ -217,7 +217,7 @@ public class CmdService(ILogger<CmdService> logger)
         PipeSource? inPipeTarget = default,
         CancellationToken stoppingToken = default)
     {
-        using var _ = logger.BeginScopeMap<CmdService>(serviceAction: nameof(RunListenAndLog), scopeMap: new Dictionary<string, object?>()
+        using var _ = logger.BeginScopeMap<NativeCmdService>(serviceAction: nameof(RunListenAndLog), scopeMap: new Dictionary<string, object?>()
         {
             ["CmdCommand"] = command,
             ["WorkingDirectory"] = workingDirectory,

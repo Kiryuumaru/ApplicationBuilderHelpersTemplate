@@ -1,0 +1,39 @@
+<Project>
+	<!--
+	<PropertyGroup Condition="'$(OutputType)' == 'Exe'">
+		<AssemblyName Condition="'$(AssemblyName)' == ''">vianaapp</AssemblyName>
+		<AssemblyTitle Condition="'$(AssemblyTitle)' == ''">Viana Edge Application</AssemblyTitle>
+		<Description Condition="'$(Description)' == ''">0.0.0-alpha.0+build.local</Description>
+		<InformationalVersion Condition="'$(InformationalVersion)' == ''">0.0.0-alpha.0+build.local</InformationalVersion>
+	</PropertyGroup>
+	-->
+
+	<Target Name="GenerateBuildConstants" BeforeTargets="BeforeCompile" Condition="'$(OutputType)' == 'Exe'">
+		<ItemGroup>
+			<BuildConstantsLines Include="namespace Build" />
+			<BuildConstantsLines Include="{" />
+			<BuildConstantsLines Include="    internal static class Constants" />
+			<BuildConstantsLines Include="    {" />
+			<BuildConstantsLines Include="        public const string AppName = &quot;$(AssemblyName)&quot;%3B" />
+			<BuildConstantsLines Include="        public const string AppTitle = &quot;$(AssemblyTitle)&quot;%3B" />
+			<BuildConstantsLines Include="        public const string AppDescription = &quot;$(Description)&quot;%3B" />
+			<BuildConstantsLines Include="        public const string Version = &quot;$(InformationalVersion)&quot;%3B" />
+			<BuildConstantsLines Include="    }" />
+			<BuildConstantsLines Include=" " />
+			<BuildConstantsLines Include="    internal class ApplicationConstants : global::Application.Common.Interfaces.IApplicationConstants" />
+			<BuildConstantsLines Include="    {" />
+			<BuildConstantsLines Include="        public static global::Application.Common.Interfaces.IApplicationConstants Instance { get%3B } = new global::Build.ApplicationConstants()%3B" />
+			<BuildConstantsLines Include="        public string AppName { get%3B } = global::Build.Constants.AppName%3B" />
+			<BuildConstantsLines Include="        public string AppTitle { get%3B } = global::Build.Constants.AppTitle%3B" />
+			<BuildConstantsLines Include="        public string AppDescription { get%3B } = global::Build.Constants.AppDescription%3B" />
+			<BuildConstantsLines Include="        public string Version { get%3B } = global::Build.Constants.Version%3B" />
+			<BuildConstantsLines Include="    }" />
+			<BuildConstantsLines Include="}" />
+		</ItemGroup>
+		<WriteLinesToFile File="$(IntermediateOutputPath)Constants.cs"
+						  Lines="@(BuildConstantsLines)" Overwrite="true" Encoding="Unicode" />
+		<ItemGroup>
+			<Compile Include="$(IntermediateOutputPath)Constants.cs" />
+		</ItemGroup>
+	</Target>
+</Project>

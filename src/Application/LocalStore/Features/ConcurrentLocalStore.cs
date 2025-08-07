@@ -1,28 +1,37 @@
 ﻿using Application.LocalStore.Interfaces;
-using DisposableHelpers.Attributes;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using TransactionHelpers;
 
 namespace Application.LocalStore.Features;
 
-[Disposable]
-public partial class ConcurrentLocalStore(ILocalStoreService localStore)
+public class ConcurrentLocalStore : IDisposable
 {
-    private readonly ILocalStoreService _localStoreService = localStore;
+    private readonly ILocalStoreService _localStoreService;
+    private readonly IDisposable _concurrencyTicket;
+    private bool _disposed = false;
 
     public required string Group { get; init; }
+
+    public ConcurrentLocalStore(ILocalStoreService localStore, IDisposable concurrencyTicket)
+    {
+        _localStoreService = localStore;
+        _concurrencyTicket = concurrencyTicket;
+    }
 
     public async Task<Result<bool>> Contains(string id, CancellationToken cancellationToken = default)
     {
         Result<bool> result = new();
 
-        if (!result.Success(await _localStoreService.Get(Group, id, cancellationToken), out string? value))
+        try
         {
-            return result;
+            var contains = await _localStoreService.Contains(Group, id, cancellationToken);
+            result.WithValue(contains);
         }
-
-        result.WithValue(!string.IsNullOrEmpty(value));
+        catch (Exception ex)
+        {
+            result.WithError(ex);
+        }
 
         return result;
     }
@@ -31,14 +40,17 @@ public partial class ConcurrentLocalStore(ILocalStoreService localStore)
     {
         Result result = new();
 
-        if (!result.Success(await _localStoreService.Get(Group, id, cancellationToken), out string? value))
+        try
         {
-            return result;
+            var value = await _localStoreService.Get(Group, id, cancellationToken);
+            if (string.IsNullOrEmpty(value))
+            {
+                result.WithError(new Exception(id + " does not exists"));
+            }
         }
-
-        if (string.IsNullOrEmpty(value))
+        catch (Exception ex)
         {
-            result.WithError(new Exception(id + " does not exists"));
+            result.WithError(ex);
         }
 
         return result;
@@ -48,17 +60,10 @@ public partial class ConcurrentLocalStore(ILocalStoreService localStore)
     {
         Result<string> result = new();
 
-        if (!result.Success(await _localStoreService.Get(Group, id, cancellationToken), out string? value))
-        {
-            return result;
-        }
-
         try
         {
-            if (!string.IsNullOrEmpty(value))
-            {
-                result.WithValue(value);
-            }
+            var value = await _localStoreService.Get(Group, id, cancellationToken);
+            result.WithValue(value);
         }
         catch (Exception ex)
         {
@@ -73,13 +78,9 @@ public partial class ConcurrentLocalStore(ILocalStoreService localStore)
     {
         Result<T> result = new();
 
-        if (!result.Success(await _localStoreService.Get(Group, id, cancellationToken), out string? value))
-        {
-            return result;
-        }
-
         try
         {
+            var value = await _localStoreService.Get(Group, id, cancellationToken);
             if (!string.IsNullOrEmpty(value))
             {
                 T? obj = JsonSerializer.Deserialize(value, jsonTypeInfo);
@@ -102,12 +103,15 @@ public partial class ConcurrentLocalStore(ILocalStoreService localStore)
     {
         Result<string[]> result = new();
 
-        if (!result.Success(await _localStoreService.GetIds(Group, cancellationToken), out string[]? ids))
+        try
         {
-            return result;
+            var ids = await _localStoreService.GetIds(Group, cancellationToken);
+            result.WithValue(ids);
         }
-
-        result.WithValue(ids);
+        catch (Exception ex)
+        {
+            result.WithError(ex);
+        }
 
         return result;
     }
@@ -116,9 +120,13 @@ public partial class ConcurrentLocalStore(ILocalStoreService localStore)
     {
         Result result = new();
 
-        if (!result.Success(await _localStoreService.Set(Group, id, value, cancellationToken)))
+        try
         {
-            return result;
+            await _localStoreService.Set(Group, id, value, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            result.WithError(ex);
         }
 
         return result;
@@ -129,11 +137,14 @@ public partial class ConcurrentLocalStore(ILocalStoreService localStore)
     {
         Result result = new();
 
-        string data = JsonSerializer.Serialize(obj, jsonTypeInfo);
-
-        if (!result.Success(await _localStoreService.Set(Group, id, data, cancellationToken)))
+        try
         {
-            return result;
+            string data = JsonSerializer.Serialize(obj, jsonTypeInfo);
+            await _localStoreService.Set(Group, id, data, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            result.WithError(ex);
         }
 
         return result;
@@ -143,18 +154,34 @@ public partial class ConcurrentLocalStore(ILocalStoreService localStore)
     {
         Result<bool> result = new();
 
-        if (!result.Success(await _localStoreService.Get(Group, id, cancellationToken), out string? value))
+        try
         {
-            return result;
+            var value = await _localStoreService.Get(Group, id, cancellationToken);
+            bool hadValue = !string.IsNullOrEmpty(value);
+            
+            await _localStoreService.Set(Group, id, null, cancellationToken);
+            result.WithValue(hadValue);
         }
-
-        if (!result.Success(await _localStoreService.Set(Group, id, null, cancellationToken)))
+        catch (Exception ex)
         {
-            return result;
+            result.WithError(ex);
         }
-
-        result.WithValue(!string.IsNullOrEmpty(value));
 
         return result;
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed && disposing)
+        {
+            _concurrencyTicket?.Dispose();
+            _disposed = true;
+        }
     }
 }

@@ -1,7 +1,7 @@
 ﻿using Application.AssetResolver.Extensions;
 using Application.AssetResolver.Services;
 using Application.CommandLineParser.TypeParsers;
-using Application.Configuration.Interfaces;
+using Application.Common.Interfaces;
 using Application.LocalStore.Extensions;
 using Application.LocalStore.Services;
 using Application.Logger.Extensions;

@@ -8,14 +8,17 @@ public class LocalStoreFactory(IServiceProvider serviceProvider)
 {
     public async Task<ConcurrentLocalStore> OpenStore(string group = "common_group", CancellationToken cancellationToken = default)
     {
-        var localStoreConcurrencyService = serviceProvider.GetRequiredService<LocalStoreConcurrencyService>();
-        var ticket = await localStoreConcurrencyService.Aquire(group, cancellationToken);
+        var concurrencyService = serviceProvider.GetRequiredService<LocalStoreConcurrencyService>();
         var localStoreService = serviceProvider.GetRequiredService<ILocalStoreService>();
-        var localStore = new ConcurrentLocalStore(localStoreService)
+        
+        // Acquire the concurrency lock for this group
+        var concurrencyTicket = await concurrencyService.AcquireAsync(group, cancellationToken);
+        
+        var localStore = new ConcurrentLocalStore(localStoreService, concurrencyTicket)
         {
             Group = group
         };
-        localStore.CancelWhenDisposing().Register(ticket.Dispose);
+        
         return localStore;
     }
 }

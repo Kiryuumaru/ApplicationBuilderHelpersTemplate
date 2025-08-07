@@ -8,7 +8,7 @@ using System.Text;
 
 namespace Application.NativeServiceInstaller.Services;
 
-internal class LinuxServiceInstallerService(ILogger<LinuxServiceInstallerService> logger, CmdService cmdService) : INativeServiceInstaller
+internal class LinuxServiceInstallerService(ILogger<LinuxServiceInstallerService> logger, NativeCmdService cmdService) : INativeServiceInstaller
 {
     public async Task Install(string serviceName, string serviceDescription, AbsolutePath executablePath, string[] executableArgs, AbsolutePath workingDirectory, Dictionary<string, string?> environmentVariables, CancellationToken cancellationToken = default)
     {
