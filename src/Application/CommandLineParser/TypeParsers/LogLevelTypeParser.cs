@@ -1,4 +1,5 @@
 ﻿using AbsolutePathHelpers;
+using ApplicationBuilderHelpers.Abstracts;
 using ApplicationBuilderHelpers.Interfaces;
 using Microsoft.Extensions.Logging;
 using System;
@@ -10,11 +11,9 @@ using System.Threading.Tasks;
 
 namespace Application.CommandLineParser.TypeParsers;
 
-internal class LogLevelTypeParser : ICommandTypeParser
+internal class LogLevelTypeParser : CommandTypeParser<LogLevel>
 {
-    public Type Type { get; } = typeof(LogLevel);
-
-    public object? Parse(string? value, out string? validateError)
+    public override LogLevel ParseValue(string? value, out string? validateError)
     {
         validateError = null;
         if (string.IsNullOrEmpty(value))
@@ -38,12 +37,7 @@ internal class LogLevelTypeParser : ICommandTypeParser
         catch (ArgumentException ex)
         {
             validateError = ex.Message;
-            return null;
+            return default;
         }
-    }
-
-    public string? GetString(object? value)
-    {
-        return value?.ToString();
     }
 }

@@ -70,7 +70,9 @@ public class MainCommand : BaseCommand<HostApplicationBuilder>
         
         // Explicitly commit the transaction before disposal (optional - will auto-commit on dispose)
         await localStore.CommitAsync(cancellationTokenSource.Token);
-        
+
         // The transaction is automatically committed when the using block ends if not already committed
+
+        cancellationTokenSource.Cancel();
     }
 }

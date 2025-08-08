@@ -1,24 +1,24 @@
 ﻿using AbsolutePathHelpers;
 using Application.Logger.Extensions;
 using Application.NativeCmd.Exceptions;
-using CliWrap;
-using CliWrap.EventStream;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Channels;
 
 namespace Application.NativeCmd.Services;
 
 public class NativeCmdService(ILogger<NativeCmdService> logger)
 {
-    public Command BuildRun(
+    public ProcessStartInfo BuildRun(
         string path,
         string[] args,
         AbsolutePath? workingDirectory = default,
         IDictionary<string, string?>? environmentVariables = default,
-        PipeSource? inPipeTarget = default,
-        PipeTarget? outPipeTarget = default,
-        PipeTarget? errPipeTarget = default)
+        bool redirectStandardInput = false,
+        bool redirectStandardOutput = false,
+        bool redirectStandardError = false)
     {
         using var _ = logger.BeginScopeMap<NativeCmdService>(serviceAction: nameof(BuildRun), scopeMap: new Dictionary<string, object?>()
         {
@@ -30,64 +30,62 @@ public class NativeCmdService(ILogger<NativeCmdService> logger)
 
         logger.Trace("Building command {CmdPath} {CmdArgs}", path, string.Join(" ", args));
 
-        Command osCli = Cli.Wrap(path)
-            .WithArguments(args, false)
-            .WithValidation(CommandResultValidation.None);
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = path,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardInput = redirectStandardInput,
+            RedirectStandardOutput = redirectStandardOutput,
+            RedirectStandardError = redirectStandardError
+        };
+
+        // Add arguments
+        foreach (var arg in args)
+        {
+            startInfo.ArgumentList.Add(arg);
+        }
 
         if (workingDirectory != null)
         {
-            osCli = osCli
-                .WithWorkingDirectory(workingDirectory);
+            startInfo.WorkingDirectory = workingDirectory.ToString();
         }
 
         if (environmentVariables != null)
         {
-            osCli = osCli
-                .WithEnvironmentVariables(environmentVariables.ToDictionary());
-        }
-
-        if (inPipeTarget != null)
-        {
-            osCli = osCli
-                .WithStandardInputPipe(inPipeTarget);
-        }
-
-        if (outPipeTarget != null)
-        {
-            osCli = osCli
-                .WithStandardOutputPipe(outPipeTarget);
-        }
-
-        if (errPipeTarget != null)
-        {
-            osCli = osCli
-                .WithStandardErrorPipe(errPipeTarget);
+            foreach (var envVar in environmentVariables)
+            {
+                if (envVar.Value != null)
+                {
+                    startInfo.Environment[envVar.Key] = envVar.Value;
+                }
+            }
         }
 
         logger.Trace("Command {CmdPath} {CmdArgs} built", path, string.Join(" ", args));
 
-        return osCli;
+        return startInfo;
     }
 
-    public Command BuildRun(
+    public ProcessStartInfo BuildRun(
         string command,
         AbsolutePath? workingDirectory = default,
         IDictionary<string, string?>? environmentVariables = default,
-        PipeSource? inPipeTarget = default,
-        PipeTarget? outPipeTarget = default,
-        PipeTarget? errPipeTarget = default)
+        bool redirectStandardInput = false,
+        bool redirectStandardOutput = false,
+        bool redirectStandardError = false)
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            return BuildRun("cmd", ["/c", $"\"{command}\""], workingDirectory, environmentVariables, inPipeTarget, outPipeTarget, errPipeTarget);
+            return BuildRun("cmd", ["/c", command], workingDirectory, environmentVariables, redirectStandardInput, redirectStandardOutput, redirectStandardError);
         }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
-            return BuildRun("/bin/bash", ["-c", $"\"{command}\""], workingDirectory, environmentVariables, inPipeTarget, outPipeTarget, errPipeTarget);
+            return BuildRun("/bin/bash", ["-c", command], workingDirectory, environmentVariables, redirectStandardInput, redirectStandardOutput, redirectStandardError);
         }
         else
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException($"Platform {RuntimeInformation.OSDescription} is not supported");
         }
     }
 
@@ -98,17 +96,42 @@ public class NativeCmdService(ILogger<NativeCmdService> logger)
         IDictionary<string, string?>? environmentVariables = default,
         CancellationToken stoppingToken = default)
     {
-        var stdBuffer = new StringBuilder();
+        var startInfo = BuildRun(path, args, workingDirectory, environmentVariables, false, true, true);
 
-        var result = await BuildRun(path, args, workingDirectory, environmentVariables, null, PipeTarget.ToStringBuilder(stdBuffer), PipeTarget.ToStringBuilder(stdBuffer))
-            .ExecuteAsync(stoppingToken);
+        using var process = new Process { StartInfo = startInfo };
+        var stdOutput = new StringBuilder();
+        var stdError = new StringBuilder();
 
-        if (result.ExitCode != 0)
+        process.OutputDataReceived += (sender, e) =>
         {
-            throw new NativeCmdException(stdBuffer.ToString(), result.ExitCode);
+            if (e.Data != null)
+            {
+                stdOutput.AppendLine(e.Data);
+            }
+        };
+
+        process.ErrorDataReceived += (sender, e) =>
+        {
+            if (e.Data != null)
+            {
+                stdError.AppendLine(e.Data);
+            }
+        };
+
+        process.Start();
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+
+        await process.WaitForExitAsync(stoppingToken);
+
+        var combinedOutput = stdOutput.ToString() + stdError.ToString();
+
+        if (process.ExitCode != 0)
+        {
+            throw new NativeCmdException(combinedOutput.Trim(), process.ExitCode);
         }
 
-        return stdBuffer.ToString();
+        return combinedOutput.Trim();
     }
 
     public async Task<string> RunOnce(
@@ -117,17 +140,42 @@ public class NativeCmdService(ILogger<NativeCmdService> logger)
         IDictionary<string, string?>? environmentVariables = default,
         CancellationToken stoppingToken = default)
     {
-        var stdBuffer = new StringBuilder();
+        var startInfo = BuildRun(command, workingDirectory, environmentVariables, false, true, true);
 
-        var result = await BuildRun(command, workingDirectory, environmentVariables, null, PipeTarget.ToStringBuilder(stdBuffer), PipeTarget.ToStringBuilder(stdBuffer))
-            .ExecuteAsync(stoppingToken);
+        using var process = new Process { StartInfo = startInfo };
+        var stdOutput = new StringBuilder();
+        var stdError = new StringBuilder();
 
-        if (result.ExitCode != 0)
+        process.OutputDataReceived += (sender, e) =>
         {
-            throw new NativeCmdException(stdBuffer.ToString(), result.ExitCode);
+            if (e.Data != null)
+            {
+                stdOutput.AppendLine(e.Data);
+            }
+        };
+
+        process.ErrorDataReceived += (sender, e) =>
+        {
+            if (e.Data != null)
+            {
+                stdError.AppendLine(e.Data);
+            }
+        };
+
+        process.Start();
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+
+        await process.WaitForExitAsync(stoppingToken);
+
+        var combinedOutput = stdOutput.ToString() + stdError.ToString();
+
+        if (process.ExitCode != 0)
+        {
+            throw new NativeCmdException(combinedOutput.Trim(), process.ExitCode);
         }
 
-        return stdBuffer.ToString();
+        return combinedOutput.Trim();
     }
 
     public async Task<string> RunOnceAndIgnore(
@@ -136,25 +184,100 @@ public class NativeCmdService(ILogger<NativeCmdService> logger)
         IDictionary<string, string?>? environmentVariables = default,
         CancellationToken stoppingToken = default)
     {
-        var stdBuffer = new StringBuilder();
+        var startInfo = BuildRun(command, workingDirectory, environmentVariables, false, true, true);
 
-        _ = await BuildRun(command, workingDirectory, environmentVariables, null, PipeTarget.ToStringBuilder(stdBuffer), PipeTarget.ToStringBuilder(stdBuffer))
-            .ExecuteAsync(stoppingToken);
+        using var process = new Process { StartInfo = startInfo };
+        var stdOutput = new StringBuilder();
+        var stdError = new StringBuilder();
 
-        return stdBuffer.ToString();
+        process.OutputDataReceived += (sender, e) =>
+        {
+            if (e.Data != null)
+            {
+                stdOutput.AppendLine(e.Data);
+            }
+        };
+
+        process.ErrorDataReceived += (sender, e) =>
+        {
+            if (e.Data != null)
+            {
+                stdError.AppendLine(e.Data);
+            }
+        };
+
+        process.Start();
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+
+        await process.WaitForExitAsync(stoppingToken);
+
+        var combinedOutput = stdOutput.ToString() + stdError.ToString();
+        return combinedOutput.Trim();
     }
 
-    public IAsyncEnumerable<CommandEvent> RunListen(
+    public async IAsyncEnumerable<ProcessEvent> RunListen(
         string path,
         string[] args,
         AbsolutePath? workingDirectory = default,
         IDictionary<string, string?>? environmentVariables = default,
-        PipeSource? inPipeTarget = default,
-        CancellationToken stoppingToken = default)
+        string? standardInput = default,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken stoppingToken = default)
     {
-        var osCli = BuildRun(path, args, workingDirectory, environmentVariables, inPipeTarget);
+        var startInfo = BuildRun(path, args, workingDirectory, environmentVariables, !string.IsNullOrEmpty(standardInput), true, true);
 
-        return osCli.ListenAsync(stoppingToken);
+        using var process = new Process { StartInfo = startInfo };
+
+        var outputChannel = Channel.CreateUnbounded<ProcessEvent>();
+        var writer = outputChannel.Writer;
+
+        process.OutputDataReceived += (sender, e) =>
+        {
+            if (e.Data != null)
+            {
+                writer.TryWrite(new StandardOutputProcessEvent(e.Data));
+            }
+        };
+
+        process.ErrorDataReceived += (sender, e) =>
+        {
+            if (e.Data != null)
+            {
+                writer.TryWrite(new StandardErrorProcessEvent(e.Data));
+            }
+        };
+
+        process.Exited += (sender, e) =>
+        {
+            writer.TryWrite(new ExitedProcessEvent(process.ExitCode));
+            writer.Complete();
+        };
+
+        process.EnableRaisingEvents = true;
+        process.Start();
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+
+        if (!string.IsNullOrEmpty(standardInput))
+        {
+            await process.StandardInput.WriteAsync(standardInput);
+            process.StandardInput.Close();
+        }
+
+        await foreach (var processEvent in outputChannel.Reader.ReadAllAsync(stoppingToken))
+        {
+            yield return processEvent;
+            
+            if (processEvent is ExitedProcessEvent)
+            {
+                break;
+            }
+        }
+
+        if (!process.HasExited)
+        {
+            await process.WaitForExitAsync(stoppingToken);
+        }
     }
 
     public async Task RunListenAndLog(
@@ -162,7 +285,7 @@ public class NativeCmdService(ILogger<NativeCmdService> logger)
         string[] args,
         AbsolutePath? workingDirectory = default,
         IDictionary<string, string?>? environmentVariables = default,
-        PipeSource? inPipeTarget = default,
+        string? standardInput = default,
         CancellationToken stoppingToken = default)
     {
         using var _ = logger.BeginScopeMap<NativeCmdService>(serviceAction: nameof(RunListenAndLog), scopeMap: new Dictionary<string, object?>()
@@ -173,17 +296,17 @@ public class NativeCmdService(ILogger<NativeCmdService> logger)
             ["EnvironmentVariables"] = environmentVariables?.ToDictionary()
         });
 
-        await foreach (var cmdEvent in RunListen(path, args, workingDirectory, environmentVariables, inPipeTarget, stoppingToken))
+        await foreach (var processEvent in RunListen(path, args, workingDirectory, environmentVariables, standardInput, stoppingToken))
         {
-            switch (cmdEvent)
+            switch (processEvent)
             {
-                case StandardOutputCommandEvent stdOut:
+                case StandardOutputProcessEvent stdOut:
                     logger.LogTrace("{x}", stdOut.Text);
                     break;
-                case StandardErrorCommandEvent stdErr:
+                case StandardErrorProcessEvent stdErr:
                     logger.LogTrace("{x}", stdErr.Text);
                     break;
-                case ExitedCommandEvent exited:
+                case ExitedProcessEvent exited:
                     var msg = $"{path} ended with return code {exited.ExitCode}";
                     if (exited.ExitCode != 0)
                     {
@@ -198,23 +321,74 @@ public class NativeCmdService(ILogger<NativeCmdService> logger)
         }
     }
 
-    public IAsyncEnumerable<CommandEvent> RunListen(
+    public async IAsyncEnumerable<ProcessEvent> RunListen(
         string command,
         AbsolutePath? workingDirectory = default,
         IDictionary<string, string?>? environmentVariables = default,
-        PipeSource? inPipeTarget = default,
-        CancellationToken stoppingToken = default)
+        string? standardInput = default,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken stoppingToken = default)
     {
-        var osCli = BuildRun(command, workingDirectory, environmentVariables, inPipeTarget);
+        var startInfo = BuildRun(command, workingDirectory, environmentVariables, !string.IsNullOrEmpty(standardInput), true, true);
 
-        return osCli.ListenAsync(stoppingToken);
+        using var process = new Process { StartInfo = startInfo };
+
+        var outputChannel = Channel.CreateUnbounded<ProcessEvent>();
+        var writer = outputChannel.Writer;
+
+        process.OutputDataReceived += (sender, e) =>
+        {
+            if (e.Data != null)
+            {
+                writer.TryWrite(new StandardOutputProcessEvent(e.Data));
+            }
+        };
+
+        process.ErrorDataReceived += (sender, e) =>
+        {
+            if (e.Data != null)
+            {
+                writer.TryWrite(new StandardErrorProcessEvent(e.Data));
+            }
+        };
+
+        process.Exited += (sender, e) =>
+        {
+            writer.TryWrite(new ExitedProcessEvent(process.ExitCode));
+            writer.Complete();
+        };
+
+        process.EnableRaisingEvents = true;
+        process.Start();
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+
+        if (!string.IsNullOrEmpty(standardInput))
+        {
+            await process.StandardInput.WriteAsync(standardInput);
+            process.StandardInput.Close();
+        }
+
+        await foreach (var processEvent in outputChannel.Reader.ReadAllAsync(stoppingToken))
+        {
+            yield return processEvent;
+            
+            if (processEvent is ExitedProcessEvent)
+            {
+                break;
+            }
+        }
+
+        if (!process.HasExited)
+        {
+            await process.WaitForExitAsync(stoppingToken);
+        }
     }
 
     public async Task RunListenAndLog(
         string command,
         AbsolutePath? workingDirectory = default,
         IDictionary<string, string?>? environmentVariables = default,
-        PipeSource? inPipeTarget = default,
+        string? standardInput = default,
         CancellationToken stoppingToken = default)
     {
         using var _ = logger.BeginScopeMap<NativeCmdService>(serviceAction: nameof(RunListenAndLog), scopeMap: new Dictionary<string, object?>()
@@ -226,14 +400,14 @@ public class NativeCmdService(ILogger<NativeCmdService> logger)
 
         string errors = "";
 
-        await foreach (var cmdEvent in RunListen(command, workingDirectory, environmentVariables, inPipeTarget, stoppingToken))
+        await foreach (var processEvent in RunListen(command, workingDirectory, environmentVariables, standardInput, stoppingToken))
         {
-            switch (cmdEvent)
+            switch (processEvent)
             {
-                case StandardOutputCommandEvent stdOut:
+                case StandardOutputProcessEvent stdOut:
                     logger.LogTrace("{x}", stdOut.Text);
                     break;
-                case StandardErrorCommandEvent stdErr:
+                case StandardErrorProcessEvent stdErr:
                     logger.LogTrace("{x}", stdErr.Text);
                     if (errors != "")
                     {
@@ -241,7 +415,7 @@ public class NativeCmdService(ILogger<NativeCmdService> logger)
                     }
                     errors += stdErr.Text;
                     break;
-                case ExitedCommandEvent exited:
+                case ExitedProcessEvent exited:
                     var msg = $"{command} ended with return code {exited.ExitCode}: " + errors;
                     if (exited.ExitCode != 0)
                     {
@@ -256,3 +430,9 @@ public class NativeCmdService(ILogger<NativeCmdService> logger)
         }
     }
 }
+
+// Event types for process output streaming
+public abstract record ProcessEvent;
+public record StandardOutputProcessEvent(string Text) : ProcessEvent;
+public record StandardErrorProcessEvent(string Text) : ProcessEvent;
+public record ExitedProcessEvent(int ExitCode) : ProcessEvent;
