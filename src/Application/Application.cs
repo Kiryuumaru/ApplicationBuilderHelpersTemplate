@@ -20,6 +20,8 @@ public class Application : ApplicationDependency
 {
     public override void CommandPreparation(ApplicationBuilder applicationBuilder)
     {
+        SQLitePCL.raw.SetProvider(new SQLitePCL.SQLite3Provider_e_sqlite3());
+
         base.CommandPreparation(applicationBuilder);
 
         //applicationBuilder.AddCommandTypeParser<LogLevelTypeParser>();
