@@ -6,21 +6,14 @@ using System.Text.Json.Serialization.Metadata;
 namespace Application.LocalStore.Features;
 
 [Disposable]
-public partial class ConcurrentLocalStore : IDisposable
+public partial class ConcurrentLocalStore(ILocalStoreService localStoreService) : IDisposable
 {
-    private readonly ILocalStoreService _localStoreService;
-
-    internal ConcurrentLocalStore(ILocalStoreService localStore)
-    {
-        _localStoreService = localStore;
-    }
-
     public required string Group { get; init; }
 
     public async Task<bool> Contains(string id, CancellationToken cancellationToken = default)
     {
         VerifyNotDisposed();
-        return await _localStoreService.Contains(Group, id, cancellationToken);
+        return await localStoreService.Contains(Group, id, cancellationToken);
     }
 
     public async Task ContainsOrError(string id, CancellationToken cancellationToken = default)
@@ -34,7 +27,7 @@ public partial class ConcurrentLocalStore : IDisposable
     public async Task<string> Get(string id, CancellationToken cancellationToken = default)
     {
         VerifyNotDisposed();
-        return await _localStoreService.Get(Group, id, cancellationToken);
+        return await localStoreService.Get(Group, id, cancellationToken);
     }
 
     public async Task<T?> Get<T>(string id, JsonTypeInfo<T?> jsonTypeInfo, CancellationToken cancellationToken = default)
@@ -54,13 +47,13 @@ public partial class ConcurrentLocalStore : IDisposable
     public async Task<string[]> GetIds(CancellationToken cancellationToken = default)
     {
         VerifyNotDisposed();
-        return await _localStoreService.GetIds(Group, cancellationToken);
+        return await localStoreService.GetIds(Group, cancellationToken);
     }
 
     public async Task Set(string id, string? value, CancellationToken cancellationToken = default)
     {
         VerifyNotDisposed();
-        await _localStoreService.Set(Group, id, value, cancellationToken);
+        await localStoreService.Set(Group, id, value, cancellationToken);
     }
 
     public async Task Set<T>(string id, T? obj, JsonTypeInfo<T?> jsonTypeInfo, CancellationToken cancellationToken = default)
@@ -78,20 +71,20 @@ public partial class ConcurrentLocalStore : IDisposable
     public async Task CommitAsync(CancellationToken cancellationToken = default)
     {
         VerifyNotDisposed();
-        await _localStoreService.CommitAsync(cancellationToken);
+        await localStoreService.CommitAsync(cancellationToken);
     }
 
     public async Task RollbackAsync(CancellationToken cancellationToken = default)
     {
         VerifyNotDisposed();
-        await _localStoreService.RollbackAsync(cancellationToken);
+        await localStoreService.RollbackAsync(cancellationToken);
     }
 
     protected void Dispose(bool disposing)
     {
         if (disposing)
         {
-            _localStoreService?.Dispose();
+            localStoreService?.Dispose();
         }
     }
 }
