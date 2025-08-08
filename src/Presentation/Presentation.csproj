@@ -5,46 +5,16 @@
 		<TargetFramework>net9.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<InvariantGlobalization>true</InvariantGlobalization>
+		
+		<PublishTrimmed>true</PublishTrimmed>
+		<IsTrimmable>true</IsTrimmable>
 		<TrimmerSingleWarn>false</TrimmerSingleWarn>
 		<EnableTrimAnalyzer>true</EnableTrimAnalyzer>
-		<IsTrimmable>true</IsTrimmable>
-		<InvariantGlobalization>true</InvariantGlobalization>
 		
 		<IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
 		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-		<EnableUnsafeUTF7Encoding>false</EnableUnsafeUTF7Encoding>
-		<HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
-		<UseNativeHttpHandler>true</UseNativeHttpHandler>
-		<UseSystemResourceKeys>true</UseSystemResourceKeys>
 		<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
-
-		<!-- Additional trimming optimizations -->
-		<PublishTrimmed>true</PublishTrimmed>
-		<TrimMode>full</TrimMode>
-		<IlcOptimizationPreference>Size</IlcOptimizationPreference>
-		<IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>
-		<DebugType>none</DebugType>
-		<DebugSymbols>false</DebugSymbols>
-
-		<!-- Remove unused features -->
-		<EventSourceSupport>false</EventSourceSupport>
-		<UseSystemResourceKeys>true</UseSystemResourceKeys>
-		<EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
-		<MetadataUpdaterSupport>false</MetadataUpdaterSupport>
-		<BuiltInComInteropSupport>false</BuiltInComInteropSupport>
-		<AutoreleasePoolSupport>false</AutoreleasePoolSupport>
-		<EnableCppCLIHostActivation>false</EnableCppCLIHostActivation>
-
-		<!-- Disable reflection-based serializers if not needed -->
-		<JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
-		<XmlResolverIsNetworkingEnabledByDefault>false</XmlResolverIsNetworkingEnabledByDefault>
-
-		<!-- Strip exception messages in Release -->
-		<StackTraceSupport Condition="'$(Configuration)' == 'Release'">false</StackTraceSupport>
-
-		<!-- Additional globalization trimming -->
-		<PredefinedCulturesOnly>true</PredefinedCulturesOnly>
-		<InvariantTimezone>true</InvariantTimezone>
 		
 	</PropertyGroup>
 
@@ -59,11 +29,6 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Application\Application.csproj" />
-	</ItemGroup>
-	
-	<!-- Trim specific assemblies more aggressively if safe -->
-	<ItemGroup>
-		<TrimmerRootAssembly Include="app_sample" />
 	</ItemGroup>
 
 </Project>
