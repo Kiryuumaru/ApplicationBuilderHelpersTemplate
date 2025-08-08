@@ -16,4 +16,6 @@ Copy-Item -Force "$ApplicationBuilderHelpersTemplatePath/build.cmd" "$Root/build
 Copy-Item -Force "$ApplicationBuilderHelpersTemplatePath/build.ps1" "$Root/build.ps1"
 Copy-Item -Force "$ApplicationBuilderHelpersTemplatePath/build.sh" "$Root/build.sh"
 Copy-Item -Force "$ApplicationBuilderHelpersTemplatePath/global.json" "$Root/global.json"
+Copy-Item -Force "$ApplicationBuilderHelpersTemplatePath/README.md" "$Root/README.md"
+Copy-Item -Force "$ApplicationBuilderHelpersTemplatePath/LICENSE.txt" "$Root/LICENSE.txt"
 Copy-Item -Force "$ApplicationBuilderHelpersTemplatePath/ApplicationBuilderHelpersTemplate.sln" "$Root/$SolutionName.sln"
