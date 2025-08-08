@@ -13,8 +13,8 @@ internal partial class SqliteLocalStoreService : ILocalStoreService
 {
     private readonly AbsolutePath dbPath;
     private readonly string _connectionString;
-    private readonly SemaphoreSlim _initializationLock = new(1);
-    private static bool _isInitialized = false;
+    private static readonly SemaphoreSlim _globalInitializationLock = new(1, 1);
+    private static bool _isGloballyInitialized = false;
     
     // Transaction-scoped state
     private SqliteConnection? _connection;
@@ -58,63 +58,97 @@ internal partial class SqliteLocalStoreService : ILocalStoreService
 
     private async Task EnsureInitializedAsync(CancellationToken cancellationToken)
     {
-        if (_isInitialized) return;
+        if (_isGloballyInitialized) return;
 
-        await _initializationLock.WaitAsync(cancellationToken);
+        await _globalInitializationLock.WaitAsync(cancellationToken);
         try
         {
-            if (_isInitialized) return;
+            if (_isGloballyInitialized) return;
 
             dbPath.Parent?.CreateDirectory();
 
             using var connection = new SqliteConnection(_connectionString);
             await connection.OpenAsync(cancellationToken);
 
-            // Enable WAL mode for better concurrency
-            using var walCommand = connection.CreateCommand();
-            walCommand.CommandText = "PRAGMA journal_mode=WAL;";
-            await walCommand.ExecuteNonQueryAsync(cancellationToken);
+            try
+            {
+                // Set WAL mode first - this is critical and must be done separately
+                using var walCommand = connection.CreateCommand();
+                walCommand.CommandTimeout = 30;
+                walCommand.CommandText = "PRAGMA journal_mode=WAL;";
+                await walCommand.ExecuteNonQueryAsync(cancellationToken);
 
-            // Enable foreign keys and optimize for performance
-            using var pragmaCommand = connection.CreateCommand();
-            pragmaCommand.CommandText = @"
-                PRAGMA foreign_keys=ON;
-                PRAGMA synchronous=NORMAL;
-                PRAGMA cache_size=10000;
-                PRAGMA temp_store=memory;
-                PRAGMA busy_timeout=30000;";
-            await pragmaCommand.ExecuteNonQueryAsync(cancellationToken);
+                // Execute PRAGMAs sequentially to avoid conflicts
+                await ExecutePragmaAsync(connection, "PRAGMA foreign_keys=ON;", cancellationToken);
+                await ExecutePragmaAsync(connection, "PRAGMA synchronous=NORMAL;", cancellationToken);
+                await ExecutePragmaAsync(connection, "PRAGMA cache_size=10000;", cancellationToken);
+                await ExecutePragmaAsync(connection, "PRAGMA temp_store=memory;", cancellationToken);
+                await ExecutePragmaAsync(connection, "PRAGMA busy_timeout=30000;", cancellationToken);
+                await ExecutePragmaAsync(connection, "PRAGMA mmap_size=268435456;", cancellationToken); // 256MB
 
-            // Create the table with proper indexes
-            using var createTableCommand = connection.CreateCommand();
-            createTableCommand.CommandText = @"
-                CREATE TABLE IF NOT EXISTS LocalStoreData (
-                    Id TEXT PRIMARY KEY,
-                    Group TEXT NOT NULL,
-                    Data TEXT,
-                    RawId TEXT NOT NULL,
-                    CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-                    UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
-                );
-                
-                CREATE INDEX IF NOT EXISTS IX_LocalStoreData_Group ON LocalStoreData(Group);
-                CREATE INDEX IF NOT EXISTS IX_LocalStoreData_RawId ON LocalStoreData(RawId);
-                CREATE INDEX IF NOT EXISTS IX_LocalStoreData_Group_RawId ON LocalStoreData(Group, RawId);
-                
-                -- Trigger to update UpdatedAt timestamp
-                CREATE TRIGGER IF NOT EXISTS update_LocalStoreData_timestamp 
-                AFTER UPDATE ON LocalStoreData
-                BEGIN
-                    UPDATE LocalStoreData SET UpdatedAt = CURRENT_TIMESTAMP WHERE Id = NEW.Id;
-                END;";
+                // Create the table - wrap Group in square brackets as it's a reserved keyword
+                using var createTableCommand = connection.CreateCommand();
+                createTableCommand.CommandTimeout = 30;
+                createTableCommand.CommandText = @"
+                    CREATE TABLE IF NOT EXISTS LocalStoreData (
+                        Id TEXT PRIMARY KEY,
+                        [Group] TEXT NOT NULL,
+                        Data TEXT,
+                        RawId TEXT NOT NULL,
+                        CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+                    );";
+                await createTableCommand.ExecuteNonQueryAsync(cancellationToken);
 
-            await createTableCommand.ExecuteNonQueryAsync(cancellationToken);
-            _isInitialized = true;
+                // Create indexes separately with proper column name escaping
+                await ExecuteCommandAsync(connection, 
+                    "CREATE INDEX IF NOT EXISTS IX_LocalStoreData_Group ON LocalStoreData([Group]);", 
+                    cancellationToken);
+
+                await ExecuteCommandAsync(connection, 
+                    "CREATE INDEX IF NOT EXISTS IX_LocalStoreData_RawId ON LocalStoreData(RawId);", 
+                    cancellationToken);
+
+                await ExecuteCommandAsync(connection, 
+                    "CREATE INDEX IF NOT EXISTS IX_LocalStoreData_Group_RawId ON LocalStoreData([Group], RawId);", 
+                    cancellationToken);
+
+                // Create trigger separately with proper syntax
+                await ExecuteCommandAsync(connection, @"
+                    CREATE TRIGGER IF NOT EXISTS update_LocalStoreData_timestamp 
+                    AFTER UPDATE ON LocalStoreData
+                    FOR EACH ROW
+                    BEGIN
+                        UPDATE LocalStoreData SET UpdatedAt = CURRENT_TIMESTAMP WHERE Id = NEW.Id;
+                    END;", cancellationToken);
+
+                _isGloballyInitialized = true;
+            }
+            catch (SqliteException ex)
+            {
+                throw new InvalidOperationException($"Failed to initialize SQLite database: {ex.Message} (Error Code: {ex.SqliteErrorCode})", ex);
+            }
         }
         finally
         {
-            _initializationLock.Release();
+            _globalInitializationLock.Release();
         }
+    }
+
+    private static async Task ExecutePragmaAsync(SqliteConnection connection, string pragmaCommand, CancellationToken cancellationToken)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandTimeout = 30;
+        command.CommandText = pragmaCommand;
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static async Task ExecuteCommandAsync(SqliteConnection connection, string commandText, CancellationToken cancellationToken)
+    {
+        using var command = connection.CreateCommand();
+        command.CommandTimeout = 30;
+        command.CommandText = commandText;
+        await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
     public async Task<string> Get(string group, string id, CancellationToken cancellationToken)
@@ -125,7 +159,8 @@ internal partial class SqliteLocalStoreService : ILocalStoreService
         
         using var command = _connection!.CreateCommand();
         command.Transaction = _transaction;
-        command.CommandText = "SELECT Data FROM LocalStoreData WHERE RawId = @rawId AND Group = @group";
+        command.CommandTimeout = 30;
+        command.CommandText = "SELECT Data FROM LocalStoreData WHERE RawId = @rawId AND [Group] = @group";
         command.Parameters.AddWithValue("@rawId", rawId);
         command.Parameters.AddWithValue("@group", group);
         
@@ -139,7 +174,8 @@ internal partial class SqliteLocalStoreService : ILocalStoreService
         
         using var command = _connection!.CreateCommand();
         command.Transaction = _transaction;
-        command.CommandText = "SELECT RawId FROM LocalStoreData WHERE Group = @group ORDER BY Id";
+        command.CommandTimeout = 30;
+        command.CommandText = "SELECT RawId FROM LocalStoreData WHERE [Group] = @group ORDER BY Id";
         command.Parameters.AddWithValue("@group", group);
         
         var ids = new List<string>();
@@ -174,7 +210,8 @@ internal partial class SqliteLocalStoreService : ILocalStoreService
             // Delete the record
             using var deleteCommand = _connection!.CreateCommand();
             deleteCommand.Transaction = _transaction;
-            deleteCommand.CommandText = "DELETE FROM LocalStoreData WHERE RawId = @rawId AND Group = @group";
+            deleteCommand.CommandTimeout = 30;
+            deleteCommand.CommandText = "DELETE FROM LocalStoreData WHERE RawId = @rawId AND [Group] = @group";
             deleteCommand.Parameters.AddWithValue("@rawId", rawId);
             deleteCommand.Parameters.AddWithValue("@group", group);
             
@@ -185,12 +222,13 @@ internal partial class SqliteLocalStoreService : ILocalStoreService
             // Insert or update the record
             using var upsertCommand = _connection!.CreateCommand();
             upsertCommand.Transaction = _transaction;
+            upsertCommand.CommandTimeout = 30;
             upsertCommand.CommandText = @"
-                INSERT INTO LocalStoreData (Id, Group, Data, RawId) 
+                INSERT INTO LocalStoreData (Id, [Group], Data, RawId) 
                 VALUES (@id, @group, @data, @rawId)
                 ON CONFLICT(Id) DO UPDATE SET 
                     Data = @data,
-                    Group = @group,
+                    [Group] = @group,
                     RawId = @rawId,
                     UpdatedAt = CURRENT_TIMESTAMP";
                     
@@ -211,7 +249,8 @@ internal partial class SqliteLocalStoreService : ILocalStoreService
         
         using var command = _connection!.CreateCommand();
         command.Transaction = _transaction;
-        command.CommandText = "SELECT COUNT(*) FROM LocalStoreData WHERE RawId = @rawId AND Group = @group";
+        command.CommandTimeout = 30;
+        command.CommandText = "SELECT COUNT(*) FROM LocalStoreData WHERE RawId = @rawId AND [Group] = @group";
         command.Parameters.AddWithValue("@rawId", rawId);
         command.Parameters.AddWithValue("@group", group);
         
