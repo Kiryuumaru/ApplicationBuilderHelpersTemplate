@@ -19,12 +19,18 @@
 			<BuildConstantsLines Include="        public string AppDescription { get%3B } = global::Build.Constants.AppDescription%3B" />
 			<BuildConstantsLines Include="        public string Version { get%3B } = global::Build.Constants.Version%3B" />
 			<BuildConstantsLines Include="    }" />
+			<BuildConstantsLines Include=" " />
+			<BuildConstantsLines Include="    public abstract class BaseCommand&lt;[global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] THostApplicationBuilder&gt; : global::Application.Abstractions.Application.BaseCommand&lt;THostApplicationBuilder&gt;" />
+			<BuildConstantsLines Include="		  where THostApplicationBuilder : global::Microsoft.Extensions.Hosting.IHostApplicationBuilder" />
+			<BuildConstantsLines Include="    {" />
+			<BuildConstantsLines Include="        public override global::Application.Abstractions.Application.IApplicationConstants ApplicationConstants { get%3B } = global::Build.ApplicationConstants.Instance%3B" />
+			<BuildConstantsLines Include="    }" />
 			<BuildConstantsLines Include="}" />
 		</ItemGroup>
-		<WriteLinesToFile File="$(IntermediateOutputPath)Constants.cs"
+		<WriteLinesToFile File="$(IntermediateOutputPath)GeneratedBuildConstants.cs"
 						  Lines="@(BuildConstantsLines)" Overwrite="true" Encoding="Unicode" />
 		<ItemGroup>
-			<Compile Include="$(IntermediateOutputPath)Constants.cs" />
+			<Compile Include="$(IntermediateOutputPath)GeneratedBuildConstants.cs" />
 		</ItemGroup>
 	</Target>
 </Project>

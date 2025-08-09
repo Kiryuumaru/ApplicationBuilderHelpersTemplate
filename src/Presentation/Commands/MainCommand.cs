@@ -11,7 +11,7 @@ using Application.LocalStore.Services;
 namespace Presentation.Commands;
 
 [Command(description: "Main subcommand.")]
-public class MainCommand : BaseCommand<HostApplicationBuilder>
+public class MainCommand : Build.BaseCommand<HostApplicationBuilder>
 {
     protected override ValueTask<HostApplicationBuilder> ApplicationBuilder(CancellationToken stoppingToken)
     {
