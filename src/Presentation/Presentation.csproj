@@ -6,16 +6,13 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<InvariantGlobalization>true</InvariantGlobalization>
-		
 		<PublishTrimmed>true</PublishTrimmed>
 		<IsTrimmable>true</IsTrimmable>
 		<TrimmerSingleWarn>false</TrimmerSingleWarn>
 		<EnableTrimAnalyzer>true</EnableTrimAnalyzer>
-		
 		<IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
 		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
 		<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
-		
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -23,7 +20,7 @@
 		<Company>Kiryuumaru</Company>
 		<AssemblyTitle>Application Builder Helpers</AssemblyTitle>
 		<AssemblyName>app_sample</AssemblyName>
-		<Description>App adawdawd</Description>
+		<Description>App sample</Description>
 		<InformationalVersion>0.1.0</InformationalVersion>
 	</PropertyGroup>
 

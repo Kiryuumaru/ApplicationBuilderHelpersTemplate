@@ -4,16 +4,9 @@
 		<TargetFramework>net9.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<PublishAot>true</PublishAot>
 		<TrimmerSingleWarn>false</TrimmerSingleWarn>
 		<EnableTrimAnalyzer>true</EnableTrimAnalyzer>
 		<IsTrimmable>true</IsTrimmable>
 	</PropertyGroup>
-
-	<ItemGroup>
-		<PackageReference Include="DisposableHelpers" Version="1.2.124" />
-		<PackageReference Include="Microsoft.DotNet.ILCompiler" Version="9.0.8" />
-		<PackageReference Include="Microsoft.NET.ILLink.Tasks" Version="9.0.8" />
-	</ItemGroup>
 
 </Project>

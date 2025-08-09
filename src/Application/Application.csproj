@@ -5,20 +5,18 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<LangVersion>13</LangVersion>
 		<Nullable>enable</Nullable>
-		<PublishAot>true</PublishAot>
 		<TrimmerSingleWarn>false</TrimmerSingleWarn>
 		<EnableTrimAnalyzer>true</EnableTrimAnalyzer>
 		<IsTrimmable>true</IsTrimmable>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Domain\Domain.csproj" />
+		<PackageReference Include="ApplicationBuilderHelpers" Version="4.0.15" />
+		<PackageReference Include="DisposableHelpers" Version="1.2.124" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.8" />
-		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.8" />
-		<PackageReference Include="ApplicationBuilderHelpers" Version="4.0.15" />
+		<ProjectReference Include="..\Domain\Domain.csproj" />
 	</ItemGroup>
 
 </Project>
