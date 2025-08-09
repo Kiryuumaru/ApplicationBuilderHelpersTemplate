@@ -1,21 +1,12 @@
-﻿using Application.Common.Extensions;
-using Application.LocalStore.Interfaces;
-using Application.LocalStore.Services;
-using Application.Logger.Extensions;
+﻿using Application.Abstractions.Application;
+using Application.Abstractions.Storage;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Attributes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
-using YamlDotNet.RepresentationModel;
-using YamlDotNet.Serialization;
+using Application.Logger.Extensions;
+using Application.LocalStore.Services;
 
 namespace Presentation.Commands;
 
@@ -32,7 +23,7 @@ public class MainCommand : BaseCommand<HostApplicationBuilder>
         var logger = applicationHost.Services.GetRequiredService<ILogger<MainCommand>>();
         var localStoreFactory = applicationHost.Services.GetRequiredService<LocalStoreFactory>();
 
-        using var _ = logger.BeginScopeMap<MainCommand>(scopeMap: new Dictionary<string, object?>
+        using var _ = logger.BeginScopeMap(scopeMap: new Dictionary<string, object?>
         {
             { "AppName", ApplicationConstants.AppName },
             { "AppTitle", ApplicationConstants.AppTitle }

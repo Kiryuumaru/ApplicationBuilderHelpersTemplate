@@ -1,5 +1,5 @@
-﻿using Application.LocalStore.Features;
-using Application.LocalStore.Interfaces;
+using Infrastructure.Storage.Features;
+using Application.Abstractions.Storage;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Application.LocalStore.Services;

@@ -20,9 +20,9 @@
 			<BuildConstantsLines Include="        public const string Version = &quot;$(InformationalVersion)&quot;%3B" />
 			<BuildConstantsLines Include="    }" />
 			<BuildConstantsLines Include=" " />
-			<BuildConstantsLines Include="    internal class ApplicationConstants : global::Application.Common.Interfaces.IApplicationConstants" />
+			<BuildConstantsLines Include="    internal class ApplicationConstants : global::Application.Abstractions.Application.IApplicationConstants" />
 			<BuildConstantsLines Include="    {" />
-			<BuildConstantsLines Include="        public static global::Application.Common.Interfaces.IApplicationConstants Instance { get%3B } = new global::Build.ApplicationConstants()%3B" />
+			<BuildConstantsLines Include="        public static global::Application.Abstractions.Application.IApplicationConstants Instance { get%3B } = new global::Build.ApplicationConstants()%3B" />
 			<BuildConstantsLines Include="        public string AppName { get%3B } = global::Build.Constants.AppName%3B" />
 			<BuildConstantsLines Include="        public string AppTitle { get%3B } = global::Build.Constants.AppTitle%3B" />
 			<BuildConstantsLines Include="        public string AppDescription { get%3B } = global::Build.Constants.AppDescription%3B" />

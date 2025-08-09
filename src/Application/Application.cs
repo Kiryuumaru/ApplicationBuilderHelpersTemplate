@@ -1,18 +1,8 @@
-﻿using Application.AssetResolver.Extensions;
-using Application.AssetResolver.Services;
-using Application.CommandLineParser.TypeParsers;
-using Application.Common.Interfaces;
+﻿using ApplicationBuilderHelpers;
 using Application.LocalStore.Extensions;
-using Application.LocalStore.Services;
-using Application.Logger.Extensions;
-using Application.NativeCmd.Extensions;
-using Application.NativeCmd.Services;
-using Application.NativeServiceInstaller.Extensions;
-using ApplicationBuilderHelpers;
-using ApplicationBuilderHelpers.Interfaces;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
 
 namespace Application;
 
@@ -20,11 +10,10 @@ public class Application : ApplicationDependency
 {
     public override void CommandPreparation(ApplicationBuilder applicationBuilder)
     {
-        SQLitePCL.raw.SetProvider(new SQLitePCL.SQLite3Provider_e_sqlite3());
-
         base.CommandPreparation(applicationBuilder);
 
-        //applicationBuilder.AddCommandTypeParser<LogLevelTypeParser>();
+        // Application-level command preparation only
+        // Infrastructure setup moved to Infrastructure project
     }
 
     public override void BuilderPreparation(ApplicationHostBuilder applicationBuilder)
@@ -32,37 +21,33 @@ public class Application : ApplicationDependency
         base.BuilderPreparation(applicationBuilder);
     }
 
-    public override void AddConfigurations(ApplicationHostBuilder applicationBuilder, Microsoft.Extensions.Configuration.IConfiguration configuration)
+    public override void AddConfigurations(ApplicationHostBuilder applicationBuilder, IConfiguration configuration)
     {
         base.AddConfigurations(applicationBuilder, configuration);
 
-        applicationBuilder.AddLoggerConfiguration();
+        // Application-level configurations only
+        // Infrastructure configurations moved to Infrastructure project
     }
 
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
     {
         base.AddServices(applicationBuilder, services);
 
-        applicationBuilder.AddLoggerServices();
-
-        services.AddHttpClient(Options.DefaultName, (sp, client) =>
-        {
-            using var scope = sp.CreateScope();
-            var applicationConstans = scope.ServiceProvider.GetRequiredService<IApplicationConstants>();
-            client.DefaultRequestHeaders.Add("Client-Agent", applicationConstans.AppName);
-        });
-
-        services.AddCmdServices();
         services.AddLocalStoreServices();
-        services.AddAssetResolverServices();
-        services.AddNativeServiceInstallerServices();
+
+        // Application-level services only
+        // Infrastructure services moved to Infrastructure project
+
+        // Add use case handlers, domain services, application services here
+        // Example: services.AddScoped<IUserService, UserService>();
     }
 
     public override void AddMiddlewares(ApplicationHost applicationHost, IHost host)
     {
         base.AddMiddlewares(applicationHost, host);
 
-        applicationHost.AddLoggerMiddlewares();
+        // Application-level middlewares only
+        // Infrastructure middlewares moved to Infrastructure project
     }
 
     public override void RunPreparation(ApplicationHost applicationHost)
