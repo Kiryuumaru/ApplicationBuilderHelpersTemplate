@@ -1,4 +1,4 @@
-namespace Application.Abstractions.Storage;
+namespace Application.Abstractions.LocalStore;
 
 public interface ILocalStoreService : IDisposable
 {

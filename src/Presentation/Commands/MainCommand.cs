@@ -1,5 +1,5 @@
 ﻿using Application.Abstractions.Application;
-using Application.Abstractions.Storage;
+using Application.Abstractions.LocalStore;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Attributes;
 using Microsoft.Extensions.DependencyInjection;
