@@ -1,13 +1,4 @@
 <Project>
-	<!--
-	<PropertyGroup Condition="'$(OutputType)' == 'Exe'">
-		<AssemblyName Condition="'$(AssemblyName)' == ''">vianaapp</AssemblyName>
-		<AssemblyTitle Condition="'$(AssemblyTitle)' == ''">Viana Edge Application</AssemblyTitle>
-		<Description Condition="'$(Description)' == ''">0.0.0-alpha.0+build.local</Description>
-		<InformationalVersion Condition="'$(InformationalVersion)' == ''">0.0.0-alpha.0+build.local</InformationalVersion>
-	</PropertyGroup>
-	-->
-
 	<Target Name="GenerateBuildConstants" BeforeTargets="BeforeCompile" Condition="'$(OutputType)' == 'Exe'">
 		<ItemGroup>
 			<BuildConstantsLines Include="namespace Build" />

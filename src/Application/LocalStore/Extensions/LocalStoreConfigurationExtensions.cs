@@ -1,4 +1,5 @@
 using AbsolutePathHelpers;
+using Application.Common.Configuration.Extensions;
 using ApplicationBuilderHelpers.Extensions;
 using Microsoft.Extensions.Configuration;
 
@@ -9,8 +10,7 @@ public static class LocalStoreConfigurationExtensions
     private const string LocalStoreDbPathKey = "RUNTIME_LOCAL_STORE_DB_PATH";
     public static AbsolutePath GetLocalStoreDbPath(this IConfiguration configuration)
     {
-        return configuration.GetRefValueOrDefault(LocalStoreDbPathKey, 
-            AbsolutePath.Create(Environment.CurrentDirectory) / "localstore.db");
+        return configuration.GetRefValueOrDefault(LocalStoreDbPathKey, configuration.GetHomePath() / "localstore.db");
     }
     public static void SetLocalStoreDbPath(this IConfiguration configuration, AbsolutePath path)
     {
