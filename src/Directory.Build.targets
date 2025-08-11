@@ -3,26 +3,61 @@
 		<ItemGroup>
 			<BuildConstantsLines Include="namespace Build" />
 			<BuildConstantsLines Include="{" />
+			<BuildConstantsLines Include="    /// &lt;summary&gt;" />
+			<BuildConstantsLines Include="    /// Contains application build constants." />
+			<BuildConstantsLines Include="    /// &lt;/summary&gt;" />
 			<BuildConstantsLines Include="    internal static class Constants" />
 			<BuildConstantsLines Include="    {" />
+			<BuildConstantsLines Include="        /// &lt;summary&gt;" />
+			<BuildConstantsLines Include="        /// The application name." />
+			<BuildConstantsLines Include="        /// &lt;/summary&gt;" />
 			<BuildConstantsLines Include="        public const string AppName = &quot;$(AssemblyName)&quot;%3B" />
+			<BuildConstantsLines Include=" " />
+			<BuildConstantsLines Include="        /// &lt;summary&gt;" />
+			<BuildConstantsLines Include="        /// The application title." />
+			<BuildConstantsLines Include="        /// &lt;/summary&gt;" />
 			<BuildConstantsLines Include="        public const string AppTitle = &quot;$(AssemblyTitle)&quot;%3B" />
+			<BuildConstantsLines Include=" " />
+			<BuildConstantsLines Include="        /// &lt;summary&gt;" />
+			<BuildConstantsLines Include="        /// The application description." />
+			<BuildConstantsLines Include="        /// &lt;/summary&gt;" />
 			<BuildConstantsLines Include="        public const string AppDescription = &quot;$(Description)&quot;%3B" />
+			<BuildConstantsLines Include=" " />
+			<BuildConstantsLines Include="        /// &lt;summary&gt;" />
+			<BuildConstantsLines Include="        /// The application version." />
+			<BuildConstantsLines Include="        /// &lt;/summary&gt;" />
 			<BuildConstantsLines Include="        public const string Version = &quot;$(InformationalVersion)&quot;%3B" />
 			<BuildConstantsLines Include="    }" />
 			<BuildConstantsLines Include=" " />
+			<BuildConstantsLines Include="    /// &lt;inheritdoc/&gt;" />
 			<BuildConstantsLines Include="    internal class ApplicationConstants : global::Application.Abstractions.Application.IApplicationConstants" />
 			<BuildConstantsLines Include="    {" />
+			<BuildConstantsLines Include="        /// &lt;inheritdoc/&gt;" />
 			<BuildConstantsLines Include="        public static global::Application.Abstractions.Application.IApplicationConstants Instance { get%3B } = new global::Build.ApplicationConstants()%3B" />
+			<BuildConstantsLines Include=" " />
+			<BuildConstantsLines Include="        /// &lt;inheritdoc/&gt;" />
 			<BuildConstantsLines Include="        public string AppName { get%3B } = global::Build.Constants.AppName%3B" />
+			<BuildConstantsLines Include=" " />
+			<BuildConstantsLines Include="        /// &lt;inheritdoc/&gt;" />
 			<BuildConstantsLines Include="        public string AppTitle { get%3B } = global::Build.Constants.AppTitle%3B" />
+			<BuildConstantsLines Include=" " />
+			<BuildConstantsLines Include="        /// &lt;inheritdoc/&gt;" />
 			<BuildConstantsLines Include="        public string AppDescription { get%3B } = global::Build.Constants.AppDescription%3B" />
+			<BuildConstantsLines Include=" " />
+			<BuildConstantsLines Include="        /// &lt;inheritdoc/&gt;" />
 			<BuildConstantsLines Include="        public string Version { get%3B } = global::Build.Constants.Version%3B" />
 			<BuildConstantsLines Include="    }" />
 			<BuildConstantsLines Include=" " />
+			<BuildConstantsLines Include="    /// &lt;summary&gt;" />
+			<BuildConstantsLines Include="    /// Base command class with application constants support." />
+			<BuildConstantsLines Include="    /// &lt;/summary&gt;" />
+			<BuildConstantsLines Include="    /// &lt;typeparam name=&quot;THostApplicationBuilder&quot;&gt;The type of host application builder.&lt;/typeparam&gt;" />
 			<BuildConstantsLines Include="    public abstract class BaseCommand&lt;[global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] THostApplicationBuilder&gt; : global::Application.Abstractions.Application.BaseCommand&lt;THostApplicationBuilder&gt;" />
 			<BuildConstantsLines Include="		  where THostApplicationBuilder : global::Microsoft.Extensions.Hosting.IHostApplicationBuilder" />
 			<BuildConstantsLines Include="    {" />
+			<BuildConstantsLines Include="        /// &lt;summary&gt;" />
+			<BuildConstantsLines Include="        /// Gets the application constants." />
+			<BuildConstantsLines Include="        /// &lt;/summary&gt;" />
 			<BuildConstantsLines Include="        public override global::Application.Abstractions.Application.IApplicationConstants ApplicationConstants { get%3B } = global::Build.ApplicationConstants.Instance%3B" />
 			<BuildConstantsLines Include="    }" />
 			<BuildConstantsLines Include="}" />
