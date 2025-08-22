@@ -12,7 +12,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="ApplicationBuilderHelpers" Version="4.0.24" />
-		<PackageReference Include="DisposableHelpers" Version="1.2.126" />
+		<PackageReference Include="DisposableHelpers" Version="1.2.127" />
 	</ItemGroup>
 
 	<ItemGroup>
