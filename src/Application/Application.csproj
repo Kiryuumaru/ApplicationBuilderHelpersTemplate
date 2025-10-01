@@ -11,7 +11,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="ApplicationBuilderHelpers" Version="4.0.32" />
+		<PackageReference Include="ApplicationBuilderHelpers" Version="4.0.34" />
 		<PackageReference Include="DisposableHelpers" Version="1.2.131" />
 	</ItemGroup>
 
