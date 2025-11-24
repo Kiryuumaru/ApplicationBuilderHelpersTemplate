@@ -21,7 +21,7 @@
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(GenerateBuildConstants)' == 'true'">
-		<PackageReference Include="WmiLight" Version="6.15.0" />
+		<PackageReference Include="WmiLight" Version="6.16.0" />
 		<ProjectReference Include="$(ApplicationCodeGeneratorProject)"
 			ReferenceOutputAssembly="false"
 			SkipGetTargetFrameworkProperties="true">
