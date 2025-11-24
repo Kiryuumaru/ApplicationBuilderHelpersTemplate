@@ -1,12 +1,11 @@
 ﻿using Application.Abstractions.Application;
-using Application.Abstractions.LocalStore;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Attributes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Application.Logger.Extensions;
-using Application.LocalStore.Services;
+using Application.LocalStore.Interfaces;
 
 namespace Presentation.Commands;
 
@@ -20,8 +19,10 @@ public class MainCommand : Build.BaseCommand<HostApplicationBuilder>
 
     protected override async ValueTask Run(ApplicationHost<HostApplicationBuilder> applicationHost, CancellationTokenSource cancellationTokenSource)
     {
+        await base.Run(applicationHost, cancellationTokenSource);
+
         var logger = applicationHost.Services.GetRequiredService<ILogger<MainCommand>>();
-        var localStoreFactory = applicationHost.Services.GetRequiredService<LocalStoreFactory>();
+        var localStoreFactory = applicationHost.Services.GetRequiredService<ILocalStoreFactory>();
 
         using var _ = logger.BeginScopeMap(scopeMap: new Dictionary<string, object?>
         {
@@ -55,7 +56,7 @@ public class MainCommand : Build.BaseCommand<HostApplicationBuilder>
 
         await localStore.Set("TestKey", "TestValue", cancellationTokenSource.Token);
 
-        var value = await localStore.Get("TestKey", cancellationTokenSource.Token);
+        var value = await localStore.Get("TestKey", cancellationTokenSource.Token) ?? "<null>";
 
         logger.LogInformation("Retrieved value from local store: {Value}", value);
         

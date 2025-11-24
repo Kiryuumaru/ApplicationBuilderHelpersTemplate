@@ -24,4 +24,14 @@ public interface IApplicationConstants
     /// Gets the application version.
     /// </summary>
     string Version { get; }
+
+    /// <summary>
+    /// Gets the application tag (release channel or environment label).
+    /// </summary>
+    string AppTag { get; }
+
+    /// <summary>
+    /// Gets the build payload serialized as a Base64 string.
+    /// </summary>
+    string BuildPayload { get; }
 }

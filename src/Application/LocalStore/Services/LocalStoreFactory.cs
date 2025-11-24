@@ -1,25 +1,23 @@
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Infrastructure.Storage.Features;
-using Application.Abstractions.LocalStore;
 using Microsoft.Extensions.DependencyInjection;
+using Application.LocalStore.Interfaces;
+using Application.LocalStore.Common;
 
 namespace Application.LocalStore.Services;
 
-public class LocalStoreFactory(IServiceProvider serviceProvider)
+internal sealed class LocalStoreFactory(IServiceProvider serviceProvider) : ILocalStoreFactory
 {
     public async Task<ConcurrentLocalStore> OpenStore(string group = "common_group", CancellationToken cancellationToken = default)
     {
-        // Create a new transient instance of the local store service
+        var normalizedGroup = LocalStoreKey.NormalizeGroup(group);
+
         var localStoreService = serviceProvider.GetRequiredService<ILocalStoreService>();
-        
-        // Open the transaction-scoped service
+
         await localStoreService.Open(cancellationToken);
-        
-        // Create the local store with the opened service
-        var localStore = new ConcurrentLocalStore(localStoreService)
-        {
-            Group = group
-        };
-        
-        return localStore;
+
+        return new ConcurrentLocalStore(localStoreService, normalizedGroup);
     }
 }

@@ -1,0 +1,148 @@
+<Project>
+	<PropertyGroup Condition="'$(GenerateBuildConstants)' == 'true'">
+		<AssemblyName Condition="'$(AssemblyName)' == ''">vianaapp</AssemblyName>
+		<AssemblyTitle Condition="'$(AssemblyTitle)' == ''">Viana Edge Application</AssemblyTitle>
+		<Description Condition="'$(Description)' == ''">Viana Edge Application</Description>
+		<FullVersion Condition="'$(FullVersion)' == ''">0.0.0-alpha.0+build.local</FullVersion>
+		<AppTag Condition="'$(AppTag)' == ''">alpha</AppTag>
+		<CredsJsonPath Condition="'$(CredsJsonPath)' == ''">$(MSBuildThisFileDirectory)creds.json</CredsJsonPath>
+
+		<!-- Statically build wmi wrapper -->
+		<PublishWmiLightStaticallyLinked>true</PublishWmiLightStaticallyLinked>
+		<SkipApplicationCodeGeneration Condition="'$(SkipApplicationCodeGeneration)' == ''">false</SkipApplicationCodeGeneration>
+		<ApplicationCodeGeneratorProject Condition="'$(ApplicationCodeGeneratorProject)' == ''">$(MSBuildThisFileDirectory)src/Application.CodeGenerator/Application.CodeGenerator.csproj</ApplicationCodeGeneratorProject>
+		<ApplicationCodeGeneratorTargetFramework Condition="'$(ApplicationCodeGeneratorTargetFramework)' == ''">net9.0</ApplicationCodeGeneratorTargetFramework>
+		<_ApplicationCodeGeneratorPlatformFolder Condition="'$(Platform)' != '' and '$(Platform)' != 'AnyCPU'">$(Platform)</_ApplicationCodeGeneratorPlatformFolder>
+		<_ApplicationCodeGeneratorPlatformFolder Condition="'$(_ApplicationCodeGeneratorPlatformFolder)' == '' and '$(PlatformTarget)' != '' and '$(PlatformTarget)' != 'AnyCPU'">$(PlatformTarget)</_ApplicationCodeGeneratorPlatformFolder>
+		<ApplicationCodeGeneratorAssembly Condition="'$(ApplicationCodeGeneratorAssembly)' == ''">$([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', 'src', 'Application.CodeGenerator', 'bin', $(_ApplicationCodeGeneratorPlatformFolder), '$(Configuration)', '$(ApplicationCodeGeneratorTargetFramework)', 'Application.CodeGenerator.dll'))</ApplicationCodeGeneratorAssembly>
+		<_ApplicationCodeGeneratorBuildProperties>Configuration=$(Configuration);SkipApplicationCodeGeneration=true;Platform=$(Platform);PlatformTarget=$(PlatformTarget);RuntimeIdentifier=$(RuntimeIdentifier);RuntimeIdentifiers=$(RuntimeIdentifiers);SelfContained=false;PublishAot=false;PublishTrimmed=false;PublishSingleFile=false</_ApplicationCodeGeneratorBuildProperties>
+		<_ApplicationCodeGeneratorBuildProperties Condition="'$(OutDir)' != ''">$(_ApplicationCodeGeneratorBuildProperties);OutDir=$(OutDir)</_ApplicationCodeGeneratorBuildProperties>
+		<_ApplicationCodeGeneratorBuildProperties Condition="'$(OutputPath)' != ''">$(_ApplicationCodeGeneratorBuildProperties);OutputPath=$(OutputPath)</_ApplicationCodeGeneratorBuildProperties>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(GenerateBuildConstants)' == 'true'">
+		<PackageReference Include="WmiLight" Version="6.15.0" />
+		<ProjectReference Include="$(ApplicationCodeGeneratorProject)"
+			ReferenceOutputAssembly="false"
+			SkipGetTargetFrameworkProperties="true">
+			<AdditionalProperties>SkipApplicationCodeGeneration=true</AdditionalProperties>
+		</ProjectReference>
+	</ItemGroup>
+
+	<Target Name="EnsureApplicationCodeGeneratorBuilt" Condition="'$(GenerateBuildConstants)' == 'true' and !Exists('$(ApplicationCodeGeneratorAssembly)')">
+		<MSBuild Projects="$(ApplicationCodeGeneratorProject)"
+			Targets="Restore;Build"
+			Properties="$(_ApplicationCodeGeneratorBuildProperties)"
+			BuildInParallel="false" />
+
+		<MSBuild Projects="$(ApplicationCodeGeneratorProject)"
+			Targets="GetTargetPath"
+			Properties="$(_ApplicationCodeGeneratorBuildProperties)"
+			BuildInParallel="false">
+			<Output TaskParameter="TargetOutputs" ItemName="_ApplicationCodeGeneratorOutputs" />
+		</MSBuild>
+
+		<PropertyGroup>
+			<ApplicationCodeGeneratorAssembly Condition="'@(_ApplicationCodeGeneratorOutputs)' != ''">@(_ApplicationCodeGeneratorOutputs->'%(FullPath)')</ApplicationCodeGeneratorAssembly>
+		</PropertyGroup>
+	</Target>
+
+	<Target Name="GenerateBuildConstants" BeforeTargets="BeforeCompile" DependsOnTargets="EnsureApplicationCodeGeneratorBuilt" Condition="'$(GenerateBuildConstants)' == 'true' and '$(SkipApplicationCodeGeneration)' != 'true'">
+		<PropertyGroup>
+			<_GeneratorProject>$(ApplicationCodeGeneratorProject)</_GeneratorProject>
+			<_GeneratorAssembly>$(ApplicationCodeGeneratorAssembly)</_GeneratorAssembly>
+			<_GeneratorAssemblyDirectory>$([System.IO.Path]::GetDirectoryName($(_GeneratorAssembly)))</_GeneratorAssemblyDirectory>
+			<_GeneratorAssemblyCopyRoot>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'Application.CodeGenerator'))</_GeneratorAssemblyCopyRoot>
+			<_GeneratorAssemblyCopy>$([System.IO.Path]::Combine($(_GeneratorAssemblyCopyRoot), $([System.IO.Path]::GetFileName($(_GeneratorAssembly)))))</_GeneratorAssemblyCopy>
+			<_GeneratedFilePath>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'GeneratedBuildConstants.cs'))</_GeneratedFilePath>
+			<_GeneratedDirectory>$([System.IO.Path]::GetDirectoryName($(_GeneratedFilePath)))</_GeneratedDirectory>
+		</PropertyGroup>
+
+		<Message Condition="'$(DesignTimeBuild)' != 'true'" Importance="Low" Text="Generating build constants via Application.CodeGenerator." />
+		<Message Condition="'$(DesignTimeBuild)' == 'true' and !Exists('$(_GeneratedFilePath)')" Importance="Low" Text="Generating build constants for design-time build via Application.CodeGenerator." />
+
+		<MakeDir Condition="'$(DesignTimeBuild)' != 'true' or !Exists('$(_GeneratedDirectory)')" Directories="$(_GeneratedDirectory)" />
+		<MakeDir Condition="'$(DesignTimeBuild)' != 'true' or !Exists('$(_GeneratorAssemblyCopyRoot)')" Directories="$(_GeneratorAssemblyCopyRoot)" />
+
+		<ItemGroup>
+			<_ApplicationCodeGeneratorFiles Include="$(_GeneratorAssemblyDirectory)\**\*.*" />
+		</ItemGroup>
+
+		<Copy SourceFiles="@(_ApplicationCodeGeneratorFiles)"
+			DestinationFiles="@(_ApplicationCodeGeneratorFiles->'$(_GeneratorAssemblyCopyRoot)\%(RecursiveDir)%(Filename)%(Extension)')"
+			SkipUnchangedFiles="true" />
+
+		<Exec Condition="'$(DesignTimeBuild)' != 'true'" Command="dotnet &quot;$(_GeneratorAssemblyCopy)&quot; --output &quot;$(_GeneratedFilePath)&quot; --app-name &quot;$(AssemblyName)&quot; --app-title &quot;$(AssemblyTitle)&quot; --app-description &quot;$(Description)&quot; --version &quot;$(FullVersion)&quot; --app-tag &quot;$(AppTag)&quot; --build-payload-path &quot;$(CredsJsonPath)&quot;" />
+
+		<Exec Condition="'$(DesignTimeBuild)' == 'true' and !Exists('$(_GeneratedFilePath)')" Command="dotnet &quot;$(_GeneratorAssemblyCopy)&quot; --output &quot;$(_GeneratedFilePath)&quot; --app-name &quot;$(AssemblyName)&quot; --app-title &quot;$(AssemblyTitle)&quot; --app-description &quot;$(Description)&quot; --version &quot;$(FullVersion)&quot; --app-tag &quot;$(AppTag)&quot; --build-payload-path &quot;$(CredsJsonPath)&quot;" />
+
+		<ItemGroup Condition="Exists('$(_GeneratedFilePath)')">
+			<Compile Include="$(_GeneratedFilePath)" />
+		</ItemGroup>
+	</Target>
+
+	<PropertyGroup Condition=" '$(Configuration)' == 'Debug' AND '$(ActiveDebugProfile)' == 'Remote.Vagrant.Windows11' ">
+		<RemoteDeployPath>C$</RemoteDeployPath>
+	</PropertyGroup>
+
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition=" '$(Configuration)' == 'Debug' AND '$(ActiveDebugProfile)' == 'Remote.Vagrant.Windows11' ">
+		<!-- Read RemoteHostName from launchSettings.json -->
+		<Exec Command="powershell -NoProfile -Command &quot;$launchSettings = Get-Content 'Properties\launchSettings.json' | ConvertFrom-Json; $remoteDebugMachine = $launchSettings.profiles.'Remote.Vagrant.Windows11'.remoteDebugMachine; $hostname = $remoteDebugMachine.Split(':')[0]; $hostname | Out-File -FilePath '$(IntermediateOutputPath)hostname.txt' -Encoding utf8&quot;" />
+
+		<!-- Read hostname from file -->
+		<ReadLinesFromFile File="$(IntermediateOutputPath)hostname.txt">
+			<Output TaskParameter="Lines" PropertyName="RemoteHostName" />
+		</ReadLinesFromFile>
+
+		<PropertyGroup>
+			<!-- Trim any whitespace from the hostname -->
+			<RemoteHostName>$(RemoteHostName.Trim())</RemoteHostName>
+		</PropertyGroup>
+
+		<Message Text="Resolving IPv4 for $(RemoteHostName)..." Importance="high" />
+
+		<!-- Write IP to temporary file to avoid PowerShell output formatting issues -->
+		<Exec Command="powershell -NoProfile -Command &quot;$ip = (Resolve-DnsName $(RemoteHostName) | Where-Object { $_.IPAddress -match '^\d+\.' } | Select-Object -First 1).IPAddress; if($ip) { $ip | Out-File -FilePath '$(IntermediateOutputPath)ip.txt' -Encoding utf8 } else { Write-Error 'Failed to resolve IP' }&quot;" />
+
+		<!-- Read IP from file -->
+		<ReadLinesFromFile File="$(IntermediateOutputPath)ip.txt">
+			<Output TaskParameter="Lines" PropertyName="ResolvedIP" />
+		</ReadLinesFromFile>
+
+		<PropertyGroup>
+			<!-- Trim any whitespace from the IP -->
+			<ResolvedIP>$(ResolvedIP.Trim())</ResolvedIP>
+			<HostPathFromCDrive>$([System.IO.Path]::GetFullPath($(TargetDir)).Substring(2))</HostPathFromCDrive>
+		</PropertyGroup>
+
+		<Message Text="Using resolved IP: $(ResolvedIP)" Importance="high" />
+
+		<!-- Safely unmap drive if mapped already -->
+		<Exec Command="net use x: /delete /y 2&gt;nul || echo Drive x: was not mapped" ContinueOnError="true" />
+		<Message Text="Ensured network drive x: is unmapped" Importance="high" />
+
+		<!-- Use the resolved IP address instead of hostname -->
+		<Exec Command="net use x: \\$(ResolvedIP)\$(RemoteDeployPath) /user:vagrant vagrant /persistent:no" />
+		<Message Text="Mapped network drive to IP $(ResolvedIP)" Importance="high" />
+
+		<!-- Ensure target dir -->
+		<Exec Command="if not exist &quot;x:\$(HostPathFromCDrive.Replace('\', '\\'))&quot; mkdir &quot;x:\$(HostPathFromCDrive.Replace('\', '\\'))&quot;" />
+		<Message Text="Ensured directory exists: x:\$(HostPathFromCDrive)" Importance="high" />
+
+		<Message Text="Deploying build to remote VM ($(ResolvedIP)) with identical directory structure..." Importance="high" />
+
+		<!-- Copy files -->
+		<Exec Command="xcopy &quot;$(TargetDir)*.*&quot; &quot;x:\$(HostPathFromCDrive)&quot; /I /E /Y" />
+		<Message Text="Copied files from $(TargetDir) to x:\$(HostPathFromCDrive)" Importance="high" />
+
+		<!-- Safely unmap drive -->
+		<Exec Command="net use x: /delete /y 2&gt;nul || echo Drive x: cleanup completed" ContinueOnError="true" />
+		<Message Text="Unmapped network drive x:" Importance="high" />
+		<Message Text="Remote deployment completed to x:\$(HostPathFromCDrive)" Importance="high" />
+	</Target>
+
+	<PropertyGroup Condition="'$(IsQuietConsole)' == 'true' AND '$(OutputType)' == 'Exe'">
+		<OutputType>WinExe</OutputType>
+	</PropertyGroup>
+
+</Project>

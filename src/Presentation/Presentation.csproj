@@ -1,10 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
+		<LangVersion>14</LangVersion>
+		<TargetFramework>net10.0</TargetFramework>
 		<OutputType>Exe</OutputType>
-		<TargetFramework>net9.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<GenerateBuildConstants>true</GenerateBuildConstants>
 		<InvariantGlobalization>true</InvariantGlobalization>
 		<PublishTrimmed>true</PublishTrimmed>
 		<IsTrimmable>true</IsTrimmable>
@@ -21,13 +23,10 @@
 		<AssemblyTitle>Application Builder Helpers</AssemblyTitle>
 		<AssemblyName>app_sample</AssemblyName>
 		<Description>App sample</Description>
-		<InformationalVersion>0.1.0</InformationalVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\Application\Application.csproj" />
-		<ProjectReference Include="..\Infrastructure.Serilog.Logger\Infrastructure.Serilog.Logger.csproj" />
-		<ProjectReference Include="..\Infrastructure.Sqlite.LocalStore\Infrastructure.Sqlite.LocalStore.csproj" />
 	</ItemGroup>
 
 </Project>
