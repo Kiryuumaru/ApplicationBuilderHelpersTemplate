@@ -22,7 +22,7 @@ public class RolePermissionTemplateTests
         var template = "api:portfolio:positions:read";
 
         var exception = Assert.Throws<DomainException>(
-            () => RolePermissionTemplate.Create(template, new[] { "portfolioId" }));
+            () => RolePermissionTemplate.Create(template, ["portfolioId"]));
 
         Assert.Contains("does not allow parameters", exception.Message);
     }
@@ -33,7 +33,7 @@ public class RolePermissionTemplateTests
         var template = "api:portfolio:[portfolioId={portfolioId}]:positions:[accountId={accountId}]:read";
 
         var exception = Assert.Throws<DomainException>(
-            () => RolePermissionTemplate.Create(template, new[] { "portfolioId" }));
+            () => RolePermissionTemplate.Create(template, ["portfolioId"]));
 
         Assert.Contains("missing required parameters", exception.Message);
     }

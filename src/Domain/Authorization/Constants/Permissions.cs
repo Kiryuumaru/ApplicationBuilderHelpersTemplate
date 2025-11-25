@@ -155,7 +155,7 @@ public static class Permissions
                     "Manage the asset catalog.",
                     "asset catalog",
                     RLeaf("list", "List all supported assets."),
-                    RLeaf("metadata", "Read metadata for a specific asset.", new[] { "symbol" }),
+                    RLeaf("metadata", "Read metadata for a specific asset.", ["symbol"]),
                     RLeaf("search", "Search for assets matching filter criteria.")
                 ),
                 Node(
@@ -164,7 +164,7 @@ public static class Permissions
                     "price data",
                     new[] { "symbol" },
                     RLeaf("latest", "Read the latest price tick for an asset."),
-                    RLeaf("historical", "Read historical candles for an asset.", new[] { "granularity" })
+                    RLeaf("historical", "Read historical candles for an asset.", ["granularity"])
                 ),
                 Node(
                     "orderbooks",

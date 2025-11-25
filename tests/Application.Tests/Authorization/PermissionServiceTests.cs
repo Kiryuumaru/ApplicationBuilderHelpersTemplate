@@ -71,11 +71,11 @@ public class PermissionServiceTests
     public void HasPermission_AllowsUserScopedRootGrant()
     {
         var service = CreateService(new RecordingJwtTokenService());
-        var identity = new ClaimsIdentity(new[]
-        {
+        var identity = new ClaimsIdentity(
+        [
             new Claim("scope", "api:[userId=user-123]:_read"),
             new Claim("rbac_version", "1")
-        });
+        ]);
         var principal = new ClaimsPrincipal(identity);
 
         var permitted = "api:portfolio:[userId=user-123]:accounts:[accountId=acct-1]:list";
@@ -117,7 +117,7 @@ public class PermissionServiceTests
         var otherUser = "api:portfolio:[userId=user-456]:accounts:list";
         var otherUserPositions = "api:portfolio:[userId=user-456]:positions:read";
 
-        Assert.False(service.HasAnyPermission(principal, new[] { otherUser, otherUserPositions }));
+        Assert.False(service.HasAnyPermission(principal, [otherUser, otherUserPositions]));
     }
 
     [Fact]
@@ -146,14 +146,14 @@ public class PermissionServiceTests
     public void HasAllPermissions_ReturnsFalseWhenAnyMissing()
     {
         var service = CreateService(new RecordingJwtTokenService());
-        var identity = new ClaimsIdentity(new[]
-        {
+        var identity = new ClaimsIdentity(
+        [
             new Claim("scope", AccountUpdatePermission),
             new Claim("rbac_version", "1")
-        });
+        ]);
         var principal = new ClaimsPrincipal(identity);
 
-        var result = service.HasAllPermissions(principal, new[] { AccountUpdatePermission, PositionClosePermission });
+        var result = service.HasAllPermissions(principal, [AccountUpdatePermission, PositionClosePermission]);
 
         Assert.False(result);
     }
@@ -174,9 +174,9 @@ public class PermissionServiceTests
             token: "token-value",
             permissionsToAdd: permissionsToAdd,
             permissionsToRemove: permissionsToRemove,
-            claimsToAdd: new[] { new Claim("tenant", "alpha") },
-            claimsToRemove: new[] { new Claim("tenant", "beta") },
-            claimTypesToRemove: new[] { "custom_type" },
+            claimsToAdd: [new Claim("tenant", "alpha")],
+            claimsToRemove: [new Claim("tenant", "beta")],
+            claimTypesToRemove: ["custom_type"],
             cancellationToken: CancellationToken.None);
 
         Assert.Equal("mutated-token", result);
@@ -200,11 +200,11 @@ public class PermissionServiceTests
     private static ClaimsPrincipal BuildPrincipalWithScopes(params string[] scopes)
     {
         var scopeValue = string.Join(' ', scopes);
-        var identity = new ClaimsIdentity(new[]
-        {
+        var identity = new ClaimsIdentity(
+        [
             new Claim("scope", scopeValue),
             new Claim("rbac_version", "1")
-        });
+        ]);
 
         return new ClaimsPrincipal(identity);
     }

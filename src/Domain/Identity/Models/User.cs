@@ -30,10 +30,9 @@ public sealed class User : AggregateRoot
     public int ConsecutiveFailedLoginCount { get; private set; }
 
     public IReadOnlyCollection<UserPermissionGrant> PermissionGrants => _permissionGrants.ToList().AsReadOnly();
-    public IReadOnlyCollection<Guid> RoleIds => _roleAssignments
+    public IReadOnlyCollection<Guid> RoleIds => [.. _roleAssignments
         .Select(static assignment => assignment.RoleId)
-        .Distinct()
-        .ToArray();
+        .Distinct()];
     public IReadOnlyCollection<UserRoleAssignment> RoleAssignments => _roleAssignments.ToList().AsReadOnly();
     public IReadOnlyCollection<UserIdentityLink> IdentityLinks => _identityLinks.Values.ToList().AsReadOnly();
     public bool HasPasswordCredential => Credential is not null;
@@ -156,11 +155,10 @@ public sealed class User : AggregateRoot
     }
 
     public IReadOnlyCollection<string> GetPermissionIdentifiers()
-        => _permissionGrants
+        => [.. _permissionGrants
             .Select(grant => grant.Identifier)
             .Distinct(StringComparer.Ordinal)
-            .OrderBy(identifier => identifier, StringComparer.Ordinal)
-            .ToArray();
+            .OrderBy(identifier => identifier, StringComparer.Ordinal)];
 
     public IReadOnlyCollection<string> BuildEffectivePermissions(IEnumerable<UserRoleResolution>? roleResolutions)
     {
@@ -186,7 +184,7 @@ public sealed class User : AggregateRoot
             }
         }
 
-        return identifiers.OrderBy(static id => id, StringComparer.Ordinal).ToArray();
+        return [.. identifiers.OrderBy(static id => id, StringComparer.Ordinal)];
     }
 
     public bool AssignRole(Guid roleId, IReadOnlyDictionary<string, string?>? parameterValues = null)

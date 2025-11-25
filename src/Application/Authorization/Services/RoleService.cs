@@ -126,6 +126,6 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
 
         return templates.Count == 0
             ? Array.Empty<RolePermissionTemplate>()
-            : templates.ToArray();
+            : [.. templates];
     }
 }

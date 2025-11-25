@@ -22,7 +22,7 @@ public class JwtTokenServiceTests
 		var token = await service.GenerateToken(
 			userId: "user-1",
 			username: "user@example.com",
-			scopes: new[] { "  api.read ", "api.read", "api.write" },
+			scopes: ["  api.read ", "api.read", "api.write"],
 			additionalClaims: additionalClaims,
 			cancellationToken: CancellationToken.None);
 
@@ -58,16 +58,16 @@ public class JwtTokenServiceTests
 		var originalToken = await service.GenerateToken(
 			userId: "user-2",
 			username: "user@example.com",
-			scopes: new[] { "perm.alpha", "perm.beta" },
-			additionalClaims: new[] { new Claim("tenant", "alpha") },
+			scopes: ["perm.alpha", "perm.beta"],
+			additionalClaims: [new Claim("tenant", "alpha")],
 			cancellationToken: CancellationToken.None);
 
 		var mutatedToken = await service.MutateToken(
 			originalToken,
-			scopesToAdd: new[] { "perm.gamma" },
-			scopesToRemove: new[] { "perm.alpha" },
-			claimsToAdd: new[] { new Claim("tenant", "bravo"), new Claim("region", "eu") },
-			claimsToRemove: new[] { new Claim("tenant", "alpha") },
+			scopesToAdd: ["perm.gamma"],
+			scopesToRemove: ["perm.alpha"],
+			claimsToAdd: [new Claim("tenant", "bravo"), new Claim("region", "eu")],
+			claimsToRemove: [new Claim("tenant", "alpha")],
 			cancellationToken: CancellationToken.None);
 
 		var principal = await service.ValidateToken(mutatedToken, CancellationToken.None);
