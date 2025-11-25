@@ -30,10 +30,9 @@ public sealed class RolePermissionTemplate : ValueObject
         var placeholders = ExtractPlaceholders(IdentifierTemplate);
         if (parameters.Length == 0 && placeholders.Count > 0)
         {
-            parameters = placeholders
+            parameters = [.. placeholders
                 .Distinct(StringComparer.Ordinal)
-                .OrderBy(static parameter => parameter, StringComparer.Ordinal)
-                .ToArray();
+                .OrderBy(static parameter => parameter, StringComparer.Ordinal)];
         }
 
         RequiredParameters = parameters;
@@ -137,13 +136,12 @@ public sealed class RolePermissionTemplate : ValueObject
             return Array.Empty<string>();
         }
 
-        return matches
+        return [.. matches
             .Select(static match => match.Groups[1].Value)
             .Where(static name => !string.IsNullOrWhiteSpace(name))
             .Select(static name => name.Trim())
             .Distinct(StringComparer.Ordinal)
-            .OrderBy(static name => name, StringComparer.Ordinal)
-            .ToArray();
+            .OrderBy(static name => name, StringComparer.Ordinal)];
     }
 
     private static void ValidatePlaceholderConfiguration(

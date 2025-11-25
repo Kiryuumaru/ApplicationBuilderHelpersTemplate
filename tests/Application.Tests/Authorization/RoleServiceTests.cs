@@ -31,10 +31,10 @@ public class RoleServiceTests
             Name: "Portfolio Manager",
             Description: "Manages portfolios",
             IsSystemRole: false,
-            PermissionTemplates: new[]
-            {
+            PermissionTemplates:
+            [
                 new RolePermissionTemplateDescriptor("api:portfolio:[userId=user-123]:accounts:list")
-            });
+            ]);
 
         await service.CreateRoleAsync(descriptor, CancellationToken.None);
 
@@ -52,16 +52,16 @@ public class RoleServiceTests
             Name: "Read Only Analyst",
             Description: null,
             IsSystemRole: false,
-            PermissionTemplates: new[]
-            {
+            PermissionTemplates:
+            [
                 new RolePermissionTemplateDescriptor("api:market:assets:list")
-            });
+            ]);
 
         var role = await service.CreateRoleAsync(descriptor, CancellationToken.None);
 
         role = await service.ReplacePermissionsAsync(
             role.Id,
-            new[] { new RolePermissionTemplateDescriptor(Permissions.RootReadIdentifier) },
+            [new RolePermissionTemplateDescriptor(Permissions.RootReadIdentifier)],
             CancellationToken.None);
 
         Assert.Contains(Permissions.RootReadIdentifier, role.GetPermissionIdentifiers());

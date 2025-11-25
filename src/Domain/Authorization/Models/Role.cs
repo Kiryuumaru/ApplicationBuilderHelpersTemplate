@@ -108,21 +108,19 @@ public sealed class Role : AggregateRoot
             identifiers.Add(grant.Expand(EmptyParameters));
         }
 
-        return identifiers
+        return [.. identifiers
             .Distinct(StringComparer.Ordinal)
-            .OrderBy(static identifier => identifier, StringComparer.Ordinal)
-            .ToArray();
+            .OrderBy(static identifier => identifier, StringComparer.Ordinal)];
     }
 
     public IReadOnlyCollection<string> ExpandPermissions(IReadOnlyDictionary<string, string?> parameterValues)
     {
         ArgumentNullException.ThrowIfNull(parameterValues);
 
-        return _permissionGrants
+        return [.. _permissionGrants
             .Select(template => template.Expand(parameterValues))
             .Distinct(StringComparer.Ordinal)
-            .OrderBy(static identifier => identifier, StringComparer.Ordinal)
-            .ToArray();
+            .OrderBy(static identifier => identifier, StringComparer.Ordinal)];
     }
 
     private static string NormalizeCode(string code)

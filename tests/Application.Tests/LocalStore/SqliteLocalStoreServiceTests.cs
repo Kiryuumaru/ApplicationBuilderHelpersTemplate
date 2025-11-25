@@ -195,7 +195,7 @@ public class SqliteLocalStoreServiceTests
 			{
 				Name = "Widget",
 				Quantity = 3,
-				Tags = new[] { "alpha", "beta" }
+				Tags = ["alpha", "beta"]
 			};
 
 			await store.Set("TestKey", "TestValue", CancellationToken.None);
@@ -233,7 +233,7 @@ public class SqliteLocalStoreServiceTests
 			Assert.NotNull(restored);
 			Assert.Equal("Widget", restored!.Name);
 			Assert.Equal(3, restored.Quantity);
-			Assert.Equal(new[] { "alpha", "beta" }, restored.Tags);
+			Assert.Equal(["alpha", "beta"], restored.Tags);
 
 			var number = await store.GetDecimal("Sample:Number", CancellationToken.None);
 			Assert.Equal(decimalValue, number!.Value);

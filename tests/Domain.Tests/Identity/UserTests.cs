@@ -71,7 +71,7 @@ public class UserTests
         var role = Role.Create("admin", "Administrator");
         role.AssignPermission(RolePermissionTemplate.Create("api:portfolio:positions:close"));
 
-        var identifiers = user.BuildEffectivePermissions(new[] { new UserRoleResolution(role) });
+        var identifiers = user.BuildEffectivePermissions([new UserRoleResolution(role)]);
 
         Assert.Contains("api:portfolio:accounts:list", identifiers);
         Assert.Contains("api:portfolio:positions:close", identifiers);
@@ -191,13 +191,13 @@ public class UserTests
         }
     }
 
-        private sealed class StubRoleResolver(params Role[] roles) : IUserRoleResolver
+    private sealed class StubRoleResolver(params Role[] roles) : IUserRoleResolver
     {
-            private readonly IReadOnlyCollection<Role> _roles = roles;
+        private readonly IReadOnlyCollection<Role> _roles = roles;
 
-            public IReadOnlyCollection<UserRoleResolution> ResolveRoles(User user)
-            {
-                return _roles.Select(static role => new UserRoleResolution(role)).ToArray();
-            }
+        public IReadOnlyCollection<UserRoleResolution> ResolveRoles(User user)
+        {
+            return [.. _roles.Select(static role => new UserRoleResolution(role))];
+        }
     }
 }

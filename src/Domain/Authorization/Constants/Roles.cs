@@ -19,25 +19,25 @@ public static class Roles
             Name: "Administrator",
             Description: "Full access to all platform capabilities.",
             IsSystemRole: true,
-            PermissionTemplates: new[]
-            {
+            PermissionTemplates:
+            [
                 RolePermissionTemplate.Create(Permissions.RootReadIdentifier),
                 RolePermissionTemplate.Create(Permissions.RootWriteIdentifier)
-            });
+            ]);
 
         User = new RoleDefinition(
             Code: "user",
             Name: "User",
             Description: "Default role for authenticated users accessing their own data.",
             IsSystemRole: true,
-            TemplateParametersOverride: new[] { "roleUserId" },
-            PermissionTemplates: new[]
-            {
+            TemplateParametersOverride: ["roleUserId"],
+            PermissionTemplates:
+            [
                 RolePermissionTemplate.Create("api:[userId={roleUserId}]:_read"),
                 RolePermissionTemplate.Create("api:[userId={roleUserId}]:_write")
-            });
+            ]);
 
-        All = new[] { Admin, User };
+        All = [Admin, User];
     }
 
     public sealed record RoleDefinition(

@@ -22,7 +22,7 @@ public class IdentityServiceTests
             Username: "alice",
             Password: "Password!23",
             Email: "alice@example.com",
-            PermissionIdentifiers: new[] { Permissions.RootReadIdentifier });
+            PermissionIdentifiers: [Permissions.RootReadIdentifier]);
 
         var user = await fixture.IdentityService.RegisterUserAsync(request, CancellationToken.None);
 
@@ -68,7 +68,7 @@ public class IdentityServiceTests
         var request = new UserRegistrationRequest(
             Username: "admin-user",
             Password: "Secret!123",
-            RoleAssignments: new[] { new RoleAssignmentRequest(RolesConstants.Admin.Code) });
+            RoleAssignments: [new RoleAssignmentRequest(RolesConstants.Admin.Code)]);
 
         await fixture.IdentityService.RegisterUserAsync(request, CancellationToken.None);
 
@@ -117,8 +117,8 @@ public class IdentityServiceTests
         var request = new UserRegistrationRequest(
             Username: "mixed-user",
             Password: "Mixed!123",
-            PermissionIdentifiers: new[] { additionalPermission },
-            RoleAssignments: new[] { new RoleAssignmentRequest(RolesConstants.Admin.Code) });
+            PermissionIdentifiers: [additionalPermission],
+            RoleAssignments: [new RoleAssignmentRequest(RolesConstants.Admin.Code)]);
 
         await fixture.IdentityService.RegisterUserAsync(request, CancellationToken.None);
 
@@ -159,24 +159,24 @@ public class IdentityServiceTests
             Name: "Portfolio Reader",
             Description: "Reads a single portfolio",
             IsSystemRole: false,
-            PermissionTemplates: new[]
-            {
+            PermissionTemplates:
+            [
                 new RolePermissionTemplateDescriptor(
                     "api:portfolio:[portfolioId={portfolioId}]:positions:read",
-                    new[] { "portfolioId" })
-            });
+                    ["portfolioId"])
+            ]);
 
         await fixture.RoleService.CreateRoleAsync(descriptor, CancellationToken.None);
 
         var request = new UserRegistrationRequest(
             Username: "scoped-user",
             Password: "Scoped!123",
-            RoleAssignments: new[]
-            {
+            RoleAssignments:
+            [
                 new RoleAssignmentRequest(
                     "portfolio_reader",
                     new Dictionary<string, string?> { ["portfolioId"] = "portfolio-123" })
-            });
+            ]);
 
         await fixture.IdentityService.RegisterUserAsync(request, CancellationToken.None);
 
@@ -207,12 +207,12 @@ public class IdentityServiceTests
             Name: "Portfolio Reader",
             Description: "Reads a single portfolio",
             IsSystemRole: false,
-            PermissionTemplates: new[]
-            {
+            PermissionTemplates:
+            [
                 new RolePermissionTemplateDescriptor(
                     "api:portfolio:[portfolioId={portfolioId}]:positions:read",
-                    new[] { "portfolioId" })
-            });
+                    ["portfolioId"])
+            ]);
 
         await fixture.RoleService.CreateRoleAsync(descriptor, CancellationToken.None);
         var user = await fixture.IdentityService.RegisterUserAsync(new UserRegistrationRequest("epsilon", "pass"), CancellationToken.None);
@@ -236,7 +236,7 @@ public class IdentityServiceTests
             ProviderEmail: "alice@github.com",
             ProviderDisplayName: "Alice GH",
             Email: "alice@sample.com",
-            PermissionIdentifiers: new[] { Permissions.RootReadIdentifier });
+            PermissionIdentifiers: [Permissions.RootReadIdentifier]);
 
         var user = await fixture.IdentityService.RegisterExternalAsync(request, CancellationToken.None);
 
