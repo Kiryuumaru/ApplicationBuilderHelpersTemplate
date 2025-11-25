@@ -24,7 +24,7 @@ class Build : BaseNukeBuildHelpers
         .Matrix([RunnerOS.Windows2022, RunnerOS.Ubuntu2204], (osTest, osId) => osTest
             .Matrix(["Application.Tests", "Domain.Tests"], (test, testId) => test
                 .DisplayName($"Test {testId} on {osId.Name}")
-                .WorkflowId($"test-{osId.Name.ToLowerInvariant()}-{testId.Replace(".", "-").ToLowerInvariant()}")
+                .WorkflowId($"test_{osId.Name}_{testId}".Replace(".", "_").Replace("-", "_").ToLowerInvariant())
                 .RunnerOS(osId)
                 .Execute(() =>
                 {
