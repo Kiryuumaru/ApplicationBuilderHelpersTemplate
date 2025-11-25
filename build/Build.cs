@@ -40,22 +40,6 @@ class Build : BaseNukeBuildHelpers
                         .SetProjectFile(projFile));
                 })));
 
-    TestEntry DomainTest => _ => _
-        .AppId(AppId)
-        .RunnerOS(RunnerOS.Ubuntu2204)
-        .Execute(() =>
-        {
-            DotNetTasks.DotNetClean(_ => _
-                .SetProject(RootDirectory / "DisposableHelpersTest" / "DisposableHelpersTest.csproj"));
-            DotNetTasks.DotNetTest(_ => _
-                .SetProcessAdditionalArguments(
-                    "--logger \"GitHubActions;summary.includePassedTests=true;summary.includeSkippedTests=true\" " +
-                    "-- " +
-                    "RunConfiguration.CollectSourceInformation=true " +
-                    "DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencovere ")
-                .SetProjectFile(RootDirectory / "DisposableHelpersTest" / "DisposableHelpersTest.csproj"));
-        });
-
     BuildEntry BuildEntry => _ => _
         .AppId(AppId)
         .RunnerOS(RunnerOS.Windows2022)

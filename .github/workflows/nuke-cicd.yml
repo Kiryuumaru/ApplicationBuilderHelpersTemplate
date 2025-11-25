@@ -69,15 +69,6 @@ jobs:
       NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_TESTS_CHECKOUT_FETCH_DEPTH: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_TESTS_CHECKOUT_FETCH_DEPTH }}
       NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_TESTS_CHECKOUT_FETCH_TAGS: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_TESTS_CHECKOUT_FETCH_TAGS }}
       NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_TESTS_CHECKOUT_SUBMODULES: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_TESTS_CHECKOUT_SUBMODULES }}
-      NUKE_PRE_SETUP_DOMAINTEST_CONDITION: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_DOMAINTEST_CONDITION }}
-      NUKE_PRE_SETUP_DOMAINTEST_RUNS_ON: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_DOMAINTEST_RUNS_ON }}
-      NUKE_PRE_SETUP_DOMAINTEST_RUN_SCRIPT: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_DOMAINTEST_RUN_SCRIPT }}
-      NUKE_PRE_SETUP_DOMAINTEST_CACHE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_DOMAINTEST_CACHE_KEY }}
-      NUKE_PRE_SETUP_DOMAINTEST_CACHE_RESTORE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_DOMAINTEST_CACHE_RESTORE_KEY }}
-      NUKE_PRE_SETUP_DOMAINTEST_CACHE_MAIN_RESTORE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_DOMAINTEST_CACHE_MAIN_RESTORE_KEY }}
-      NUKE_PRE_SETUP_DOMAINTEST_CHECKOUT_FETCH_DEPTH: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_DOMAINTEST_CHECKOUT_FETCH_DEPTH }}
-      NUKE_PRE_SETUP_DOMAINTEST_CHECKOUT_FETCH_TAGS: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_DOMAINTEST_CHECKOUT_FETCH_TAGS }}
-      NUKE_PRE_SETUP_DOMAINTEST_CHECKOUT_SUBMODULES: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_DOMAINTEST_CHECKOUT_SUBMODULES }}
       NUKE_PRE_SETUP_BUILDENTRY_CONDITION: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_BUILDENTRY_CONDITION }}
       NUKE_PRE_SETUP_BUILDENTRY_RUNS_ON: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_BUILDENTRY_RUNS_ON }}
       NUKE_PRE_SETUP_BUILDENTRY_RUN_SCRIPT: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_BUILDENTRY_RUN_SCRIPT }}
@@ -345,57 +336,6 @@ jobs:
     if: "! failure() && ! cancelled() && needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_TESTS_CONDITION == 'true' && needs.BUILDENTRY.result == 'success'"
     env:
       NUKE_PRE_SETUP: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP }}
-  DOMAINTEST:
-    name: Test - sample_app (DomainTest)
-    runs-on: ${{ fromJson(needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_DOMAINTEST_RUNS_ON) }}
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_DOMAINTEST_CHECKOUT_FETCH_DEPTH }}
-        fetch-tags: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_DOMAINTEST_CHECKOUT_FETCH_TAGS }}
-        submodules: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_DOMAINTEST_CHECKOUT_SUBMODULES }}
-        persist-credentials: true
-    - name: Download sample_app pre_test artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: ./.nuke/temp/artifacts-download
-        pattern: pre_test___sample_app___*
-    - name: Download sample_app build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: ./.nuke/temp/artifacts-download
-        pattern: build___sample_app___*
-    - name: Cache Run
-      uses: actions/cache@v4
-      with:
-        path: ./.nuke/temp/cache
-        key: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_DOMAINTEST_CACHE_KEY }}
-        restore-keys: |-
-          ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_DOMAINTEST_CACHE_RESTORE_KEY }}
-          ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_DOMAINTEST_CACHE_MAIN_RESTORE_KEY }}
-    - id: NUKE_RUN
-      name: Run Nuke DomainTest
-      run: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_DOMAINTEST_RUN_SCRIPT }} Run --args "DomainTest"
-    - name: Upload sample_app post_test artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: post_test___sample_app___DOMAINTEST
-        path: ./.nuke/temp/artifacts-upload/sample_app/*
-        if-no-files-found: error
-        retention-days: 1
-    - name: Upload common post_test artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: post_test___$common___DOMAINTEST
-        path: ./.nuke/temp/artifacts-upload/$common/*
-        if-no-files-found: error
-        retention-days: 1
-    needs:
-    - PRE_SETUP
-    - BUILDENTRY
-    if: "! failure() && ! cancelled() && needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_DOMAINTEST_CONDITION == 'true' && needs.BUILDENTRY.result == 'success'"
-    env:
-      NUKE_PRE_SETUP: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP }}
   PUBLISHENTRY:
     name: Publish - sample_app (PublishEntry)
     runs-on: ${{ fromJson(needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_PUBLISHENTRY_RUNS_ON) }}
@@ -446,8 +386,7 @@ jobs:
     - TEST_WINDOWS_2022_DOMAIN_TESTS
     - TEST_UBUNTU_22_04_APPLICATION_TESTS
     - TEST_UBUNTU_22_04_DOMAIN_TESTS
-    - DOMAINTEST
-    if: "! failure() && ! cancelled() && needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_PUBLISHENTRY_CONDITION == 'true' && needs.BUILDENTRY.result == 'success' && needs.TEST_WINDOWS_2022_APPLICATION_TESTS.result == 'success' && needs.TEST_WINDOWS_2022_DOMAIN_TESTS.result == 'success' && needs.TEST_UBUNTU_22_04_APPLICATION_TESTS.result == 'success' && needs.TEST_UBUNTU_22_04_DOMAIN_TESTS.result == 'success' && needs.DOMAINTEST.result == 'success'"
+    if: "! failure() && ! cancelled() && needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_PUBLISHENTRY_CONDITION == 'true' && needs.BUILDENTRY.result == 'success' && needs.TEST_WINDOWS_2022_APPLICATION_TESTS.result == 'success' && needs.TEST_WINDOWS_2022_DOMAIN_TESTS.result == 'success' && needs.TEST_UBUNTU_22_04_APPLICATION_TESTS.result == 'success' && needs.TEST_UBUNTU_22_04_DOMAIN_TESTS.result == 'success'"
     env:
       NUKE_PRE_SETUP: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP }}
   POST_SETUP:
@@ -475,7 +414,6 @@ jobs:
     - TEST_WINDOWS_2022_DOMAIN_TESTS
     - TEST_UBUNTU_22_04_APPLICATION_TESTS
     - TEST_UBUNTU_22_04_DOMAIN_TESTS
-    - DOMAINTEST
     - PUBLISHENTRY
     if: success() || failure() || always()
     timeout-minutes: 30
@@ -485,7 +423,6 @@ jobs:
       NUKE_RUN_RESULT_GITHUB_TEST_WINDOWS_2022_DOMAIN_TESTS: ${{ needs.TEST_WINDOWS_2022_DOMAIN_TESTS.result }}
       NUKE_RUN_RESULT_GITHUB_TEST_UBUNTU_22_04_APPLICATION_TESTS: ${{ needs.TEST_UBUNTU_22_04_APPLICATION_TESTS.result }}
       NUKE_RUN_RESULT_GITHUB_TEST_UBUNTU_22_04_DOMAIN_TESTS: ${{ needs.TEST_UBUNTU_22_04_DOMAIN_TESTS.result }}
-      NUKE_RUN_RESULT_GITHUB_DOMAINTEST: ${{ needs.DOMAINTEST.result }}
       NUKE_RUN_RESULT_GITHUB_BUILDENTRY: ${{ needs.BUILDENTRY.result }}
       NUKE_RUN_RESULT_GITHUB_PUBLISHENTRY: ${{ needs.PUBLISHENTRY.result }}
 env:
