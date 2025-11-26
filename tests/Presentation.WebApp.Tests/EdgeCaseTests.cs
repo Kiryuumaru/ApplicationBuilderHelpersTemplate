@@ -112,15 +112,18 @@ public class EdgeCaseTests : PlaywrightTestBase
         await Page.GetByLabel("Confirm Password").FillAsync(password);
         await Page.GetByRole(AriaRole.Button, new() { Name = "Register" }).ClickAsync();
         
-        // Try to register again
+        // Wait for registration confirmation page
+        await Expect(Page).ToHaveURLAsync(new System.Text.RegularExpressions.Regex(@"/Account/RegisterConfirmation"));
+        
+        // Try to register again with same email
         await Page.GotoAsync($"{BaseUrl}/Account/Register");
         await Page.GetByLabel("Email").FillAsync(email);
         await Page.GetByLabel("Password", new() { Exact = true }).FillAsync(password);
         await Page.GetByLabel("Confirm Password").FillAsync(password);
         await Page.GetByRole(AriaRole.Button, new() { Name = "Register" }).ClickAsync();
         
-        // Should show error
-        await Expect(Page.Locator(".validation-message, .text-danger, .validation-summary-errors").First).ToBeVisibleAsync();
+        // Should show error (either in validation summary or alert)
+        await Expect(Page.Locator(".validation-message, .text-danger, .validation-summary-errors, .alert-danger").First).ToBeVisibleAsync();
     }
 
     [Test]
@@ -135,6 +138,14 @@ public class EdgeCaseTests : PlaywrightTestBase
         await Page.GetByLabel("Password", new() { Exact = true }).FillAsync(password);
         await Page.GetByLabel("Confirm Password").FillAsync(password);
         await Page.GetByRole(AriaRole.Button, new() { Name = "Register" }).ClickAsync();
+        
+        // Wait for registration confirmation page and click the email confirmation link
+        await Expect(Page).ToHaveURLAsync(new System.Text.RegularExpressions.Regex(@"/Account/RegisterConfirmation"));
+        var confirmLink = Page.GetByRole(AriaRole.Link, new() { Name = "Click here to confirm your account" });
+        if (await confirmLink.CountAsync() > 0)
+        {
+            await confirmLink.ClickAsync();
+        }
         
         // Login
         await Page.GotoAsync($"{BaseUrl}/Account/Login");

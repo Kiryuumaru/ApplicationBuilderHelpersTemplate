@@ -1,4 +1,4 @@
-namespace Infrastructure.Sqlite;
+namespace Infrastructure.Sqlite.Interfaces;
 
 public interface IDatabaseBootstrap
 {

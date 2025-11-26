@@ -42,7 +42,7 @@ public class AccessibilityTests : PlaywrightTestBase
     {
         await Page.GotoAsync($"{BaseUrl}/Account/Login");
 
-        var button = Page.GetByRole(AriaRole.Button, new() { Name = "Log in" });
+        var button = Page.GetByRole(AriaRole.Button, new() { Name = "Log in", Exact = true });
         await Expect(button).ToBeVisibleAsync();
     }
 
@@ -146,7 +146,7 @@ public class AccessibilityTests : PlaywrightTestBase
     {
         await Page.GotoAsync($"{BaseUrl}/Account/Login");
 
-        var button = Page.GetByRole(AriaRole.Button, new() { Name = "Log in" });
+        var button = Page.GetByRole(AriaRole.Button, new() { Name = "Log in", Exact = true });
         await Expect(button).ToBeVisibleAsync();
         
         // Button should have distinguishable styling

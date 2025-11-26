@@ -121,6 +121,14 @@ public class FormValidationTests : PlaywrightTestBase
         await Page.GetByLabel("Confirm Password").FillAsync(password);
         await Page.GetByRole(AriaRole.Button, new() { Name = "Register" }).ClickAsync();
 
+        // Wait for registration confirmation page and click the email confirmation link
+        await Expect(Page).ToHaveURLAsync(new System.Text.RegularExpressions.Regex(@"/Account/RegisterConfirmation"));
+        var confirmLink = Page.GetByRole(AriaRole.Link, new() { Name = "Click here to confirm your account" });
+        if (await confirmLink.CountAsync() > 0)
+        {
+            await confirmLink.ClickAsync();
+        }
+
         // Try login with uppercase
         await Page.GotoAsync($"{BaseUrl}/Account/Login");
         await Page.GetByLabel("Email").FillAsync(email.ToUpper());

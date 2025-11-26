@@ -3,10 +3,10 @@ using System.Text.Json;
 using Application.Authorization.Roles.Interfaces;
 using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;
-using Infrastructure.Sqlite;
+using Infrastructure.Sqlite.Services;
 using Microsoft.Data.Sqlite;
 
-namespace Infrastructure.Sqlite.Identity;
+namespace Infrastructure.Sqlite.Identity.Services;
 
 public sealed class SqliteRoleRepository(SqliteConnectionFactory connectionFactory) : IRoleRepository, IRoleLookup
 {

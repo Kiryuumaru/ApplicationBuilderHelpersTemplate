@@ -1,4 +1,6 @@
-namespace Infrastructure.Sqlite;
+using Infrastructure.Sqlite.Interfaces;
+
+namespace Infrastructure.Sqlite.Services;
 
 public abstract class DatabaseBootstrap(SqliteConnectionFactory connectionFactory) : IDatabaseBootstrap
 {

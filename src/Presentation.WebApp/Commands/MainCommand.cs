@@ -25,7 +25,7 @@ public class MainCommand : Build.BaseCommand<WebApplicationBuilder>
         // for the sake of testing, we will add timeout incase it runs forever. Will delete if everything is ready to push
         try
         {
-            await cancellationTokenSource.Token.WithTimeout(TimeSpan.FromMinutes(2)).WhenCanceled();
+            await cancellationTokenSource.Token.WithTimeout(TimeSpan.FromMinutes(5)).WhenCanceled();
         }
         catch { }
 

@@ -1,8 +1,9 @@
 using System.Data;
 using Application.LocalStore.Interfaces;
+using Infrastructure.Sqlite.Services;
 using Microsoft.Data.Sqlite;
 
-namespace Infrastructure.Sqlite.LocalStore;
+namespace Infrastructure.Sqlite.LocalStore.Services;
 
 public sealed class SqliteLocalStoreService(SqliteConnectionFactory connectionFactory) : ILocalStoreService
 {

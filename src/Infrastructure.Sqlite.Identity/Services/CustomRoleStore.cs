@@ -1,10 +1,10 @@
 using System.Security.Claims;
 using Domain.Authorization.Models;
-using Infrastructure.Sqlite;
+using Infrastructure.Sqlite.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.Sqlite;
 
-namespace Infrastructure.Sqlite.Identity;
+namespace Infrastructure.Sqlite.Identity.Services;
 
 public class CustomRoleStore(SqliteConnectionFactory connectionFactory) : IRoleStore<Role>
 {

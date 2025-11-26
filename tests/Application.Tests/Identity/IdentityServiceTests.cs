@@ -15,13 +15,15 @@ using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;
 using Domain.Identity.ValueObjects;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Security.Authentication;
 using Xunit;
 using RolesConstants = Domain.Authorization.Constants.Roles;
 using Infrastructure.Sqlite.Extensions;
 using Infrastructure.Sqlite.Identity.Extensions;
-using Infrastructure.Sqlite;
+using Infrastructure.Sqlite.Interfaces;
+using Infrastructure.Sqlite.Services;
 
 namespace Application.Tests.Identity;
 
@@ -305,9 +307,15 @@ public class IdentityServiceTests
         services.AddLogging();
         services.AddIdentityServices();
 
-        // Use shared memory database
+        // Use shared memory database with IConfiguration
         var dbName = Guid.NewGuid().ToString();
-        services.AddSqliteInfrastructure($"Data Source={dbName};Mode=Memory;Cache=Shared");
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["SQLITE_CONNECTION_STRING"] = $"Data Source={dbName};Mode=Memory;Cache=Shared"
+            })
+            .Build();
+        services.AddSqliteInfrastructure(configuration);
         services.AddSqliteIdentityStores();
         
         // Relax password requirements for tests

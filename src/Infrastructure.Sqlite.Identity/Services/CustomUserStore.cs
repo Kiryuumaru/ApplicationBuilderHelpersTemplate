@@ -1,11 +1,11 @@
 using System.Security.Claims;
 using Domain.Identity.Models;
 using Domain.Identity.ValueObjects;
-using Infrastructure.Sqlite;
+using Infrastructure.Sqlite.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.Sqlite;
 
-namespace Infrastructure.Sqlite.Identity;
+namespace Infrastructure.Sqlite.Identity.Services;
 
 public class CustomUserStore(SqliteConnectionFactory connectionFactory) : 
     IUserStore<User>,

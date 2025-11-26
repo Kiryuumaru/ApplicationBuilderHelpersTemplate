@@ -1,6 +1,6 @@
-using Infrastructure.Sqlite;
+using Infrastructure.Sqlite.Services;
 
-namespace Infrastructure.Sqlite.Identity;
+namespace Infrastructure.Sqlite.Identity.Services;
 
 public sealed class IdentityTableInitializer(SqliteConnectionFactory connectionFactory) : DatabaseBootstrap(connectionFactory)
 {

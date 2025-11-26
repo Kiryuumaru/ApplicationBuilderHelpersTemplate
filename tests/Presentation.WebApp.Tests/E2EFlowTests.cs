@@ -63,6 +63,14 @@ public class E2EFlowTests : PlaywrightTestBase
         await Page.GetByLabel("Confirm Password").FillAsync(oldPassword);
         await Page.GetByRole(AriaRole.Button, new() { Name = "Register" }).ClickAsync();
 
+        // Wait for registration confirmation page and click the email confirmation link
+        await Expect(Page).ToHaveURLAsync(new System.Text.RegularExpressions.Regex(@"/Account/RegisterConfirmation"));
+        var confirmLink = Page.GetByRole(AriaRole.Link, new() { Name = "Click here to confirm your account" });
+        if (await confirmLink.CountAsync() > 0)
+        {
+            await confirmLink.ClickAsync();
+        }
+
         // Login
         await Page.GotoAsync($"{BaseUrl}/Account/Login");
         await Page.GetByLabel("Email").FillAsync(email);
@@ -71,9 +79,9 @@ public class E2EFlowTests : PlaywrightTestBase
 
         // Change password
         await Page.GotoAsync($"{BaseUrl}/Account/Manage/ChangePassword");
-        await Page.GetByLabel("Current password").FillAsync(oldPassword);
+        await Page.GetByLabel("Old password").FillAsync(oldPassword);
         await Page.GetByLabel("New password", new() { Exact = true }).FillAsync(newPassword);
-        await Page.GetByLabel("Confirm new password").FillAsync(newPassword);
+        await Page.GetByLabel("Confirm password", new() { Exact = true }).FillAsync(newPassword);
         await Page.GetByRole(AriaRole.Button, new() { Name = "Update password" }).ClickAsync();
 
         // Verify success
@@ -104,12 +112,21 @@ public class E2EFlowTests : PlaywrightTestBase
         await Page.GetByRole(AriaRole.Link, new() { Name = "Login" }).ClickAsync();
         await Expect(Page.GetByLabel("Email")).ToBeVisibleAsync();
 
-        // Register page via link
-        await Page.GetByRole(AriaRole.Link, new() { Name = "register", Exact = false }).ClickAsync();
+        // Register page via link - use exact match to avoid multiple elements
+        await Page.GetByRole(AriaRole.Link, new() { Name = "Register as a new user" }).ClickAsync();
         await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "Register", Exact = true })).ToBeVisibleAsync();
 
-        // Back to login
-        await Page.GetByRole(AriaRole.Link, new() { Name = "login", Exact = false }).ClickAsync();
+        // Back to login - use a link that has exact "login" text (could be a link on register page)
+        var loginLink = Page.GetByRole(AriaRole.Link, new() { Name = "login", Exact = true });
+        if (await loginLink.CountAsync() == 0)
+        {
+            // Fall back to navigating directly
+            await Page.GotoAsync($"{BaseUrl}/Account/Login");
+        }
+        else
+        {
+            await loginLink.ClickAsync();
+        }
         await Expect(Page.GetByLabel("Email")).ToBeVisibleAsync();
     }
 

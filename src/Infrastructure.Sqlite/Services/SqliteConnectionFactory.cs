@@ -1,7 +1,7 @@
 using System.Data;
 using Microsoft.Data.Sqlite;
 
-namespace Infrastructure.Sqlite;
+namespace Infrastructure.Sqlite.Services;
 
 public sealed class SqliteConnectionFactory : IDisposable
 {

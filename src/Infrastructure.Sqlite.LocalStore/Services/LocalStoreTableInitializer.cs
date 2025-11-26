@@ -1,6 +1,6 @@
-using Infrastructure.Sqlite;
+using Infrastructure.Sqlite.Services;
 
-namespace Infrastructure.Sqlite.LocalStore;
+namespace Infrastructure.Sqlite.LocalStore.Services;
 
 public sealed class LocalStoreTableInitializer(SqliteConnectionFactory connectionFactory) : DatabaseBootstrap(connectionFactory)
 {

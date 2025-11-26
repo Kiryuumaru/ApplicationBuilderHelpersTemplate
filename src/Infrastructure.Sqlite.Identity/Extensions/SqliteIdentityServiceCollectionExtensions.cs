@@ -1,6 +1,8 @@
 using Application.Authorization.Roles.Interfaces;
 using Domain.Authorization.Models;
 using Domain.Identity.Models;
+using Infrastructure.Sqlite.Identity.Services;
+using Infrastructure.Sqlite.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 
