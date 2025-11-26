@@ -2,12 +2,12 @@
 using Application.Logger.Extensions;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Attributes;
+using Domain.Identity.Models;
+using Infrastructure.Sqlite;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Presentation.WebApp.Components;
 using Presentation.WebApp.Components.Account;
-using Presentation.WebApp.Data;
 
 namespace Presentation.WebApp.Commands;
 
@@ -38,21 +38,17 @@ public class MainCommand : Build.BaseCommand<WebApplicationBuilder>
         })
             .AddIdentityCookies();
 
-        var connectionString = applicationBuilder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-        services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlServer(connectionString));
         services.AddDatabaseDeveloperPageExceptionFilter();
 
-        services.AddIdentityCore<ApplicationUser>(options =>
+        services.AddIdentityCore<User>(options =>
             {
                 options.SignIn.RequireConfirmedAccount = true;
                 options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
             })
-            .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddSignInManager()
             .AddDefaultTokenProviders();
 
-        services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+        services.AddSingleton<IEmailSender<User>, IdentityNoOpEmailSender>();
     }
 
     public override void AddMiddlewares(ApplicationHost applicationHost, IHost host)

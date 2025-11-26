@@ -26,7 +26,6 @@ namespace Domain.Shared.Serialization;
 [JsonSerializable(typeof(UserPermissionGrant))]
 [JsonSerializable(typeof(UserRoleAssignment))]
 [JsonSerializable(typeof(UserIdentityLink))]
-[JsonSerializable(typeof(PasswordCredential))]
 public partial class DomainJsonContext : JsonSerializerContext
 {
     public static JsonSerializerOptions CreateOptions(JsonSerializerOptions? baseOptions = null)

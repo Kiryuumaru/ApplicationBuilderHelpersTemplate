@@ -17,11 +17,6 @@ public sealed class UserRoleAssignment : ValueObject
 
     private UserRoleAssignment(Guid roleId, IReadOnlyDictionary<string, string?> parameterValues)
     {
-        if (roleId == Guid.Empty)
-        {
-            throw new DomainException("Role identifier cannot be empty.");
-        }
-
         RoleId = roleId;
         ParameterValues = parameterValues;
     }

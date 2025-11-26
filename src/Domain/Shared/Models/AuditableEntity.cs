@@ -1,8 +1,8 @@
 ﻿namespace Domain.Shared.Models;
 
-public abstract class AuditableEntity<TId> : Entity<TId>
+public abstract class AuditableEntity : Entity
 {
-    protected AuditableEntity(TId id) : base(id)
+    protected AuditableEntity(Guid id) : base(id)
     {
     }
 
@@ -13,5 +13,6 @@ public abstract class AuditableEntity<TId> : Entity<TId>
     protected void MarkAsModified()
     {
         LastModified = DateTimeOffset.UtcNow;
+        RevId = Guid.NewGuid();
     }
 }

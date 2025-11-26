@@ -1,6 +1,6 @@
 namespace Domain.Shared.Interfaces;
 
-public interface IEntity<out TId>
+public interface IEntity
 {
-    TId Id { get; }
+    Guid Id { get; }
 }

@@ -2,20 +2,22 @@
 
 namespace Domain.Shared.Models;
 
-public abstract class Entity<TId> : DomainObject, IEntity<TId>
+public abstract class Entity : DomainObject, IEntity
 {
     private readonly List<IDomainEvent> _domainEvents = [];
 
-    public TId Id { get; private set; }
+    public Guid Id { get; private set; }
+    public Guid RevId { get; set; }
 
-    protected Entity(TId id)
+    protected Entity(Guid id, Guid? revId = null)
     {
-        if (id is null)
+        if (id == Guid.Empty)
         {
-            throw new ArgumentNullException(nameof(id));
+            throw new ArgumentException("Id cannot be empty", nameof(id));
         }
 
         Id = id;
+        RevId = revId ?? Guid.NewGuid();
     }
 
     public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();

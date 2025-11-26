@@ -15,7 +15,7 @@ public static class Roles
     static Roles()
     {
         Admin = new RoleDefinition(
-            Code: "admin",
+            Code: "ADMIN",
             Name: "Administrator",
             Description: "Full access to all platform capabilities.",
             IsSystemRole: true,
@@ -26,7 +26,7 @@ public static class Roles
             ]);
 
         User = new RoleDefinition(
-            Code: "user",
+            Code: "USER",
             Name: "User",
             Description: "Default role for authenticated users accessing their own data.",
             IsSystemRole: true,

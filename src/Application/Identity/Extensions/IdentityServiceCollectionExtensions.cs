@@ -1,7 +1,10 @@
 using Application.Authorization.Roles.Extensions;
+using Application.Authorization.Roles.Services;
 using Application.Identity.Interfaces;
 using Application.Identity.Services;
-using Domain.Identity.Interfaces;
+using Domain.Authorization.Models;
+using Domain.Identity.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Application.Identity.Extensions;
@@ -13,10 +16,12 @@ public static class IdentityServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddRoleServices();
-        services.AddSingleton<IUserStore, InMemoryUserStore>();
-        services.AddSingleton<IPasswordCredentialFactory, Pbkdf2PasswordCredentialFactory>();
-        services.AddSingleton<IUserSecretValidator, Pbkdf2UserSecretValidator>();
-        services.AddSingleton<IIdentityService, IdentityService>();
+
+        services.AddIdentityCore<User>()
+            .AddRoles<Role>()
+            .AddSignInManager();
+
+        services.AddScoped<IIdentityService, IdentityService>();
         return services;
     }
 }

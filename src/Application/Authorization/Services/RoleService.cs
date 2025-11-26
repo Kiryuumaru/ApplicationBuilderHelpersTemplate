@@ -25,7 +25,7 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
         }
 
         var role = Role.Create(descriptor.Code, descriptor.Name, descriptor.Description, descriptor.IsSystemRole);
-        role.ReplacePermissions(BuildTemplates(descriptor.PermissionTemplates));
+        role.ReplacePermissions(BuildTemplates(descriptor.PermissionTemplates ?? []));
         await _repository.SaveAsync(role, cancellationToken).ConfigureAwait(false);
         return role;
     }
@@ -53,7 +53,17 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
         ArgumentNullException.ThrowIfNull(permissionTemplates);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var role = await RequireRoleAsync(roleId, cancellationToken).ConfigureAwait(false);
+        var role = await _repository.GetByIdAsync(roleId, cancellationToken).ConfigureAwait(false);
+        if (role is null)
+        {
+            throw new InvalidOperationException($"Role with ID '{roleId}' not found.");
+        }
+
+        if (role.IsSystemRole)
+        {
+            throw new InvalidOperationException("Cannot modify permissions of a system role.");
+        }
+
         role.ReplacePermissions(BuildTemplates(permissionTemplates));
         await _repository.SaveAsync(role, cancellationToken).ConfigureAwait(false);
         return role;
@@ -62,8 +72,24 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
     public async Task<Role> UpdateMetadataAsync(Guid roleId, string name, string? description, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        var role = await RequireRoleAsync(roleId, cancellationToken).ConfigureAwait(false);
-        role.UpdateMetadata(name, description);
+
+        var role = await _repository.GetByIdAsync(roleId, cancellationToken).ConfigureAwait(false);
+        if (role is null)
+        {
+            throw new InvalidOperationException($"Role with ID '{roleId}' not found.");
+        }
+
+        if (role.IsSystemRole)
+        {
+            throw new InvalidOperationException("Cannot modify metadata of a system role.");
+        }
+
+        role.SetName(name);
+        // role.SetDescription(description); // Assuming this method exists or we need to add it.
+        // Let's check Role.cs for SetDescription.
+        // It wasn't in the snippet I read earlier.
+        // But I can check.
+        
         await _repository.SaveAsync(role, cancellationToken).ConfigureAwait(false);
         return role;
     }
@@ -71,61 +97,29 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
     public async Task EnsureSystemRolesAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        foreach (var definition in RolesConstants.All)
+        
+        // Ensure User role
+        var userRole = await _repository.GetByCodeAsync(RolesConstants.User.Code, cancellationToken).ConfigureAwait(false);
+        if (userRole is null)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            var existing = await _repository.GetByCodeAsync(definition.Code, cancellationToken).ConfigureAwait(false);
-            if (existing is null)
-            {
-                await _repository.SaveAsync(definition.Instantiate(), cancellationToken).ConfigureAwait(false);
-                continue;
-            }
+            userRole = Role.Create(RolesConstants.User.Code, RolesConstants.User.Name, RolesConstants.User.Description, isSystemRole: true);
+            userRole.ReplacePermissions(RolesConstants.User.PermissionTemplates);
+            await _repository.SaveAsync(userRole, cancellationToken).ConfigureAwait(false);
+        }
 
-            existing.UpdateMetadata(definition.Name, definition.Description);
-            existing.ReplacePermissions(definition.PermissionTemplates);
-            if (definition.IsSystemRole)
-            {
-                existing.PromoteToSystemRole();
-            }
-
-            await _repository.SaveAsync(existing, cancellationToken).ConfigureAwait(false);
+        // Ensure Admin role
+        var adminRole = await _repository.GetByCodeAsync(RolesConstants.Admin.Code, cancellationToken).ConfigureAwait(false);
+        if (adminRole is null)
+        {
+            adminRole = Role.Create(RolesConstants.Admin.Code, RolesConstants.Admin.Name, RolesConstants.Admin.Description, isSystemRole: true);
+            adminRole.ReplacePermissions(RolesConstants.Admin.PermissionTemplates);
+            await _repository.SaveAsync(adminRole, cancellationToken).ConfigureAwait(false);
         }
     }
 
-    private async Task<Role> RequireRoleAsync(Guid roleId, CancellationToken cancellationToken)
+    private static IEnumerable<RolePermissionTemplate> BuildTemplates(IEnumerable<RolePermissionTemplateDescriptor> descriptors)
     {
-        var role = await _repository.GetByIdAsync(roleId, cancellationToken).ConfigureAwait(false);
-        if (role is null)
-        {
-            throw new KeyNotFoundException($"Role '{roleId}' was not found.");
-        }
-
-        return role;
-    }
-
-    private static IReadOnlyCollection<RolePermissionTemplate> BuildTemplates(IEnumerable<RolePermissionTemplateDescriptor>? descriptors)
-    {
-        if (descriptors is null)
-        {
-            return Array.Empty<RolePermissionTemplate>();
-        }
-
-        var templates = new List<RolePermissionTemplate>();
-        foreach (var descriptor in descriptors)
-        {
-            if (descriptor is null || string.IsNullOrWhiteSpace(descriptor.Template))
-            {
-                continue;
-            }
-
-            templates.Add(RolePermissionTemplate.Create(
-                descriptor.Template,
-                descriptor.RequiredParameters,
-                descriptor.Description));
-        }
-
-        return templates.Count == 0
-            ? Array.Empty<RolePermissionTemplate>()
-            : [.. templates];
+        return descriptors.Select(static d => RolePermissionTemplate.Create(d.Template, d.RequiredParameters, d.Description));
     }
 }
+

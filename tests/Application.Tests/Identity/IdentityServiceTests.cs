@@ -1,12 +1,27 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Application.Authorization.Roles.Interfaces;
 using Application.Authorization.Roles.Models;
 using Application.Authorization.Roles.Services;
+using Application.Identity.Extensions;
+using Application.Identity.Interfaces;
 using Application.Identity.Models;
 using Application.Identity.Services;
 using Domain.Authorization.Constants;
-using Domain.Identity.Exceptions;
+using Domain.Authorization.Models;
+using Domain.Authorization.ValueObjects;
+using Domain.Identity.ValueObjects;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.DependencyInjection;
+using System.Security.Authentication;
+using Xunit;
 using RolesConstants = Domain.Authorization.Constants.Roles;
+using Infrastructure.Sqlite.Extensions;
+using Infrastructure.Sqlite.Identity.Extensions;
+using Infrastructure.Sqlite;
 
 namespace Application.Tests.Identity;
 
@@ -26,7 +41,7 @@ public class IdentityServiceTests
 
         var user = await fixture.IdentityService.RegisterUserAsync(request, CancellationToken.None);
 
-        Assert.Equal("alice", user.Username);
+        Assert.Equal("alice", user.UserName);
         var stored = await fixture.IdentityService.GetByUsernameAsync("alice", CancellationToken.None);
         Assert.NotNull(stored);
         Assert.Contains(Permissions.RootReadIdentifier, stored!.GetPermissionIdentifiers());
@@ -240,7 +255,7 @@ public class IdentityServiceTests
 
         var user = await fixture.IdentityService.RegisterExternalAsync(request, CancellationToken.None);
 
-        Assert.False(user.HasPasswordCredential);
+        Assert.Null(user.PasswordHash);
         var stored = await fixture.IdentityService.GetByUsernameAsync("oauth-alice", CancellationToken.None);
         Assert.NotNull(stored);
         Assert.Single(stored!.IdentityLinks);
@@ -286,15 +301,50 @@ public class IdentityServiceTests
 
     private static IdentityFixture CreateFixture()
     {
-        var roleRepository = new InMemoryRoleRepository();
-        var roleService = new RoleService(roleRepository);
-        var userStore = new InMemoryUserStore();
-        var credentialFactory = new Pbkdf2PasswordCredentialFactory();
-        var secretValidator = new Pbkdf2UserSecretValidator();
-        var roleResolver = new UserRoleResolver(roleRepository);
-        var identityService = new IdentityService(userStore, roleRepository, credentialFactory, secretValidator, roleResolver);
-        return new IdentityFixture(identityService, roleService);
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddIdentityServices();
+
+        // Use shared memory database
+        var dbName = Guid.NewGuid().ToString();
+        services.AddSqliteInfrastructure($"Data Source={dbName};Mode=Memory;Cache=Shared");
+        services.AddSqliteIdentityStores();
+        
+        // Relax password requirements for tests
+        services.Configure<IdentityOptions>(options =>
+        {
+            options.Password.RequireDigit = false;
+            options.Password.RequireLowercase = false;
+            options.Password.RequireNonAlphanumeric = false;
+            options.Password.RequireUppercase = false;
+            options.Password.RequiredLength = 1;
+            options.Password.RequiredUniqueChars = 0;
+        });
+        
+        var provider = services.BuildServiceProvider();
+
+        // Keep a connection open to preserve the in-memory database
+        var connectionFactory = provider.GetRequiredService<SqliteConnectionFactory>();
+        var keepAliveConnection = connectionFactory.CreateConnection();
+        keepAliveConnection.Open();
+
+        var bootstrappers = provider.GetServices<IDatabaseBootstrap>();
+        foreach (var bootstrapper in bootstrappers)
+        {
+            bootstrapper.SetupAsync(CancellationToken.None).GetAwaiter().GetResult();
+        }
+        
+        var identityService = provider.GetRequiredService<IIdentityService>();
+        var roleService = provider.GetRequiredService<IRoleService>();
+        
+        return new IdentityFixture((IdentityService)identityService, (RoleService)roleService, keepAliveConnection);
     }
 
-    private sealed record IdentityFixture(IdentityService IdentityService, RoleService RoleService);
+    private sealed record IdentityFixture(IdentityService IdentityService, RoleService RoleService, IDisposable Connection) : IDisposable
+    {
+        public void Dispose()
+        {
+            Connection.Dispose();
+        }
+    }
 }

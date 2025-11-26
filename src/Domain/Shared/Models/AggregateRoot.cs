@@ -2,9 +2,9 @@ using Domain.Shared.Interfaces;
 
 namespace Domain.Shared.Models;
 
-public abstract class AggregateRoot<TId> : AuditableEntity<TId>, IAggregateRoot
+public abstract class AggregateRoot : AuditableEntity, IAggregateRoot
 {
-    protected AggregateRoot(TId id) : base(id)
+    protected AggregateRoot(Guid id) : base(id)
     {
     }
 }

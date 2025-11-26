@@ -31,12 +31,16 @@ public class UserTests
         var user = CreateUser();
         user.Activate();
         user.GrantPermission(UserPermissionGrant.Create("api:portfolio:accounts:list"));
+        
+        // Set password hash
+        var prop = typeof(User).GetProperty(nameof(User.PasswordHash));
+        prop?.SetValue(user, "hashed_secret");
 
-        var service = new UserAuthenticationService(new StubSecretValidator("secret"));
-        var session = service.Authenticate(user, "secret".AsSpan(), DateTimeOffset.UtcNow);
+        var service = new UserAuthenticationService(new StubPasswordVerifier("secret"));
+        var session = service.Authenticate(user, "secret", DateTimeOffset.UtcNow);
 
         Assert.Equal(user.Id, session.UserId);
-        Assert.Equal(user.Username, session.Username);
+        Assert.Equal(user.UserName, session.Username);
         Assert.NotEmpty(session.PermissionIdentifiers);
     }
 
@@ -45,10 +49,14 @@ public class UserTests
     {
         var user = CreateUser();
         user.Activate();
+        
+        // Set password hash
+        var prop = typeof(User).GetProperty(nameof(User.PasswordHash));
+        prop?.SetValue(user, "hashed_secret");
 
-        var service = new UserAuthenticationService(new StubSecretValidator("secret"));
+        var service = new UserAuthenticationService(new StubPasswordVerifier("secret"));
 
-        Assert.Throws<AuthenticationException>(() => service.Authenticate(user, "invalid".AsSpan(), DateTimeOffset.UtcNow));
+        Assert.Throws<AuthenticationException>(() => service.Authenticate(user, "invalid", DateTimeOffset.UtcNow));
     }
 
     [Fact]
@@ -83,14 +91,18 @@ public class UserTests
         var user = CreateUser();
         user.Activate();
         user.GrantPermission(UserPermissionGrant.Create("api:portfolio:accounts:list"));
+        
+        // Set password hash
+        var prop = typeof(User).GetProperty(nameof(User.PasswordHash));
+        prop?.SetValue(user, "hashed_secret");
 
         var adminRole = Role.Create("admin", "Administrator");
         adminRole.AssignPermission(RolePermissionTemplate.Create("api:_write"));
 
-        var service = new UserAuthenticationService(new StubSecretValidator("secret"), new StubRoleResolver(adminRole));
-        var session = service.Authenticate(user, "secret".AsSpan(), DateTimeOffset.UtcNow);
+        var service = new UserAuthenticationService(new StubPasswordVerifier("secret"), new StubRoleResolver(adminRole));
+        var session = service.Authenticate(user, "secret", DateTimeOffset.UtcNow);
 
-        Assert.Contains("admin", session.RoleCodes);
+        Assert.Contains("ADMIN", session.RoleCodes);
         Assert.Contains("api:_write", session.PermissionIdentifiers);
     }
 
@@ -112,11 +124,11 @@ public class UserTests
         user.SetEmail("MixedCase@Example.com");
 
         Assert.Equal("mixedcase@example.com", user.Email);
-        Assert.False(user.IsEmailVerified);
+        Assert.False(user.EmailConfirmed); // Was IsEmailVerified
 
         user.SetEmail("mixedcase@example.com", markVerified: true);
 
-        Assert.True(user.IsEmailVerified);
+        Assert.True(user.EmailConfirmed);
     }
 
     [Fact]
@@ -128,7 +140,7 @@ public class UserTests
         user.ClearEmail();
 
         Assert.Null(user.Email);
-        Assert.False(user.IsEmailVerified);
+        Assert.False(user.EmailConfirmed);
     }
 
     [Fact]
@@ -145,9 +157,9 @@ public class UserTests
         var user = User.Register("federated", "federated@example.com");
         user.Activate();
 
-        var service = new UserAuthenticationService(new StubSecretValidator("secret"));
+        var service = new UserAuthenticationService(new StubPasswordVerifier("secret"));
 
-        Assert.Throws<AuthenticationException>(() => service.Authenticate(user, "secret".AsSpan(), DateTimeOffset.UtcNow));
+        Assert.Throws<AuthenticationException>(() => service.Authenticate(user, "secret", DateTimeOffset.UtcNow));
     }
 
     [Fact]
@@ -179,15 +191,14 @@ public class UserTests
 
     private static User CreateUser()
     {
-        var credential = PasswordCredential.Create("argon2", "hash", "salt", 3);
-        return User.Register("trader", "trader@example.com", credential);
+        return User.Register("trader", "trader@example.com");
     }
 
-    private sealed class StubSecretValidator(string expected) : IUserSecretValidator
+    private sealed class StubPasswordVerifier(string expected) : IPasswordVerifier
     {
-        public bool Verify(PasswordCredential credential, ReadOnlySpan<char> secret)
+        public bool Verify(string? hashedPassword, string providedPassword)
         {
-            return secret.SequenceEqual(expected.AsSpan());
+            return providedPassword == expected && hashedPassword == "hashed_secret";
         }
     }
 

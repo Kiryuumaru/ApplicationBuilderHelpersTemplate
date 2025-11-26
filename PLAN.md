@@ -14,6 +14,8 @@ The Domain and Application layers will remain completely agnostic of the underly
         - Update `Entity` to `Entity<TId>` inheriting from `DomainObject`.
         - **Enforce ID initialization in `Entity<TId>` constructor to ensure null safety (avoid `default!`).**
         - Ensure `ValueObject` inherits from `DomainObject`.
+        - Ensure `RevId` is regenerated on modification (similar to `LastModified` in `AuditableEntity`).
+        - Add `RevId` to `Entity` constructor as optional parameter (next to `Id`).
 - [ ] **Refactor `User` Entity**:
     - **Strategy**: Keep as pure Domain Entity (No inheritance from `IdentityUser`).
     - **Implementation**: Manually add all standard Identity fields (`PasswordHash`, `SecurityStamp`, `NormalizedEmail`, etc.) to the `User` class.
