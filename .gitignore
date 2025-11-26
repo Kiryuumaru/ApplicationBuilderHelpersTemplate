@@ -364,3 +364,4 @@ FodyWeavers.xsd
 /src/Presentation.WebApp/localstore.db
 /src/Presentation.WebApp/localstore.db-shm
 /src/Presentation.WebApp/localstore.db-wal
+/src/Presentation.WebApp/app.db

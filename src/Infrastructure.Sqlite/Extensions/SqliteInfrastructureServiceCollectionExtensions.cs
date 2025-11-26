@@ -1,3 +1,4 @@
+using Application.LocalStore.Interfaces;
 using ApplicationBuilderHelpers.Extensions;
 using Infrastructure.Sqlite.Services;
 using Infrastructure.Sqlite.Workers;
@@ -6,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.Sqlite.Extensions;
 
-public static class SqliteInfrastructureServiceCollectionExtensions
+internal static class SqliteInfrastructureServiceCollectionExtensions
 {
     private const string DefaultConnectionString = "Data Source=app.db";
 
@@ -14,6 +15,8 @@ public static class SqliteInfrastructureServiceCollectionExtensions
     {
         var connectionString = configuration.GetRefValueOrDefault("SQLITE_CONNECTION_STRING", DefaultConnectionString);
         services.AddSingleton(new SqliteConnectionFactory(connectionString));
+        services.AddSingleton<DatabaseInitializationState>();
+        services.AddSingleton<IDatabaseInitializationState>(sp => sp.GetRequiredService<DatabaseInitializationState>());
         services.AddHostedService<SqliteDatabaseBootstrapperWorker>();
         return services;
     }

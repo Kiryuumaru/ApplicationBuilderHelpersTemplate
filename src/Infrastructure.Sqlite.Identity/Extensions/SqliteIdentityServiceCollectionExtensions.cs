@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.Sqlite.Identity.Extensions;
 
-public static class SqliteIdentityServiceCollectionExtensions
+internal static class SqliteIdentityServiceCollectionExtensions
 {
     public static IServiceCollection AddSqliteIdentityStores(this IServiceCollection services)
     {

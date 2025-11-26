@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.Sqlite.LocalStore.Extensions;
 
-public static class SqliteLocalStoreServiceCollectionExtensions
+internal static class SqliteLocalStoreServiceCollectionExtensions
 {
     public static IServiceCollection AddSqliteLocalStore(this IServiceCollection services)
     {

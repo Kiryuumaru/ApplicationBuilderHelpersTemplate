@@ -13,6 +13,7 @@ using Application.Identity.Services;
 using Domain.Authorization.Constants;
 using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;
+using Domain.Identity.Models;
 using Domain.Identity.ValueObjects;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
@@ -20,8 +21,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Security.Authentication;
 using Xunit;
 using RolesConstants = Domain.Authorization.Constants.Roles;
-using Infrastructure.Sqlite.Extensions;
-using Infrastructure.Sqlite.Identity.Extensions;
+using Infrastructure.Sqlite.Identity.Services;
 using Infrastructure.Sqlite.Interfaces;
 using Infrastructure.Sqlite.Services;
 
@@ -307,16 +307,20 @@ public class IdentityServiceTests
         services.AddLogging();
         services.AddIdentityServices();
 
-        // Use shared memory database with IConfiguration
+        // Use shared memory database
         var dbName = Guid.NewGuid().ToString();
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["SQLITE_CONNECTION_STRING"] = $"Data Source={dbName};Mode=Memory;Cache=Shared"
-            })
-            .Build();
-        services.AddSqliteInfrastructure(configuration);
-        services.AddSqliteIdentityStores();
+        var connectionString = $"Data Source={dbName};Mode=Memory;Cache=Shared";
+        
+        // Register SQLite infrastructure services directly (since extensions are internal)
+        services.AddSingleton(new SqliteConnectionFactory(connectionString));
+        services.AddSingleton<IDatabaseBootstrap, IdentityTableInitializer>();
+        
+        // Register identity stores directly (since extension is internal)
+        services.AddScoped<IUserStore<User>, CustomUserStore>();
+        services.AddScoped<IRoleStore<Role>, CustomRoleStore>();
+        services.AddScoped<SqliteRoleRepository>();
+        services.AddScoped<IRoleRepository>(sp => sp.GetRequiredService<SqliteRoleRepository>());
+        services.AddScoped<IRoleLookup>(sp => sp.GetRequiredService<SqliteRoleRepository>());
         
         // Relax password requirements for tests
         services.Configure<IdentityOptions>(options =>

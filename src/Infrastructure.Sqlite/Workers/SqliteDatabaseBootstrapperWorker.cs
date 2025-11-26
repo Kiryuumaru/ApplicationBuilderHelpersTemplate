@@ -1,4 +1,5 @@
 ﻿using Infrastructure.Sqlite.Interfaces;
+using Infrastructure.Sqlite.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
@@ -7,7 +8,7 @@ using System.Text;
 
 namespace Infrastructure.Sqlite.Workers;
 
-internal class SqliteDatabaseBootstrapperWorker(IServiceProvider serviceProvider) : IHostedLifecycleService
+internal class SqliteDatabaseBootstrapperWorker(IServiceProvider serviceProvider, DatabaseInitializationState initializationState) : IHostedLifecycleService
 {
     public async Task StartingAsync(CancellationToken cancellationToken)
     {
@@ -16,6 +17,7 @@ internal class SqliteDatabaseBootstrapperWorker(IServiceProvider serviceProvider
         {
             await bootstrapper.SetupAsync(cancellationToken);
         }
+        initializationState.MarkInitialized();
     }
 
     public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;

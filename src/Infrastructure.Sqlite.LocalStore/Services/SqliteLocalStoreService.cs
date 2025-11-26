@@ -5,9 +5,10 @@ using Microsoft.Data.Sqlite;
 
 namespace Infrastructure.Sqlite.LocalStore.Services;
 
-public sealed class SqliteLocalStoreService(SqliteConnectionFactory connectionFactory) : ILocalStoreService
+public sealed class SqliteLocalStoreService(SqliteConnectionFactory connectionFactory, IDatabaseInitializationState databaseInitializationState) : ILocalStoreService
 {
     private readonly SqliteConnectionFactory _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
+    private readonly IDatabaseInitializationState _databaseInitializationState = databaseInitializationState ?? throw new ArgumentNullException(nameof(databaseInitializationState));
     private SqliteConnection? _connection;
     private SqliteTransaction? _transaction;
 
@@ -18,6 +19,9 @@ public sealed class SqliteLocalStoreService(SqliteConnectionFactory connectionFa
             return;
         }
 
+        // Wait for database tables to be initialized before opening connection
+        await _databaseInitializationState.WaitForInitializationAsync(cancellationToken);
+        
         _connection = (SqliteConnection)await _connectionFactory.CreateOpenedConnectionAsync(cancellationToken);
         _transaction = _connection.BeginTransaction();
     }
