@@ -42,7 +42,9 @@ public class MainCommand : Build.BaseCommand<WebApplicationBuilder>
 
         services.AddCascadingAuthenticationState();
         services.AddScoped<IdentityRedirectManager>();
+        services.AddScoped<IdentityUserAccessor>();
         services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
+        services.AddSingleton<IEmailSender<User>, IdentityNoOpEmailSender>();
 
         services.AddAuthentication(options =>
         {

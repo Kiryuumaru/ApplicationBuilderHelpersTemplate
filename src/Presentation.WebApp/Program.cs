@@ -13,6 +13,5 @@ return await ApplicationBuilderHelpers.ApplicationBuilder.Create()
     .AddApplication<SqliteInfrastructure>()
     .AddApplication<SqliteIdentityInfrastructure>()
     .AddApplication<SqliteLocalStoreInfrastructure>()
-    .AddApplication<PresentationWebAppDependency>()
     .AddCommand<MainCommand>()
     .RunAsync(args);
