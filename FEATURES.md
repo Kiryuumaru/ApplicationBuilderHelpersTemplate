@@ -4,7 +4,8 @@ This template provides a robust, production-ready foundation for .NET applicatio
 
 ### Architecture & Technology
 - **Clean Architecture (DDD)**: Strict separation between Domain (Business Logic), Application (Use Cases), and Infrastructure (Persistence).
-- **Raw SQLite Persistence**: High-performance, dependency-free data access using `Microsoft.Data.Sqlite` and Dapper-style mapping. Eliminates Entity Framework Core overhead for maximum control and speed.
+- **Persistence Ignorance**: The Domain and Application layers are completely decoupled from the database implementation. Infrastructure is pluggable, allowing for easy migration to other databases (e.g., PostgreSQL, SQL Server) without affecting business logic.
+- **Raw SQLite Persistence**: High-performance, dependency-free data access using `Microsoft.Data.Sqlite` and manual mapping. Eliminates Entity Framework Core overhead for maximum control and speed.
 - **Strongly Typed IDs**: Domain entities utilize ValueObjects (`UserId`, `RoleId`) for type safety, mapped seamlessly to database primitives.
 
 ### Identity & Security

@@ -1,6 +1,6 @@
 ﻿namespace Domain.Shared.Models;
 
-public abstract class ValueObject
+public abstract class ValueObject : DomainObject
 {
     protected static bool EqualOperator(ValueObject left, ValueObject right)
     {

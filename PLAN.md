@@ -2,7 +2,18 @@
 
 This plan focuses on maintaining a lightweight, dependency-free architecture by using raw SQLite (ADO.NET) instead of Entity Framework Core. We will implement Microsoft Identity interfaces manually to support standard authentication features without the overhead of an ORM.
 
+**Core Principle: Persistence Ignorance**
+The Domain and Application layers will remain completely agnostic of the underlying database technology. All data access will be performed through interfaces defined in the Application layer (e.g., `IUserStore`, `IRoleStore`, `ILocalStoreService`), implemented in separate Infrastructure projects. This ensures that the SQLite implementation can be swapped for PostgreSQL, SQL Server, or any other provider without modifying the core business logic.
+
 ## 1. Domain Refactoring (Identity Compatible)
+- [ ] **Refactor `Domain.Shared`**:
+    - **Goal**: Update base classes to support generic strongly typed IDs and introduce a common root.
+    - **Actions**:
+        - Create `DomainObject` base class (parent for Entity, ValueObject).
+        - **Add common logic to `DomainObject` (e.g., validation helpers, cloning, or reflection utilities) that applies to all domain objects.**
+        - Update `Entity` to `Entity<TId>` inheriting from `DomainObject`.
+        - **Enforce ID initialization in `Entity<TId>` constructor to ensure null safety (avoid `default!`).**
+        - Ensure `ValueObject` inherits from `DomainObject`.
 - [ ] **Refactor `User` Entity**:
     - **Strategy**: Keep as pure Domain Entity (No inheritance from `IdentityUser`).
     - **Implementation**: Manually add all standard Identity fields (`PasswordHash`, `SecurityStamp`, `NormalizedEmail`, etc.) to the `User` class.
@@ -25,7 +36,7 @@ This plan focuses on maintaining a lightweight, dependency-free architecture by 
     - Contains:
         - `SqliteConnectionFactory`: Helper to manage connections.
         - `DatabaseBootstrap`: Base logic/interface for table creation.
-        - *Note*: Must handle Type Handlers for Strongly Typed IDs (`UserId`, `RoleId`) in Dapper/Sqlite.
+        - *Note*: Must handle Type Handlers for Strongly Typed IDs (`UserId`, `RoleId`) manually in ADO.NET.
 
 - [ ] **Create `src/Infrastructure.Sqlite.LocalStore` Project**:
     - Target `net10.0`.
