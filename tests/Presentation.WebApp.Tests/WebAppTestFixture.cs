@@ -42,27 +42,24 @@ public class WebAppTestFixture : IDisposable
         var tcs = new TaskCompletionSource<string>();
         
         _ = Task.Run(async () => {
-            while (!_process.StandardOutput.EndOfStream)
+            string? line;
+            while ((line = await _process.StandardOutput.ReadLineAsync()) != null)
             {
-                var line = await _process.StandardOutput.ReadLineAsync();
-                if (line != null)
+                Console.WriteLine($"[App]: {line}"); // Forward output for debugging
+                // Match patterns like "[Lifetime] Now listening on: http://..." or "Now listening on: http://..."
+                var match = Regex.Match(line, @"Now listening on:\s*(http://\S+)");
+                if (match.Success)
                 {
-                    Console.WriteLine($"[App]: {line}"); // Forward output for debugging
-                    // Match patterns like "[Lifetime] Now listening on: http://..." or "Now listening on: http://..."
-                    var match = Regex.Match(line, @"Now listening on:\s*(http://\S+)");
-                    if (match.Success)
-                    {
-                        tcs.TrySetResult(match.Groups[1].Value);
-                    }
+                    tcs.TrySetResult(match.Groups[1].Value);
                 }
             }
         });
         
         _ = Task.Run(async () => {
-             while (!_process.StandardError.EndOfStream)
+             string? line;
+             while ((line = await _process.StandardError.ReadLineAsync()) != null)
              {
-                 var line = await _process.StandardError.ReadLineAsync();
-                 if (line != null) Console.WriteLine($"[App Error]: {line}");
+                 Console.WriteLine($"[App Error]: {line}");
              }
         });
 
