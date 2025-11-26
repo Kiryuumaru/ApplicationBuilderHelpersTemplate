@@ -16,6 +16,6 @@ public class SmokeTests : PlaywrightTestBase
     public async Task LoginPage_Loads()
     {
         await Page.GotoAsync($"{BaseUrl}/Account/Login");
-        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "Log in" })).ToBeVisibleAsync();
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "Log in", Exact = true })).ToBeVisibleAsync();
     }
 }

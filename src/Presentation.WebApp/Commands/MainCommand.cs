@@ -23,7 +23,13 @@ public class MainCommand : Build.BaseCommand<WebApplicationBuilder>
         await base.Run(applicationHost, cancellationTokenSource);
 
         // for the sake of testing, we will add timeout incase it runs forever. Will delete if everything is ready to push
-        await cancellationTokenSource.Token.WithTimeout(TimeSpan.FromMinutes(2)).WhenCanceled();
+        try
+        {
+            await cancellationTokenSource.Token.WithTimeout(TimeSpan.FromMinutes(2)).WhenCanceled();
+        }
+        catch { }
+
+        cancellationTokenSource.Cancel();
     }
 
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
@@ -51,6 +57,11 @@ public class MainCommand : Build.BaseCommand<WebApplicationBuilder>
             {
                 options.SignIn.RequireConfirmedAccount = true;
                 options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
+                options.Password.RequireDigit = true;
+                options.Password.RequireLowercase = true;
+                options.Password.RequireUppercase = true;
+                options.Password.RequireNonAlphanumeric = true;
+                options.Password.RequiredLength = 6;
             })
             .AddSignInManager()
             .AddDefaultTokenProviders();

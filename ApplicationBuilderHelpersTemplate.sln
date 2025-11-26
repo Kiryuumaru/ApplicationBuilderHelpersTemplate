@@ -35,8 +35,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure.EFCore", "sr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure.EFCore.Sqlite", "src\Infrastructure.EFCore.Sqlite\Infrastructure.EFCore.Sqlite.csproj", "{7D4AE425-2196-4CE5-8544-5BE3745F9759}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure.Sqlite", "src\Infrastructure.Sqlite\Infrastructure.Sqlite.csproj", "{1DE7832A-7E87-4AD1-ABF6-35B49CB26E8A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure.Sqlite.LocalStore", "src\Infrastructure.Sqlite.LocalStore\Infrastructure.Sqlite.LocalStore.csproj", "{E7F6F064-CB3A-44C8-96C3-60CF219E114F}"

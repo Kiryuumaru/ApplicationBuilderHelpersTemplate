@@ -7,7 +7,7 @@ using System.Text;
 
 namespace Infrastructure.Sqlite.LocalStore;
 
-public class SqliteLocalStoreInfrastructure : SqliteInfrastructure
+public class SqliteLocalStoreInfrastructure : ApplicationDependency
 {
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
     {

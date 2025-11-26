@@ -1,4 +1,4 @@
-﻿namespace Presentation.WebApp.Tests;
+namespace Presentation.WebApp.Tests;
 
 public class Tests
 {

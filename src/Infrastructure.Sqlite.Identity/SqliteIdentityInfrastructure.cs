@@ -10,7 +10,7 @@ using System.Text;
 
 namespace Infrastructure.Sqlite.Identity;
 
-public class SqliteIdentityInfrastructure : SqliteInfrastructure
+public class SqliteIdentityInfrastructure : ApplicationDependency
 {
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
     {

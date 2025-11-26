@@ -1,3 +1,4 @@
+using Infrastructure.Sqlite;
 using Infrastructure.Sqlite.Identity;
 using Infrastructure.Sqlite.LocalStore;
 using Microsoft.AspNetCore.Components.Authorization;
@@ -9,6 +10,7 @@ using Presentation.WebApp.Components.Account;
 
 return await ApplicationBuilderHelpers.ApplicationBuilder.Create()
     .AddApplication<Application.Application>()
+    .AddApplication<SqliteInfrastructure>()
     .AddApplication<SqliteIdentityInfrastructure>()
     .AddApplication<SqliteLocalStoreInfrastructure>()
     .AddApplication<PresentationWebAppDependency>()
