@@ -11,7 +11,7 @@ using Presentation.WebApp.Components.Account.Pages.Manage;
 using System.Security.Claims;
 using System.Text.Json;
 
-namespace Microsoft.AspNetCore.Routing
+namespace Presentation.WebApp.Components.Account
 {
     internal static class IdentityComponentsEndpointRouteBuilderExtensions
     {

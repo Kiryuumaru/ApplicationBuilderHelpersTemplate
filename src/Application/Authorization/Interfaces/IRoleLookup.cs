@@ -1,6 +1,6 @@
 using Domain.Authorization.Models;
 
-namespace Application.Authorization.Roles.Interfaces;
+namespace Application.Authorization.Interfaces;
 
 public interface IRoleLookup
 {

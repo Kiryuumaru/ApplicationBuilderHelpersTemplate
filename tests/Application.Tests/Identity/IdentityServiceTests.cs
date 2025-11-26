@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Application.Authorization.Roles.Interfaces;
 using Application.Authorization.Roles.Models;
-using Application.Authorization.Roles.Services;
 using Application.Identity.Extensions;
 using Application.Identity.Interfaces;
 using Application.Identity.Models;
@@ -24,6 +22,8 @@ using RolesConstants = Domain.Authorization.Constants.Roles;
 using Infrastructure.Sqlite.Identity.Services;
 using Infrastructure.Sqlite.Interfaces;
 using Infrastructure.Sqlite.Services;
+using Application.Authorization.Services;
+using Application.Authorization.Interfaces;
 
 namespace Application.Tests.Identity;
 

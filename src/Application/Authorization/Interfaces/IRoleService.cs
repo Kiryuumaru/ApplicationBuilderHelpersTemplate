@@ -1,7 +1,7 @@
-using Application.Authorization.Roles.Models;
+using Application.Authorization.Models;
 using Domain.Authorization.Models;
 
-namespace Application.Authorization.Roles.Interfaces;
+namespace Application.Authorization.Interfaces;
 
 public interface IRoleService
 {

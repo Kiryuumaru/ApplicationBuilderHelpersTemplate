@@ -1,5 +1,5 @@
 ﻿using ApplicationBuilderHelpers;
-using Presentation.Commands;
+using Presentation.Cli.Commands;
 
 return await ApplicationBuilder.Create()
     .AddApplication<Application.Application>()

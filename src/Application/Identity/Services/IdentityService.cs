@@ -4,7 +4,7 @@ using System.Linq;
 using System.Security.Authentication;
 using System.Threading;
 using System.Threading.Tasks;
-using Application.Authorization.Roles.Interfaces;
+using Application.Authorization.Interfaces;
 using Application.Identity.Interfaces;
 using Application.Identity.Models;
 using Domain.Authorization.Constants;

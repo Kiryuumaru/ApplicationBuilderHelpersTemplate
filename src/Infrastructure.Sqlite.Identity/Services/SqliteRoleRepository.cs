@@ -1,6 +1,6 @@
 using System.Data;
 using System.Text.Json;
-using Application.Authorization.Roles.Interfaces;
+using Application.Authorization.Interfaces;
 using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;
 using Infrastructure.Sqlite.Services;

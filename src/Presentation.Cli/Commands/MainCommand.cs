@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 using Application.Logger.Extensions;
 using Application.LocalStore.Interfaces;
 
-namespace Presentation.Commands;
+namespace Presentation.Cli.Commands;
 
 [Command(description: "Main subcommand.")]
 public class MainCommand : Build.BaseCommand<HostApplicationBuilder>

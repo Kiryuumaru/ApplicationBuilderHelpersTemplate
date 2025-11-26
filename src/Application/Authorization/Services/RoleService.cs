@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Application.Authorization.Roles.Interfaces;
-using Application.Authorization.Roles.Models;
+using Application.Authorization.Interfaces;
+using Application.Authorization.Models;
 using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;
 using RolesConstants = Domain.Authorization.Constants.Roles;
 
-namespace Application.Authorization.Roles.Services;
+namespace Application.Authorization.Services;
 
 internal sealed class RoleService(IRoleRepository repository) : IRoleService
 {

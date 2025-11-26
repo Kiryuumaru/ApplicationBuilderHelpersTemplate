@@ -1,9 +1,9 @@
 using System.Collections.Concurrent;
-using Application.Authorization.Roles.Interfaces;
+using Application.Authorization.Interfaces;
 using Domain.Authorization.Models;
 using Microsoft.AspNetCore.Identity;
 
-namespace Application.Authorization.Roles.Services;
+namespace Application.Authorization.Services;
 
 internal sealed class InMemoryRoleRepository : IRoleRepository, IRoleLookup, IRoleStore<Role>
 {

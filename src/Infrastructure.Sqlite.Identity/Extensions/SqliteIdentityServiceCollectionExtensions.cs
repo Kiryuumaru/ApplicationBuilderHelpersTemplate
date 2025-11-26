@@ -1,4 +1,4 @@
-using Application.Authorization.Roles.Interfaces;
+using Application.Authorization.Interfaces;
 using Domain.Authorization.Models;
 using Domain.Identity.Models;
 using Infrastructure.Sqlite.Identity.Services;

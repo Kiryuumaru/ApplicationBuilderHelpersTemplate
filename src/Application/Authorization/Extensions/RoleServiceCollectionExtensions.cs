@@ -1,9 +1,9 @@
-using Application.Authorization.Roles.Interfaces;
-using Application.Authorization.Roles.Services;
+using Application.Authorization.Interfaces;
+using Application.Authorization.Services;
 using Domain.Identity.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Application.Authorization.Roles.Extensions;
+namespace Application.Authorization.Extensions;
 
 public static class RoleServiceCollectionExtensions
 {
