@@ -63,7 +63,7 @@
 	</Target>
 
 	<ItemGroup>
-		<PackageReference Include="DisposableHelpers" Version="1.2.142" />
+		<PackageReference Include="DisposableHelpers" Version="1.2.144" />
 	</ItemGroup>
 
 </Project>
