@@ -6,14 +6,20 @@ using System.Text;
 
 namespace Infrastructure.Sqlite;
 
-internal class SqliteDatabaseBootstrapperWorker(IServiceProvider serviceProvider) : BackgroundService
+internal class SqliteDatabaseBootstrapperWorker(IServiceProvider serviceProvider) : IHostedLifecycleService
 {
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    public async Task StartingAsync(CancellationToken cancellationToken)
     {
         var bootstrappers = serviceProvider.GetServices<IDatabaseBootstrap>();
         foreach (var bootstrapper in bootstrappers)
         {
-            await bootstrapper.SetupAsync(stoppingToken);
+            await bootstrapper.SetupAsync(cancellationToken);
         }
     }
+
+    public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    public Task StartedAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    public Task StoppingAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    public Task StoppedAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }

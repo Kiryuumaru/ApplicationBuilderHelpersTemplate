@@ -1,9 +1,8 @@
-﻿using Application.LocalStore.Interfaces;
+﻿using Application.Common.Extensions;
 using Application.Logger.Extensions;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Attributes;
 using Domain.Identity.Models;
-using Infrastructure.Sqlite;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Presentation.WebApp.Components;
@@ -17,6 +16,14 @@ public class MainCommand : Build.BaseCommand<WebApplicationBuilder>
     protected override ValueTask<WebApplicationBuilder> ApplicationBuilder(CancellationToken stoppingToken)
     {
         return new ValueTask<WebApplicationBuilder>(WebApplication.CreateBuilder());
+    }
+
+    protected override async ValueTask Run(ApplicationHost<WebApplicationBuilder> applicationHost, CancellationTokenSource cancellationTokenSource)
+    {
+        await base.Run(applicationHost, cancellationTokenSource);
+
+        // for the sake of testing, we will add timeout incase it runs forever. Will delete if everything is ready to push
+        await cancellationTokenSource.Token.WithTimeout(TimeSpan.FromMinutes(2)).WhenCanceled();
     }
 
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)

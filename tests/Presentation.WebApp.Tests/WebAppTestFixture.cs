@@ -33,6 +33,7 @@ public class WebAppTestFixture : IDisposable
         startInfo.Environment["ASPNETCORE_URLS"] = "http://127.0.0.1:0";
         startInfo.Environment["ASPNETCORE_ENVIRONMENT"] = "Development";
         startInfo.Environment["ConnectionStrings:DefaultConnection"] = $"Data Source={Guid.NewGuid()};Mode=Memory;Cache=Shared";
+        startInfo.Environment["SQLITE_CONNECTION_STRING"] = $"Data Source={Guid.NewGuid()};Mode=Memory;Cache=Shared";
 
         _process = new Process { StartInfo = startInfo };
         _process.Start();
@@ -47,13 +48,11 @@ public class WebAppTestFixture : IDisposable
                 if (line != null)
                 {
                     Console.WriteLine($"[App]: {line}"); // Forward output for debugging
-                    if (line.Contains("Now listening on:"))
+                    // Match patterns like "[Lifetime] Now listening on: http://..." or "Now listening on: http://..."
+                    var match = Regex.Match(line, @"Now listening on:\s*(http://\S+)");
+                    if (match.Success)
                     {
-                        var match = Regex.Match(line, @"Now listening on: (http://\S+)");
-                        if (match.Success)
-                        {
-                            tcs.TrySetResult(match.Groups[1].Value);
-                        }
+                        tcs.TrySetResult(match.Groups[1].Value);
                     }
                 }
             }

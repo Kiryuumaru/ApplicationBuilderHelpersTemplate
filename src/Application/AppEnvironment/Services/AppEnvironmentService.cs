@@ -17,11 +17,18 @@ public class AppEnvironmentService(IConfiguration configuration, ILocalStoreFact
         catch { }
         if (string.IsNullOrEmpty(appTag))
         {
-            using var store = await localStoreFactory.OpenStore(cancellationToken: cancellationToken);
-            var storedValue = await store.Get("VIANA_EDGE_GRID_APP_TAG", cancellationToken);
-            if (!string.IsNullOrWhiteSpace(storedValue))
+            try
             {
-                appTag = storedValue;
+                using var store = await localStoreFactory.OpenStore(cancellationToken: cancellationToken);
+                var storedValue = await store.Get("VIANA_EDGE_GRID_APP_TAG", cancellationToken);
+                if (!string.IsNullOrWhiteSpace(storedValue))
+                {
+                    appTag = storedValue;
+                }
+            }
+            catch
+            {
+                // Database might not be initialized yet during startup
             }
         }
         if (string.IsNullOrEmpty(appTag))
