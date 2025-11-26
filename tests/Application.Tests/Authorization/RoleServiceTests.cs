@@ -1,5 +1,5 @@
-using Application.Authorization.Roles.Models;
-using Application.Authorization.Roles.Services;
+using Application.Authorization.Models;
+using Application.Authorization.Services;
 using Domain.Authorization.Constants;
 using RolesConstants = Domain.Authorization.Constants.Roles;
 
