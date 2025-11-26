@@ -19,7 +19,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\Infrastructure.EFCore.Sqlite\Infrastructure.EFCore.Sqlite.csproj" />
+		<ProjectReference Include="..\Infrastructure.EFCore.Sqlite\Infrastructure.EFCore.Sqlite.csproj" />
 		<ProjectReference Include="..\Application\Application.csproj" />
 	</ItemGroup>
 
