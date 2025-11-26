@@ -12,12 +12,7 @@ public class AppEnvironmentService(
 {
     public async Task<Domain.AppEnvironment.Models.AppEnvironment> GetEnvironment(CancellationToken cancellationToken = default)
     {
-        string? appTag = null;
-        try
-        {
-            appTag = configuration.GetAppTagOverride();
-        }
-        catch { }
+        string? appTag = configuration.GetAppTagOverride();
         if (string.IsNullOrEmpty(appTag))
         {
             using var store = await localStoreFactory.OpenStore(cancellationToken: cancellationToken);
