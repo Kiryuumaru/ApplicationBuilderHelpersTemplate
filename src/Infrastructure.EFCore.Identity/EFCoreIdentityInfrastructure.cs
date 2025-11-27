@@ -10,6 +10,6 @@ public class EFCoreIdentityInfrastructure : InfrastructureEFCore
     {
         base.AddServices(applicationBuilder, services);
 
-        services.AddEFCoreIdentityStores();
+        services.AddEFCoreIdentity();
     }
 }

@@ -1,6 +1,7 @@
 using Domain.Authorization.Models;
 using Domain.Identity.Models;
 using Domain.Identity.ValueObjects;
+using Infrastructure.EFCore.Identity.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,6 +24,7 @@ public class EFCoreUserStore(EFCoreDbContext dbContext) :
     
     private DbSet<User> Users => _dbContext.Set<User>();
     private DbSet<Role> Roles => _dbContext.Set<Role>();
+    private DbSet<UserLoginEntity> UserLogins => _dbContext.Set<UserLoginEntity>();
 
     public async Task<IdentityResult> CreateAsync(User user, CancellationToken cancellationToken)
     {
@@ -75,13 +77,35 @@ public class EFCoreUserStore(EFCoreDbContext dbContext) :
     public async Task<User?> FindByIdAsync(string userId, CancellationToken cancellationToken)
     {
         if (!Guid.TryParse(userId, out var guid)) return null;
-        return await Users.FindAsync([guid], cancellationToken);
+        var user = await Users.FindAsync([guid], cancellationToken);
+        if (user != null)
+        {
+            await LoadIdentityLinksAsync(user, cancellationToken);
+        }
+        return user;
     }
 
     public async Task<User?> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken)
     {
-        return await Users
+        var user = await Users
             .FirstOrDefaultAsync(u => u.NormalizedUserName == normalizedUserName, cancellationToken);
+        if (user != null)
+        {
+            await LoadIdentityLinksAsync(user, cancellationToken);
+        }
+        return user;
+    }
+
+    private async Task LoadIdentityLinksAsync(User user, CancellationToken cancellationToken)
+    {
+        var logins = await UserLogins
+            .Where(ul => ul.UserId == user.Id)
+            .ToListAsync(cancellationToken);
+
+        foreach (var login in logins)
+        {
+            user.LinkIdentity(login.LoginProvider, login.ProviderKey, login.Email, login.ProviderDisplayName);
+        }
     }
 
     public Task<string> GetUserIdAsync(User user, CancellationToken cancellationToken) 
@@ -319,28 +343,70 @@ public class EFCoreUserStore(EFCoreDbContext dbContext) :
         return Task.FromResult(count);
     }
 
-    // IUserLoginStore - Simplified implementation without UserLogins table
-    public Task AddLoginAsync(User user, UserLoginInfo login, CancellationToken cancellationToken)
+    // IUserLoginStore - Full implementation with UserLogins table
+    public async Task AddLoginAsync(User user, UserLoginInfo login, CancellationToken cancellationToken)
     {
-        // Would require UserLogins join table
-        return Task.CompletedTask;
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(user);
+        ArgumentNullException.ThrowIfNull(login);
+
+        // Also link in the domain model
+        user.LinkIdentity(login.LoginProvider, login.ProviderKey, null, login.ProviderDisplayName);
+
+        var userLogin = new UserLoginEntity
+        {
+            LoginProvider = login.LoginProvider,
+            ProviderKey = login.ProviderKey,
+            UserId = user.Id,
+            ProviderDisplayName = login.ProviderDisplayName,
+            LinkedAt = DateTimeOffset.UtcNow
+        };
+        UserLogins.Add(userLogin);
+        await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public Task RemoveLoginAsync(User user, string loginProvider, string providerKey, CancellationToken cancellationToken)
+    public async Task RemoveLoginAsync(User user, string loginProvider, string providerKey, CancellationToken cancellationToken)
     {
-        // Would require UserLogins join table
-        return Task.CompletedTask;
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(user);
+
+        // Also unlink in the domain model
+        user.UnlinkIdentity(loginProvider, providerKey);
+
+        var login = await UserLogins.FirstOrDefaultAsync(
+            ul => ul.UserId == user.Id && ul.LoginProvider == loginProvider && ul.ProviderKey == providerKey,
+            cancellationToken);
+
+        if (login != null)
+        {
+            UserLogins.Remove(login);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
     }
 
-    public Task<IList<UserLoginInfo>> GetLoginsAsync(User user, CancellationToken cancellationToken)
+    public async Task<IList<UserLoginInfo>> GetLoginsAsync(User user, CancellationToken cancellationToken)
     {
-        IList<UserLoginInfo> logins = [];
-        return Task.FromResult(logins);
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(user);
+
+        var logins = await UserLogins
+            .Where(ul => ul.UserId == user.Id)
+            .Select(ul => new UserLoginInfo(ul.LoginProvider, ul.ProviderKey, ul.ProviderDisplayName))
+            .ToListAsync(cancellationToken);
+
+        return logins;
     }
 
-    public Task<User?> FindByLoginAsync(string loginProvider, string providerKey, CancellationToken cancellationToken)
+    public async Task<User?> FindByLoginAsync(string loginProvider, string providerKey, CancellationToken cancellationToken)
     {
-        return Task.FromResult<User?>(null);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var userLogin = await UserLogins
+            .FirstOrDefaultAsync(ul => ul.LoginProvider == loginProvider && ul.ProviderKey == providerKey, cancellationToken);
+
+        if (userLogin == null) return null;
+
+        return await Users.FindAsync([userLogin.UserId], cancellationToken);
     }
 
     public void Dispose()

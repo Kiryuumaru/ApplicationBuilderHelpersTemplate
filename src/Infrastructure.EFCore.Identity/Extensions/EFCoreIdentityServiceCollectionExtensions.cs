@@ -9,9 +9,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.EFCore.Identity.Extensions;
 
-internal static class EFCoreIdentityServiceCollectionExtensions
+public static class EFCoreIdentityServiceCollectionExtensions
 {
-    public static IServiceCollection AddEFCoreIdentityStores(this IServiceCollection services)
+    public static IServiceCollection AddEFCoreIdentity(this IServiceCollection services)
     {
         // Register entity configuration for modular DbContext composition
         services.AddSingleton<IEFCoreEntityConfiguration, IdentityEntityConfiguration>();

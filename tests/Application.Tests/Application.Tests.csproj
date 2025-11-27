@@ -24,8 +24,8 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\src\Application\Application.csproj" />
 		<ProjectReference Include="..\..\src\Domain\Domain.csproj" />
-		<ProjectReference Include="..\..\src\Infrastructure.Sqlite.Identity\Infrastructure.Sqlite.Identity.csproj" />
-		<ProjectReference Include="..\..\src\Infrastructure.Sqlite\Infrastructure.Sqlite.csproj" />
+		<ProjectReference Include="..\..\src\Infrastructure.EFCore.Identity\Infrastructure.EFCore.Identity.csproj" />
+		<ProjectReference Include="..\..\src\Infrastructure.EFCore.Sqlite\Infrastructure.EFCore.Sqlite.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

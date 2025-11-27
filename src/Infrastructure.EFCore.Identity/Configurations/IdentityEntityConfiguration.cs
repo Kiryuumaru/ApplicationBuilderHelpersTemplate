@@ -1,5 +1,6 @@
 using Domain.Authorization.Models;
 using Domain.Identity.Models;
+using Infrastructure.EFCore.Identity.Models;
 using Infrastructure.EFCore.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,6 +15,7 @@ public class IdentityEntityConfiguration : IEFCoreEntityConfiguration
     {
         ConfigureUser(modelBuilder);
         ConfigureRole(modelBuilder);
+        ConfigureUserLogin(modelBuilder);
     }
 
     private static void ConfigureUser(ModelBuilder modelBuilder)
@@ -79,5 +81,24 @@ public class IdentityEntityConfiguration : IEFCoreEntityConfiguration
 
         // Ignore PermissionGrants - stored in separate table
         entity.Ignore(r => r.PermissionGrants);
+    }
+
+    private static void ConfigureUserLogin(ModelBuilder modelBuilder)
+    {
+        var entity = modelBuilder.Entity<UserLoginEntity>();
+
+        entity.ToTable("UserLogins");
+
+        entity.HasKey(ul => new { ul.LoginProvider, ul.ProviderKey });
+
+        entity.Property(ul => ul.LoginProvider).IsRequired().HasMaxLength(128);
+        entity.Property(ul => ul.ProviderKey).IsRequired().HasMaxLength(128);
+        entity.Property(ul => ul.UserId)
+            .HasConversion(id => id.ToString(), str => Guid.Parse(str))
+            .IsRequired();
+        entity.Property(ul => ul.ProviderDisplayName).HasMaxLength(256);
+        entity.Property(ul => ul.Email).HasMaxLength(256);
+
+        entity.HasIndex(ul => ul.UserId);
     }
 }

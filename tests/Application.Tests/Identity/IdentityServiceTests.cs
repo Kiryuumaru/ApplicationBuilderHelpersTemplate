@@ -19,9 +19,8 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Security.Authentication;
 using Xunit;
 using RolesConstants = Domain.Authorization.Constants.Roles;
-using Infrastructure.Sqlite.Identity.Services;
-using Infrastructure.Sqlite.Interfaces;
-using Infrastructure.Sqlite.Services;
+using Infrastructure.EFCore.Identity.Extensions;
+using Infrastructure.EFCore.Sqlite.Extensions;
 using Application.Authorization.Services;
 using Application.Authorization.Interfaces;
 
@@ -307,20 +306,13 @@ public class IdentityServiceTests
         services.AddLogging();
         services.AddIdentityServices();
 
-        // Use shared memory database
+        // Use shared memory database with EF Core
         var dbName = Guid.NewGuid().ToString();
         var connectionString = $"Data Source={dbName};Mode=Memory;Cache=Shared";
         
-        // Register SQLite infrastructure services directly (since extensions are internal)
-        services.AddSingleton(new SqliteConnectionFactory(connectionString));
-        services.AddSingleton<IDatabaseBootstrap, IdentityTableInitializer>();
-        
-        // Register identity stores directly (since extension is internal)
-        services.AddScoped<IUserStore<User>, CustomUserStore>();
-        services.AddScoped<IRoleStore<Role>, CustomRoleStore>();
-        services.AddScoped<SqliteRoleRepository>();
-        services.AddScoped<IRoleRepository>(sp => sp.GetRequiredService<SqliteRoleRepository>());
-        services.AddScoped<IRoleLookup>(sp => sp.GetRequiredService<SqliteRoleRepository>());
+        // Register EF Core Sqlite infrastructure
+        services.AddEFCoreSqlite(connectionString);
+        services.AddEFCoreIdentity();
         
         // Relax password requirements for tests
         services.Configure<IdentityOptions>(options =>
@@ -335,21 +327,15 @@ public class IdentityServiceTests
         
         var provider = services.BuildServiceProvider();
 
-        // Keep a connection open to preserve the in-memory database
-        var connectionFactory = provider.GetRequiredService<SqliteConnectionFactory>();
-        var keepAliveConnection = connectionFactory.CreateConnection();
-        keepAliveConnection.Open();
-
-        var bootstrappers = provider.GetServices<IDatabaseBootstrap>();
-        foreach (var bootstrapper in bootstrappers)
-        {
-            bootstrapper.SetupAsync(CancellationToken.None).GetAwaiter().GetResult();
-        }
+        // Keep a connection open to preserve the in-memory database and run migrations
+        var dbContextFactory = provider.GetRequiredService<Microsoft.EntityFrameworkCore.IDbContextFactory<Infrastructure.EFCore.EFCoreDbContext>>();
+        var dbContext = dbContextFactory.CreateDbContext();
+        dbContext.Database.EnsureCreated();
         
         var identityService = provider.GetRequiredService<IIdentityService>();
         var roleService = provider.GetRequiredService<IRoleService>();
         
-        return new IdentityFixture((IdentityService)identityService, (RoleService)roleService, keepAliveConnection);
+        return new IdentityFixture((IdentityService)identityService, (RoleService)roleService, dbContext);
     }
 
     private sealed record IdentityFixture(IdentityService IdentityService, RoleService RoleService, IDisposable Connection) : IDisposable
