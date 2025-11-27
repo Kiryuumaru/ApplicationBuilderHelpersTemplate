@@ -25,6 +25,8 @@ using System.Threading.Tasks;
 
 partial class Build
 {
+    public static int Main() => Execute<Build>(x => x.Interactive);
+
     private async Task<ApplicationRuntime> StartApplicationRuntime(IRunContext runContext)
     {
         if (string.IsNullOrEmpty(applicationCredentials) && (RootDirectory / "creds.json").Exists())

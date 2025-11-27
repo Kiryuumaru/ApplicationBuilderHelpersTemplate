@@ -27,8 +27,6 @@ partial class Build : BaseNukeBuildHelpers
         new("master", "Production", "prod")
     ];
 
-    public static int Main() => Execute<Build>(x => x.Interactive);
-
     [SecretVariable("GITHUB_TOKEN")]
     readonly string? GithubToken;
 
