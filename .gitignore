@@ -366,3 +366,4 @@ FodyWeavers.xsd
 /src/Presentation.WebApp/localstore.db-wal
 /src/Presentation.WebApp/app.db
 /creds.json
+/.nuke/temp
