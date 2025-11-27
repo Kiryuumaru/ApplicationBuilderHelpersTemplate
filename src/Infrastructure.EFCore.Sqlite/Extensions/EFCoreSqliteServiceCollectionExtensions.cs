@@ -19,23 +19,48 @@ internal static class EFCoreSqliteServiceCollectionExtensions
         // to prevent the database from being destroyed when all connections close
         services.AddSingleton(new SqliteConnectionHolder(connectionString));
         
-        // Use AddDbContextFactory which properly handles the lifetime
-        services.AddDbContextFactory<SqliteDbContext>(options =>
+        // Register DbContext with factory pattern that injects entity configurations
+        services.AddDbContext<SqliteDbContext>((sp, options) =>
         {
             options.UseSqlite(connectionString);
         });
 
+        // Register factory that creates DbContext with configurations
+        services.AddSingleton<IDbContextFactory<SqliteDbContext>, SqliteDbContextFactory>();
+
         // Register IDbContextFactory<EFCoreDbContext> for persistence-ignorant consumers
-        services.AddScoped<IDbContextFactory<EFCoreDbContext>>(sp => 
+        services.AddSingleton<IDbContextFactory<EFCoreDbContext>>(sp => 
             new EFCoreDbContextFactoryAdapter(sp.GetRequiredService<IDbContextFactory<SqliteDbContext>>()));
 
-        // Also register the DbContext itself for scoped usage
-        services.AddScoped<SqliteDbContext>(sp => sp.GetRequiredService<IDbContextFactory<SqliteDbContext>>().CreateDbContext());
+        // Also register the base DbContext for scoped usage
         services.AddScoped<EFCoreDbContext>(sp => sp.GetRequiredService<SqliteDbContext>());
 
         services.AddScoped<IEFCoreDatabaseBootstrap, SqliteDatabaseBootstrap>();
 
         return services;
+    }
+}
+
+/// <summary>
+/// Factory for creating SqliteDbContext instances with registered entity configurations.
+/// </summary>
+internal sealed class SqliteDbContextFactory : IDbContextFactory<SqliteDbContext>
+{
+    private readonly IServiceProvider _serviceProvider;
+    private readonly string _connectionString;
+
+    public SqliteDbContextFactory(IServiceProvider serviceProvider, IConfiguration configuration)
+    {
+        _serviceProvider = serviceProvider;
+        _connectionString = configuration.GetRefValueOrDefault("SQLITE_CONNECTION_STRING", "Data Source=app.db");
+    }
+
+    public SqliteDbContext CreateDbContext()
+    {
+        var configurations = _serviceProvider.GetServices<IEFCoreEntityConfiguration>();
+        var optionsBuilder = new DbContextOptionsBuilder<SqliteDbContext>();
+        optionsBuilder.UseSqlite(_connectionString);
+        return new SqliteDbContext(optionsBuilder.Options, configurations);
     }
 }
 

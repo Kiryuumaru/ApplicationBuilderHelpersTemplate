@@ -20,6 +20,9 @@ public class EFCoreUserStore(EFCoreDbContext dbContext) :
     IUserLoginStore<User>
 {
     private readonly EFCoreDbContext _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+    
+    private DbSet<User> Users => _dbContext.Set<User>();
+    private DbSet<Role> Roles => _dbContext.Set<Role>();
 
     public async Task<IdentityResult> CreateAsync(User user, CancellationToken cancellationToken)
     {
@@ -28,7 +31,7 @@ public class EFCoreUserStore(EFCoreDbContext dbContext) :
 
         try
         {
-            _dbContext.Users.Add(user);
+            Users.Add(user);
             await _dbContext.SaveChangesAsync(cancellationToken);
             return IdentityResult.Success;
         }
@@ -45,7 +48,7 @@ public class EFCoreUserStore(EFCoreDbContext dbContext) :
 
         try
         {
-            _dbContext.Users.Update(user);
+            Users.Update(user);
             var rows = await _dbContext.SaveChangesAsync(cancellationToken);
             if (rows == 0)
             {
@@ -64,7 +67,7 @@ public class EFCoreUserStore(EFCoreDbContext dbContext) :
         cancellationToken.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(user);
 
-        _dbContext.Users.Remove(user);
+        Users.Remove(user);
         await _dbContext.SaveChangesAsync(cancellationToken);
         return IdentityResult.Success;
     }
@@ -72,12 +75,12 @@ public class EFCoreUserStore(EFCoreDbContext dbContext) :
     public async Task<User?> FindByIdAsync(string userId, CancellationToken cancellationToken)
     {
         if (!Guid.TryParse(userId, out var guid)) return null;
-        return await _dbContext.Users.FindAsync([guid], cancellationToken);
+        return await Users.FindAsync([guid], cancellationToken);
     }
 
     public async Task<User?> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken)
     {
-        return await _dbContext.Users
+        return await Users
             .FirstOrDefaultAsync(u => u.NormalizedUserName == normalizedUserName, cancellationToken);
     }
 
@@ -136,7 +139,7 @@ public class EFCoreUserStore(EFCoreDbContext dbContext) :
 
     public async Task<User?> FindByEmailAsync(string normalizedEmail, CancellationToken cancellationToken)
     {
-        return await _dbContext.Users
+        return await Users
             .FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail, cancellationToken);
     }
 
@@ -152,7 +155,7 @@ public class EFCoreUserStore(EFCoreDbContext dbContext) :
     // IUserRoleStore - These require related tables which we handle separately
     public async Task AddToRoleAsync(User user, string roleName, CancellationToken cancellationToken)
     {
-        var role = await _dbContext.Roles
+        var role = await Roles
             .FirstOrDefaultAsync(r => r.NormalizedName == roleName.ToUpperInvariant(), cancellationToken);
         
         if (role == null)
@@ -166,7 +169,7 @@ public class EFCoreUserStore(EFCoreDbContext dbContext) :
 
     public async Task RemoveFromRoleAsync(User user, string roleName, CancellationToken cancellationToken)
     {
-        var role = await _dbContext.Roles
+        var role = await Roles
             .FirstOrDefaultAsync(r => r.NormalizedName == roleName.ToUpperInvariant(), cancellationToken);
         
         if (role == null) return;
@@ -192,7 +195,7 @@ public class EFCoreUserStore(EFCoreDbContext dbContext) :
 
     public async Task<bool> IsInRoleAsync(User user, string roleName, CancellationToken cancellationToken)
     {
-        var role = await _dbContext.Roles
+        var role = await Roles
             .FirstOrDefaultAsync(r => r.NormalizedName == roleName.ToUpperInvariant(), cancellationToken);
         
         if (role == null) return false;

@@ -1,3 +1,4 @@
+using Infrastructure.EFCore.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.EFCore.Sqlite;
@@ -7,7 +8,8 @@ namespace Infrastructure.EFCore.Sqlite;
 /// </summary>
 public class SqliteDbContext : EFCoreDbContext
 {
-    public SqliteDbContext(DbContextOptions<SqliteDbContext> options) : base(options)
+    public SqliteDbContext(DbContextOptions<SqliteDbContext> options, IEnumerable<IEFCoreEntityConfiguration> configurations) 
+        : base(options, configurations)
     {
     }
 }

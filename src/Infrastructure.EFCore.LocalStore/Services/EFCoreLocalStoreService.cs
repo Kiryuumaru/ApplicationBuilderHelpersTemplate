@@ -1,4 +1,5 @@
 using Application.LocalStore.Interfaces;
+using Infrastructure.EFCore.LocalStore.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.EFCore.LocalStore.Services;

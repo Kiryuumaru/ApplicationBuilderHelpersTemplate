@@ -7,6 +7,8 @@ namespace Infrastructure.EFCore.Identity.Services;
 public class EFCoreRoleStore(EFCoreDbContext dbContext) : IRoleStore<Role>
 {
     private readonly EFCoreDbContext _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+    
+    private DbSet<Role> Roles => _dbContext.Set<Role>();
 
     public async Task<IdentityResult> CreateAsync(Role role, CancellationToken cancellationToken)
     {
@@ -15,7 +17,7 @@ public class EFCoreRoleStore(EFCoreDbContext dbContext) : IRoleStore<Role>
 
         try
         {
-            _dbContext.Roles.Add(role);
+            Roles.Add(role);
             await _dbContext.SaveChangesAsync(cancellationToken);
             return IdentityResult.Success;
         }
@@ -32,7 +34,7 @@ public class EFCoreRoleStore(EFCoreDbContext dbContext) : IRoleStore<Role>
 
         try
         {
-            _dbContext.Roles.Update(role);
+            Roles.Update(role);
             var rows = await _dbContext.SaveChangesAsync(cancellationToken);
             if (rows == 0)
             {
@@ -51,7 +53,7 @@ public class EFCoreRoleStore(EFCoreDbContext dbContext) : IRoleStore<Role>
         cancellationToken.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(role);
 
-        _dbContext.Roles.Remove(role);
+        Roles.Remove(role);
         await _dbContext.SaveChangesAsync(cancellationToken);
         return IdentityResult.Success;
     }
@@ -90,12 +92,12 @@ public class EFCoreRoleStore(EFCoreDbContext dbContext) : IRoleStore<Role>
             return null;
         }
 
-        return await _dbContext.Roles.FindAsync([guid], cancellationToken);
+        return await Roles.FindAsync([guid], cancellationToken);
     }
 
     public async Task<Role?> FindByNameAsync(string normalizedRoleName, CancellationToken cancellationToken)
     {
-        return await _dbContext.Roles
+        return await Roles
             .FirstOrDefaultAsync(r => r.NormalizedName == normalizedRoleName, cancellationToken);
     }
 
