@@ -44,8 +44,12 @@ partial class Build : BaseNukeBuildHelpers
                         .SetProjectFile(projFile));
                     if (testId == "Presentation.WebApp.Tests")
                     {
-                        AbsolutePath outputDir = RootDirectory / "tests" / testId / "bin" / "Debug" / "net10.0";
-                        DotNetTasks.DotNet($"tool run playwright install --with-deps", outputDir);
+                        var playwrightScript = (RootDirectory / "tests" / testId)
+                            .GetDirectories().First() // bin
+                            .GetDirectories().First() // Debug/Release
+                            .GetDirectories().First() // netX
+                            / "playwright.ps1";
+                        ProcessTasks.StartProcess("pwsh", $"{playwrightScript} install --with-deps").AssertZeroExitCode();
                     }
                     DotNetTasks.DotNetTest(_ => _
                         .SetNoBuild(true)
