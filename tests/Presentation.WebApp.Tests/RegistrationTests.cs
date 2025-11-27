@@ -29,8 +29,12 @@ public class RegistrationTests : PlaywrightTestBase
 
         await Page.GetByRole(AriaRole.Button, new() { Name = "Register" }).ClickAsync();
 
-        // Should redirect to registration confirmation page
-        await Expect(Page).ToHaveURLAsync(new System.Text.RegularExpressions.Regex(@"/Account/RegisterConfirmation"));
+        // Since RequireConfirmedAccount is false, user is auto-logged in and redirected to home page
+        await Page.WaitForLoadStateAsync(Microsoft.Playwright.LoadState.NetworkIdle);
+        
+        // Verify user is logged in by checking they can access the manage page
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage");
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "Profile", Exact = false })).ToBeVisibleAsync();
     }
 
     [Test]

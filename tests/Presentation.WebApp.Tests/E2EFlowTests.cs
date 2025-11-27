@@ -56,26 +56,8 @@ public class E2EFlowTests : PlaywrightTestBase
         var oldPassword = "OldPassword123!";
         var newPassword = "NewPassword456!";
 
-        // Register
-        await Page.GotoAsync($"{BaseUrl}/Account/Register");
-        await Page.GetByLabel("Email").FillAsync(email);
-        await Page.GetByLabel("Password", new() { Exact = true }).FillAsync(oldPassword);
-        await Page.GetByLabel("Confirm Password").FillAsync(oldPassword);
-        await Page.GetByRole(AriaRole.Button, new() { Name = "Register" }).ClickAsync();
-
-        // Wait for registration confirmation page and click the email confirmation link
-        await Expect(Page).ToHaveURLAsync(new System.Text.RegularExpressions.Regex(@"/Account/RegisterConfirmation"));
-        var confirmLink = Page.GetByRole(AriaRole.Link, new() { Name = "Click here to confirm your account" });
-        if (await confirmLink.CountAsync() > 0)
-        {
-            await confirmLink.ClickAsync();
-        }
-
-        // Login
-        await Page.GotoAsync($"{BaseUrl}/Account/Login");
-        await Page.GetByLabel("Email").FillAsync(email);
-        await Page.GetByLabel("Password").FillAsync(oldPassword);
-        await Page.GetByRole(AriaRole.Button, new() { Name = "Log in", Exact = true }).ClickAsync();
+        // Register (user is auto-logged in since RequireConfirmedAccount is false)
+        await RegisterAndLoginUserAsync(email, oldPassword);
 
         // Change password
         await Page.GotoAsync($"{BaseUrl}/Account/Manage/ChangePassword");

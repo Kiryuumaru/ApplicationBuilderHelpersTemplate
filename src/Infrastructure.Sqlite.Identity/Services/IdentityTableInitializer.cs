@@ -85,6 +85,23 @@ public sealed class IdentityTableInitializer(SqliteConnectionFactory connectionF
                 FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE
             );
 
+            CREATE TABLE IF NOT EXISTS UserPasskeys (
+                UserId TEXT NOT NULL,
+                CredentialId BLOB NOT NULL,
+                PublicKey BLOB,
+                Name TEXT,
+                CreatedAt TEXT,
+                SignCount INTEGER NOT NULL DEFAULT 0,
+                Transports TEXT,
+                IsUserVerified INTEGER NOT NULL DEFAULT 0,
+                IsBackupEligible INTEGER NOT NULL DEFAULT 0,
+                IsBackedUp INTEGER NOT NULL DEFAULT 0,
+                AttestationObject BLOB,
+                ClientDataJson BLOB,
+                PRIMARY KEY (UserId, CredentialId),
+                FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE
+            );
+
             CREATE TABLE IF NOT EXISTS RolePermissions (
                 RoleId TEXT NOT NULL,
                 IdentifierTemplate TEXT NOT NULL,

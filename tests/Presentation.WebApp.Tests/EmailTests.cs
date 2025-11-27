@@ -49,9 +49,12 @@ public class EmailTests : PlaywrightTestBase
         await Page.GetByLabel("Confirm Password").FillAsync("TestPassword123!");
         await Page.GetByRole(AriaRole.Button, new() { Name = "Register" }).ClickAsync();
         
-        // Should redirect to some confirmation or success page
-        var url = Page.Url;
-        Assert.That(url, Does.Contain("/Account/").IgnoreCase);
+        // Since RequireConfirmedAccount is false, user is auto-logged in and redirected to home page
+        await Page.WaitForLoadStateAsync(Microsoft.Playwright.LoadState.NetworkIdle);
+        
+        // Verify registration succeeded by checking user is logged in
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage");
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "Profile", Exact = false })).ToBeVisibleAsync();
     }
 
     [Test]

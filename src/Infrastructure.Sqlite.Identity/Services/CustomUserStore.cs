@@ -16,7 +16,8 @@ public class CustomUserStore(SqliteConnectionFactory connectionFactory) :
     IUserLockoutStore<User>,
     IUserPhoneNumberStore<User>,
     IUserTwoFactorStore<User>,
-    IUserLoginStore<User>
+    IUserLoginStore<User>,
+    IUserPasskeyStore<User>
 {
     private readonly SqliteConnectionFactory _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
 
@@ -282,10 +283,7 @@ public class CustomUserStore(SqliteConnectionFactory connectionFactory) :
 
     public Task SetPasswordHashAsync(User user, string? passwordHash, CancellationToken cancellationToken)
     {
-        // User.cs doesn't have SetPasswordHash method, need reflection or add it.
-        // Assuming reflection for now as I can't modify Domain easily without breaking "Pure Domain" if I add setters everywhere.
-        // But wait, User.cs has private setters.
-        SetProp(user, "PasswordHash", passwordHash);
+        user.SetPasswordHash(passwordHash);
         return Task.CompletedTask;
     }
     public Task<string?> GetPasswordHashAsync(User user, CancellationToken cancellationToken) => Task.FromResult(user.PasswordHash);
@@ -635,7 +633,179 @@ public class CustomUserStore(SqliteConnectionFactory connectionFactory) :
              linksDict.Clear();
              foreach(var l in links) linksDict[l.Provider] = l;
         }
-    }    public void Dispose()
+    }
+
+    // IUserPasskeyStore implementation
+    public async Task<IList<UserPasskeyInfo>> GetPasskeysAsync(User user, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(user);
+
+        using var connection = await _connectionFactory.CreateOpenedConnectionAsync(cancellationToken);
+        using var command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT CredentialId, PublicKey, Name, CreatedAt, SignCount, Transports, 
+                   IsUserVerified, IsBackupEligible, IsBackedUp, AttestationObject, ClientDataJson
+            FROM UserPasskeys WHERE UserId = @UserId";
+        command.Parameters.AddWithValue("@UserId", user.Id.ToString());
+
+        var passkeys = new List<UserPasskeyInfo>();
+        using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var credentialId = (byte[])reader["CredentialId"];
+            var publicKey = reader.IsDBNull(reader.GetOrdinal("PublicKey")) ? Array.Empty<byte>() : (byte[])reader["PublicKey"];
+            var createdAt = reader.IsDBNull(reader.GetOrdinal("CreatedAt")) ? DateTimeOffset.UtcNow : DateTimeOffset.Parse(reader.GetString(reader.GetOrdinal("CreatedAt")));
+            var signCount = (uint)reader.GetInt32(reader.GetOrdinal("SignCount"));
+            var transportsJson = reader.IsDBNull(reader.GetOrdinal("Transports")) ? null : reader.GetString(reader.GetOrdinal("Transports"));
+            var isUserVerified = reader.GetBoolean(reader.GetOrdinal("IsUserVerified"));
+            var isBackupEligible = reader.GetBoolean(reader.GetOrdinal("IsBackupEligible"));
+            var isBackedUp = reader.GetBoolean(reader.GetOrdinal("IsBackedUp"));
+            var attestationObject = reader.IsDBNull(reader.GetOrdinal("AttestationObject")) ? Array.Empty<byte>() : (byte[])reader["AttestationObject"];
+            var clientDataJson = reader.IsDBNull(reader.GetOrdinal("ClientDataJson")) ? Array.Empty<byte>() : (byte[])reader["ClientDataJson"];
+
+            var transports = string.IsNullOrEmpty(transportsJson) 
+                ? null
+                : System.Text.Json.JsonSerializer.Deserialize<string[]>(transportsJson);
+
+            passkeys.Add(new UserPasskeyInfo(
+                credentialId,
+                publicKey,
+                createdAt,
+                signCount,
+                transports,
+                isUserVerified,
+                isBackupEligible,
+                isBackedUp,
+                attestationObject,
+                clientDataJson
+            ));
+        }
+
+        return passkeys;
+    }
+
+    public async Task<UserPasskeyInfo?> FindPasskeyAsync(User user, byte[] credentialId, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(user);
+        ArgumentNullException.ThrowIfNull(credentialId);
+
+        using var connection = await _connectionFactory.CreateOpenedConnectionAsync(cancellationToken);
+        using var command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT CredentialId, PublicKey, Name, CreatedAt, SignCount, Transports, 
+                   IsUserVerified, IsBackupEligible, IsBackedUp, AttestationObject, ClientDataJson
+            FROM UserPasskeys WHERE UserId = @UserId AND CredentialId = @CredentialId";
+        command.Parameters.AddWithValue("@UserId", user.Id.ToString());
+        command.Parameters.AddWithValue("@CredentialId", credentialId);
+
+        using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        if (await reader.ReadAsync(cancellationToken))
+        {
+            var cId = (byte[])reader["CredentialId"];
+            var publicKey = reader.IsDBNull(reader.GetOrdinal("PublicKey")) ? Array.Empty<byte>() : (byte[])reader["PublicKey"];
+            var createdAt = reader.IsDBNull(reader.GetOrdinal("CreatedAt")) ? DateTimeOffset.UtcNow : DateTimeOffset.Parse(reader.GetString(reader.GetOrdinal("CreatedAt")));
+            var signCount = (uint)reader.GetInt32(reader.GetOrdinal("SignCount"));
+            var transportsJson = reader.IsDBNull(reader.GetOrdinal("Transports")) ? null : reader.GetString(reader.GetOrdinal("Transports"));
+            var isUserVerified = reader.GetBoolean(reader.GetOrdinal("IsUserVerified"));
+            var isBackupEligible = reader.GetBoolean(reader.GetOrdinal("IsBackupEligible"));
+            var isBackedUp = reader.GetBoolean(reader.GetOrdinal("IsBackedUp"));
+            var attestationObject = reader.IsDBNull(reader.GetOrdinal("AttestationObject")) ? Array.Empty<byte>() : (byte[])reader["AttestationObject"];
+            var clientDataJson = reader.IsDBNull(reader.GetOrdinal("ClientDataJson")) ? Array.Empty<byte>() : (byte[])reader["ClientDataJson"];
+
+            var transports = string.IsNullOrEmpty(transportsJson) 
+                ? null
+                : System.Text.Json.JsonSerializer.Deserialize<string[]>(transportsJson);
+
+            return new UserPasskeyInfo(
+                cId,
+                publicKey,
+                createdAt,
+                signCount,
+                transports,
+                isUserVerified,
+                isBackupEligible,
+                isBackedUp,
+                attestationObject,
+                clientDataJson
+            );
+        }
+
+        return null;
+    }
+
+    public async Task AddOrUpdatePasskeyAsync(User user, UserPasskeyInfo passkeyInfo, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(user);
+        ArgumentNullException.ThrowIfNull(passkeyInfo);
+
+        using var connection = await _connectionFactory.CreateOpenedConnectionAsync(cancellationToken);
+        using var command = connection.CreateCommand();
+        command.CommandText = @"
+            INSERT INTO UserPasskeys (UserId, CredentialId, PublicKey, Name, CreatedAt, SignCount, 
+                                      Transports, IsUserVerified, IsBackupEligible, IsBackedUp, 
+                                      AttestationObject, ClientDataJson)
+            VALUES (@UserId, @CredentialId, @PublicKey, @Name, @CreatedAt, @SignCount, 
+                    @Transports, @IsUserVerified, @IsBackupEligible, @IsBackedUp, 
+                    @AttestationObject, @ClientDataJson)
+            ON CONFLICT(UserId, CredentialId) DO UPDATE SET
+                PublicKey = @PublicKey, Name = @Name, SignCount = @SignCount, 
+                Transports = @Transports, IsUserVerified = @IsUserVerified, 
+                IsBackupEligible = @IsBackupEligible, IsBackedUp = @IsBackedUp,
+                AttestationObject = @AttestationObject, ClientDataJson = @ClientDataJson";
+
+        command.Parameters.AddWithValue("@UserId", user.Id.ToString());
+        command.Parameters.AddWithValue("@CredentialId", passkeyInfo.CredentialId);
+        command.Parameters.AddWithValue("@PublicKey", (object?)passkeyInfo.PublicKey ?? DBNull.Value);
+        command.Parameters.AddWithValue("@Name", DBNull.Value); // Name is not part of UserPasskeyInfo
+        command.Parameters.AddWithValue("@CreatedAt", passkeyInfo.CreatedAt.ToString("O"));
+        command.Parameters.AddWithValue("@SignCount", (int)passkeyInfo.SignCount);
+        command.Parameters.AddWithValue("@Transports", passkeyInfo.Transports?.Length > 0 
+            ? System.Text.Json.JsonSerializer.Serialize(passkeyInfo.Transports) 
+            : DBNull.Value);
+        command.Parameters.AddWithValue("@IsUserVerified", passkeyInfo.IsUserVerified ? 1 : 0);
+        command.Parameters.AddWithValue("@IsBackupEligible", passkeyInfo.IsBackupEligible ? 1 : 0);
+        command.Parameters.AddWithValue("@IsBackedUp", passkeyInfo.IsBackedUp ? 1 : 0);
+        command.Parameters.AddWithValue("@AttestationObject", (object?)passkeyInfo.AttestationObject ?? DBNull.Value);
+        command.Parameters.AddWithValue("@ClientDataJson", (object?)passkeyInfo.ClientDataJson ?? DBNull.Value);
+
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task RemovePasskeyAsync(User user, byte[] credentialId, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(user);
+        ArgumentNullException.ThrowIfNull(credentialId);
+
+        using var connection = await _connectionFactory.CreateOpenedConnectionAsync(cancellationToken);
+        using var command = connection.CreateCommand();
+        command.CommandText = "DELETE FROM UserPasskeys WHERE UserId = @UserId AND CredentialId = @CredentialId";
+        command.Parameters.AddWithValue("@UserId", user.Id.ToString());
+        command.Parameters.AddWithValue("@CredentialId", credentialId);
+
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public async Task<User?> FindByPasskeyIdAsync(byte[] credentialId, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(credentialId);
+
+        using var connection = await _connectionFactory.CreateOpenedConnectionAsync(cancellationToken);
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT UserId FROM UserPasskeys WHERE CredentialId = @CredentialId";
+        command.Parameters.AddWithValue("@CredentialId", credentialId);
+
+        var userId = await command.ExecuteScalarAsync(cancellationToken) as string;
+        if (userId == null) return null;
+
+        return await FindByIdAsync(userId, cancellationToken);
+    }
+
+    public void Dispose()
     {
     }
 }

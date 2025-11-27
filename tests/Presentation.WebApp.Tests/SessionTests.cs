@@ -8,34 +8,6 @@ namespace Presentation.WebApp.Tests;
 /// </summary>
 public class SessionTests : PlaywrightTestBase
 {
-    private async Task RegisterAndLoginUserAsync(string email, string password)
-    {
-        // Register first
-        await Page.GotoAsync($"{BaseUrl}/Account/Register");
-        await Page.GetByLabel("Email").FillAsync(email);
-        await Page.GetByLabel("Password", new() { Exact = true }).FillAsync(password);
-        await Page.GetByLabel("Confirm Password").FillAsync(password);
-        await Page.GetByRole(AriaRole.Button, new() { Name = "Register" }).ClickAsync();
-
-        // Wait for registration confirmation page and click the email confirmation link
-        await Expect(Page).ToHaveURLAsync(new System.Text.RegularExpressions.Regex(@"/Account/RegisterConfirmation"));
-        var confirmLink = Page.GetByRole(AriaRole.Link, new() { Name = "Click here to confirm your account" });
-        if (await confirmLink.CountAsync() > 0)
-        {
-            await confirmLink.ClickAsync();
-            await Page.WaitForLoadStateAsync(Microsoft.Playwright.LoadState.NetworkIdle);
-        }
-
-        // Login
-        await Page.GotoAsync($"{BaseUrl}/Account/Login");
-        await Page.GetByLabel("Email").FillAsync(email);
-        await Page.GetByLabel("Password").FillAsync(password);
-        await Page.GetByRole(AriaRole.Button, new() { Name = "Log in", Exact = true }).ClickAsync();
-        
-        // Wait for login to complete
-        await Page.WaitForLoadStateAsync(Microsoft.Playwright.LoadState.NetworkIdle);
-    }
-
     [Test]
     public async Task AuthenticatedUser_CanAccessHomePage()
     {

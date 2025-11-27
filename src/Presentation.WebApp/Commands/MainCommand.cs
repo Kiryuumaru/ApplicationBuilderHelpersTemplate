@@ -57,7 +57,8 @@ public class MainCommand : Build.BaseCommand<WebApplicationBuilder>
 
         services.AddIdentityCore<User>(options =>
             {
-                options.SignIn.RequireConfirmedAccount = true;
+                // Allow sign-in without confirmed email - check EmailConfirmed manually for critical features
+                options.SignIn.RequireConfirmedAccount = false;
                 options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
                 options.Password.RequireDigit = true;
                 options.Password.RequireLowercase = true;
