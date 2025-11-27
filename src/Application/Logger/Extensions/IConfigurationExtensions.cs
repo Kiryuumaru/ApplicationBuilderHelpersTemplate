@@ -16,7 +16,7 @@ public static class IConfigurationExtensions
 
     public static bool GetApplyThemeWhenOutputIsRedirected(this IConfiguration configuration)
     {
-        return configuration.GetBoolean(ApplyThemeWhenOutputIsRedirectedKey);
+        return configuration.GetBooleanOrDefault(ApplyThemeWhenOutputIsRedirectedKey);
     }
 
     public static void SetApplyThemeWhenOutputIsRedirected(this IConfiguration configuration, bool applyThemeWhenOutputIsRedirected)

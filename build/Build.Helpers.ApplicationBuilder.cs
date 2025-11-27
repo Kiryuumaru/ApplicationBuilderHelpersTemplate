@@ -2,6 +2,7 @@
 using Application.Common.Extensions;
 using Application.Configuration.Extensions;
 using Application.Logger.Extensions;
+using Application.NativeCmd.Extensions;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Exceptions;
 using ApplicationBuilderHelpers.Extensions;
@@ -147,7 +148,8 @@ partial class Build
         public override void AddConfigurations(ApplicationHostBuilder applicationBuilder, Microsoft.Extensions.Configuration.IConfiguration configuration)
         {
             base.AddConfigurations(applicationBuilder, configuration);
-            configuration.SetLoggerLevel(LogLevel.Trace);
+            configuration.SetLoggerLevel(LogLevel.Debug);
+            configuration.SetIsVerboseCliLogger(false);
             configuration.SetApplyThemeWhenOutputIsRedirected(true);
         }
 
