@@ -16,6 +16,7 @@ public class IdentityEntityConfiguration : IEFCoreEntityConfiguration
         ConfigureUser(modelBuilder);
         ConfigureRole(modelBuilder);
         ConfigureUserLogin(modelBuilder);
+        ConfigureUserPasskey(modelBuilder);
     }
 
     private static void ConfigureUser(ModelBuilder modelBuilder)
@@ -100,5 +101,27 @@ public class IdentityEntityConfiguration : IEFCoreEntityConfiguration
         entity.Property(ul => ul.Email).HasMaxLength(256);
 
         entity.HasIndex(ul => ul.UserId);
+    }
+
+    private static void ConfigureUserPasskey(ModelBuilder modelBuilder)
+    {
+        var entity = modelBuilder.Entity<UserPasskeyEntity>();
+
+        entity.ToTable("UserPasskeys");
+
+        entity.HasKey(up => new { up.UserId, up.CredentialId });
+
+        entity.Property(up => up.UserId)
+            .HasConversion(id => id.ToString(), str => Guid.Parse(str))
+            .IsRequired();
+        entity.Property(up => up.CredentialId).IsRequired();
+        entity.Property(up => up.PublicKey);
+        entity.Property(up => up.Name).HasMaxLength(256);
+        entity.Property(up => up.SignCount);
+        entity.Property(up => up.Transports);
+        entity.Property(up => up.AttestationObject);
+        entity.Property(up => up.ClientDataJson);
+
+        entity.HasIndex(up => up.CredentialId);
     }
 }

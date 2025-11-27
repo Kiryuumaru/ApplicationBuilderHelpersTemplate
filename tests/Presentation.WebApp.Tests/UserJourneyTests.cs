@@ -1091,4 +1091,1336 @@ public class UserJourneyTests : PlaywrightTestBase
     }
 
     #endregion
+
+    #region Forgot Password Tests
+
+    /// <summary>
+    /// User journey: Navigate to forgot password page and request password reset
+    /// Tests the forgot password functionality.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_ForgotPassword_RequestReset()
+    {
+        var email = $"forgotpw_{Guid.NewGuid():N}@test.com";
+        var password = "SecurePassword123!";
+
+        // First register a user
+        await RegisterUserAsync(email, password);
+
+        // Logout if logged in
+        await Page.GotoAsync($"{BaseUrl}/");
+        var logoutButton = Page.GetByRole(AriaRole.Button, new() { Name = "Logout" });
+        if (await logoutButton.CountAsync() > 0)
+        {
+            await logoutButton.ClickAsync();
+            await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        }
+
+        // Navigate to login page
+        await Page.GotoAsync($"{BaseUrl}/Account/Login");
+
+        // Click forgot password link
+        await Page.GetByRole(AriaRole.Link, new() { Name = "Forgot your password?" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Verify forgot password page loaded
+        Assert.That(Page.Url, Does.Contain("/Account/ForgotPassword").IgnoreCase);
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "Forgot your password?" })).ToBeVisibleAsync();
+
+        // Fill in email and submit
+        await Page.GetByLabel("Email").FillAsync(email);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Reset password" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Should redirect to confirmation page
+        Assert.That(Page.Url, Does.Contain("/Account/ForgotPasswordConfirmation").IgnoreCase);
+    }
+
+    /// <summary>
+    /// User journey: Navigate directly to reset password page
+    /// Tests the reset password page is accessible with valid token (simulated).
+    /// </summary>
+    [Test]
+    public async Task UserJourney_ResetPassword_InvalidToken()
+    {
+        // Navigate to reset password page with fake token
+        await Page.GotoAsync($"{BaseUrl}/Account/ResetPassword?code=invalid_token");
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Page should load (even with invalid token initially)
+        Assert.That(Page.Url, Does.Contain("/Account/ResetPassword").IgnoreCase.Or.Contain("/Account/InvalidPasswordReset").IgnoreCase);
+    }
+
+    /// <summary>
+    /// User journey: Request email confirmation resend
+    /// Tests the resend email confirmation functionality.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_ResendEmailConfirmation()
+    {
+        var email = $"resend_{Guid.NewGuid():N}@test.com";
+        var password = "SecurePassword123!";
+
+        // Register a user
+        await RegisterUserAsync(email, password);
+
+        // Logout if logged in
+        await Page.GotoAsync($"{BaseUrl}/");
+        var logoutButton = Page.GetByRole(AriaRole.Button, new() { Name = "Logout" });
+        if (await logoutButton.CountAsync() > 0)
+        {
+            await logoutButton.ClickAsync();
+            await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        }
+
+        // Navigate to resend email confirmation page
+        await Page.GotoAsync($"{BaseUrl}/Account/ResendEmailConfirmation");
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Verify page loaded
+        Assert.That(Page.Url, Does.Contain("/Account/ResendEmailConfirmation").IgnoreCase);
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "Resend email confirmation" })).ToBeVisibleAsync();
+
+        // Fill in email and submit
+        await Page.GetByLabel("Email").FillAsync(email);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Resend" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Should show success message or stay on page
+        var successText = Page.GetByText("Verification email sent", new() { Exact = false });
+        var displayMessage = Page.Locator(".alert-success, .alert-info");
+        Assert.That(await successText.CountAsync() > 0 || await displayMessage.CountAsync() > 0, 
+            "Should show confirmation that email was sent");
+    }
+
+    #endregion
+
+    #region Login Validation Tests
+
+    /// <summary>
+    /// User journey: Attempt login with wrong password
+    /// Tests that login fails with incorrect password.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_Login_WrongPassword()
+    {
+        var email = $"wrongpw_{Guid.NewGuid():N}@test.com";
+        var password = "SecurePassword123!";
+        var wrongPassword = "WrongPassword456!";
+
+        // Register a user
+        await RegisterUserAsync(email, password);
+
+        // Logout if logged in
+        await Page.GotoAsync($"{BaseUrl}/");
+        var logoutButton = Page.GetByRole(AriaRole.Button, new() { Name = "Logout" });
+        if (await logoutButton.CountAsync() > 0)
+        {
+            await logoutButton.ClickAsync();
+            await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        }
+
+        // Try to login with wrong password
+        await Page.GotoAsync($"{BaseUrl}/Account/Login");
+        await Page.GetByLabel("Email").FillAsync(email);
+        await Page.GetByLabel("Password").FillAsync(wrongPassword);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Log in", Exact = true }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Should show error or stay on login page
+        Assert.That(Page.Url, Does.Contain("/Account/Login").IgnoreCase);
+    }
+
+    /// <summary>
+    /// User journey: Attempt login with non-existent user
+    /// Tests that login fails for non-existent users.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_Login_NonExistentUser()
+    {
+        var email = $"nonexistent_{Guid.NewGuid():N}@test.com";
+        var password = "AnyPassword123!";
+
+        // Try to login with non-existent user
+        await Page.GotoAsync($"{BaseUrl}/Account/Login");
+        await Page.GetByLabel("Email").FillAsync(email);
+        await Page.GetByLabel("Password").FillAsync(password);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Log in", Exact = true }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Should stay on login page
+        Assert.That(Page.Url, Does.Contain("/Account/Login").IgnoreCase);
+    }
+
+    /// <summary>
+    /// User journey: Login with empty fields
+    /// Tests client-side validation for empty login fields.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_Login_EmptyFields()
+    {
+        await Page.GotoAsync($"{BaseUrl}/Account/Login");
+
+        // Try to submit without filling fields
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Log in", Exact = true }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Should stay on login page (validation should prevent submission)
+        Assert.That(Page.Url, Does.Contain("/Account/Login").IgnoreCase);
+    }
+
+    #endregion
+
+    #region Registration Validation Tests
+
+    /// <summary>
+    /// User journey: Register with password mismatch
+    /// Tests that registration fails when passwords don't match.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_Register_PasswordMismatch()
+    {
+        var email = $"mismatch_{Guid.NewGuid():N}@test.com";
+        var password = "SecurePassword123!";
+        var differentPassword = "DifferentPassword456!";
+
+        await Page.GotoAsync($"{BaseUrl}/Account/Register");
+        await Page.GetByLabel("Email").FillAsync(email);
+        await Page.GetByLabel("Password", new() { Exact = true }).FillAsync(password);
+        await Page.GetByLabel("Confirm Password").FillAsync(differentPassword);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Register" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Should show error or stay on register page
+        Assert.That(Page.Url, Does.Contain("/Account/Register").IgnoreCase);
+    }
+
+    /// <summary>
+    /// User journey: Register with weak password
+    /// Tests that registration fails with weak password.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_Register_WeakPassword()
+    {
+        var email = $"weakpw_{Guid.NewGuid():N}@test.com";
+        var weakPassword = "123"; // Too short, no special chars, etc.
+
+        await Page.GotoAsync($"{BaseUrl}/Account/Register");
+        await Page.GetByLabel("Email").FillAsync(email);
+        await Page.GetByLabel("Password", new() { Exact = true }).FillAsync(weakPassword);
+        await Page.GetByLabel("Confirm Password").FillAsync(weakPassword);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Register" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Should show error or stay on register page
+        Assert.That(Page.Url, Does.Contain("/Account/Register").IgnoreCase);
+    }
+
+    /// <summary>
+    /// User journey: Register with invalid email format
+    /// Tests that registration fails with invalid email.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_Register_InvalidEmail()
+    {
+        var invalidEmail = "not-an-email";
+        var password = "SecurePassword123!";
+
+        await Page.GotoAsync($"{BaseUrl}/Account/Register");
+        await Page.GetByLabel("Email").FillAsync(invalidEmail);
+        await Page.GetByLabel("Password", new() { Exact = true }).FillAsync(password);
+        await Page.GetByLabel("Confirm Password").FillAsync(password);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Register" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Should show error or stay on register page
+        Assert.That(Page.Url, Does.Contain("/Account/Register").IgnoreCase);
+    }
+
+    /// <summary>
+    /// User journey: Register with duplicate email
+    /// Tests that registration fails when email is already in use.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_Register_DuplicateEmail()
+    {
+        var email = $"duplicate_{Guid.NewGuid():N}@test.com";
+        var password = "SecurePassword123!";
+
+        // Register first time
+        await RegisterUserAsync(email, password);
+
+        // Logout if logged in
+        await Page.GotoAsync($"{BaseUrl}/");
+        var logoutButton = Page.GetByRole(AriaRole.Button, new() { Name = "Logout" });
+        if (await logoutButton.CountAsync() > 0)
+        {
+            await logoutButton.ClickAsync();
+            await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        }
+
+        // Try to register with same email again
+        await Page.GotoAsync($"{BaseUrl}/Account/Register");
+        await Page.GetByLabel("Email").FillAsync(email);
+        await Page.GetByLabel("Password", new() { Exact = true }).FillAsync(password);
+        await Page.GetByLabel("Confirm Password").FillAsync(password);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Register" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Should show error or stay on register page
+        Assert.That(Page.Url, Does.Contain("/Account/Register").IgnoreCase);
+    }
+
+    #endregion
+
+    #region External Logins Tests
+
+    /// <summary>
+    /// User journey: Navigate to External Logins management page
+    /// Tests the external logins page displays correctly.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_ExternalLogins_ViewPage()
+    {
+        var email = $"extlogin_{Guid.NewGuid():N}@test.com";
+        var password = "SecurePassword123!";
+
+        // Register and ensure logged in
+        await RegisterUserAsync(email, password);
+        await EnsureLoggedInAsync(email, password);
+
+        // Navigate to External Logins page
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage/ExternalLogins");
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Verify page loaded
+        Assert.That(Page.Url, Does.Contain("/Account/Manage/ExternalLogins").IgnoreCase);
+
+        // Verify page loaded without server error
+        var title = await Page.TitleAsync();
+        Assert.That(title, Does.Not.Contain("Internal Server Error"),
+            "ExternalLogins page should load without server error");
+
+        // Cleanup
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+    }
+
+    #endregion
+
+    #region Passkeys Tests
+
+    /// <summary>
+    /// User journey: Navigate to Passkeys management page
+    /// Tests the passkeys page displays correctly.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_Passkeys_ViewPage()
+    {
+        var email = $"passkey_{Guid.NewGuid():N}@test.com";
+        var password = "SecurePassword123!";
+
+        // Register and ensure logged in
+        await RegisterUserAsync(email, password);
+        await EnsureLoggedInAsync(email, password);
+
+        // Navigate to Passkeys page
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage/Passkeys");
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Verify page loaded
+        Assert.That(Page.Url, Does.Contain("/Account/Manage/Passkeys").IgnoreCase);
+
+        // Verify page loaded without server error
+        var title = await Page.TitleAsync();
+        Assert.That(title, Does.Not.Contain("Internal Server Error"),
+            "Passkeys page should load without server error");
+
+        // Verify page heading or content exists
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "Manage your passkeys" })).ToBeVisibleAsync();
+
+        // Cleanup
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+    }
+
+    /// <summary>
+    /// User journey: Navigate to Rename Passkey page (without existing passkey)
+    /// Tests the rename passkey page accessibility.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_Passkeys_RenamePageWithoutPasskey()
+    {
+        var email = $"passkeyrename_{Guid.NewGuid():N}@test.com";
+        var password = "SecurePassword123!";
+
+        // Register and ensure logged in
+        await RegisterUserAsync(email, password);
+        await EnsureLoggedInAsync(email, password);
+
+        // Navigate directly to rename passkey page (should redirect or show error)
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage/RenamePasskey");
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Page should either redirect to passkeys page or show error
+        var url = Page.Url;
+        Assert.That(url, Does.Contain("/Account/Manage").IgnoreCase);
+
+        // Cleanup
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+    }
+
+    #endregion
+
+    #region Recovery Codes Tests
+
+    /// <summary>
+    /// User journey: Navigate to Generate Recovery Codes page
+    /// Tests the recovery codes generation page.
+    /// Note: This page requires 2FA to be enabled first. Without 2FA, it may show an error.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_RecoveryCodes_NavigateToPage()
+    {
+        var email = $"recovery_{Guid.NewGuid():N}@test.com";
+        var password = "SecurePassword123!";
+
+        // Register and ensure logged in
+        await RegisterUserAsync(email, password);
+        await EnsureLoggedInAsync(email, password);
+
+        // Navigate to Generate Recovery Codes page
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage/GenerateRecoveryCodes");
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Verify page loaded (may redirect to 2FA page if 2FA not enabled)
+        var url = Page.Url;
+        Assert.That(url, Does.Contain("/Account/Manage").IgnoreCase);
+
+        // Cleanup
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+    }
+
+    #endregion
+
+    #region Disable 2FA Tests
+
+    /// <summary>
+    /// User journey: Navigate to Disable 2FA page
+    /// Tests the disable 2FA page.
+    /// Note: This page requires 2FA to be enabled first. Without 2FA, it may show an error or redirect.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_Disable2FA_NavigateToPage()
+    {
+        var email = $"disable2fa_{Guid.NewGuid():N}@test.com";
+        var password = "SecurePassword123!";
+
+        // Register and ensure logged in
+        await RegisterUserAsync(email, password);
+        await EnsureLoggedInAsync(email, password);
+
+        // Navigate to Disable 2FA page
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage/Disable2fa");
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Verify page loaded (may redirect if 2FA not enabled)
+        var url = Page.Url;
+        Assert.That(url, Does.Contain("/Account/Manage").IgnoreCase);
+
+        // Cleanup
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+    }
+
+    #endregion
+
+    #region Set Password Tests
+
+    /// <summary>
+    /// User journey: Navigate to Set Password page (for users without password, e.g., external login)
+    /// Tests the set password page accessibility.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_SetPassword_NavigateToPage()
+    {
+        var email = $"setpw_{Guid.NewGuid():N}@test.com";
+        var password = "SecurePassword123!";
+
+        // Register with password and ensure logged in
+        await RegisterUserAsync(email, password);
+        await EnsureLoggedInAsync(email, password);
+
+        // Navigate to Set Password page
+        // For users with password, this may redirect to Change Password
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage/SetPassword");
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Page should load or redirect appropriately
+        var url = Page.Url;
+        Assert.That(url, Does.Contain("/Account/Manage").IgnoreCase);
+
+        // Verify no server error
+        var title = await Page.TitleAsync();
+        Assert.That(title, Does.Not.Contain("Internal Server Error"),
+            "SetPassword page should not show server error");
+
+        // Cleanup
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+    }
+
+    #endregion
+
+    #region Access Denied Tests
+
+    /// <summary>
+    /// User journey: Access denied page is accessible
+    /// Tests that access denied page loads correctly.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_AccessDenied_PageLoads()
+    {
+        // Navigate directly to access denied page
+        await Page.GotoAsync($"{BaseUrl}/Account/AccessDenied");
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Verify page loaded
+        Assert.That(Page.Url, Does.Contain("/Account/AccessDenied").IgnoreCase);
+
+        // Verify access denied message is shown
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "Access denied" })).ToBeVisibleAsync();
+    }
+
+    #endregion
+
+    #region Lockout Tests
+
+    /// <summary>
+    /// User journey: Lockout page is accessible
+    /// Tests that lockout page loads correctly.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_Lockout_PageLoads()
+    {
+        // Navigate directly to lockout page
+        await Page.GotoAsync($"{BaseUrl}/Account/Lockout");
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Verify page loaded
+        Assert.That(Page.Url, Does.Contain("/Account/Lockout").IgnoreCase);
+
+        // Verify lockout message is shown
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "Locked out" })).ToBeVisibleAsync();
+    }
+
+    #endregion
+
+    #region Multiple Sessions Tests
+
+    /// <summary>
+    /// User journey: Register, login, logout, login again
+    /// Tests that users can log in multiple times.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_MultipleLogins()
+    {
+        var email = $"multilogin_{Guid.NewGuid():N}@test.com";
+        var password = "SecurePassword123!";
+
+        // Register and login
+        await RegisterUserAsync(email, password);
+        await EnsureLoggedInAsync(email, password);
+
+        // Verify logged in
+        await Page.GotoAsync($"{BaseUrl}/auth");
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "You are authenticated" })).ToBeVisibleAsync();
+
+        // Logout
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Verify logged out
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage");
+        Assert.That(Page.Url, Does.Contain("/Account/Login").IgnoreCase);
+
+        // Login again
+        await Page.GotoAsync($"{BaseUrl}/Account/Login");
+        await Page.GetByLabel("Email").FillAsync(email);
+        await Page.GetByLabel("Password").FillAsync(password);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Log in", Exact = true }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Verify logged in again
+        await Page.GotoAsync($"{BaseUrl}/auth");
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "You are authenticated" })).ToBeVisibleAsync();
+
+        // Logout again
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Login third time
+        await Page.GotoAsync($"{BaseUrl}/Account/Login");
+        await Page.GetByLabel("Email").FillAsync(email);
+        await Page.GetByLabel("Password").FillAsync(password);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Log in", Exact = true }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Verify logged in
+        await Page.GotoAsync($"{BaseUrl}/auth");
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "You are authenticated" })).ToBeVisibleAsync();
+
+        // Cleanup
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+    }
+
+    #endregion
+
+    #region Counter Page Interaction Tests
+
+    /// <summary>
+    /// User journey: View counter page
+    /// Tests the counter page loads correctly.
+    /// Note: Counter interactivity requires Blazor interactive mode which is not enabled by default.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_Counter_PageLoads()
+    {
+        // Navigate to counter page
+        await Page.GotoAsync($"{BaseUrl}/counter");
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "Counter" })).ToBeVisibleAsync();
+
+        // Verify initial count is displayed
+        var statusParagraph = Page.Locator("p[role='status']");
+        await Expect(statusParagraph).ToContainTextAsync("Current count: 0");
+
+        // Verify click button is present
+        await Expect(Page.GetByRole(AriaRole.Button, new() { Name = "Click me" })).ToBeVisibleAsync();
+    }
+
+    #endregion
+
+    #region Weather Page Tests
+
+    /// <summary>
+    /// User journey: View weather page
+    /// Tests the weather page loads with data.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_Weather_ViewData()
+    {
+        // Navigate to weather page
+        await Page.GotoAsync($"{BaseUrl}/weather");
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "Weather" })).ToBeVisibleAsync();
+
+        // Wait for loading to complete and table to appear
+        // The weather page has a 500ms simulated loading delay
+        await Expect(Page.Locator("table")).ToBeVisibleAsync(new() { Timeout = 10000 });
+
+        // Verify table header exists
+        await Expect(Page.Locator("table thead")).ToBeVisibleAsync();
+        
+        // Verify table body exists with data rows
+        var tableBody = Page.Locator("table tbody");
+        await Expect(tableBody).ToBeVisibleAsync();
+        
+        // Verify at least one row exists (weather data loaded)
+        var rows = tableBody.Locator("tr");
+        await Expect(rows.First).ToBeVisibleAsync();
+    }
+
+    #endregion
+
+    #region Navigation Tests
+
+    /// <summary>
+    /// User journey: Navigate using nav links
+    /// Tests navigation using the side nav.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_Navigation_SideNav()
+    {
+        // Start on home page
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "Hello, world!" })).ToBeVisibleAsync();
+
+        // Click on Counter link
+        await Page.GetByRole(AriaRole.Link, new() { Name = "Counter" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "Counter" })).ToBeVisibleAsync();
+
+        // Click on Weather link
+        await Page.GetByRole(AriaRole.Link, new() { Name = "Weather" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "Weather" })).ToBeVisibleAsync();
+
+        // Click on Home link
+        await Page.GetByRole(AriaRole.Link, new() { Name = "Home" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "Hello, world!" })).ToBeVisibleAsync();
+    }
+
+    #endregion
+
+    #region Comprehensive User Journey Tests
+
+    /// <summary>
+    /// Complete user journey: Create account → Logout → Login with same account
+    /// Tests the full registration and re-login flow.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_CreateAccount_Logout_LoginAgain()
+    {
+        var email = $"relogin_{Guid.NewGuid():N}@test.com";
+        var password = "SecurePassword123!";
+
+        // Step 1: Create account
+        await RegisterUserAsync(email, password);
+
+        // Step 2: Verify logged in after registration
+        await Page.GotoAsync($"{BaseUrl}/");
+        var logoutButton = Page.GetByRole(AriaRole.Button, new() { Name = "Logout" });
+        
+        // If not auto-logged in, login first
+        if (await logoutButton.CountAsync() == 0)
+        {
+            await EnsureLoggedInAsync(email, password);
+        }
+
+        // Verify logged in by accessing protected page
+        await Page.GotoAsync($"{BaseUrl}/auth");
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "You are authenticated" })).ToBeVisibleAsync();
+
+        // Step 3: Logout
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Verify logged out - protected page should redirect
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage");
+        Assert.That(Page.Url, Does.Contain("/Account/Login").IgnoreCase);
+
+        // Step 4: Login with same account
+        await Page.GotoAsync($"{BaseUrl}/Account/Login");
+        await Page.GetByLabel("Email").FillAsync(email);
+        await Page.GetByLabel("Password").FillAsync(password);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Log in", Exact = true }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Verify logged in again
+        await Page.GotoAsync($"{BaseUrl}/auth");
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "You are authenticated" })).ToBeVisibleAsync();
+
+        // Cleanup
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+    }
+
+    /// <summary>
+    /// User journey: Create account → Change password → Logout → Login with new password
+    /// Tests password change flow with verification.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_CreateAccount_ChangePassword_LoginWithNewPassword()
+    {
+        var email = $"changepw_{Guid.NewGuid():N}@test.com";
+        var originalPassword = "OriginalPass123!";
+        var newPassword = "NewSecurePass456!";
+
+        // Step 1: Create account
+        await RegisterUserAsync(email, originalPassword);
+        await EnsureLoggedInAsync(email, originalPassword);
+
+        // Step 2: Change password
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage/ChangePassword");
+        await Page.GetByLabel("Old password").FillAsync(originalPassword);
+        await Page.GetByLabel("New password", new() { Exact = true }).FillAsync(newPassword);
+        await Page.GetByLabel("Confirm password", new() { Exact = true }).FillAsync(newPassword);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Update password" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Verify password changed message
+        await Expect(Page.GetByText("password has been changed", new() { Exact = false })).ToBeVisibleAsync();
+
+        // Step 3: Logout
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Step 4: Try login with old password - should fail
+        await Page.GotoAsync($"{BaseUrl}/Account/Login");
+        await Page.GetByLabel("Email").FillAsync(email);
+        await Page.GetByLabel("Password").FillAsync(originalPassword);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Log in", Exact = true }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Should stay on login page (failed login)
+        Assert.That(Page.Url, Does.Contain("/Account/Login").IgnoreCase);
+
+        // Step 5: Login with new password - should succeed
+        await Page.GetByLabel("Email").FillAsync(email);
+        await Page.GetByLabel("Password").FillAsync(newPassword);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Log in", Exact = true }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Verify logged in
+        await Page.GotoAsync($"{BaseUrl}/auth");
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "You are authenticated" })).ToBeVisibleAsync();
+
+        // Cleanup
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+    }
+
+    /// <summary>
+    /// User journey: Create account → Add phone number → Verify phone saved
+    /// Tests phone number management flow.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_CreateAccount_AddPhoneNumber()
+    {
+        var email = $"phone_{Guid.NewGuid():N}@test.com";
+        var password = "SecurePassword123!";
+        var phoneNumber = "555-987-6543";
+
+        // Step 1: Create account and login
+        await RegisterUserAsync(email, password);
+        await EnsureLoggedInAsync(email, password);
+
+        // Step 2: Navigate to profile and add phone number
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage");
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "Profile" })).ToBeVisibleAsync();
+
+        // Fill in phone number
+        await Page.GetByLabel("Phone number").FillAsync(phoneNumber);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Save" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Step 3: Verify phone number is saved
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage");
+        var phoneInput = Page.GetByLabel("Phone number");
+        var savedPhone = await phoneInput.InputValueAsync();
+        Assert.That(savedPhone, Is.EqualTo(phoneNumber), "Phone number should be saved");
+
+        // Cleanup
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+    }
+
+    /// <summary>
+    /// User journey: Create account → Add phone → Change phone → Verify updated
+    /// Tests phone number update flow.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_CreateAccount_ChangePhoneNumber()
+    {
+        var email = $"changephone_{Guid.NewGuid():N}@test.com";
+        var password = "SecurePassword123!";
+        var originalPhone = "555-111-2222";
+        var newPhone = "555-333-4444";
+
+        // Step 1: Create account and login
+        await RegisterUserAsync(email, password);
+        await EnsureLoggedInAsync(email, password);
+
+        // Step 2: Add original phone number
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage");
+        await Page.GetByLabel("Phone number").FillAsync(originalPhone);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Save" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Step 3: Change phone number
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage");
+        await Page.GetByLabel("Phone number").FillAsync(newPhone);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Save" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Step 4: Verify new phone number is saved
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage");
+        var phoneInput = Page.GetByLabel("Phone number");
+        var savedPhone = await phoneInput.InputValueAsync();
+        Assert.That(savedPhone, Is.EqualTo(newPhone), "Phone number should be updated");
+
+        // Cleanup
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+    }
+
+    /// <summary>
+    /// User journey: Create account → Browse pages → Add phone → Change password → Logout → Re-login
+    /// Tests a complex multi-step user journey.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_CompleteUserExperience()
+    {
+        var email = $"complete_{Guid.NewGuid():N}@test.com";
+        var password = "InitialPass123!";
+        var newPassword = "UpdatedPass456!";
+        var phoneNumber = "555-777-8888";
+
+        // Step 1: Create account
+        await RegisterUserAsync(email, password);
+        await EnsureLoggedInAsync(email, password);
+
+        // Step 2: Browse public pages
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "Hello, world!" })).ToBeVisibleAsync();
+
+        await Page.GotoAsync($"{BaseUrl}/counter");
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "Counter" })).ToBeVisibleAsync();
+
+        await Page.GotoAsync($"{BaseUrl}/weather");
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "Weather" })).ToBeVisibleAsync();
+
+        // Step 3: Access protected page
+        await Page.GotoAsync($"{BaseUrl}/auth");
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "You are authenticated" })).ToBeVisibleAsync();
+
+        // Step 4: Update profile with phone number
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage");
+        await Page.GetByLabel("Phone number").FillAsync(phoneNumber);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Save" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Step 5: Change password
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage/ChangePassword");
+        await Page.GetByLabel("Old password").FillAsync(password);
+        await Page.GetByLabel("New password", new() { Exact = true }).FillAsync(newPassword);
+        await Page.GetByLabel("Confirm password", new() { Exact = true }).FillAsync(newPassword);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Update password" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Step 6: Logout
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Step 7: Re-login with new password
+        await Page.GotoAsync($"{BaseUrl}/Account/Login");
+        await Page.GetByLabel("Email").FillAsync(email);
+        await Page.GetByLabel("Password").FillAsync(newPassword);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Log in", Exact = true }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Step 8: Verify profile data persisted
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage");
+        var phoneInput = Page.GetByLabel("Phone number");
+        var savedPhone = await phoneInput.InputValueAsync();
+        Assert.That(savedPhone, Is.EqualTo(phoneNumber), "Phone number should persist across login sessions");
+
+        // Cleanup
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+    }
+
+    /// <summary>
+    /// User journey: Create account → Request email change → Verify change initiated
+    /// Tests email change request flow.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_CreateAccount_RequestEmailChange()
+    {
+        var email = $"oldemail_{Guid.NewGuid():N}@test.com";
+        var newEmail = $"newemail_{Guid.NewGuid():N}@test.com";
+        var password = "SecurePassword123!";
+
+        // Step 1: Create account and login
+        await RegisterUserAsync(email, password);
+        await EnsureLoggedInAsync(email, password);
+
+        // Step 2: Navigate to email management
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage/Email");
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Verify current email is displayed
+        await Expect(Page.GetByText(email, new() { Exact = false }).First).ToBeVisibleAsync();
+
+        // Step 3: Request email change
+        var newEmailInput = Page.GetByLabel("New email");
+        await newEmailInput.FillAsync(newEmail);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Change email" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Should stay on email page or show confirmation
+        Assert.That(Page.Url, Does.Contain("/Account/Manage/Email").IgnoreCase);
+
+        // Cleanup
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+    }
+
+    /// <summary>
+    /// User journey: Create account → Navigate all manage sections → Logout
+    /// Tests complete account management navigation.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_CreateAccount_ExploreAllManageSections()
+    {
+        var email = $"explore_{Guid.NewGuid():N}@test.com";
+        var password = "SecurePassword123!";
+
+        // Step 1: Create account and login
+        await RegisterUserAsync(email, password);
+        await EnsureLoggedInAsync(email, password);
+
+        // Step 2: Navigate to Profile
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage");
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "Profile" })).ToBeVisibleAsync();
+
+        // Step 3: Navigate to Email
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage/Email");
+        Assert.That(Page.Url, Does.Contain("/Account/Manage/Email").IgnoreCase);
+
+        // Step 4: Navigate to Change Password
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage/ChangePassword");
+        Assert.That(Page.Url, Does.Contain("/Account/Manage/ChangePassword").IgnoreCase);
+
+        // Step 5: Navigate to Two-Factor Authentication
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage/TwoFactorAuthentication");
+        Assert.That(Page.Url, Does.Contain("/Account/Manage/TwoFactorAuthentication").IgnoreCase);
+
+        // Step 6: Navigate to Personal Data
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage/PersonalData");
+        Assert.That(Page.Url, Does.Contain("/Account/Manage/PersonalData").IgnoreCase);
+
+        // Step 7: Navigate to Passkeys
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage/Passkeys");
+        Assert.That(Page.Url, Does.Contain("/Account/Manage/Passkeys").IgnoreCase);
+
+        // Step 8: Navigate to External Logins
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage/ExternalLogins");
+        Assert.That(Page.Url, Does.Contain("/Account/Manage/ExternalLogins").IgnoreCase);
+
+        // Cleanup
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+    }
+
+    /// <summary>
+    /// User journey: Create account → Logout → Forgot password flow
+    /// Tests forgot password request after logging out.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_CreateAccount_Logout_ForgotPassword()
+    {
+        var email = $"forgot_{Guid.NewGuid():N}@test.com";
+        var password = "SecurePassword123!";
+
+        // Step 1: Create account
+        await RegisterUserAsync(email, password);
+        await EnsureLoggedInAsync(email, password);
+
+        // Step 2: Logout
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Step 3: Go to login and click forgot password
+        await Page.GotoAsync($"{BaseUrl}/Account/Login");
+        await Page.GetByRole(AriaRole.Link, new() { Name = "Forgot your password?" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Step 4: Request password reset
+        Assert.That(Page.Url, Does.Contain("/Account/ForgotPassword").IgnoreCase);
+        await Page.GetByLabel("Email").FillAsync(email);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Reset password" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Should redirect to confirmation page
+        Assert.That(Page.Url, Does.Contain("/Account/ForgotPasswordConfirmation").IgnoreCase);
+    }
+
+    /// <summary>
+    /// User journey: Create two accounts → Login/Logout between them
+    /// Tests switching between multiple accounts.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_CreateMultipleAccounts_SwitchBetween()
+    {
+        var email1 = $"user1_{Guid.NewGuid():N}@test.com";
+        var email2 = $"user2_{Guid.NewGuid():N}@test.com";
+        var password1 = "Password1_123!";
+        var password2 = "Password2_456!";
+
+        // Step 1: Create first account
+        await RegisterUserAsync(email1, password1);
+        await EnsureLoggedInAsync(email1, password1);
+
+        // Verify first user's profile
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage/Email");
+        await Expect(Page.GetByText(email1, new() { Exact = false }).First).ToBeVisibleAsync();
+
+        // Step 2: Logout first user
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Step 3: Create second account
+        await RegisterUserAsync(email2, password2);
+        await EnsureLoggedInAsync(email2, password2);
+
+        // Verify second user's profile
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage/Email");
+        await Expect(Page.GetByText(email2, new() { Exact = false }).First).ToBeVisibleAsync();
+
+        // Step 4: Logout second user
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Step 5: Login back to first account
+        await Page.GotoAsync($"{BaseUrl}/Account/Login");
+        await Page.GetByLabel("Email").FillAsync(email1);
+        await Page.GetByLabel("Password").FillAsync(password1);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Log in", Exact = true }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Verify first user's profile again
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage/Email");
+        await Expect(Page.GetByText(email1, new() { Exact = false }).First).ToBeVisibleAsync();
+
+        // Cleanup
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+    }
+
+    /// <summary>
+    /// User journey: Create account → Update profile → Delete account
+    /// Tests the complete account lifecycle including deletion.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_CreateAccount_UpdateProfile_DeleteAccount()
+    {
+        var email = $"delete_{Guid.NewGuid():N}@test.com";
+        var password = "SecurePassword123!";
+        var phoneNumber = "555-999-0000";
+
+        // Step 1: Create account and login
+        await RegisterUserAsync(email, password);
+        await EnsureLoggedInAsync(email, password);
+
+        // Step 2: Update profile with phone number
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage");
+        await Page.GetByLabel("Phone number").FillAsync(phoneNumber);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Save" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Step 3: Navigate to delete personal data
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage/DeletePersonalData");
+        Assert.That(Page.Url, Does.Contain("/Account/Manage/DeletePersonalData").IgnoreCase);
+
+        // Step 4: Delete account
+        await Page.GetByLabel("Password").FillAsync(password);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Delete data and close my account" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Step 5: Verify logged out
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Expect(Page.GetByRole(AriaRole.Link, new() { Name = "Login" })).ToBeVisibleAsync();
+
+        // Step 6: Verify cannot login with deleted account
+        await Page.GotoAsync($"{BaseUrl}/Account/Login");
+        await Page.GetByLabel("Email").FillAsync(email);
+        await Page.GetByLabel("Password").FillAsync(password);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Log in", Exact = true }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Should fail to login - stay on login page
+        Assert.That(Page.Url, Does.Contain("/Account/Login").IgnoreCase);
+    }
+
+    /// <summary>
+    /// User journey: Create account → Add phone → Update phone → Verify updated
+    /// Tests updating phone number to a different value.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_CreateAccount_UpdatePhoneNumber()
+    {
+        var email = $"updatephone_{Guid.NewGuid():N}@test.com";
+        var password = "SecurePassword123!";
+        var phoneNumber = "555-123-4567";
+        var updatedPhone = "555-999-8888";
+
+        // Step 1: Create account and login
+        await RegisterUserAsync(email, password);
+        await EnsureLoggedInAsync(email, password);
+
+        // Step 2: Add phone number
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage");
+        await Page.GetByLabel("Phone number").FillAsync(phoneNumber);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Save" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Verify phone saved
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage");
+        var phoneInput = Page.GetByLabel("Phone number");
+        var savedPhone = await phoneInput.InputValueAsync();
+        Assert.That(savedPhone, Is.EqualTo(phoneNumber));
+
+        // Step 3: Update phone number to new value
+        await phoneInput.FillAsync(updatedPhone);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Save" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Step 4: Verify phone updated
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage");
+        phoneInput = Page.GetByLabel("Phone number");
+        savedPhone = await phoneInput.InputValueAsync();
+        Assert.That(savedPhone, Is.EqualTo(updatedPhone), "Phone number should be updated");
+
+        // Cleanup
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+    }
+
+    /// <summary>
+    /// User journey: Create account → Rapid login/logout cycles
+    /// Tests session handling with rapid authentication changes.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_CreateAccount_RapidLoginLogoutCycles()
+    {
+        var email = $"rapid_{Guid.NewGuid():N}@test.com";
+        var password = "SecurePassword123!";
+
+        // Create account
+        await RegisterUserAsync(email, password);
+        await EnsureLoggedInAsync(email, password);
+
+        // Cycle 1
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        await Page.GotoAsync($"{BaseUrl}/Account/Login");
+        await Page.GetByLabel("Email").FillAsync(email);
+        await Page.GetByLabel("Password").FillAsync(password);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Log in", Exact = true }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Cycle 2
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        await Page.GotoAsync($"{BaseUrl}/Account/Login");
+        await Page.GetByLabel("Email").FillAsync(email);
+        await Page.GetByLabel("Password").FillAsync(password);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Log in", Exact = true }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Cycle 3
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        await Page.GotoAsync($"{BaseUrl}/Account/Login");
+        await Page.GetByLabel("Email").FillAsync(email);
+        await Page.GetByLabel("Password").FillAsync(password);
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Log in", Exact = true }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+        // Verify still works after rapid cycles
+        await Page.GotoAsync($"{BaseUrl}/auth");
+        await Expect(Page.GetByRole(AriaRole.Heading, new() { Name = "You are authenticated" })).ToBeVisibleAsync();
+
+        // Cleanup
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+    }
+
+    /// <summary>
+    /// User journey: Create account → View 2FA options → Navigate to Enable Authenticator
+    /// Tests 2FA setup navigation flow.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_CreateAccount_Explore2FASetup()
+    {
+        var email = $"twofa_{Guid.NewGuid():N}@test.com";
+        var password = "SecurePassword123!";
+
+        // Step 1: Create account and login
+        await RegisterUserAsync(email, password);
+        await EnsureLoggedInAsync(email, password);
+
+        // Step 2: Navigate to 2FA page
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage/TwoFactorAuthentication");
+        Assert.That(Page.Url, Does.Contain("/Account/Manage/TwoFactorAuthentication").IgnoreCase);
+
+        // Step 3: Navigate to Enable Authenticator
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage/EnableAuthenticator");
+        Assert.That(Page.Url, Does.Contain("/Account/Manage/EnableAuthenticator").IgnoreCase);
+
+        // Verify page loaded without error
+        var title = await Page.TitleAsync();
+        Assert.That(title, Does.Not.Contain("Internal Server Error"));
+
+        // Step 4: Navigate to Reset Authenticator
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage/ResetAuthenticator");
+        Assert.That(Page.Url, Does.Contain("/Account/Manage/ResetAuthenticator").IgnoreCase);
+
+        // Cleanup
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+    }
+
+    /// <summary>
+    /// User journey: Create account → Download personal data
+    /// Tests personal data download functionality.
+    /// </summary>
+    [Test]
+    public async Task UserJourney_CreateAccount_DownloadPersonalData()
+    {
+        var email = $"download_{Guid.NewGuid():N}@test.com";
+        var password = "SecurePassword123!";
+
+        // Step 1: Create account and login
+        await RegisterUserAsync(email, password);
+        await EnsureLoggedInAsync(email, password);
+
+        // Step 2: Navigate to Personal Data page
+        await Page.GotoAsync($"{BaseUrl}/Account/Manage/PersonalData");
+        Assert.That(Page.Url, Does.Contain("/Account/Manage/PersonalData").IgnoreCase);
+
+        // Step 3: Verify download button exists
+        var downloadButton = Page.GetByRole(AriaRole.Button, new() { Name = "Download" });
+        await Expect(downloadButton).ToBeVisibleAsync();
+        await Expect(downloadButton).ToBeEnabledAsync();
+
+        // Verify the download form exists
+        var downloadForm = Page.Locator("form[action*='DownloadPersonalData']");
+        await Expect(downloadForm).ToBeVisibleAsync();
+
+        // Cleanup
+        await Page.GotoAsync($"{BaseUrl}/");
+        await Page.GetByRole(AriaRole.Button, new() { Name = "Logout" }).ClickAsync();
+        await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+    }
+
+    #endregion
 }
+
+

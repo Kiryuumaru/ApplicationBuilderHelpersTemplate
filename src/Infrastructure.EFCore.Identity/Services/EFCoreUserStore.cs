@@ -18,13 +18,15 @@ public class EFCoreUserStore(EFCoreDbContext dbContext) :
     IUserTwoFactorStore<User>,
     IUserAuthenticatorKeyStore<User>,
     IUserTwoFactorRecoveryCodeStore<User>,
-    IUserLoginStore<User>
+    IUserLoginStore<User>,
+    IUserPasskeyStore<User>
 {
     private readonly EFCoreDbContext _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
     
     private DbSet<User> Users => _dbContext.Set<User>();
     private DbSet<Role> Roles => _dbContext.Set<Role>();
     private DbSet<UserLoginEntity> UserLogins => _dbContext.Set<UserLoginEntity>();
+    private DbSet<UserPasskeyEntity> UserPasskeys => _dbContext.Set<UserPasskeyEntity>();
 
     public async Task<IdentityResult> CreateAsync(User user, CancellationToken cancellationToken)
     {
@@ -407,6 +409,135 @@ public class EFCoreUserStore(EFCoreDbContext dbContext) :
         if (userLogin == null) return null;
 
         return await Users.FindAsync([userLogin.UserId], cancellationToken);
+    }
+
+    // IUserPasskeyStore implementation
+    public async Task<IList<UserPasskeyInfo>> GetPasskeysAsync(User user, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(user);
+
+        var passkeys = await UserPasskeys
+            .Where(up => up.UserId == user.Id)
+            .ToListAsync(cancellationToken);
+
+        return passkeys.Select(p => new UserPasskeyInfo(
+            p.CredentialId,
+            p.PublicKey ?? [],
+            p.CreatedAt,
+            p.SignCount,
+            string.IsNullOrEmpty(p.Transports) ? null : System.Text.Json.JsonSerializer.Deserialize<string[]>(p.Transports),
+            p.IsUserVerified,
+            p.IsBackupEligible,
+            p.IsBackedUp,
+            p.AttestationObject ?? [],
+            p.ClientDataJson ?? []
+        )).ToList();
+    }
+
+    public async Task<UserPasskeyInfo?> FindPasskeyAsync(User user, byte[] credentialId, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(user);
+        ArgumentNullException.ThrowIfNull(credentialId);
+
+        var passkey = await UserPasskeys
+            .FirstOrDefaultAsync(up => up.UserId == user.Id && up.CredentialId == credentialId, cancellationToken);
+
+        if (passkey == null) return null;
+
+        return new UserPasskeyInfo(
+            passkey.CredentialId,
+            passkey.PublicKey ?? [],
+            passkey.CreatedAt,
+            passkey.SignCount,
+            string.IsNullOrEmpty(passkey.Transports) ? null : System.Text.Json.JsonSerializer.Deserialize<string[]>(passkey.Transports),
+            passkey.IsUserVerified,
+            passkey.IsBackupEligible,
+            passkey.IsBackedUp,
+            passkey.AttestationObject ?? [],
+            passkey.ClientDataJson ?? []
+        );
+    }
+
+    public async Task AddOrUpdatePasskeyAsync(User user, UserPasskeyInfo passkeyInfo, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(user);
+        ArgumentNullException.ThrowIfNull(passkeyInfo);
+
+        var existing = await UserPasskeys
+            .FirstOrDefaultAsync(up => up.UserId == user.Id && up.CredentialId == passkeyInfo.CredentialId, cancellationToken);
+
+        if (existing != null)
+        {
+            existing.PublicKey = passkeyInfo.PublicKey;
+            existing.SignCount = passkeyInfo.SignCount;
+            existing.Transports = passkeyInfo.Transports?.Length > 0
+                ? System.Text.Json.JsonSerializer.Serialize(passkeyInfo.Transports)
+                : null;
+            existing.IsUserVerified = passkeyInfo.IsUserVerified;
+            existing.IsBackupEligible = passkeyInfo.IsBackupEligible;
+            existing.IsBackedUp = passkeyInfo.IsBackedUp;
+            existing.AttestationObject = passkeyInfo.AttestationObject;
+            existing.ClientDataJson = passkeyInfo.ClientDataJson;
+        }
+        else
+        {
+            var entity = new UserPasskeyEntity
+            {
+                UserId = user.Id,
+                CredentialId = passkeyInfo.CredentialId,
+                PublicKey = passkeyInfo.PublicKey,
+                CreatedAt = passkeyInfo.CreatedAt,
+                SignCount = passkeyInfo.SignCount,
+                Transports = passkeyInfo.Transports?.Length > 0
+                    ? System.Text.Json.JsonSerializer.Serialize(passkeyInfo.Transports)
+                    : null,
+                IsUserVerified = passkeyInfo.IsUserVerified,
+                IsBackupEligible = passkeyInfo.IsBackupEligible,
+                IsBackedUp = passkeyInfo.IsBackedUp,
+                AttestationObject = passkeyInfo.AttestationObject,
+                ClientDataJson = passkeyInfo.ClientDataJson
+            };
+            UserPasskeys.Add(entity);
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task RemovePasskeyAsync(User user, byte[] credentialId, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(user);
+        ArgumentNullException.ThrowIfNull(credentialId);
+
+        var passkey = await UserPasskeys
+            .FirstOrDefaultAsync(up => up.UserId == user.Id && up.CredentialId == credentialId, cancellationToken);
+
+        if (passkey != null)
+        {
+            UserPasskeys.Remove(passkey);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+    }
+
+    public async Task<User?> FindByPasskeyIdAsync(byte[] credentialId, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(credentialId);
+
+        var passkey = await UserPasskeys
+            .FirstOrDefaultAsync(up => up.CredentialId == credentialId, cancellationToken);
+
+        if (passkey == null) return null;
+
+        var user = await Users.FindAsync([passkey.UserId], cancellationToken);
+        if (user != null)
+        {
+            await LoadIdentityLinksAsync(user, cancellationToken);
+        }
+        return user;
     }
 
     public void Dispose()
