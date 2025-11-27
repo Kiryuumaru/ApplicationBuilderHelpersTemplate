@@ -11,9 +11,9 @@ namespace Application.AppEnvironment.Extensions;
 public static class IConfigurationExtensions
 {
     private const string AppTagOverrideKey = "VEG_APP_TAG_OVERRIDE";
-    public static string GetAppTagOverride(this IConfiguration configuration)
+    public static string? GetAppTagOverride(this IConfiguration configuration)
     {
-        return configuration.GetRefValue(AppTagOverrideKey);
+        return configuration.GetRefValueOrDefault(AppTagOverrideKey);
     }
     public static void SetAppTagOverride(this IConfiguration configuration, string appTag)
     {

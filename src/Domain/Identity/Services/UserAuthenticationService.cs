@@ -8,18 +8,18 @@ namespace Domain.Identity.Services;
 
 public sealed class UserAuthenticationService
 {
-    private readonly IUserSecretValidator _secretValidator;
+    private readonly IPasswordVerifier _passwordVerifier;
     private readonly IUserRoleResolver? _roleResolver;
     private readonly TimeSpan _defaultLifetime;
 
-    public UserAuthenticationService(IUserSecretValidator secretValidator, IUserRoleResolver? roleResolver = null, TimeSpan? defaultLifetime = null)
+    public UserAuthenticationService(IPasswordVerifier passwordVerifier, IUserRoleResolver? roleResolver = null, TimeSpan? defaultLifetime = null)
     {
-        _secretValidator = secretValidator ?? throw new ArgumentNullException(nameof(secretValidator));
+        _passwordVerifier = passwordVerifier ?? throw new ArgumentNullException(nameof(passwordVerifier));
         _roleResolver = roleResolver;
         _defaultLifetime = defaultLifetime is { TotalSeconds: > 0 } lifetime ? lifetime : TimeSpan.FromHours(1);
     }
 
-    public UserSession Authenticate(User user, ReadOnlySpan<char> secret, DateTimeOffset? issuedAt = null, TimeSpan? lifetime = null)
+    public UserSession Authenticate(User user, string secret, DateTimeOffset? issuedAt = null, TimeSpan? lifetime = null)
     {
         ArgumentNullException.ThrowIfNull(user);
 
@@ -29,12 +29,12 @@ public sealed class UserAuthenticationService
             throw new AuthenticationException("User is not allowed to authenticate in the current state.");
         }
 
-        if (user.Credential is null)
+        if (user.PasswordHash is null)
         {
-            throw new AuthenticationException("User does not have a local credential configured.");
+            throw new AuthenticationException("User does not have a password set.");
         }
 
-        if (!_secretValidator.Verify(user.Credential, secret))
+        if (!_passwordVerifier.Verify(user.PasswordHash, secret))
         {
             user.RecordFailedLogin(timestamp);
             throw new AuthenticationException("Invalid credentials supplied.");

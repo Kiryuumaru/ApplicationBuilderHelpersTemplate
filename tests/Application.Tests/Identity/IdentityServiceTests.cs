@@ -1,12 +1,28 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Application.Authorization.Roles.Models;
-using Application.Authorization.Roles.Services;
+using System.Threading;
+using System.Threading.Tasks;
+using Application.Authorization.Models;
+using Application.Identity.Extensions;
+using Application.Identity.Interfaces;
 using Application.Identity.Models;
 using Application.Identity.Services;
 using Domain.Authorization.Constants;
-using Domain.Identity.Exceptions;
+using Domain.Authorization.Models;
+using Domain.Authorization.ValueObjects;
+using Domain.Identity.Models;
+using Domain.Identity.ValueObjects;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using System.Security.Authentication;
+using Xunit;
 using RolesConstants = Domain.Authorization.Constants.Roles;
+using Infrastructure.EFCore.Identity.Extensions;
+using Infrastructure.EFCore.Sqlite.Extensions;
+using Application.Authorization.Services;
+using Application.Authorization.Interfaces;
 
 namespace Application.Tests.Identity;
 
@@ -26,7 +42,7 @@ public class IdentityServiceTests
 
         var user = await fixture.IdentityService.RegisterUserAsync(request, CancellationToken.None);
 
-        Assert.Equal("alice", user.Username);
+        Assert.Equal("alice", user.UserName);
         var stored = await fixture.IdentityService.GetByUsernameAsync("alice", CancellationToken.None);
         Assert.NotNull(stored);
         Assert.Contains(Permissions.RootReadIdentifier, stored!.GetPermissionIdentifiers());
@@ -34,7 +50,7 @@ public class IdentityServiceTests
         var userRole = await fixture.RoleService.GetByCodeAsync(RolesConstants.User.Code, CancellationToken.None);
         Assert.NotNull(userRole);
         var assignment = Assert.Single(stored.RoleAssignments, a => a.RoleId == userRole!.Id);
-        Assert.Equal(stored.Id.ToString(), assignment.ParameterValues[RoleIds.User.RoleUserIdParameter]);
+        Assert.Equal(stored.Id.ToString(), assignment.ParameterValues[Domain.Authorization.Constants.RoleIds.User.RoleUserIdParameter]);
 
         var session = await fixture.IdentityService.AuthenticateAsync("alice", "Password!23", CancellationToken.None);
         Assert.Contains(RolesConstants.User.Code, session.RoleCodes);
@@ -53,7 +69,7 @@ public class IdentityServiceTests
         var userRole = await fixture.RoleService.GetByCodeAsync(RolesConstants.User.Code, CancellationToken.None);
         Assert.NotNull(userRole);
         var assignment = Assert.Single(stored!.RoleAssignments, a => a.RoleId == userRole!.Id);
-        Assert.Equal(user.Id.ToString(), assignment.ParameterValues[RoleIds.User.RoleUserIdParameter]);
+        Assert.Equal(user.Id.ToString(), assignment.ParameterValues[Domain.Authorization.Constants.RoleIds.User.RoleUserIdParameter]);
 
         var session = await fixture.IdentityService.AuthenticateAsync("solo", "pa55word", CancellationToken.None);
         Assert.Contains(RolesConstants.User.Code, session.RoleCodes);
@@ -145,7 +161,7 @@ public class IdentityServiceTests
         var stored = await fixture.IdentityService.GetByUsernameAsync("delta", CancellationToken.None);
         Assert.NotNull(stored);
         var assignment = Assert.Single(stored!.RoleAssignments);
-        Assert.Equal(user.Id.ToString(), assignment.ParameterValues[RoleIds.User.RoleUserIdParameter]);
+        Assert.Equal(user.Id.ToString(), assignment.ParameterValues[Domain.Authorization.Constants.RoleIds.User.RoleUserIdParameter]);
     }
 
     [Fact]
@@ -240,7 +256,7 @@ public class IdentityServiceTests
 
         var user = await fixture.IdentityService.RegisterExternalAsync(request, CancellationToken.None);
 
-        Assert.False(user.HasPasswordCredential);
+        Assert.Null(user.PasswordHash);
         var stored = await fixture.IdentityService.GetByUsernameAsync("oauth-alice", CancellationToken.None);
         Assert.NotNull(stored);
         Assert.Single(stored!.IdentityLinks);
@@ -250,7 +266,7 @@ public class IdentityServiceTests
         var userRole = await fixture.RoleService.GetByCodeAsync(RolesConstants.User.Code, CancellationToken.None);
         Assert.NotNull(userRole);
         var defaultAssignment = Assert.Single(stored.RoleAssignments, assignment => assignment.RoleId == userRole!.Id);
-        Assert.Equal(stored.Id.ToString(), defaultAssignment.ParameterValues[RoleIds.User.RoleUserIdParameter]);
+        Assert.Equal(stored.Id.ToString(), defaultAssignment.ParameterValues[Domain.Authorization.Constants.RoleIds.User.RoleUserIdParameter]);
     }
 
     [Fact]
@@ -286,15 +302,47 @@ public class IdentityServiceTests
 
     private static IdentityFixture CreateFixture()
     {
-        var roleRepository = new InMemoryRoleRepository();
-        var roleService = new RoleService(roleRepository);
-        var userStore = new InMemoryUserStore();
-        var credentialFactory = new Pbkdf2PasswordCredentialFactory();
-        var secretValidator = new Pbkdf2UserSecretValidator();
-        var roleResolver = new UserRoleResolver(roleRepository);
-        var identityService = new IdentityService(userStore, roleRepository, credentialFactory, secretValidator, roleResolver);
-        return new IdentityFixture(identityService, roleService);
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddIdentityServices();
+
+        // Use shared memory database with EF Core
+        var dbName = Guid.NewGuid().ToString();
+        var connectionString = $"Data Source={dbName};Mode=Memory;Cache=Shared";
+        
+        // Register EF Core Sqlite infrastructure
+        services.AddEFCoreSqlite(connectionString);
+        services.AddEFCoreIdentity();
+        
+        // Relax password requirements for tests
+        services.Configure<IdentityOptions>(options =>
+        {
+            options.Password.RequireDigit = false;
+            options.Password.RequireLowercase = false;
+            options.Password.RequireNonAlphanumeric = false;
+            options.Password.RequireUppercase = false;
+            options.Password.RequiredLength = 1;
+            options.Password.RequiredUniqueChars = 0;
+        });
+        
+        var provider = services.BuildServiceProvider();
+
+        // Keep a connection open to preserve the in-memory database and run migrations
+        var dbContextFactory = provider.GetRequiredService<Microsoft.EntityFrameworkCore.IDbContextFactory<Infrastructure.EFCore.EFCoreDbContext>>();
+        var dbContext = dbContextFactory.CreateDbContext();
+        dbContext.Database.EnsureCreated();
+        
+        var identityService = provider.GetRequiredService<IIdentityService>();
+        var roleService = provider.GetRequiredService<IRoleService>();
+        
+        return new IdentityFixture((IdentityService)identityService, (RoleService)roleService, dbContext);
     }
 
-    private sealed record IdentityFixture(IdentityService IdentityService, RoleService RoleService);
+    private sealed record IdentityFixture(IdentityService IdentityService, RoleService RoleService, IDisposable Connection) : IDisposable
+    {
+        public void Dispose()
+        {
+            Connection.Dispose();
+        }
+    }
 }

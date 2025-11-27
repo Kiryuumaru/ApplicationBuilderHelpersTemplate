@@ -1,3 +1,4 @@
+using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
 using Domain.Identity.Services;
 using Domain.Identity.ValueObjects;
@@ -17,7 +18,7 @@ public class FederatedAuthTests
             displayName: "User One",
             email: "user@example.com");
 
-        Assert.Equal("federatedUser", user.Username);
+        Assert.Equal("federatedUser", user.UserName);
         Assert.Single(user.IdentityLinks);
         var link = user.IdentityLinks.First();
         Assert.Equal("google", link.Provider);
@@ -42,9 +43,9 @@ public class FederatedAuthTests
         user.LinkIdentity("github", "gh-42", "np@example.com", "NP");
         user.Activate();
 
-        var service = new UserAuthenticationService(new StubSecretValidator("secret"));
+        var service = new UserAuthenticationService(new StubPasswordVerifier("secret"));
 
-        Assert.Throws<Domain.Identity.Exceptions.AuthenticationException>(() => service.Authenticate(user, "secret".AsSpan(), DateTimeOffset.UtcNow));
+        Assert.Throws<Domain.Identity.Exceptions.AuthenticationException>(() => service.Authenticate(user, "secret", DateTimeOffset.UtcNow));
     }
 
     [Fact]
@@ -54,20 +55,21 @@ public class FederatedAuthTests
         user.LinkIdentity("google", "g-1", "local@example.com", "Local");
         user.Activate();
 
-        var credential = PasswordCredential.Create("argon2", "hash", "salt", 3);
-        user.SetPasswordCredential(credential);
+        // Set password hash using reflection since setter is private
+        var prop = typeof(User).GetProperty(nameof(User.PasswordHash));
+        prop?.SetValue(user, "hashed_secret");
 
-        var service = new UserAuthenticationService(new StubSecretValidator("secret"));
-        var session = service.Authenticate(user, "secret".AsSpan(), DateTimeOffset.UtcNow);
+        var service = new UserAuthenticationService(new StubPasswordVerifier("secret"));
+        var session = service.Authenticate(user, "secret", DateTimeOffset.UtcNow);
 
         Assert.Equal(user.Id, session.UserId);
     }
 
-    private sealed class StubSecretValidator(string expected) : Domain.Identity.Interfaces.IUserSecretValidator
+    private sealed class StubPasswordVerifier(string expected) : IPasswordVerifier
     {
-        public bool Verify(Domain.Identity.ValueObjects.PasswordCredential credential, ReadOnlySpan<char> secret)
+        public bool Verify(string? hashedPassword, string providedPassword)
         {
-            return secret.SequenceEqual(expected.AsSpan());
+            return providedPassword == expected && hashedPassword == "hashed_secret";
         }
     }
 }

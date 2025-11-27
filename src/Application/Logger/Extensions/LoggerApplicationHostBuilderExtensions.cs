@@ -21,7 +21,7 @@ using Serilog.Templates.Themes;
 
 namespace Application.Logger.Extensions;
 
-public static class LoggerApplicationHostBuilderExtensions
+internal static class LoggerApplicationHostBuilderExtensions
 {
     static readonly TemplateTheme ConsoleTheme = new(new Dictionary<TemplateThemeStyle, string>
     {

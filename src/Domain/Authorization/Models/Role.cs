@@ -14,21 +14,48 @@ public sealed class Role : AggregateRoot
 
     public string Code { get; private set; }
     public string Name { get; private set; }
+    public string NormalizedName { get; private set; }
     public string? Description { get; private set; }
     public bool IsSystemRole { get; private set; }
 
     public IReadOnlyCollection<RolePermissionTemplate> PermissionGrants => _permissionGrants.ToList().AsReadOnly();
 
-    private Role(string code, string name, string? description, bool isSystemRole)
+    private Role(Guid id, string code, string name, string? description, bool isSystemRole) : base(id)
     {
         Code = NormalizeCode(code);
         Name = NormalizeName(name);
+        NormalizedName = name.ToUpperInvariant();
         Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
         IsSystemRole = isSystemRole;
     }
 
     public static Role Create(string code, string name, string? description = null, bool isSystemRole = false)
-        => new(code, name, description, isSystemRole);
+        => new(Guid.NewGuid(), code, name, description, isSystemRole);
+
+    /// <summary>
+    /// Factory method for hydrating a Role from persistence. AOT-compatible.
+    /// </summary>
+    public static Role Hydrate(Guid id, Guid? revId, string code, string name, string? description, bool isSystemRole)
+    {
+        var role = new Role(id, code, name, description, isSystemRole);
+        if (revId.HasValue)
+        {
+            role.RevId = revId.Value;
+        }
+        return role;
+    }
+
+    public void SetName(string name)
+    {
+        Name = NormalizeName(name);
+        MarkAsModified();
+    }
+
+    public void SetNormalizedName(string normalizedName)
+    {
+        NormalizedName = normalizedName;
+        MarkAsModified();
+    }
 
     public void UpdateMetadata(string name, string? description)
     {
@@ -130,7 +157,7 @@ public sealed class Role : AggregateRoot
             throw new DomainException("Role code cannot be null or empty.");
         }
 
-        return code.Trim().ToLowerInvariant();
+        return code.Trim().ToUpperInvariant();
     }
 
     private static string NormalizeName(string name)

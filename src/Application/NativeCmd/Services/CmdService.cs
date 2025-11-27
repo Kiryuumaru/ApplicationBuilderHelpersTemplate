@@ -2,8 +2,10 @@
 using Application.Common.Extensions;
 using Application.Logger.Extensions;
 using Application.NativeCmd.Exceptions;
+using Application.NativeCmd.Extensions;
 using CliWrap;
 using CliWrap.EventStream;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -12,7 +14,7 @@ using System.Text;
 namespace Application.NativeCmd.Services;
 
 #pragma warning disable CA1822 // Mark members as static
-public class CmdService(ILogger<CmdService> logger)
+public class CmdService(ILogger<CmdService> logger, IConfiguration configuration)
 {
     public Command BuildRun(
         string path,
@@ -108,15 +110,23 @@ public class CmdService(ILogger<CmdService> logger)
 
         string errors = "";
 
+        bool isVerbose = configuration.GetIsVerboseCliLogger();
+
         await foreach (var cmdEvent in RunListen(path, args, workingDirectory, environmentVariables, inPipeTarget, stoppingToken))
         {
             switch (cmdEvent)
             {
                 case StandardOutputCommandEvent stdOut:
-                    logger.LogTrace("{x}", stdOut.Text);
+                    if (isVerbose)
+                        logger.LogTrace("{x}", stdOut.Text);
+                    else
+                        logger.LogDebug("{x}", stdOut.Text);
                     break;
                 case StandardErrorCommandEvent stdErr:
-                    logger.LogTrace("{x}", stdErr.Text);
+                    if (isVerbose)
+                        logger.LogTrace("{x}", stdErr.Text);
+                    else
+                        logger.LogDebug("{x}", stdErr.Text);
                     if (errors != "")
                     {
                         errors += "\n";
@@ -131,7 +141,10 @@ public class CmdService(ILogger<CmdService> logger)
                     }
                     else
                     {
-                        logger.LogTrace("{x}", msg);
+                        if (isVerbose)
+                            logger.LogTrace("{x}", msg);
+                        else
+                            logger.LogDebug("{x}", msg);
                     }
                     break;
             }
@@ -164,15 +177,23 @@ public class CmdService(ILogger<CmdService> logger)
 
         string errors = "";
 
+        bool isVerbose = configuration.GetIsVerboseCliLogger();
+
         await foreach (var cmdEvent in RunListen(command, workingDirectory, environmentVariables, inPipeTarget, stoppingToken))
         {
             switch (cmdEvent)
             {
                 case StandardOutputCommandEvent stdOut:
-                    logger.LogTrace("{x}", stdOut.Text);
+                    if (isVerbose)
+                        logger.LogTrace("{x}", stdOut.Text);
+                    else
+                        logger.LogDebug("{x}", stdOut.Text);
                     break;
                 case StandardErrorCommandEvent stdErr:
-                    logger.LogTrace("{x}", stdErr.Text);
+                    if (isVerbose)
+                        logger.LogTrace("{x}", stdErr.Text);
+                    else
+                        logger.LogDebug("{x}", stdErr.Text);
                     if (errors != "")
                     {
                         errors += "\n";
@@ -187,7 +208,10 @@ public class CmdService(ILogger<CmdService> logger)
                     }
                     else
                     {
-                        logger.LogTrace("{x}", msg);
+                        if (isVerbose)
+                            logger.LogTrace("{x}", msg);
+                        else
+                            logger.LogDebug("{x}", msg);
                     }
                     break;
             }

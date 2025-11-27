@@ -1,4 +1,4 @@
-namespace Application.Authorization.Roles.Models;
+namespace Application.Authorization.Models;
 
 public sealed record RoleDescriptor(
     string Code,

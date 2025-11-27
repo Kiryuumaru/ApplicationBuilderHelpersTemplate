@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Application.Authorization.Roles.Interfaces;
+using Application.Authorization.Interfaces;
 using Domain.Authorization.Models;
 using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
 
-namespace Application.Authorization.Roles.Services;
+namespace Application.Authorization.Services;
 
 internal sealed class UserRoleResolver(IRoleLookup roleLookup) : IUserRoleResolver
 {

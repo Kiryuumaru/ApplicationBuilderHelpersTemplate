@@ -6,10 +6,8 @@ namespace Domain.Tests.AppEnvironment;
 public class AppEnvironmentsTests
 {
     [Theory]
-    [InlineData("alpha", "Development", "dev")]
-    [InlineData("beta", "Staging", "stg")]
-    [InlineData("rc", "Preproduction", "pre")]
-    [InlineData("prod", "Production", "prod")]
+    [InlineData("prerelease", "Development", "pre")]
+    [InlineData("master", "Production", "prod")]
     public void GetByTag_ReturnsExpectedEnvironment(string tag, string name, string shortName)
     {
         var environment = AppEnvironments.GetByTag(tag);
@@ -27,7 +25,7 @@ public class AppEnvironmentsTests
     [Fact]
     public void IsValidHelpers_RespectCaseInsensitivity()
     {
-        Assert.True(AppEnvironments.IsValidAppTag("PROD"));
+        Assert.True(AppEnvironments.IsValidAppTag("MASTER"));
         Assert.True(AppEnvironments.IsValidEnvironment("production"));
         Assert.False(AppEnvironments.IsValidAppTag("devops"));
     }

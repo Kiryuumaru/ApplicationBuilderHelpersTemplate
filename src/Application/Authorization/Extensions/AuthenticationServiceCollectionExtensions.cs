@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Application.Authorization.Extensions;
 
-public static class AuthenticationServiceCollectionExtensions
+internal static class AuthenticationServiceCollectionExtensions
 {
     internal static IServiceCollection AddAuthenticationServices(this IServiceCollection services)
     {

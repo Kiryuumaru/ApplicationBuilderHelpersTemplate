@@ -1,10 +1,15 @@
 <Project>
+	<PropertyGroup>
+		<!-- Prevent file locking issues during parallel/CI builds -->
+		<UseSharedCompilation>false</UseSharedCompilation>
+	</PropertyGroup>
+
 	<PropertyGroup Condition="'$(GenerateBuildConstants)' == 'true'">
 		<AssemblyName Condition="'$(AssemblyName)' == ''">vianaapp</AssemblyName>
 		<AssemblyTitle Condition="'$(AssemblyTitle)' == ''">Viana Edge Application</AssemblyTitle>
 		<Description Condition="'$(Description)' == ''">Viana Edge Application</Description>
-		<FullVersion Condition="'$(FullVersion)' == ''">0.0.0-alpha.0+build.local</FullVersion>
-		<AppTag Condition="'$(AppTag)' == ''">alpha</AppTag>
+		<FullVersion Condition="'$(FullVersion)' == ''">0.0.0-prerelease.0+build.local</FullVersion>
+		<AppTag Condition="'$(AppTag)' == ''">prerelease</AppTag>
 		<CredsJsonPath Condition="'$(CredsJsonPath)' == ''">$(MSBuildThisFileDirectory)creds.json</CredsJsonPath>
 
 		<!-- Statically build wmi wrapper -->
@@ -21,7 +26,6 @@
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(GenerateBuildConstants)' == 'true'">
-		<PackageReference Include="WmiLight" Version="6.16.0" />
 		<ProjectReference Include="$(ApplicationCodeGeneratorProject)"
 			ReferenceOutputAssembly="false"
 			SkipGetTargetFrameworkProperties="true">
@@ -84,62 +88,6 @@
 	<PropertyGroup Condition=" '$(Configuration)' == 'Debug' AND '$(ActiveDebugProfile)' == 'Remote.Vagrant.Windows11' ">
 		<RemoteDeployPath>C$</RemoteDeployPath>
 	</PropertyGroup>
-
-	<Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition=" '$(Configuration)' == 'Debug' AND '$(ActiveDebugProfile)' == 'Remote.Vagrant.Windows11' ">
-		<!-- Read RemoteHostName from launchSettings.json -->
-		<Exec Command="powershell -NoProfile -Command &quot;$launchSettings = Get-Content 'Properties\launchSettings.json' | ConvertFrom-Json; $remoteDebugMachine = $launchSettings.profiles.'Remote.Vagrant.Windows11'.remoteDebugMachine; $hostname = $remoteDebugMachine.Split(':')[0]; $hostname | Out-File -FilePath '$(IntermediateOutputPath)hostname.txt' -Encoding utf8&quot;" />
-
-		<!-- Read hostname from file -->
-		<ReadLinesFromFile File="$(IntermediateOutputPath)hostname.txt">
-			<Output TaskParameter="Lines" PropertyName="RemoteHostName" />
-		</ReadLinesFromFile>
-
-		<PropertyGroup>
-			<!-- Trim any whitespace from the hostname -->
-			<RemoteHostName>$(RemoteHostName.Trim())</RemoteHostName>
-		</PropertyGroup>
-
-		<Message Text="Resolving IPv4 for $(RemoteHostName)..." Importance="high" />
-
-		<!-- Write IP to temporary file to avoid PowerShell output formatting issues -->
-		<Exec Command="powershell -NoProfile -Command &quot;$ip = (Resolve-DnsName $(RemoteHostName) | Where-Object { $_.IPAddress -match '^\d+\.' } | Select-Object -First 1).IPAddress; if($ip) { $ip | Out-File -FilePath '$(IntermediateOutputPath)ip.txt' -Encoding utf8 } else { Write-Error 'Failed to resolve IP' }&quot;" />
-
-		<!-- Read IP from file -->
-		<ReadLinesFromFile File="$(IntermediateOutputPath)ip.txt">
-			<Output TaskParameter="Lines" PropertyName="ResolvedIP" />
-		</ReadLinesFromFile>
-
-		<PropertyGroup>
-			<!-- Trim any whitespace from the IP -->
-			<ResolvedIP>$(ResolvedIP.Trim())</ResolvedIP>
-			<HostPathFromCDrive>$([System.IO.Path]::GetFullPath($(TargetDir)).Substring(2))</HostPathFromCDrive>
-		</PropertyGroup>
-
-		<Message Text="Using resolved IP: $(ResolvedIP)" Importance="high" />
-
-		<!-- Safely unmap drive if mapped already -->
-		<Exec Command="net use x: /delete /y 2&gt;nul || echo Drive x: was not mapped" ContinueOnError="true" />
-		<Message Text="Ensured network drive x: is unmapped" Importance="high" />
-
-		<!-- Use the resolved IP address instead of hostname -->
-		<Exec Command="net use x: \\$(ResolvedIP)\$(RemoteDeployPath) /user:vagrant vagrant /persistent:no" />
-		<Message Text="Mapped network drive to IP $(ResolvedIP)" Importance="high" />
-
-		<!-- Ensure target dir -->
-		<Exec Command="if not exist &quot;x:\$(HostPathFromCDrive.Replace('\', '\\'))&quot; mkdir &quot;x:\$(HostPathFromCDrive.Replace('\', '\\'))&quot;" />
-		<Message Text="Ensured directory exists: x:\$(HostPathFromCDrive)" Importance="high" />
-
-		<Message Text="Deploying build to remote VM ($(ResolvedIP)) with identical directory structure..." Importance="high" />
-
-		<!-- Copy files -->
-		<Exec Command="xcopy &quot;$(TargetDir)*.*&quot; &quot;x:\$(HostPathFromCDrive)&quot; /I /E /Y" />
-		<Message Text="Copied files from $(TargetDir) to x:\$(HostPathFromCDrive)" Importance="high" />
-
-		<!-- Safely unmap drive -->
-		<Exec Command="net use x: /delete /y 2&gt;nul || echo Drive x: cleanup completed" ContinueOnError="true" />
-		<Message Text="Unmapped network drive x:" Importance="high" />
-		<Message Text="Remote deployment completed to x:\$(HostPathFromCDrive)" Importance="high" />
-	</Target>
 
 	<PropertyGroup Condition="'$(IsQuietConsole)' == 'true' AND '$(OutputType)' == 'Exe'">
 		<OutputType>WinExe</OutputType>

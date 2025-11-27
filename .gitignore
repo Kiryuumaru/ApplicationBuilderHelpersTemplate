@@ -361,3 +361,11 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/src/Presentation.WebApp/localstore.db
+/src/Presentation.WebApp/localstore.db-shm
+/src/Presentation.WebApp/localstore.db-wal
+/src/Presentation.WebApp/app.db
+/creds.json
+/.nuke/temp
+/src/Presentation.WebApp/app.db-shm
+/src/Presentation.WebApp/app.db-wal

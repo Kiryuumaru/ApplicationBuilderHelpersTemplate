@@ -1,9 +1,9 @@
-using Application.Authorization.Roles.Interfaces;
-using Application.Authorization.Roles.Services;
+using Application.Authorization.Interfaces;
+using Application.Authorization.Services;
 using Domain.Identity.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Application.Authorization.Roles.Extensions;
+namespace Application.Authorization.Extensions;
 
 public static class RoleServiceCollectionExtensions
 {
@@ -14,8 +14,8 @@ public static class RoleServiceCollectionExtensions
         services.AddSingleton<InMemoryRoleRepository>();
         services.AddSingleton<IRoleRepository>(static sp => sp.GetRequiredService<InMemoryRoleRepository>());
         services.AddSingleton<IRoleLookup>(static sp => sp.GetRequiredService<InMemoryRoleRepository>());
-        services.AddSingleton<IRoleService, RoleService>();
-        services.AddSingleton<IUserRoleResolver>(static sp => new UserRoleResolver(sp.GetRequiredService<IRoleLookup>()));
+        services.AddScoped<IRoleService, RoleService>();
+        services.AddScoped<IUserRoleResolver>(static sp => new UserRoleResolver(sp.GetRequiredService<IRoleLookup>()));
         return services;
     }
 }
