@@ -19,11 +19,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Infrastructure.EFCore.Sqlite\Infrastructure.EFCore.Sqlite.csproj" />
 		<ProjectReference Include="..\Application\Application.csproj" />
-		<ProjectReference Include="..\Infrastructure.Sqlite\Infrastructure.Sqlite.csproj" />
-		<ProjectReference Include="..\Infrastructure.Sqlite.Identity\Infrastructure.Sqlite.Identity.csproj" />
-		<ProjectReference Include="..\Infrastructure.Sqlite.LocalStore\Infrastructure.Sqlite.LocalStore.csproj" />
+		<ProjectReference Include="..\Infrastructure.EFCore.Identity\Infrastructure.EFCore.Identity.csproj" />
+		<ProjectReference Include="..\Infrastructure.EFCore.LocalStore\Infrastructure.EFCore.LocalStore.csproj" />
 	</ItemGroup>
 
 </Project>

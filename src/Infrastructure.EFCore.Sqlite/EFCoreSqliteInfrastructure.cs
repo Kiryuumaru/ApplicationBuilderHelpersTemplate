@@ -1,12 +1,15 @@
 ﻿using ApplicationBuilderHelpers;
+using Infrastructure.EFCore.Sqlite.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.EFCore.Sqlite;
 
-public class InfrastructureEFCoreSqlite : InfrastructureEFCore
+public class EFCoreSqliteInfrastructure : InfrastructureEFCore
 {
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
     {
         base.AddServices(applicationBuilder, services);
+
+        services.AddEFCoreSqlite(applicationBuilder.Configuration);
     }
 }
