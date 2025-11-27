@@ -367,3 +367,5 @@ FodyWeavers.xsd
 /src/Presentation.WebApp/app.db
 /creds.json
 /.nuke/temp
+/src/Presentation.WebApp/app.db-shm
+/src/Presentation.WebApp/app.db-wal
