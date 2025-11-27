@@ -1,3 +1,5 @@
+using Nuke.Common;
+using Nuke.Common.IO;
 using Nuke.Common.Tooling;
 using Nuke.Common.Tools.DotNet;
 using NukeBuildHelpers;
@@ -5,7 +7,9 @@ using NukeBuildHelpers.Common.Attributes;
 using NukeBuildHelpers.Entry;
 using NukeBuildHelpers.Entry.Extensions;
 using NukeBuildHelpers.Runner.Abstraction;
+using Serilog;
 using System;
+using System.Linq;
 
 partial class Build : BaseNukeBuildHelpers
 {
@@ -61,5 +65,22 @@ partial class Build : BaseNukeBuildHelpers
         {
             using var appRuntime = await StartApplicationRuntime(context);
             // publish logic here
+        });
+
+    Target Clean => _ => _
+        .Executes(() =>
+        {
+            foreach (var path in RootDirectory.GetFiles("**", 99).Where(i => i.Name.EndsWith(".csproj")))
+            {
+                if (path.Name == "_build.csproj")
+                {
+                    continue;
+                }
+                Log.Information("Cleaning {path}", path);
+                (path.Parent / "bin").DeleteDirectory();
+                (path.Parent / "obj").DeleteDirectory();
+            }
+            (RootDirectory / ".vs").DeleteDirectory();
+            (RootDirectory / "src" / "Presentation.WebApp" / "app.db").DeleteDirectory();
         });
 }
