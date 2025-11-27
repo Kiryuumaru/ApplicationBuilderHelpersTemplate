@@ -111,21 +111,21 @@ Dependencies flow inward: Outer layers depend on inner layers, never reverse.
 
 ## ⚙️ Environment Configuration
 
-Environments are configured in `Build.cs` using a single array. This is the **single source of truth** for all environment-related configuration:
+Environments are configured in `Build.cs` using the `AppEnvironment` model. This is the **single source of truth** for all environment-related configuration:
 
 ```csharp
-static readonly EnvironmentConfig[] Environments =
+static readonly AppEnvironment[] Environments =
 [
-    new("prerelease", "Development", "pre"),
-    new("master", "Production", "prod")   // Last = main branch
+    new() { Tag = "prerelease", Environment = "Development", EnvironmentShort = "pre" },
+    new() { Tag = "master", Environment = "Production", EnvironmentShort = "prod" }
 ];
 ```
 
-| Parameter | Description |
-|-----------|-------------|
+| Property | Description |
+|----------|-------------|
 | `Tag` | Git branch tag (e.g., `prerelease`, `master`) |
-| `Name` | Environment name, also used as property name in generated code |
-| `ShortName` | Short identifier (e.g., `pre`, `prod`) |
+| `Environment` | Environment name, also used as property name in generated code |
+| `EnvironmentShort` | Short identifier (e.g., `pre`, `prod`) |
 
 > **Note:** The **last environment** is treated as the main/production branch.
 

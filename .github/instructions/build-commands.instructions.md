@@ -34,13 +34,13 @@ When setting up a fresh clone or after modifying `Environments` in `Build.cs`:
 
 ## Environment Configuration
 
-Environments are configured in `build/Build.cs`:
+Environments are configured in `build/Build.cs` using the `AppEnvironment` model:
 
 ```csharp
-static readonly EnvironmentConfig[] Environments =
+static readonly AppEnvironment[] Environments =
 [
-    new("prerelease", "Development", "pre"),
-    new("master", "Production", "prod")   // Last = main branch
+    new() { Tag = "prerelease", Environment = "Development", EnvironmentShort = "pre" },
+    new() { Tag = "master", Environment = "Production", EnvironmentShort = "prod" }
 ];
 ```
 

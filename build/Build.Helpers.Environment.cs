@@ -1,4 +1,5 @@
 using Application.Common.Extensions;
+using Domain.AppEnvironment.Models;
 using Nuke.Common;
 using Nuke.Common.IO;
 using Serilog;
@@ -11,12 +12,6 @@ using System.Text.Json.Nodes;
 
 partial class Build
 {
-    // ─────────────────────────────────────────────────────────────
-    // Environment Configuration Record
-    // ─────────────────────────────────────────────────────────────
-
-    record EnvironmentConfig(string Tag, string Name, string ShortName);
-
     // ─────────────────────────────────────────────────────────────
     // Base Build Overrides
     // ─────────────────────────────────────────────────────────────
@@ -118,17 +113,17 @@ partial class Build
         // Static properties for each environment
         foreach (var env in Environments)
         {
-            sb.AppendLine($"    public static Models.AppEnvironment {env.Name} {{ get; }} = new()");
+            sb.AppendLine($"    public static Models.AppEnvironment {env.Environment} {{ get; }} = new()");
             sb.AppendLine("    {");
-            sb.AppendLine($"        Environment = \"{env.Name}\",");
-            sb.AppendLine($"        EnvironmentShort = \"{env.ShortName}\",");
+            sb.AppendLine($"        Environment = \"{env.Environment}\",");
+            sb.AppendLine($"        EnvironmentShort = \"{env.EnvironmentShort}\",");
             sb.AppendLine($"        Tag = \"{env.Tag}\"");
             sb.AppendLine("    };");
             sb.AppendLine();
         }
 
         // AllValues partial property implementation
-        sb.AppendLine($"    public static partial Models.AppEnvironment[] AllValues => [{string.Join(", ", Environments.Select(e => e.Name))}];");
+        sb.AppendLine($"    public static partial Models.AppEnvironment[] AllValues => [{string.Join(", ", Environments.Select(e => e.Environment))}];");
         sb.AppendLine("}");
 
         File.WriteAllText(path, sb.ToString());

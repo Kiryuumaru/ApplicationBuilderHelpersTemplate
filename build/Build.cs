@@ -1,4 +1,4 @@
-using System.Linq;
+using Domain.AppEnvironment.Models;
 using Nuke.Common;
 using Nuke.Common.IO;
 using Nuke.Common.Tooling;
@@ -9,6 +9,7 @@ using NukeBuildHelpers.Entry;
 using NukeBuildHelpers.Entry.Extensions;
 using NukeBuildHelpers.Runner.Abstraction;
 using Serilog;
+using System.Linq;
 
 partial class Build : BaseNukeBuildHelpers
 {
@@ -21,10 +22,10 @@ partial class Build : BaseNukeBuildHelpers
     // Note: The LAST environment is treated as the main/production branch.
     // ═══════════════════════════════════════════════════════════════
 
-    static readonly EnvironmentConfig[] Environments =
+    static readonly AppEnvironment[] Environments =
     [
-        new("prerelease", "Development", "pre"),
-        new("master", "Production", "prod")
+        new() { Tag = "prerelease", Environment = "Development", EnvironmentShort = "pre" },
+        new() { Tag = "master", Environment = "Production", EnvironmentShort = "prod" }
     ];
 
     [SecretVariable("GITHUB_TOKEN")]
