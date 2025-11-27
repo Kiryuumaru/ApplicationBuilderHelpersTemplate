@@ -2,8 +2,7 @@
 
 /// <summary>
 /// Provides extension methods for the TimeSpan struct to create cancellation tokens and sources.
-/// Simplifies the creation of time-based cancellation mechanisms for async operations in the
-/// Viana Edge Grid system.
+/// Simplifies the creation of time-based cancellation mechanisms for async operations
 /// </summary>
 /// <remarks>
 /// <para>

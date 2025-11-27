@@ -4,8 +4,7 @@ namespace Application.Common.Extensions;
 
 /// <summary>
 /// Provides extension methods for the Stopwatch class to calculate elapsed time in different units.
-/// Offers high-precision timing measurements for performance monitoring and benchmarking in the
-/// Viana Edge Grid system.
+/// Offers high-precision timing measurements for performance monitoring and benchmarking
 /// </summary>
 /// <remarks>
 /// <para>

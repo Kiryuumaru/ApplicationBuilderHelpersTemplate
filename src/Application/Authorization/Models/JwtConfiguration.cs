@@ -12,7 +12,7 @@ namespace Application.Authorization.Models;
 /// <remarks>
 /// <para>
 /// This class provides comprehensive configuration for JWT token generation and validation
-/// in the Viana Edge Grid authentication system. It supports standard JWT claims and 
+/// in the authentication system. It supports standard JWT claims and 
 /// security parameters for token lifecycle management.
 /// </para>
 /// <para>
@@ -87,9 +87,6 @@ public class JwtConfiguration
     /// - Validate strictly during token verification
     /// </para>
     /// </remarks>
-    /// <example>
-    /// Examples: "https://auth.viana.ai", "viana-edge-grid-auth", "https://dev.auth.viana.ai"
-    /// </example>
     public required string Issuer { get; init; }
 
     /// <summary>
@@ -113,9 +110,6 @@ public class JwtConfiguration
     /// - Consider using multiple audiences for tokens shared across services
     /// </para>
     /// </remarks>
-    /// <example>
-    /// Examples: "https://api.viana.ai", "viana-edge-grid", "https://gateway.viana.ai"
-    /// </example>
     public required string Audience { get; init; }
 
     /// <summary>

@@ -16,7 +16,7 @@ public class AppEnvironmentService(
         if (string.IsNullOrEmpty(appTag))
         {
             using var store = await localStoreFactory.OpenStore(cancellationToken: cancellationToken);
-            var storedValue = await store.Get("VIANA_EDGE_GRID_APP_TAG", cancellationToken);
+            var storedValue = await store.Get("APP_TAG", cancellationToken);
             if (!string.IsNullOrWhiteSpace(storedValue))
             {
                 appTag = storedValue;
