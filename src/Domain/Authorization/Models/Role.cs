@@ -32,6 +32,19 @@ public sealed class Role : AggregateRoot
     public static Role Create(string code, string name, string? description = null, bool isSystemRole = false)
         => new(Guid.NewGuid(), code, name, description, isSystemRole);
 
+    /// <summary>
+    /// Factory method for hydrating a Role from persistence. AOT-compatible.
+    /// </summary>
+    public static Role Hydrate(Guid id, Guid? revId, string code, string name, string? description, bool isSystemRole)
+    {
+        var role = new Role(id, code, name, description, isSystemRole);
+        if (revId.HasValue)
+        {
+            role.RevId = revId.Value;
+        }
+        return role;
+    }
+
     public void SetName(string name)
     {
         Name = NormalizeName(name);

@@ -5,6 +5,9 @@
 		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<TrimmerSingleWarn>false</TrimmerSingleWarn>
+		<EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+		<IsTrimmable>true</IsTrimmable>
 		<SkipDomainCodeGeneration Condition="'$(SkipDomainCodeGeneration)' == ''">false</SkipDomainCodeGeneration>
 		<PermissionIdsGeneratedFile>Authorization\Constants\PermissionIds.Generated.cs</PermissionIdsGeneratedFile>
 		<RoleIdsGeneratedFile>Authorization\Constants\RoleIds.Generated.cs</RoleIdsGeneratedFile>

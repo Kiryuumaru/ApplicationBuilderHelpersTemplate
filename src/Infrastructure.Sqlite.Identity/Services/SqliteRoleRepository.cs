@@ -52,17 +52,7 @@ public sealed class SqliteRoleRepository(SqliteConnectionFactory connectionFacto
             var description = reader.IsDBNull(4) ? null : reader.GetString(4);
             var isSystemRole = reader.GetBoolean(5);
 
-            var role = (Role)Activator.CreateInstance(
-                typeof(Role), 
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic, 
-                null, 
-                new object?[] { id, code, name, description, isSystemRole }, 
-                null)!;
-            
-            if (revId.HasValue)
-            {
-                role.RevId = revId.Value;
-            }
+            var role = Role.Hydrate(id, revId, code, name, description, isSystemRole);
             
             LoadPermissions(connection, role);
 
@@ -134,17 +124,7 @@ public sealed class SqliteRoleRepository(SqliteConnectionFactory connectionFacto
             var description = reader.IsDBNull(4) ? null : reader.GetString(4);
             var isSystemRole = reader.GetBoolean(5);
 
-            var role = (Role)Activator.CreateInstance(
-                typeof(Role), 
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic, 
-                null, 
-                new object?[] { id, code, name, description, isSystemRole }, 
-                null)!;
-            
-            if (revId.HasValue)
-            {
-                role.RevId = revId.Value;
-            }
+            var role = Role.Hydrate(id, revId, code, name, description, isSystemRole);
             
             return role;
         }

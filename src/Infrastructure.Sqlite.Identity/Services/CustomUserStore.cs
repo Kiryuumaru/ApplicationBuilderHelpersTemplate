@@ -16,6 +16,8 @@ public class CustomUserStore(SqliteConnectionFactory connectionFactory) :
     IUserLockoutStore<User>,
     IUserPhoneNumberStore<User>,
     IUserTwoFactorStore<User>,
+    IUserAuthenticatorKeyStore<User>,
+    IUserTwoFactorRecoveryCodeStore<User>,
     IUserLoginStore<User>,
     IUserPasskeyStore<User>
 {
@@ -32,11 +34,11 @@ public class CustomUserStore(SqliteConnectionFactory connectionFactory) :
             INSERT INTO Users (
                 Id, RevId, UserName, NormalizedUserName, Email, NormalizedEmail, EmailConfirmed, 
                 PasswordHash, SecurityStamp, PhoneNumber, PhoneNumberConfirmed, 
-                TwoFactorEnabled, LockoutEnd, LockoutEnabled, AccessFailedCount
+                TwoFactorEnabled, AuthenticatorKey, RecoveryCodes, LockoutEnd, LockoutEnabled, AccessFailedCount
             ) VALUES (
                 @Id, @RevId, @UserName, @NormalizedUserName, @Email, @NormalizedEmail, @EmailConfirmed, 
                 @PasswordHash, @SecurityStamp, @PhoneNumber, @PhoneNumberConfirmed, 
-                @TwoFactorEnabled, @LockoutEnd, @LockoutEnabled, @AccessFailedCount
+                @TwoFactorEnabled, @AuthenticatorKey, @RecoveryCodes, @LockoutEnd, @LockoutEnabled, @AccessFailedCount
             )";
 
         command.Parameters.AddWithValue("@Id", user.Id.ToString());
@@ -51,6 +53,8 @@ public class CustomUserStore(SqliteConnectionFactory connectionFactory) :
         command.Parameters.AddWithValue("@PhoneNumber", (object?)user.PhoneNumber ?? DBNull.Value);
         command.Parameters.AddWithValue("@PhoneNumberConfirmed", user.PhoneNumberConfirmed ? 1 : 0);
         command.Parameters.AddWithValue("@TwoFactorEnabled", user.TwoFactorEnabled ? 1 : 0);
+        command.Parameters.AddWithValue("@AuthenticatorKey", (object?)user.AuthenticatorKey ?? DBNull.Value);
+        command.Parameters.AddWithValue("@RecoveryCodes", (object?)user.RecoveryCodes ?? DBNull.Value);
         command.Parameters.AddWithValue("@LockoutEnd", (object?)user.LockoutEnd?.ToString("O") ?? DBNull.Value);
         command.Parameters.AddWithValue("@LockoutEnabled", user.LockoutEnabled ? 1 : 0);
         command.Parameters.AddWithValue("@AccessFailedCount", user.AccessFailedCount);
@@ -101,7 +105,8 @@ public class CustomUserStore(SqliteConnectionFactory connectionFactory) :
                 Email = @Email, NormalizedEmail = @NormalizedEmail, EmailConfirmed = @EmailConfirmed, 
                 PasswordHash = @PasswordHash, SecurityStamp = @SecurityStamp, 
                 PhoneNumber = @PhoneNumber, PhoneNumberConfirmed = @PhoneNumberConfirmed, 
-                TwoFactorEnabled = @TwoFactorEnabled, LockoutEnd = @LockoutEnd, 
+                TwoFactorEnabled = @TwoFactorEnabled, AuthenticatorKey = @AuthenticatorKey, 
+                RecoveryCodes = @RecoveryCodes, LockoutEnd = @LockoutEnd, 
                 LockoutEnabled = @LockoutEnabled, AccessFailedCount = @AccessFailedCount
             WHERE Id = @Id";
 
@@ -117,6 +122,8 @@ public class CustomUserStore(SqliteConnectionFactory connectionFactory) :
         command.Parameters.AddWithValue("@PhoneNumber", (object?)user.PhoneNumber ?? DBNull.Value);
         command.Parameters.AddWithValue("@PhoneNumberConfirmed", user.PhoneNumberConfirmed ? 1 : 0);
         command.Parameters.AddWithValue("@TwoFactorEnabled", user.TwoFactorEnabled ? 1 : 0);
+        command.Parameters.AddWithValue("@AuthenticatorKey", (object?)user.AuthenticatorKey ?? DBNull.Value);
+        command.Parameters.AddWithValue("@RecoveryCodes", (object?)user.RecoveryCodes ?? DBNull.Value);
         command.Parameters.AddWithValue("@LockoutEnd", (object?)user.LockoutEnd?.ToString("O") ?? DBNull.Value);
         command.Parameters.AddWithValue("@LockoutEnabled", user.LockoutEnabled ? 1 : 0);
         command.Parameters.AddWithValue("@AccessFailedCount", user.AccessFailedCount);
@@ -226,45 +233,40 @@ public class CustomUserStore(SqliteConnectionFactory connectionFactory) :
         var id = Guid.Parse(reader.GetString(reader.GetOrdinal("Id")));
         var revId = reader.IsDBNull(reader.GetOrdinal("RevId")) ? (Guid?)null : Guid.Parse(reader.GetString(reader.GetOrdinal("RevId")));
         var userName = reader.GetString(reader.GetOrdinal("UserName"));
+        var normalizedUserName = reader.GetString(reader.GetOrdinal("NormalizedUserName"));
         var email = reader.IsDBNull(reader.GetOrdinal("Email")) ? null : reader.GetString(reader.GetOrdinal("Email"));
-
-        var constructor = typeof(User).GetConstructor(
-            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
-            null,
-            new[] { typeof(Guid), typeof(string), typeof(string) },
-            null);
-
-        if (constructor == null) throw new InvalidOperationException("User constructor not found.");
-
-        var user = (User)constructor.Invoke(new object?[] { id, userName, email });
-
-        if (revId.HasValue)
-        {
-            user.RevId = revId.Value;
-        }
-
-        SetProp(user, "NormalizedUserName", reader.GetString(reader.GetOrdinal("NormalizedUserName")));
-        SetProp(user, "NormalizedEmail", reader.IsDBNull(reader.GetOrdinal("NormalizedEmail")) ? null : reader.GetString(reader.GetOrdinal("NormalizedEmail")));
-        SetProp(user, "EmailConfirmed", reader.GetBoolean(reader.GetOrdinal("EmailConfirmed")));
-        SetProp(user, "PasswordHash", reader.IsDBNull(reader.GetOrdinal("PasswordHash")) ? null : reader.GetString(reader.GetOrdinal("PasswordHash")));
-        SetProp(user, "SecurityStamp", reader.IsDBNull(reader.GetOrdinal("SecurityStamp")) ? null : reader.GetString(reader.GetOrdinal("SecurityStamp")));
-        SetProp(user, "PhoneNumber", reader.IsDBNull(reader.GetOrdinal("PhoneNumber")) ? null : reader.GetString(reader.GetOrdinal("PhoneNumber")));
-        SetProp(user, "PhoneNumberConfirmed", reader.GetBoolean(reader.GetOrdinal("PhoneNumberConfirmed")));
-        SetProp(user, "TwoFactorEnabled", reader.GetBoolean(reader.GetOrdinal("TwoFactorEnabled")));
-        
+        var normalizedEmail = reader.IsDBNull(reader.GetOrdinal("NormalizedEmail")) ? null : reader.GetString(reader.GetOrdinal("NormalizedEmail"));
+        var emailConfirmed = reader.GetBoolean(reader.GetOrdinal("EmailConfirmed"));
+        var passwordHash = reader.IsDBNull(reader.GetOrdinal("PasswordHash")) ? null : reader.GetString(reader.GetOrdinal("PasswordHash"));
+        var securityStamp = reader.IsDBNull(reader.GetOrdinal("SecurityStamp")) ? null : reader.GetString(reader.GetOrdinal("SecurityStamp"));
+        var phoneNumber = reader.IsDBNull(reader.GetOrdinal("PhoneNumber")) ? null : reader.GetString(reader.GetOrdinal("PhoneNumber"));
+        var phoneNumberConfirmed = reader.GetBoolean(reader.GetOrdinal("PhoneNumberConfirmed"));
+        var twoFactorEnabled = reader.GetBoolean(reader.GetOrdinal("TwoFactorEnabled"));
+        var authenticatorKey = reader.IsDBNull(reader.GetOrdinal("AuthenticatorKey")) ? null : reader.GetString(reader.GetOrdinal("AuthenticatorKey"));
+        var recoveryCodes = reader.IsDBNull(reader.GetOrdinal("RecoveryCodes")) ? null : reader.GetString(reader.GetOrdinal("RecoveryCodes"));
         var lockoutEndStr = reader.IsDBNull(reader.GetOrdinal("LockoutEnd")) ? null : reader.GetString(reader.GetOrdinal("LockoutEnd"));
-        if (lockoutEndStr != null) SetProp(user, "LockoutEnd", DateTimeOffset.Parse(lockoutEndStr));
-        
-        SetProp(user, "LockoutEnabled", reader.GetBoolean(reader.GetOrdinal("LockoutEnabled")));
-        SetProp(user, "AccessFailedCount", reader.GetInt32(reader.GetOrdinal("AccessFailedCount")));
+        var lockoutEnd = lockoutEndStr != null ? DateTimeOffset.Parse(lockoutEndStr) : (DateTimeOffset?)null;
+        var lockoutEnabled = reader.GetBoolean(reader.GetOrdinal("LockoutEnabled"));
+        var accessFailedCount = reader.GetInt32(reader.GetOrdinal("AccessFailedCount"));
 
-        return user;
-    }
-
-    private static void SetProp(object instance, string propName, object? value)
-    {
-        var prop = typeof(User).GetProperty(propName);
-        prop?.SetValue(instance, value);
+        return User.Hydrate(
+            id,
+            revId,
+            userName,
+            normalizedUserName,
+            email,
+            normalizedEmail,
+            emailConfirmed,
+            passwordHash,
+            securityStamp,
+            phoneNumber,
+            phoneNumberConfirmed,
+            twoFactorEnabled,
+            authenticatorKey,
+            recoveryCodes,
+            lockoutEnd,
+            lockoutEnabled,
+            accessFailedCount);
     }
 
     public Task<string> GetUserIdAsync(User user, CancellationToken cancellationToken) => Task.FromResult(user.Id.ToString());
@@ -446,7 +448,7 @@ public class CustomUserStore(SqliteConnectionFactory connectionFactory) :
 
     public Task SetSecurityStampAsync(User user, string stamp, CancellationToken cancellationToken)
     {
-        SetProp(user, "SecurityStamp", stamp);
+        user.SetSecurityStamp(stamp);
         return Task.CompletedTask;
     }
     public Task<string?> GetSecurityStampAsync(User user, CancellationToken cancellationToken) => Task.FromResult(user.SecurityStamp);
@@ -454,46 +456,44 @@ public class CustomUserStore(SqliteConnectionFactory connectionFactory) :
     public Task<DateTimeOffset?> GetLockoutEndDateAsync(User user, CancellationToken cancellationToken) => Task.FromResult(user.LockoutEnd);
     public Task SetLockoutEndDateAsync(User user, DateTimeOffset? lockoutEnd, CancellationToken cancellationToken)
     {
-        // User.cs has private set.
-        SetProp(user, "LockoutEnd", lockoutEnd);
+        user.SetLockoutEnd(lockoutEnd);
         return Task.CompletedTask;
     }
     public Task<int> IncrementAccessFailedCountAsync(User user, CancellationToken cancellationToken)
     {
-        // User.cs has private set.
         var count = user.AccessFailedCount + 1;
-        SetProp(user, "AccessFailedCount", count);
+        user.SetAccessFailedCount(count);
         return Task.FromResult(count);
     }
     public Task ResetAccessFailedCountAsync(User user, CancellationToken cancellationToken)
     {
-        SetProp(user, "AccessFailedCount", 0);
+        user.SetAccessFailedCount(0);
         return Task.CompletedTask;
     }
     public Task<int> GetAccessFailedCountAsync(User user, CancellationToken cancellationToken) => Task.FromResult(user.AccessFailedCount);
     public Task<bool> GetLockoutEnabledAsync(User user, CancellationToken cancellationToken) => Task.FromResult(user.LockoutEnabled);
     public Task SetLockoutEnabledAsync(User user, bool enabled, CancellationToken cancellationToken)
     {
-        SetProp(user, "LockoutEnabled", enabled);
+        user.SetLockoutEnabled(enabled);
         return Task.CompletedTask;
     }
 
     public Task SetPhoneNumberAsync(User user, string? phoneNumber, CancellationToken cancellationToken)
     {
-        SetProp(user, "PhoneNumber", phoneNumber);
+        user.SetPhoneNumber(phoneNumber);
         return Task.CompletedTask;
     }
     public Task<string?> GetPhoneNumberAsync(User user, CancellationToken cancellationToken) => Task.FromResult(user.PhoneNumber);
     public Task<bool> GetPhoneNumberConfirmedAsync(User user, CancellationToken cancellationToken) => Task.FromResult(user.PhoneNumberConfirmed);
     public Task SetPhoneNumberConfirmedAsync(User user, bool confirmed, CancellationToken cancellationToken)
     {
-        SetProp(user, "PhoneNumberConfirmed", confirmed);
+        user.SetPhoneNumberConfirmed(confirmed);
         return Task.CompletedTask;
     }
 
     public Task SetTwoFactorEnabledAsync(User user, bool enabled, CancellationToken cancellationToken)
     {
-        SetProp(user, "TwoFactorEnabled", enabled);
+        user.SetTwoFactorEnabled(enabled);
         return Task.CompletedTask;
     }
     public Task<bool> GetTwoFactorEnabledAsync(User user, CancellationToken cancellationToken) => Task.FromResult(user.TwoFactorEnabled);
@@ -804,6 +804,71 @@ public class CustomUserStore(SqliteConnectionFactory connectionFactory) :
 
         return await FindByIdAsync(userId, cancellationToken);
     }
+
+    #region IUserAuthenticatorKeyStore
+
+    public Task SetAuthenticatorKeyAsync(User user, string key, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(user);
+        user.SetAuthenticatorKey(key);
+        return Task.CompletedTask;
+    }
+
+    public Task<string?> GetAuthenticatorKeyAsync(User user, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(user);
+        return Task.FromResult(user.AuthenticatorKey);
+    }
+
+    #endregion
+
+    #region IUserTwoFactorRecoveryCodeStore
+
+    public Task ReplaceCodesAsync(User user, IEnumerable<string> recoveryCodes, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(user);
+        ArgumentNullException.ThrowIfNull(recoveryCodes);
+        
+        // Store recovery codes as semicolon-separated string
+        user.SetRecoveryCodes(string.Join(";", recoveryCodes));
+        return Task.CompletedTask;
+    }
+
+    public Task<bool> RedeemCodeAsync(User user, string code, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(user);
+        ArgumentNullException.ThrowIfNull(code);
+
+        var codes = user.RecoveryCodes?.Split(';', StringSplitOptions.RemoveEmptyEntries).ToList();
+        if (codes == null || codes.Count == 0)
+        {
+            return Task.FromResult(false);
+        }
+
+        if (codes.Contains(code))
+        {
+            codes.Remove(code);
+            user.SetRecoveryCodes(codes.Count > 0 ? string.Join(";", codes) : null);
+            return Task.FromResult(true);
+        }
+
+        return Task.FromResult(false);
+    }
+
+    public Task<int> CountCodesAsync(User user, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(user);
+
+        var codes = user.RecoveryCodes?.Split(';', StringSplitOptions.RemoveEmptyEntries);
+        return Task.FromResult(codes?.Length ?? 0);
+    }
+
+    #endregion
 
     public void Dispose()
     {

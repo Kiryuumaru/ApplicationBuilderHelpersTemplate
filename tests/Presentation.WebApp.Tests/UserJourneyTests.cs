@@ -790,7 +790,6 @@ public class UserJourneyTests : PlaywrightTestBase
     /// Tests the two-factor authentication page displays correctly.
     /// </summary>
     [Test]
-    [Ignore("TwoFactorAuthentication page has a known server error - needs investigation")]
     public async Task UserJourney_TwoFactor_ViewOptions()
     {
         var email = $"twofa_{Guid.NewGuid():N}@test.com";
@@ -823,7 +822,6 @@ public class UserJourneyTests : PlaywrightTestBase
     /// Tests navigation to the enable authenticator page.
     /// </summary>
     [Test]
-    [Ignore("EnableAuthenticator page has a known server error - needs investigation")]
     public async Task UserJourney_TwoFactor_NavigateToEnableAuthenticator()
     {
         var email = $"twofaenable_{Guid.NewGuid():N}@test.com";

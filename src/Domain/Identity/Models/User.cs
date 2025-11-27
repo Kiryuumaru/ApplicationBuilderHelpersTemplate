@@ -25,6 +25,8 @@ public sealed class User : AggregateRoot
     public string? PhoneNumber { get; private set; }
     public bool PhoneNumberConfirmed { get; private set; }
     public bool TwoFactorEnabled { get; private set; }
+    public string? AuthenticatorKey { get; private set; }
+    public string? RecoveryCodes { get; private set; }
     public DateTimeOffset? LockoutEnd { get; private set; }
     public bool LockoutEnabled { get; private set; }
     public int AccessFailedCount { get; private set; }
@@ -59,6 +61,51 @@ public sealed class User : AggregateRoot
 
     public static User Register(string userName, string? email = null)
         => new(Guid.NewGuid(), userName, email);
+
+    /// <summary>
+    /// Factory method for hydrating a User from persistence. AOT-compatible.
+    /// </summary>
+    public static User Hydrate(
+        Guid id,
+        Guid? revId,
+        string userName,
+        string normalizedUserName,
+        string? email,
+        string? normalizedEmail,
+        bool emailConfirmed,
+        string? passwordHash,
+        string? securityStamp,
+        string? phoneNumber,
+        bool phoneNumberConfirmed,
+        bool twoFactorEnabled,
+        string? authenticatorKey,
+        string? recoveryCodes,
+        DateTimeOffset? lockoutEnd,
+        bool lockoutEnabled,
+        int accessFailedCount)
+    {
+        var user = new User(id, userName, email)
+        {
+            NormalizedUserName = normalizedUserName,
+            NormalizedEmail = normalizedEmail,
+            EmailConfirmed = emailConfirmed,
+            PasswordHash = passwordHash,
+            SecurityStamp = securityStamp,
+            PhoneNumber = phoneNumber,
+            PhoneNumberConfirmed = phoneNumberConfirmed,
+            TwoFactorEnabled = twoFactorEnabled,
+            AuthenticatorKey = authenticatorKey,
+            RecoveryCodes = recoveryCodes,
+            LockoutEnd = lockoutEnd,
+            LockoutEnabled = lockoutEnabled,
+            AccessFailedCount = accessFailedCount
+        };
+        if (revId.HasValue)
+        {
+            user.RevId = revId.Value;
+        }
+        return user;
+    }
 
     public static User RegisterExternal(string userName, string provider, string subject, string? providerEmail = null, string? displayName = null, string? email = null)
     {
@@ -127,6 +174,18 @@ public sealed class User : AggregateRoot
     public void SetTwoFactorEnabled(bool enabled)
     {
         TwoFactorEnabled = enabled;
+        MarkAsModified();
+    }
+
+    public void SetAuthenticatorKey(string? authenticatorKey)
+    {
+        AuthenticatorKey = authenticatorKey;
+        MarkAsModified();
+    }
+
+    public void SetRecoveryCodes(string? recoveryCodes)
+    {
+        RecoveryCodes = recoveryCodes;
         MarkAsModified();
     }
 

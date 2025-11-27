@@ -160,25 +160,7 @@ public class CustomRoleStore(SqliteConnectionFactory connectionFactory) : IRoleS
         var description = reader.IsDBNull(reader.GetOrdinal("Description")) ? null : reader.GetString(reader.GetOrdinal("Description"));
         var isSystemRole = reader.GetBoolean(reader.GetOrdinal("IsSystemRole"));
 
-        var constructor = typeof(Role).GetConstructor(
-            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
-            null,
-            new[] { typeof(Guid), typeof(string), typeof(string), typeof(string), typeof(bool) },
-            null);
-
-        if (constructor == null)
-        {
-             throw new InvalidOperationException("Role constructor not found.");
-        }
-
-        var role = (Role)constructor.Invoke(new object?[] { id, code, name, description, isSystemRole });
-        
-        if (revId.HasValue)
-        {
-            role.RevId = revId.Value;
-        }
-
-        return role;
+        return Role.Hydrate(id, revId, code, name, description, isSystemRole);
     }
 
     public void Dispose()

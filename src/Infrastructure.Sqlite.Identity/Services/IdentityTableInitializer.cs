@@ -20,6 +20,8 @@ public sealed class IdentityTableInitializer(SqliteConnectionFactory connectionF
                 PhoneNumber TEXT,
                 PhoneNumberConfirmed INTEGER NOT NULL,
                 TwoFactorEnabled INTEGER NOT NULL,
+                AuthenticatorKey TEXT,
+                RecoveryCodes TEXT,
                 LockoutEnd TEXT,
                 LockoutEnabled INTEGER NOT NULL,
                 AccessFailedCount INTEGER NOT NULL

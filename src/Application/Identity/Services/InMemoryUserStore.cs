@@ -122,18 +122,11 @@ internal sealed class InMemoryUserStore : IUserStore<User>, IUserPasswordStore<U
     {
         cancellationToken.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(user);
-        // In a real app, we would update the property. 
-        // Since User is a Domain Entity, we might need a method on it, or use reflection if setters are private.
-        // For now, assuming we can't easily set it without a domain method, but let's check User.cs.
-        // User.cs has private setters. 
-        // We should probably use a method on User to set this, or reflection.
-        // However, for this template, let's assume the User is created with the right values or we use reflection.
         
-        // Actually, the User entity should probably have methods to update these if we want to support it.
-        // But for now, let's just ignore updating if we can't, or use reflection.
-        
-        var prop = typeof(User).GetProperty(nameof(User.NormalizedUserName));
-        prop?.SetValue(user, normalizedName);
+        if (normalizedName != null)
+        {
+            user.SetNormalizedUserName(normalizedName);
+        }
 
         return Task.CompletedTask;
     }
@@ -143,8 +136,10 @@ internal sealed class InMemoryUserStore : IUserStore<User>, IUserPasswordStore<U
         cancellationToken.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(user);
         
-        var prop = typeof(User).GetProperty(nameof(User.UserName));
-        prop?.SetValue(user, userName);
+        if (userName != null)
+        {
+            user.SetUserName(userName);
+        }
 
         return Task.CompletedTask;
     }
@@ -179,8 +174,7 @@ internal sealed class InMemoryUserStore : IUserStore<User>, IUserPasswordStore<U
         cancellationToken.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(user);
         
-        var prop = typeof(User).GetProperty(nameof(User.PasswordHash));
-        prop?.SetValue(user, passwordHash);
+        user.SetPasswordHash(passwordHash);
 
         return Task.CompletedTask;
     }

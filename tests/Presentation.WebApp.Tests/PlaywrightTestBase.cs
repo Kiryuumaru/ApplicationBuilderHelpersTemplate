@@ -4,7 +4,7 @@ using NUnit.Framework;
 
 namespace Presentation.WebApp.Tests;
 
-public class PlaywrightTestBase : PageTest
+public abstract class PlaywrightTestBase : PageTest
 {
     protected WebAppTestFixture Fixture { get; private set; } = null!;
     protected string BaseUrl => Fixture.ServerAddress;
