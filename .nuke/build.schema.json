@@ -32,6 +32,7 @@
         "DeleteOriginTags",
         "Fetch",
         "GithubWorkflow",
+        "Init",
         "Interactive",
         "PipelinePostSetup",
         "PipelinePreSetup",

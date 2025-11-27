@@ -1,26 +1,8 @@
 ﻿namespace Domain.AppEnvironment.Constants;
 
-public static class AppEnvironments
+public static partial class AppEnvironments
 {
-    public static Models.AppEnvironment Prerelease { get; } = new Models.AppEnvironment
-    {
-        Environment = "Development",
-        EnvironmentShort = "pre",
-        Tag = "prerelease"
-    };
-
-    public static Models.AppEnvironment Prod { get; } = new Models.AppEnvironment
-    {
-        Environment = "Production",
-        EnvironmentShort = "prod",
-        Tag = "master"
-    };
-
-    public static Models.AppEnvironment[] AllValues { get; } =
-    [
-        Prerelease,
-        Prod
-    ];
+    public static partial Models.AppEnvironment[] AllValues { get; }
 
     public static bool IsValidAppTag(string appTag)
     {

@@ -1,3 +1,4 @@
+using System.Linq;
 using Nuke.Common;
 using Nuke.Common.IO;
 using Nuke.Common.Tooling;
@@ -8,16 +9,25 @@ using NukeBuildHelpers.Entry;
 using NukeBuildHelpers.Entry.Extensions;
 using NukeBuildHelpers.Runner.Abstraction;
 using Serilog;
-using System;
-using System.Linq;
 
 partial class Build : BaseNukeBuildHelpers
 {
+    // ═══════════════════════════════════════════════════════════════
+    // ENVIRONMENT CONFIGURATION
+    // Add or modify environments here. These are used to generate:
+    // - creds.json (JWT secrets per environment)
+    // - AppEnvironments.Generated.cs (Domain constants)
+    //
+    // Note: The LAST environment is treated as the main/production branch.
+    // ═══════════════════════════════════════════════════════════════
+
+    static readonly EnvironmentConfig[] Environments =
+    [
+        new("prerelease", "Development", "pre"),
+        new("master", "Production", "prod")
+    ];
+
     public static int Main() => Execute<Build>(x => x.Interactive);
-
-    public override string[] EnvironmentBranches { get; } = ["prerelease", "master"];
-
-    public override string MainEnvironmentBranch => "master";
 
     [SecretVariable("GITHUB_TOKEN")]
     readonly string? GithubToken;
@@ -77,22 +87,5 @@ partial class Build : BaseNukeBuildHelpers
         {
             using var appRuntime = await StartApplicationRuntime(context);
             // publish logic here
-        });
-
-    Target Clean => _ => _
-        .Executes(() =>
-        {
-            foreach (var path in RootDirectory.GetFiles("**", 99).Where(i => i.Name.EndsWith(".csproj")))
-            {
-                if (path.Name == "_build.csproj")
-                {
-                    continue;
-                }
-                Log.Information("Cleaning {path}", path);
-                (path.Parent / "bin").DeleteDirectory();
-                (path.Parent / "obj").DeleteDirectory();
-            }
-            (RootDirectory / ".vs").DeleteDirectory();
-            (RootDirectory / "src" / "Presentation.WebApp" / "app.db").DeleteDirectory();
         });
 }
