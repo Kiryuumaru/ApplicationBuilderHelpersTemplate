@@ -40,7 +40,15 @@ partial class Build : BaseNukeBuildHelpers
                     string projFile = RootDirectory / "tests" / testId / $"{testId}.csproj";
                     DotNetTasks.DotNetClean(_ => _
                         .SetProject(projFile));
+                    DotNetTasks.DotNetBuild(_ => _
+                        .SetProjectFile(projFile));
+                    if (testId == "Presentation.WebApp.Tests")
+                    {
+                        AbsolutePath outputDir = RootDirectory / "tests" / testId / "bin" / "Debug" / "net10.0";
+                        DotNetTasks.DotNet($"tool run playwright install --with-deps", outputDir);
+                    }
                     DotNetTasks.DotNetTest(_ => _
+                        .SetNoBuild(true)
                         .SetProcessAdditionalArguments(
                             "--logger \"GitHubActions;summary.includePassedTests=true;summary.includeSkippedTests=true\" " +
                             "-- " +
