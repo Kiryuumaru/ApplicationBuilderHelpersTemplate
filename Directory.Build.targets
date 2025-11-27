@@ -1,4 +1,9 @@
 <Project>
+	<PropertyGroup>
+		<!-- Prevent file locking issues during parallel/CI builds -->
+		<UseSharedCompilation>false</UseSharedCompilation>
+	</PropertyGroup>
+
 	<PropertyGroup Condition="'$(GenerateBuildConstants)' == 'true'">
 		<AssemblyName Condition="'$(AssemblyName)' == ''">vianaapp</AssemblyName>
 		<AssemblyTitle Condition="'$(AssemblyTitle)' == ''">Viana Edge Application</AssemblyTitle>
