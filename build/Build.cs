@@ -1,4 +1,3 @@
-using Domain.AppEnvironment.Models;
 using Nuke.Common;
 using Nuke.Common.IO;
 using Nuke.Common.Tooling;
@@ -13,21 +12,6 @@ using System.Linq;
 
 partial class Build : BaseNukeBuildHelpers
 {
-    // ═══════════════════════════════════════════════════════════════
-    // ENVIRONMENT CONFIGURATION
-    // Add or modify environments here. These are used to generate:
-    // - creds.json (JWT secrets per environment)
-    // - AppEnvironments.Generated.cs (Domain constants)
-    //
-    // Note: The LAST environment is treated as the main/production branch.
-    // ═══════════════════════════════════════════════════════════════
-
-    static readonly AppEnvironment[] Environments =
-    [
-        new() { Tag = "prerelease", Environment = "Development", EnvironmentShort = "pre" },
-        new() { Tag = "master", Environment = "Production", EnvironmentShort = "prod" }
-    ];
-
     [SecretVariable("GITHUB_TOKEN")]
     readonly string? GithubToken;
 

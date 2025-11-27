@@ -111,29 +111,38 @@ Dependencies flow inward: Outer layers depend on inner layers, never reverse.
 
 ## ⚙️ Environment Configuration
 
-Environments are configured in `Build.cs` using the `AppEnvironment` model. This is the **single source of truth** for all environment-related configuration:
+Environments are configured in `src/Domain/AppEnvironment/Constants/AppEnvironments.cs`. This is the **single source of truth** for all environment-related configuration, following the same pattern as `Roles.cs` and `Permissions.cs`:
 
 ```csharp
-static readonly AppEnvironment[] Environments =
-[
-    new() { Tag = "prerelease", Environment = "Development", EnvironmentShort = "pre" },
-    new() { Tag = "master", Environment = "Production", EnvironmentShort = "prod" }
-];
+public static class AppEnvironments
+{
+    public static AppEnvironment Development { get; } = new()
+    {
+        Tag = "prerelease",
+        Environment = "Development",
+        EnvironmentShort = "pre"
+    };
+
+    public static AppEnvironment Production { get; } = new()
+    {
+        Tag = "master",
+        Environment = "Production",
+        EnvironmentShort = "prod"
+    };
+
+    public static AppEnvironment[] AllValues { get; } = [Development, Production];
+}
 ```
 
 | Property | Description |
 |----------|-------------|
 | `Tag` | Git branch tag (e.g., `prerelease`, `master`) |
-| `Environment` | Environment name, also used as property name in generated code |
+| `Environment` | Environment name, also used as property name |
 | `EnvironmentShort` | Short identifier (e.g., `pre`, `prod`) |
 
-> **Note:** The **last environment** is treated as the main/production branch.
+> **Note:** The **last environment** in `AllValues` is treated as the main/production branch.
 
-Running `.\build.ps1 init` generates/updates:
-- `creds.json` - JWT secrets per environment (only if not exists)
-- `AppEnvironments.Generated.cs` - Domain constants (partial class, always regenerated)
-
-After modifying `Environments`, run `.\build.ps1 init` to regenerate `AppEnvironments.Generated.cs`.
+Running `.\build.ps1 init` generates `creds.json` with JWT secrets per environment (only if not exists).
 
 ## 🔐 Credentials (`creds.json`)
 
@@ -164,7 +173,7 @@ The file will not be overwritten if it already exists.
 
 ### Commands
 ```powershell
-.\build.ps1 init            # Generate creds.json + AppEnvironments.Generated.cs
+.\build.ps1 init            # Generate creds.json (if not exists)
 .\build.ps1 clean           # Clean build artifacts
 .\build.ps1 githubworkflow  # Generate GitHub Actions workflow
 

@@ -1,8 +1,31 @@
 ﻿namespace Domain.AppEnvironment.Constants;
 
-public static partial class AppEnvironments
+/// <summary>
+/// Application environment definitions. This is the single source of truth for all environments.
+/// </summary>
+/// <remarks>
+/// The LAST environment in <see cref="AllValues"/> is treated as the main/production branch.
+/// </remarks>
+public static class AppEnvironments
 {
-    public static partial Models.AppEnvironment[] AllValues { get; }
+    public static Models.AppEnvironment Development { get; } = new()
+    {
+        Tag = "prerelease",
+        Environment = "Development",
+        EnvironmentShort = "pre"
+    };
+
+    public static Models.AppEnvironment Production { get; } = new()
+    {
+        Tag = "master",
+        Environment = "Production",
+        EnvironmentShort = "prod"
+    };
+
+    /// <summary>
+    /// All defined environments. The last environment is treated as the main/production branch.
+    /// </summary>
+    public static Models.AppEnvironment[] AllValues { get; } = [Development, Production];
 
     public static bool IsValidAppTag(string appTag)
     {
