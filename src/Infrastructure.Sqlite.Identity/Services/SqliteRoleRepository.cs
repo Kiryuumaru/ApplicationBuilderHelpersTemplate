@@ -37,7 +37,7 @@ public sealed class SqliteRoleRepository(SqliteConnectionFactory connectionFacto
     {
         using var command = connection.CreateCommand();
         command.CommandText = $@"
-            SELECT Id, Code, Name, Description, IsSystemRole, ConcurrencyStamp
+            SELECT Id, RevId, Code, Name, Description, IsSystemRole
             FROM Roles
             WHERE {column} = @Value";
         command.Parameters.AddWithValue("@Value", value);
@@ -46,11 +46,11 @@ public sealed class SqliteRoleRepository(SqliteConnectionFactory connectionFacto
         if (reader.Read())
         {
             var id = Guid.Parse(reader.GetString(0));
-            var code = reader.GetString(1);
-            var name = reader.GetString(2);
-            var description = reader.IsDBNull(3) ? null : reader.GetString(3);
-            var isSystemRole = reader.GetBoolean(4);
-            var concurrencyStamp = reader.GetString(5);
+            var revId = reader.IsDBNull(1) ? (Guid?)null : Guid.Parse(reader.GetString(1));
+            var code = reader.GetString(2);
+            var name = reader.GetString(3);
+            var description = reader.IsDBNull(4) ? null : reader.GetString(4);
+            var isSystemRole = reader.GetBoolean(5);
 
             var role = (Role)Activator.CreateInstance(
                 typeof(Role), 
@@ -59,7 +59,10 @@ public sealed class SqliteRoleRepository(SqliteConnectionFactory connectionFacto
                 new object?[] { id, code, name, description, isSystemRole }, 
                 null)!;
             
-            typeof(Role).GetProperty(nameof(Role.ConcurrencyStamp))!.SetValue(role, concurrencyStamp);
+            if (revId.HasValue)
+            {
+                role.RevId = revId.Value;
+            }
             
             LoadPermissions(connection, role);
 
@@ -116,7 +119,7 @@ public sealed class SqliteRoleRepository(SqliteConnectionFactory connectionFacto
     {
         using var command = connection.CreateCommand();
         command.CommandText = $@"
-            SELECT Id, Code, Name, Description, IsSystemRole, ConcurrencyStamp
+            SELECT Id, RevId, Code, Name, Description, IsSystemRole
             FROM Roles
             WHERE {column} = @Value";
         command.Parameters.AddWithValue("@Value", value);
@@ -125,11 +128,11 @@ public sealed class SqliteRoleRepository(SqliteConnectionFactory connectionFacto
         if (await reader.ReadAsync(cancellationToken))
         {
             var id = Guid.Parse(reader.GetString(0));
-            var code = reader.GetString(1);
-            var name = reader.GetString(2);
-            var description = reader.IsDBNull(3) ? null : reader.GetString(3);
-            var isSystemRole = reader.GetBoolean(4);
-            var concurrencyStamp = reader.GetString(5);
+            var revId = reader.IsDBNull(1) ? (Guid?)null : Guid.Parse(reader.GetString(1));
+            var code = reader.GetString(2);
+            var name = reader.GetString(3);
+            var description = reader.IsDBNull(4) ? null : reader.GetString(4);
+            var isSystemRole = reader.GetBoolean(5);
 
             var role = (Role)Activator.CreateInstance(
                 typeof(Role), 
@@ -138,7 +141,10 @@ public sealed class SqliteRoleRepository(SqliteConnectionFactory connectionFacto
                 new object?[] { id, code, name, description, isSystemRole }, 
                 null)!;
             
-            typeof(Role).GetProperty(nameof(Role.ConcurrencyStamp))!.SetValue(role, concurrencyStamp);
+            if (revId.HasValue)
+            {
+                role.RevId = revId.Value;
+            }
             
             return role;
         }
@@ -200,23 +206,23 @@ public sealed class SqliteRoleRepository(SqliteConnectionFactory connectionFacto
             {
                 command.Transaction = transaction;
                 command.CommandText = @"
-                    INSERT INTO Roles (Id, Code, Name, NormalizedName, Description, IsSystemRole, ConcurrencyStamp)
-                    VALUES (@Id, @Code, @Name, @NormalizedName, @Description, @IsSystemRole, @ConcurrencyStamp)
+                    INSERT INTO Roles (Id, RevId, Code, Name, NormalizedName, Description, IsSystemRole)
+                    VALUES (@Id, @RevId, @Code, @Name, @NormalizedName, @Description, @IsSystemRole)
                     ON CONFLICT(Id) DO UPDATE SET
+                        RevId = @RevId,
                         Code = @Code,
                         Name = @Name,
                         NormalizedName = @NormalizedName,
                         Description = @Description,
-                        IsSystemRole = @IsSystemRole,
-                        ConcurrencyStamp = @ConcurrencyStamp";
+                        IsSystemRole = @IsSystemRole";
                 
                 command.Parameters.AddWithValue("@Id", role.Id.ToString());
+                command.Parameters.AddWithValue("@RevId", role.RevId.ToString());
                 command.Parameters.AddWithValue("@Code", role.Code);
                 command.Parameters.AddWithValue("@Name", role.Name);
                 command.Parameters.AddWithValue("@NormalizedName", role.NormalizedName);
                 command.Parameters.AddWithValue("@Description", (object?)role.Description ?? DBNull.Value);
                 command.Parameters.AddWithValue("@IsSystemRole", role.IsSystemRole ? 1 : 0);
-                command.Parameters.AddWithValue("@ConcurrencyStamp", role.ConcurrencyStamp ?? Guid.NewGuid().ToString());
                 
                 await command.ExecuteNonQueryAsync(cancellationToken);
             }

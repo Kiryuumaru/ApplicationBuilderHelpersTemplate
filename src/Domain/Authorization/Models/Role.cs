@@ -17,7 +17,6 @@ public sealed class Role : AggregateRoot
     public string NormalizedName { get; private set; }
     public string? Description { get; private set; }
     public bool IsSystemRole { get; private set; }
-    public string? ConcurrencyStamp { get; private set; } = Guid.NewGuid().ToString();
 
     public IReadOnlyCollection<RolePermissionTemplate> PermissionGrants => _permissionGrants.ToList().AsReadOnly();
 
@@ -42,12 +41,6 @@ public sealed class Role : AggregateRoot
     public void SetNormalizedName(string normalizedName)
     {
         NormalizedName = normalizedName;
-        MarkAsModified();
-    }
-
-    public void SetConcurrencyStamp(string concurrencyStamp)
-    {
-        ConcurrencyStamp = concurrencyStamp;
         MarkAsModified();
     }
 

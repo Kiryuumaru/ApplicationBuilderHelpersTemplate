@@ -7,9 +7,9 @@ public abstract class Entity : DomainObject, IEntity
     private readonly List<IDomainEvent> _domainEvents = [];
 
     public Guid Id { get; private set; }
-    public Guid RevId { get; set; }
+    public Guid RevId { get; set; } = Guid.NewGuid();
 
-    protected Entity(Guid id, Guid? revId = null)
+    protected Entity(Guid id)
     {
         if (id == Guid.Empty)
         {
@@ -17,7 +17,6 @@ public abstract class Entity : DomainObject, IEntity
         }
 
         Id = id;
-        RevId = revId ?? Guid.NewGuid();
     }
 
     public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();

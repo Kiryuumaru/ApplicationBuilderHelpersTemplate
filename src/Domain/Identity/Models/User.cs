@@ -22,7 +22,6 @@ public sealed class User : AggregateRoot
     public bool EmailConfirmed { get; private set; }
     public string? PasswordHash { get; private set; }
     public string? SecurityStamp { get; private set; }
-    public string? ConcurrencyStamp { get; private set; } = Guid.NewGuid().ToString();
     public string? PhoneNumber { get; private set; }
     public bool PhoneNumberConfirmed { get; private set; }
     public bool TwoFactorEnabled { get; private set; }
@@ -110,12 +109,6 @@ public sealed class User : AggregateRoot
     public void SetSecurityStamp(string securityStamp)
     {
         SecurityStamp = securityStamp;
-        MarkAsModified();
-    }
-
-    public void SetConcurrencyStamp(string concurrencyStamp)
-    {
-        ConcurrencyStamp = concurrencyStamp;
         MarkAsModified();
     }
 

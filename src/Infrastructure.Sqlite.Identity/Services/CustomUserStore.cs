@@ -29,16 +29,17 @@ public class CustomUserStore(SqliteConnectionFactory connectionFactory) :
         using var command = (SqliteCommand)connection.CreateCommand();
         command.CommandText = @"
             INSERT INTO Users (
-                Id, UserName, NormalizedUserName, Email, NormalizedEmail, EmailConfirmed, 
-                PasswordHash, SecurityStamp, ConcurrencyStamp, PhoneNumber, PhoneNumberConfirmed, 
+                Id, RevId, UserName, NormalizedUserName, Email, NormalizedEmail, EmailConfirmed, 
+                PasswordHash, SecurityStamp, PhoneNumber, PhoneNumberConfirmed, 
                 TwoFactorEnabled, LockoutEnd, LockoutEnabled, AccessFailedCount
             ) VALUES (
-                @Id, @UserName, @NormalizedUserName, @Email, @NormalizedEmail, @EmailConfirmed, 
-                @PasswordHash, @SecurityStamp, @ConcurrencyStamp, @PhoneNumber, @PhoneNumberConfirmed, 
+                @Id, @RevId, @UserName, @NormalizedUserName, @Email, @NormalizedEmail, @EmailConfirmed, 
+                @PasswordHash, @SecurityStamp, @PhoneNumber, @PhoneNumberConfirmed, 
                 @TwoFactorEnabled, @LockoutEnd, @LockoutEnabled, @AccessFailedCount
             )";
 
         command.Parameters.AddWithValue("@Id", user.Id.ToString());
+        command.Parameters.AddWithValue("@RevId", user.RevId.ToString());
         command.Parameters.AddWithValue("@UserName", user.UserName);
         command.Parameters.AddWithValue("@NormalizedUserName", user.NormalizedUserName);
         command.Parameters.AddWithValue("@Email", (object?)user.Email ?? DBNull.Value);
@@ -46,7 +47,6 @@ public class CustomUserStore(SqliteConnectionFactory connectionFactory) :
         command.Parameters.AddWithValue("@EmailConfirmed", user.EmailConfirmed ? 1 : 0);
         command.Parameters.AddWithValue("@PasswordHash", (object?)user.PasswordHash ?? DBNull.Value);
         command.Parameters.AddWithValue("@SecurityStamp", (object?)user.SecurityStamp ?? DBNull.Value);
-        command.Parameters.AddWithValue("@ConcurrencyStamp", user.ConcurrencyStamp ?? Guid.NewGuid().ToString());
         command.Parameters.AddWithValue("@PhoneNumber", (object?)user.PhoneNumber ?? DBNull.Value);
         command.Parameters.AddWithValue("@PhoneNumberConfirmed", user.PhoneNumberConfirmed ? 1 : 0);
         command.Parameters.AddWithValue("@TwoFactorEnabled", user.TwoFactorEnabled ? 1 : 0);
@@ -96,15 +96,16 @@ public class CustomUserStore(SqliteConnectionFactory connectionFactory) :
         using var command = (SqliteCommand)connection.CreateCommand();
         command.CommandText = @"
             UPDATE Users SET
-                UserName = @UserName, NormalizedUserName = @NormalizedUserName, 
+                RevId = @RevId, UserName = @UserName, NormalizedUserName = @NormalizedUserName, 
                 Email = @Email, NormalizedEmail = @NormalizedEmail, EmailConfirmed = @EmailConfirmed, 
-                PasswordHash = @PasswordHash, SecurityStamp = @SecurityStamp, ConcurrencyStamp = @ConcurrencyStamp, 
+                PasswordHash = @PasswordHash, SecurityStamp = @SecurityStamp, 
                 PhoneNumber = @PhoneNumber, PhoneNumberConfirmed = @PhoneNumberConfirmed, 
                 TwoFactorEnabled = @TwoFactorEnabled, LockoutEnd = @LockoutEnd, 
                 LockoutEnabled = @LockoutEnabled, AccessFailedCount = @AccessFailedCount
             WHERE Id = @Id";
 
         command.Parameters.AddWithValue("@Id", user.Id.ToString());
+        command.Parameters.AddWithValue("@RevId", Guid.NewGuid().ToString());
         command.Parameters.AddWithValue("@UserName", user.UserName);
         command.Parameters.AddWithValue("@NormalizedUserName", user.NormalizedUserName);
         command.Parameters.AddWithValue("@Email", (object?)user.Email ?? DBNull.Value);
@@ -112,7 +113,6 @@ public class CustomUserStore(SqliteConnectionFactory connectionFactory) :
         command.Parameters.AddWithValue("@EmailConfirmed", user.EmailConfirmed ? 1 : 0);
         command.Parameters.AddWithValue("@PasswordHash", (object?)user.PasswordHash ?? DBNull.Value);
         command.Parameters.AddWithValue("@SecurityStamp", (object?)user.SecurityStamp ?? DBNull.Value);
-        command.Parameters.AddWithValue("@ConcurrencyStamp", Guid.NewGuid().ToString());
         command.Parameters.AddWithValue("@PhoneNumber", (object?)user.PhoneNumber ?? DBNull.Value);
         command.Parameters.AddWithValue("@PhoneNumberConfirmed", user.PhoneNumberConfirmed ? 1 : 0);
         command.Parameters.AddWithValue("@TwoFactorEnabled", user.TwoFactorEnabled ? 1 : 0);
@@ -223,6 +223,7 @@ public class CustomUserStore(SqliteConnectionFactory connectionFactory) :
     private static User HydrateUser(SqliteDataReader reader)
     {
         var id = Guid.Parse(reader.GetString(reader.GetOrdinal("Id")));
+        var revId = reader.IsDBNull(reader.GetOrdinal("RevId")) ? (Guid?)null : Guid.Parse(reader.GetString(reader.GetOrdinal("RevId")));
         var userName = reader.GetString(reader.GetOrdinal("UserName"));
         var email = reader.IsDBNull(reader.GetOrdinal("Email")) ? null : reader.GetString(reader.GetOrdinal("Email"));
 
@@ -236,12 +237,16 @@ public class CustomUserStore(SqliteConnectionFactory connectionFactory) :
 
         var user = (User)constructor.Invoke(new object?[] { id, userName, email });
 
+        if (revId.HasValue)
+        {
+            user.RevId = revId.Value;
+        }
+
         SetProp(user, "NormalizedUserName", reader.GetString(reader.GetOrdinal("NormalizedUserName")));
         SetProp(user, "NormalizedEmail", reader.IsDBNull(reader.GetOrdinal("NormalizedEmail")) ? null : reader.GetString(reader.GetOrdinal("NormalizedEmail")));
         SetProp(user, "EmailConfirmed", reader.GetBoolean(reader.GetOrdinal("EmailConfirmed")));
         SetProp(user, "PasswordHash", reader.IsDBNull(reader.GetOrdinal("PasswordHash")) ? null : reader.GetString(reader.GetOrdinal("PasswordHash")));
         SetProp(user, "SecurityStamp", reader.IsDBNull(reader.GetOrdinal("SecurityStamp")) ? null : reader.GetString(reader.GetOrdinal("SecurityStamp")));
-        SetProp(user, "ConcurrencyStamp", reader.IsDBNull(reader.GetOrdinal("ConcurrencyStamp")) ? null : reader.GetString(reader.GetOrdinal("ConcurrencyStamp")));
         SetProp(user, "PhoneNumber", reader.IsDBNull(reader.GetOrdinal("PhoneNumber")) ? null : reader.GetString(reader.GetOrdinal("PhoneNumber")));
         SetProp(user, "PhoneNumberConfirmed", reader.GetBoolean(reader.GetOrdinal("PhoneNumberConfirmed")));
         SetProp(user, "TwoFactorEnabled", reader.GetBoolean(reader.GetOrdinal("TwoFactorEnabled")));

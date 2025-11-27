@@ -18,16 +18,16 @@ public class CustomRoleStore(SqliteConnectionFactory connectionFactory) : IRoleS
         using var connection = await _connectionFactory.CreateOpenedConnectionAsync(cancellationToken);
         using var command = (SqliteCommand)connection.CreateCommand();
         command.CommandText = @"
-            INSERT INTO Roles (Id, Code, Name, NormalizedName, Description, IsSystemRole, ConcurrencyStamp)
-            VALUES (@Id, @Code, @Name, @NormalizedName, @Description, @IsSystemRole, @ConcurrencyStamp)";
+            INSERT INTO Roles (Id, RevId, Code, Name, NormalizedName, Description, IsSystemRole)
+            VALUES (@Id, @RevId, @Code, @Name, @NormalizedName, @Description, @IsSystemRole)";
         
         command.Parameters.AddWithValue("@Id", role.Id.ToString());
+        command.Parameters.AddWithValue("@RevId", role.RevId.ToString());
         command.Parameters.AddWithValue("@Code", role.Code);
         command.Parameters.AddWithValue("@Name", role.Name);
         command.Parameters.AddWithValue("@NormalizedName", role.NormalizedName);
         command.Parameters.AddWithValue("@Description", (object?)role.Description ?? DBNull.Value);
         command.Parameters.AddWithValue("@IsSystemRole", role.IsSystemRole ? 1 : 0);
-        command.Parameters.AddWithValue("@ConcurrencyStamp", role.ConcurrencyStamp ?? Guid.NewGuid().ToString());
 
         try
         {
@@ -50,16 +50,16 @@ public class CustomRoleStore(SqliteConnectionFactory connectionFactory) : IRoleS
         using var command = (SqliteCommand)connection.CreateCommand();
         command.CommandText = @"
             UPDATE Roles
-            SET Code = @Code, Name = @Name, NormalizedName = @NormalizedName, Description = @Description, IsSystemRole = @IsSystemRole, ConcurrencyStamp = @ConcurrencyStamp
+            SET RevId = @RevId, Code = @Code, Name = @Name, NormalizedName = @NormalizedName, Description = @Description, IsSystemRole = @IsSystemRole
             WHERE Id = @Id";
 
         command.Parameters.AddWithValue("@Id", role.Id.ToString());
+        command.Parameters.AddWithValue("@RevId", Guid.NewGuid().ToString());
         command.Parameters.AddWithValue("@Code", role.Code);
         command.Parameters.AddWithValue("@Name", role.Name);
         command.Parameters.AddWithValue("@NormalizedName", role.NormalizedName);
         command.Parameters.AddWithValue("@Description", (object?)role.Description ?? DBNull.Value);
         command.Parameters.AddWithValue("@IsSystemRole", role.IsSystemRole ? 1 : 0);
-        command.Parameters.AddWithValue("@ConcurrencyStamp", Guid.NewGuid().ToString());
 
         var rows = await command.ExecuteNonQueryAsync(cancellationToken);
         if (rows == 0)
@@ -154,11 +154,11 @@ public class CustomRoleStore(SqliteConnectionFactory connectionFactory) : IRoleS
     private static Role HydrateRole(SqliteDataReader reader)
     {
         var id = Guid.Parse(reader.GetString(reader.GetOrdinal("Id")));
+        var revId = reader.IsDBNull(reader.GetOrdinal("RevId")) ? (Guid?)null : Guid.Parse(reader.GetString(reader.GetOrdinal("RevId")));
         var code = reader.GetString(reader.GetOrdinal("Code"));
         var name = reader.GetString(reader.GetOrdinal("Name"));
         var description = reader.IsDBNull(reader.GetOrdinal("Description")) ? null : reader.GetString(reader.GetOrdinal("Description"));
         var isSystemRole = reader.GetBoolean(reader.GetOrdinal("IsSystemRole"));
-        var concurrencyStamp = reader.IsDBNull(reader.GetOrdinal("ConcurrencyStamp")) ? null : reader.GetString(reader.GetOrdinal("ConcurrencyStamp"));
 
         var constructor = typeof(Role).GetConstructor(
             System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
@@ -173,8 +173,10 @@ public class CustomRoleStore(SqliteConnectionFactory connectionFactory) : IRoleS
 
         var role = (Role)constructor.Invoke(new object?[] { id, code, name, description, isSystemRole });
         
-        var prop = typeof(Role).GetProperty(nameof(Role.ConcurrencyStamp));
-        prop?.SetValue(role, concurrencyStamp);
+        if (revId.HasValue)
+        {
+            role.RevId = revId.Value;
+        }
 
         return role;
     }

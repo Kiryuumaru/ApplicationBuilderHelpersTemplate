@@ -9,6 +9,7 @@ public sealed class IdentityTableInitializer(SqliteConnectionFactory connectionF
         const string sql = @"
             CREATE TABLE IF NOT EXISTS Users (
                 Id TEXT PRIMARY KEY,
+                RevId TEXT,
                 UserName TEXT,
                 NormalizedUserName TEXT,
                 Email TEXT,
@@ -16,7 +17,6 @@ public sealed class IdentityTableInitializer(SqliteConnectionFactory connectionF
                 EmailConfirmed INTEGER NOT NULL,
                 PasswordHash TEXT,
                 SecurityStamp TEXT,
-                ConcurrencyStamp TEXT,
                 PhoneNumber TEXT,
                 PhoneNumberConfirmed INTEGER NOT NULL,
                 TwoFactorEnabled INTEGER NOT NULL,
@@ -27,12 +27,12 @@ public sealed class IdentityTableInitializer(SqliteConnectionFactory connectionF
 
             CREATE TABLE IF NOT EXISTS Roles (
                 Id TEXT PRIMARY KEY,
+                RevId TEXT,
                 Code TEXT,
                 Name TEXT,
                 NormalizedName TEXT,
                 Description TEXT,
-                IsSystemRole INTEGER NOT NULL,
-                ConcurrencyStamp TEXT
+                IsSystemRole INTEGER NOT NULL
             );
 
             CREATE TABLE IF NOT EXISTS UserRoles (
