@@ -23,6 +23,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\src\Application\Application.csproj" />
+		<ProjectReference Include="..\..\src\Domain\Domain.csproj" />
 		<ProjectReference Include="..\..\src\Infrastructure.Sqlite.Identity\Infrastructure.Sqlite.Identity.csproj" />
 		<ProjectReference Include="..\..\src\Infrastructure.Sqlite\Infrastructure.Sqlite.csproj" />
 	</ItemGroup>

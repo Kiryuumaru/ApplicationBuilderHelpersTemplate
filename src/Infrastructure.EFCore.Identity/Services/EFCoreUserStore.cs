@@ -1,13 +1,12 @@
 using Domain.Authorization.Models;
 using Domain.Identity.Models;
 using Domain.Identity.ValueObjects;
-using Infrastructure.EFCore.Sqlite;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.EFCore.Identity.Services;
 
-public class EFCoreUserStore(SqliteDbContext dbContext) :
+public class EFCoreUserStore(EFCoreDbContext dbContext) :
     IUserStore<User>,
     IUserPasswordStore<User>,
     IUserEmailStore<User>,
@@ -20,7 +19,7 @@ public class EFCoreUserStore(SqliteDbContext dbContext) :
     IUserTwoFactorRecoveryCodeStore<User>,
     IUserLoginStore<User>
 {
-    private readonly SqliteDbContext _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+    private readonly EFCoreDbContext _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
 
     public async Task<IdentityResult> CreateAsync(User user, CancellationToken cancellationToken)
     {

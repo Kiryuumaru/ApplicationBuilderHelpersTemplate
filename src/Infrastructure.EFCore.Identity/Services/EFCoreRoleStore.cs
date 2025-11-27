@@ -1,13 +1,12 @@
 using Domain.Authorization.Models;
-using Infrastructure.EFCore.Sqlite;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.EFCore.Identity.Services;
 
-public class EFCoreRoleStore(SqliteDbContext dbContext) : IRoleStore<Role>
+public class EFCoreRoleStore(EFCoreDbContext dbContext) : IRoleStore<Role>
 {
-    private readonly SqliteDbContext _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+    private readonly EFCoreDbContext _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
 
     public async Task<IdentityResult> CreateAsync(Role role, CancellationToken cancellationToken)
     {

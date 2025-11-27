@@ -51,7 +51,7 @@ public class IdentityServiceTests
         var userRole = await fixture.RoleService.GetByCodeAsync(RolesConstants.User.Code, CancellationToken.None);
         Assert.NotNull(userRole);
         var assignment = Assert.Single(stored.RoleAssignments, a => a.RoleId == userRole!.Id);
-        Assert.Equal(stored.Id.ToString(), assignment.ParameterValues[RoleIds.User.RoleUserIdParameter]);
+        Assert.Equal(stored.Id.ToString(), assignment.ParameterValues[Domain.Authorization.Constants.RoleIds.User.RoleUserIdParameter]);
 
         var session = await fixture.IdentityService.AuthenticateAsync("alice", "Password!23", CancellationToken.None);
         Assert.Contains(RolesConstants.User.Code, session.RoleCodes);
@@ -70,7 +70,7 @@ public class IdentityServiceTests
         var userRole = await fixture.RoleService.GetByCodeAsync(RolesConstants.User.Code, CancellationToken.None);
         Assert.NotNull(userRole);
         var assignment = Assert.Single(stored!.RoleAssignments, a => a.RoleId == userRole!.Id);
-        Assert.Equal(user.Id.ToString(), assignment.ParameterValues[RoleIds.User.RoleUserIdParameter]);
+        Assert.Equal(user.Id.ToString(), assignment.ParameterValues[Domain.Authorization.Constants.RoleIds.User.RoleUserIdParameter]);
 
         var session = await fixture.IdentityService.AuthenticateAsync("solo", "pa55word", CancellationToken.None);
         Assert.Contains(RolesConstants.User.Code, session.RoleCodes);
@@ -162,7 +162,7 @@ public class IdentityServiceTests
         var stored = await fixture.IdentityService.GetByUsernameAsync("delta", CancellationToken.None);
         Assert.NotNull(stored);
         var assignment = Assert.Single(stored!.RoleAssignments);
-        Assert.Equal(user.Id.ToString(), assignment.ParameterValues[RoleIds.User.RoleUserIdParameter]);
+        Assert.Equal(user.Id.ToString(), assignment.ParameterValues[Domain.Authorization.Constants.RoleIds.User.RoleUserIdParameter]);
     }
 
     [Fact]
@@ -267,7 +267,7 @@ public class IdentityServiceTests
         var userRole = await fixture.RoleService.GetByCodeAsync(RolesConstants.User.Code, CancellationToken.None);
         Assert.NotNull(userRole);
         var defaultAssignment = Assert.Single(stored.RoleAssignments, assignment => assignment.RoleId == userRole!.Id);
-        Assert.Equal(stored.Id.ToString(), defaultAssignment.ParameterValues[RoleIds.User.RoleUserIdParameter]);
+        Assert.Equal(stored.Id.ToString(), defaultAssignment.ParameterValues[Domain.Authorization.Constants.RoleIds.User.RoleUserIdParameter]);
     }
 
     [Fact]

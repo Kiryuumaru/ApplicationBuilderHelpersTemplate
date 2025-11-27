@@ -1,11 +1,10 @@
 using ApplicationBuilderHelpers;
 using Infrastructure.EFCore.Identity.Extensions;
-using Infrastructure.EFCore.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.EFCore.Identity;
 
-public class EFCoreIdentityInfrastructure : EFCoreSqliteInfrastructure
+public class EFCoreIdentityInfrastructure : InfrastructureEFCore
 {
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
     {

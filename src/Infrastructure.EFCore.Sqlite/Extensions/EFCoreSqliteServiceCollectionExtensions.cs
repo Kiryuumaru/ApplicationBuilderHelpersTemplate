@@ -25,11 +25,24 @@ internal static class EFCoreSqliteServiceCollectionExtensions
             options.UseSqlite(connectionString);
         });
 
+        // Register IDbContextFactory<EFCoreDbContext> for persistence-ignorant consumers
+        services.AddScoped<IDbContextFactory<EFCoreDbContext>>(sp => 
+            new EFCoreDbContextFactoryAdapter(sp.GetRequiredService<IDbContextFactory<SqliteDbContext>>()));
+
         // Also register the DbContext itself for scoped usage
-        services.AddScoped(sp => sp.GetRequiredService<IDbContextFactory<SqliteDbContext>>().CreateDbContext());
+        services.AddScoped<SqliteDbContext>(sp => sp.GetRequiredService<IDbContextFactory<SqliteDbContext>>().CreateDbContext());
+        services.AddScoped<EFCoreDbContext>(sp => sp.GetRequiredService<SqliteDbContext>());
 
         services.AddScoped<IEFCoreDatabaseBootstrap, SqliteDatabaseBootstrap>();
 
         return services;
     }
+}
+
+/// <summary>
+/// Adapter to allow IDbContextFactory&lt;EFCoreDbContext&gt; registration from specific DbContext factories.
+/// </summary>
+internal sealed class EFCoreDbContextFactoryAdapter(IDbContextFactory<SqliteDbContext> innerFactory) : IDbContextFactory<EFCoreDbContext>
+{
+    public EFCoreDbContext CreateDbContext() => innerFactory.CreateDbContext();
 }

@@ -1,17 +1,16 @@
 using Application.LocalStore.Interfaces;
-using Infrastructure.EFCore.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.EFCore.LocalStore.Services;
 
 public sealed class EFCoreLocalStoreService(
-    IDbContextFactory<SqliteDbContext> dbContextFactory,
+    IDbContextFactory<EFCoreDbContext> dbContextFactory,
     IDatabaseInitializationState databaseInitializationState) : ILocalStoreService
 {
-    private readonly IDbContextFactory<SqliteDbContext> _dbContextFactory = dbContextFactory ?? throw new ArgumentNullException(nameof(dbContextFactory));
+    private readonly IDbContextFactory<EFCoreDbContext> _dbContextFactory = dbContextFactory ?? throw new ArgumentNullException(nameof(dbContextFactory));
     private readonly IDatabaseInitializationState _databaseInitializationState = databaseInitializationState ?? throw new ArgumentNullException(nameof(databaseInitializationState));
     
-    private SqliteDbContext? _dbContext;
+    private EFCoreDbContext? _dbContext;
     private bool _hasTransaction;
 
     public async Task Open(CancellationToken cancellationToken)

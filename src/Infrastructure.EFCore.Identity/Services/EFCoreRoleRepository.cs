@@ -1,13 +1,12 @@
 using Application.Authorization.Interfaces;
 using Domain.Authorization.Models;
-using Infrastructure.EFCore.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.EFCore.Identity.Services;
 
-public sealed class EFCoreRoleRepository(SqliteDbContext dbContext) : IRoleRepository, IRoleLookup
+public sealed class EFCoreRoleRepository(EFCoreDbContext dbContext) : IRoleRepository, IRoleLookup
 {
-    private readonly SqliteDbContext _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+    private readonly EFCoreDbContext _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
 
     public Role? FindById(Guid id)
     {
