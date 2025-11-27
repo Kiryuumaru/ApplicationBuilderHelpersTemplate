@@ -85,8 +85,7 @@ public sealed class SqliteRoleRepository(SqliteConnectionFactory connectionFacto
     public async Task<Role?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         using var connection = await _connectionFactory.CreateOpenedConnectionAsync(cancellationToken);
-        var role = await GetRoleAsync(connection, "Id", id.ToString(), cancellationToken);
-        if (role == null) throw new Exception($"DEBUG: Role not found for ID {id}");
+        var role = await GetRoleAsync(connection, "Id", id.ToString(), cancellationToken) ?? throw new Exception($"DEBUG: Role not found for ID {id}");
         return role;
     }
 

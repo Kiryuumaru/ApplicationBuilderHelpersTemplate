@@ -18,27 +18,20 @@ using RolesConstants = Domain.Authorization.Constants.Roles;
 
 namespace Application.Identity.Services;
 
-internal sealed class IdentityService : IIdentityService
+internal sealed class IdentityService(
+    UserManager<User> userManager,
+    IRoleRepository roleRepository,
+    IUserRoleResolver roleResolver) : IIdentityService
 {
-    private static readonly IReadOnlyDictionary<string, Func<User, Role, string?>> DefaultRoleParameterResolvers =
-        new Dictionary<string, Func<User, Role, string?>>(StringComparer.Ordinal)
+    private static readonly Dictionary<string, Func<User, Role, string?>> DefaultRoleParameterResolvers =
+        new(StringComparer.Ordinal)
         {
             [RoleIds.User.RoleUserIdParameter] = static (user, _) => user.Id.ToString()
         };
 
-    private readonly UserManager<User> _userManager;
-    private readonly IRoleRepository _roleRepository;
-    private readonly IUserRoleResolver _roleResolver;
-
-    public IdentityService(
-        UserManager<User> userManager,
-        IRoleRepository roleRepository,
-        IUserRoleResolver roleResolver)
-    {
-        _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
-        _roleRepository = roleRepository ?? throw new ArgumentNullException(nameof(roleRepository));
-        _roleResolver = roleResolver ?? throw new ArgumentNullException(nameof(roleResolver));
-    }
+    private readonly UserManager<User> _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
+    private readonly IRoleRepository _roleRepository = roleRepository ?? throw new ArgumentNullException(nameof(roleRepository));
+    private readonly IUserRoleResolver _roleResolver = roleResolver ?? throw new ArgumentNullException(nameof(roleResolver));
 
     public async Task<User> RegisterUserAsync(UserRegistrationRequest request, CancellationToken cancellationToken)
     {
@@ -205,12 +198,7 @@ internal sealed class IdentityService : IIdentityService
         cancellationToken.ThrowIfCancellationRequested();
         
         // UserId is Guid, UserManager expects string usually, but our UserStore handles Guid <-> String
-        var user = await _userManager.FindByIdAsync(userId.ToString());
-        if (user == null)
-        {
-             throw new KeyNotFoundException($"User '{userId}' was not found.");
-        }
-
+        var user = await _userManager.FindByIdAsync(userId.ToString()) ?? throw new KeyNotFoundException($"User '{userId}' was not found.");
         await AssignRoleInternalAsync(user, assignment, cancellationToken).ConfigureAwait(false);
         await _userManager.UpdateAsync(user);
     }
@@ -232,7 +220,7 @@ internal sealed class IdentityService : IIdentityService
         user.AssignRole(role.Id, parameters);
     }
 
-    private static IReadOnlyDictionary<string, string?>? ResolveAssignmentParameters(User user, Role role, RoleAssignmentRequest assignment)
+    private static Dictionary<string, string?>? ResolveAssignmentParameters(User user, Role role, RoleAssignmentRequest assignment)
     {
         var requiredParameters = role.PermissionGrants
             .Where(static template => template.RequiresParameters)

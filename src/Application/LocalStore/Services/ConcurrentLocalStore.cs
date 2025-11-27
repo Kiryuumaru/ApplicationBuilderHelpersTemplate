@@ -12,18 +12,12 @@ using System.Threading.Tasks;
 namespace Infrastructure.Storage.Features;
 
 [Disposable]
-public partial class ConcurrentLocalStore : IDisposable
+public partial class ConcurrentLocalStore(ILocalStoreService localStoreService, string group) : IDisposable
 {
-    private readonly ILocalStoreService localStoreService;
+    private readonly ILocalStoreService localStoreService = localStoreService ?? throw new ArgumentNullException(nameof(localStoreService));
     private readonly SemaphoreSlim gate = new(1, 1);
 
-    public string Group { get; }
-
-    public ConcurrentLocalStore(ILocalStoreService localStoreService, string group)
-    {
-        this.localStoreService = localStoreService ?? throw new ArgumentNullException(nameof(localStoreService));
-        Group = LocalStoreKey.NormalizeGroup(group);
-    }
+    public string Group { get; } = LocalStoreKey.NormalizeGroup(group);
 
     public Task<bool> Contains(string id, CancellationToken cancellationToken = default)
     {

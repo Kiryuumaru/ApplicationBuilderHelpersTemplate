@@ -340,8 +340,7 @@ public class CustomUserStore(SqliteConnectionFactory connectionFactory) :
         using var cmdRole = (SqliteCommand)connection.CreateCommand();
         cmdRole.CommandText = "SELECT Id FROM Roles WHERE NormalizedName = @NormalizedName";
         cmdRole.Parameters.AddWithValue("@NormalizedName", roleName.ToUpperInvariant());
-        var roleIdObj = await cmdRole.ExecuteScalarAsync(cancellationToken);
-        if (roleIdObj == null) throw new InvalidOperationException($"Role {roleName} not found.");
+        var roleIdObj = await cmdRole.ExecuteScalarAsync(cancellationToken) ?? throw new InvalidOperationException($"Role {roleName} not found.");
         var roleId = roleIdObj.ToString()!;
 
         // Insert UserRole

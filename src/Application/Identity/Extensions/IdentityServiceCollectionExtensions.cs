@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Application.Identity.Extensions;
 
-public static class IdentityServiceCollectionExtensions
+internal static class IdentityServiceCollectionExtensions
 {
     public static IServiceCollection AddIdentityServices(this IServiceCollection services)
     {

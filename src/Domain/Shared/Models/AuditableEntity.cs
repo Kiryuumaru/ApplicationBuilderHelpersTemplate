@@ -1,11 +1,7 @@
 ﻿namespace Domain.Shared.Models;
 
-public abstract class AuditableEntity : Entity
+public abstract class AuditableEntity(Guid id) : Entity(id)
 {
-    protected AuditableEntity(Guid id) : base(id)
-    {
-    }
-
     public DateTimeOffset Created { get; private set; } = DateTimeOffset.UtcNow;
 
     public DateTimeOffset LastModified { get; private set; } = DateTimeOffset.UtcNow;

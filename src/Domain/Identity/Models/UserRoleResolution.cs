@@ -5,19 +5,13 @@ using Domain.Authorization.Models;
 
 namespace Domain.Identity.Models;
 
-public sealed class UserRoleResolution
+public sealed class UserRoleResolution(Role role, IReadOnlyDictionary<string, string?>? parameterValues = null)
 {
     private static readonly IReadOnlyDictionary<string, string?> EmptyParameters =
         new ReadOnlyDictionary<string, string?>(new Dictionary<string, string?>(StringComparer.Ordinal));
 
-    public Role Role { get; }
-    public IReadOnlyDictionary<string, string?> ParameterValues { get; }
-
-    public UserRoleResolution(Role role, IReadOnlyDictionary<string, string?>? parameterValues = null)
-    {
-        Role = role ?? throw new ArgumentNullException(nameof(role));
-        ParameterValues = NormalizeParameters(parameterValues);
-    }
+    public Role Role { get; } = role ?? throw new ArgumentNullException(nameof(role));
+    public IReadOnlyDictionary<string, string?> ParameterValues { get; } = NormalizeParameters(parameterValues);
 
     private static IReadOnlyDictionary<string, string?> NormalizeParameters(IReadOnlyDictionary<string, string?>? parameterValues)
     {

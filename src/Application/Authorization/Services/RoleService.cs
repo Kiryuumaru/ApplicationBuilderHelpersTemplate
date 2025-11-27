@@ -53,12 +53,7 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
         ArgumentNullException.ThrowIfNull(permissionTemplates);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var role = await _repository.GetByIdAsync(roleId, cancellationToken).ConfigureAwait(false);
-        if (role is null)
-        {
-            throw new InvalidOperationException($"Role with ID '{roleId}' not found.");
-        }
-
+        var role = await _repository.GetByIdAsync(roleId, cancellationToken).ConfigureAwait(false) ?? throw new InvalidOperationException($"Role with ID '{roleId}' not found.");
         if (role.IsSystemRole)
         {
             throw new InvalidOperationException("Cannot modify permissions of a system role.");
@@ -73,12 +68,7 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var role = await _repository.GetByIdAsync(roleId, cancellationToken).ConfigureAwait(false);
-        if (role is null)
-        {
-            throw new InvalidOperationException($"Role with ID '{roleId}' not found.");
-        }
-
+        var role = await _repository.GetByIdAsync(roleId, cancellationToken).ConfigureAwait(false) ?? throw new InvalidOperationException($"Role with ID '{roleId}' not found.");
         if (role.IsSystemRole)
         {
             throw new InvalidOperationException("Cannot modify metadata of a system role.");

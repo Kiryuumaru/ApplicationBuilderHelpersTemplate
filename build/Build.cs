@@ -5,8 +5,9 @@ using NukeBuildHelpers.Common.Attributes;
 using NukeBuildHelpers.Entry;
 using NukeBuildHelpers.Entry.Extensions;
 using NukeBuildHelpers.Runner.Abstraction;
+using System;
 
-class Build : BaseNukeBuildHelpers
+partial class Build : BaseNukeBuildHelpers
 {
     public static int Main() => Execute<Build>(x => x.Interactive);
 
@@ -17,17 +18,21 @@ class Build : BaseNukeBuildHelpers
     [SecretVariable("GITHUB_TOKEN")]
     readonly string? GithubToken;
 
+    [SecretVariable("APPLICATION_CREDENTIALS")]
+    string? applicationCredentials;
+
     const string AppId = "sample_app";
 
     TestEntry TestEntry => _ => _
         .AppId(AppId)
         .Matrix([RunnerOS.Windows2022, RunnerOS.Ubuntu2204], (osTest, osId) => osTest
-            .Matrix(["Application.Tests", "Domain.Tests"], (test, testId) => test
+            .Matrix(["Domain.Tests", "Application.Tests", "Presentation.WebApp.Tests"], (test, testId) => test
                 .DisplayName($"Test {testId} on {osId.Name}")
                 .WorkflowId($"test_{osId.Name}_{testId}".Replace(".", "_").Replace("-", "_").ToLowerInvariant())
                 .RunnerOS(osId)
-                .Execute(() =>
+                .Execute(async context =>
                 {
+                    using var appRuntime = await StartApplicationRuntime(context);
                     string projFile = RootDirectory / "tests" / testId / $"{testId}.csproj";
                     DotNetTasks.DotNetClean(_ => _
                         .SetProject(projFile));
@@ -43,16 +48,18 @@ class Build : BaseNukeBuildHelpers
     BuildEntry BuildEntry => _ => _
         .AppId(AppId)
         .RunnerOS(RunnerOS.Windows2022)
-        .Execute(() =>
+        .Execute(async context =>
         {
+            using var appRuntime = await StartApplicationRuntime(context);
             // build logic here
         });
 
     PublishEntry PublishEntry => _ => _
         .AppId(AppId)
         .RunnerOS(RunnerOS.Ubuntu2204)
-        .Execute(context =>
+        .Execute(async context =>
         {
+            using var appRuntime = await StartApplicationRuntime(context);
             // publish logic here
         });
 }
