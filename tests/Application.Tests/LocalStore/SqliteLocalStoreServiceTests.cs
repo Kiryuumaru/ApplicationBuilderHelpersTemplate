@@ -1,3 +1,4 @@
+using Application.LocalStore.Extensions;
 using Application.LocalStore.Services;
 using Infrastructure.Storage.Features;
 using Microsoft.Extensions.Configuration;
@@ -200,11 +201,11 @@ public class SqliteLocalStoreServiceTests
 
 			await store.Set("TestKey", "TestValue", CancellationToken.None);
 			await store.Set("Sample:Payload", payload, payloadTypeInfo, CancellationToken.None);
-			await store.SetDecimal("Sample:Number", decimalValue, CancellationToken.None);
-			await store.SetBool("Sample:Flag", true, CancellationToken.None);
-			await store.SetDateTime("Sample:Timestamp", timestamp, CancellationToken.None);
-			await store.SetDateTimeOffset("Sample:TimestampOffset", timestampOffset, CancellationToken.None);
-			await store.SetTimeSpan("Sample:Duration", duration, CancellationToken.None);
+			await store.Set("Sample:Number", decimalValue, CancellationToken.None);
+			await store.Set("Sample:Flag", true, CancellationToken.None);
+			await store.Set("Sample:Timestamp", timestamp, CancellationToken.None);
+			await store.Set("Sample:TimestampOffset", timestampOffset, CancellationToken.None);
+			await store.Set("Sample:Duration", duration, CancellationToken.None);
 			await store.Set("Sample:Array", JsonSerializer.Serialize(new[] { "one", "two", "three" }, SerializerOptions), CancellationToken.None);
 			await store.Set("Sample:Object", JsonSerializer.Serialize(new Dictionary<string, object?>
 			{
@@ -235,20 +236,21 @@ public class SqliteLocalStoreServiceTests
 			Assert.Equal(3, restored.Quantity);
 			Assert.Equal(["alpha", "beta"], restored.Tags);
 
-			var number = await store.GetDecimal("Sample:Number", CancellationToken.None);
-			Assert.Equal(decimalValue, number!.Value);
+			var number = await store.Get<decimal>("Sample:Number", CancellationToken.None);
+			Assert.Equal(decimalValue, number);
 
-			var flag = await store.GetBool("Sample:Flag", CancellationToken.None);
-			Assert.True(flag!.Value);
+			var flag = await store.Get<bool>("Sample:Flag", CancellationToken.None);
+			Assert.True(flag);
 
-			var restoredTimestamp = await store.GetDateTime("Sample:Timestamp", CancellationToken.None);
-			Assert.Equal(timestamp, restoredTimestamp!.Value);
+			// DateTime may be converted to local time during parsing, compare as UTC
+			var restoredTimestamp = await store.Get<DateTime>("Sample:Timestamp", CancellationToken.None);
+			Assert.Equal(timestamp.ToUniversalTime(), restoredTimestamp.ToUniversalTime());
 
-			var restoredTimestampOffset = await store.GetDateTimeOffset("Sample:TimestampOffset", CancellationToken.None);
-			Assert.Equal(timestampOffset, restoredTimestampOffset!.Value);
+			var restoredTimestampOffset = await store.Get<DateTimeOffset>("Sample:TimestampOffset", CancellationToken.None);
+			Assert.Equal(timestampOffset, restoredTimestampOffset);
 
-			var restoredDuration = await store.GetTimeSpan("Sample:Duration", CancellationToken.None);
-			Assert.Equal(duration, restoredDuration!.Value);
+			var restoredDuration = await store.Get<TimeSpan>("Sample:Duration", CancellationToken.None);
+			Assert.Equal(duration, restoredDuration);
 
 			var arrayJson = await store.Get("Sample:Array", CancellationToken.None);
 			Assert.Null(arrayJson);
