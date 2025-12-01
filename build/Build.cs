@@ -23,7 +23,7 @@ partial class Build : BaseNukeBuildHelpers
     TestEntry TestEntry => _ => _
         .AppId(AppId)
         .Matrix([RunnerOS.Windows2022, RunnerOS.Ubuntu2204], (osTest, osId) => osTest
-            .Matrix(["Domain.Tests", "Application.Tests", "Infrastructure.Tests", "Presentation.WebApp.Tests"], (test, testId) => test
+            .Matrix(["Domain.UnitTests", "Application.UnitTests", "Application.IntegrationTests", "Presentation.FunctionalTests"], (test, testId) => test
                 .DisplayName($"Test {testId} on {osId.Name}")
                 .WorkflowId($"test_{osId.Name}_{testId}".Replace(".", "_").Replace("-", "_").ToLowerInvariant())
                 .RunnerOS(osId)
@@ -35,7 +35,7 @@ partial class Build : BaseNukeBuildHelpers
                         .SetProject(projFile));
                     DotNetTasks.DotNetBuild(_ => _
                         .SetProjectFile(projFile));
-                    if (testId == "Presentation.WebApp.Tests")
+                    if (testId == "Presentation.FunctionalTests")
                     {
                         var playwrightScript = (RootDirectory / "tests" / testId)
                             .GetDirectories().First() // bin
