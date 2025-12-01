@@ -18,20 +18,6 @@ public class MainCommand : Build.BaseCommand<WebApplicationBuilder>
         return new ValueTask<WebApplicationBuilder>(WebApplication.CreateBuilder());
     }
 
-    protected override async ValueTask Run(ApplicationHost<WebApplicationBuilder> applicationHost, CancellationTokenSource cancellationTokenSource)
-    {
-        await base.Run(applicationHost, cancellationTokenSource);
-
-        // for the sake of testing, we will add timeout incase it runs forever. Will delete if everything is ready to push
-        try
-        {
-            await cancellationTokenSource.Token.WithTimeout(TimeSpan.FromMinutes(5)).WhenCanceled();
-        }
-        catch { }
-
-        cancellationTokenSource.Cancel();
-    }
-
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
     {
         base.AddServices(applicationBuilder, services);
@@ -40,17 +26,17 @@ public class MainCommand : Build.BaseCommand<WebApplicationBuilder>
         services.AddRazorComponents()
             .AddInteractiveServerComponents();
 
+        services.AddSingleton<IEmailSender<User>, IdentityNoOpEmailSender>();
         services.AddCascadingAuthenticationState();
         services.AddScoped<IdentityRedirectManager>();
         services.AddScoped<IdentityUserAccessor>();
         services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
-        services.AddSingleton<IEmailSender<User>, IdentityNoOpEmailSender>();
 
         services.AddAuthentication(options =>
-        {
-            options.DefaultScheme = IdentityConstants.ApplicationScheme;
-            options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
-        })
+            {
+                options.DefaultScheme = IdentityConstants.ApplicationScheme;
+                options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
+            })
             .AddIdentityCookies();
 
         services.AddDatabaseDeveloperPageExceptionFilter();
@@ -68,8 +54,6 @@ public class MainCommand : Build.BaseCommand<WebApplicationBuilder>
             })
             .AddSignInManager()
             .AddDefaultTokenProviders();
-
-        services.AddSingleton<IEmailSender<User>, IdentityNoOpEmailSender>();
     }
 
     public override void AddMiddlewares(ApplicationHost applicationHost, IHost host)
