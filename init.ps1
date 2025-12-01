@@ -12,7 +12,7 @@ git clone https://github.com/Kiryuumaru/ApplicationBuilderHelpersTemplate "$Appl
 New-Item -ItemType Directory -Force -Path "$Root/.nuke"; Copy-Item -Force -Recurse -Container "$ApplicationBuilderHelpersTemplatePath/.nuke/*" "$Root/.nuke"
 New-Item -ItemType Directory -Force -Path "$Root/build"; Copy-Item -Force -Recurse -Container "$ApplicationBuilderHelpersTemplatePath/build/*" "$Root/build"
 New-Item -ItemType Directory -Force -Path "$Root/src"; Copy-Item -Force -Recurse -Container "$ApplicationBuilderHelpersTemplatePath/src/*" "$Root/src"
-New-Item -ItemType Directory -Force -Path "$Root/src"; Copy-Item -Force -Recurse -Container "$ApplicationBuilderHelpersTemplatePath/tests/*" "$Root/tests"
+New-Item -ItemType Directory -Force -Path "$Root/tests"; Copy-Item -Force -Recurse -Container "$ApplicationBuilderHelpersTemplatePath/tests/*" "$Root/tests"
 Copy-Item -Force "$ApplicationBuilderHelpersTemplatePath/Directory.Build.targets" "$Root/Directory.Build.targets"
 Copy-Item -Force "$ApplicationBuilderHelpersTemplatePath/build.cmd" "$Root/build.cmd"
 Copy-Item -Force "$ApplicationBuilderHelpersTemplatePath/build.ps1" "$Root/build.ps1"
