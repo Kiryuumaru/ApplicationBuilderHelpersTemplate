@@ -2,6 +2,10 @@
 	<PropertyGroup>
 		<!-- Prevent file locking issues during parallel/CI builds -->
 		<UseSharedCompilation>false</UseSharedCompilation>
+		<!-- Disable MSBuild node reuse to prevent file locking in CI -->
+		<DisableOutOfProcTaskHost>true</DisableOutOfProcTaskHost>
+		<!-- Prevent graph isolation issues with diamond dependencies -->
+		<BuildInParallel>false</BuildInParallel>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(GenerateBuildConstants)' == 'true'">
