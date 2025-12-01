@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.EFCore.Extensions;
 
-internal static class EFCoreInfrastructureServiceCollectionExtensions
+public static class EFCoreInfrastructureServiceCollectionExtensions
 {
     public static IServiceCollection AddEFCoreInfrastructure(this IServiceCollection services)
     {

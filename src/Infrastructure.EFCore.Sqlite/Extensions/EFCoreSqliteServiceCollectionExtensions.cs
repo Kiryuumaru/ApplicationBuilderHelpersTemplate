@@ -67,6 +67,10 @@ internal sealed class SqliteDbContextFactory : IDbContextFactory<SqliteDbContext
     {
         var optionsBuilder = new DbContextOptionsBuilder<SqliteDbContext>();
         optionsBuilder.UseSqlite(_connectionString);
+        // Disable EF Core's internal service provider caching to ensure each factory
+        // instance uses its own set of entity configurations. This prevents issues
+        // where different configuration sets share a cached model.
+        optionsBuilder.EnableServiceProviderCaching(false);
         return new SqliteDbContext(optionsBuilder.Options, _configurations);
     }
 }

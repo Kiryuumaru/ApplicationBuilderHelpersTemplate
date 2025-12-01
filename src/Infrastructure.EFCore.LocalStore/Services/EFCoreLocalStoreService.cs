@@ -126,7 +126,9 @@ public sealed class EFCoreLocalStoreService(
                 var transaction = _dbContext.Database.CurrentTransaction;
                 if (transaction != null)
                 {
-                    _dbContext.Database.RollbackTransaction();
+                    // Auto-commit on dispose - same as the original SqliteLocalStoreService behavior
+                    _dbContext.Database.CommitTransaction();
+                    _hasTransaction = false;
                 }
             }
         }
