@@ -18,7 +18,7 @@ This template provides a robust foundation for building enterprise .NET applicat
 - **Entity Framework Core** - Modular database persistence with SQLite (easily swappable to PostgreSQL, SQL Server, etc.)
 - **Full Microsoft Identity** - Complete authentication and authorization with custom user/role stores
 - **Blazor Server UI** - Modern web interface with all authentication flows built-in
-- **Comprehensive Testing** - 320+ end-to-end tests with Playwright ensuring reliability
+- **Comprehensive Testing** - 254 tests ensuring reliability across all layers
 
 ## 🏗️ Architecture
 
@@ -93,9 +93,8 @@ Dependencies flow inward: Outer layers depend on inner layers, never reverse.
 ├── build/                                  # NUKE build automation
 ├── src/
 │   ├── Domain/                             # Entities, ValueObjects, Business Rules
-│   ├── Domain.CodeGenerator/               # Permission & Role ID generators
+│   ├── Domain.CodeGenerator/               # Permission, Role, & BuildConstants generators
 │   ├── Application/                        # Use Cases, Services, Interfaces
-│   ├── Application.CodeGenerator/          # Application-level code generation
 │   ├── Infrastructure.EFCore/              # Base EF Core DbContext
 │   ├── Infrastructure.EFCore.Sqlite/       # SQLite provider
 │   ├── Infrastructure.EFCore.Identity/     # Identity stores (User, Role)
@@ -103,9 +102,10 @@ Dependencies flow inward: Outer layers depend on inner layers, never reverse.
 │   ├── Presentation.Cli/                   # Console application
 │   └── Presentation.WebApp/                # Blazor Server application
 ├── tests/
-│   ├── Domain.Tests/                       # Domain unit tests
-│   ├── Application.Tests/                  # Application unit tests
-│   └── Presentation.WebApp.Tests/          # E2E Playwright tests
+│   ├── Domain.UnitTests/                   # Domain unit tests
+│   ├── Application.UnitTests/              # Application unit tests
+│   ├── Application.IntegrationTests/       # Integration tests with real infrastructure
+│   └── Presentation.FunctionalTests/       # E2E Playwright tests
 └── ApplicationBuilderHelpersTemplate.sln
 ```
 
@@ -186,16 +186,16 @@ dotnet run --project src/Presentation.Cli     # Run CLI app
 
 ## 🧪 Testing
 
-320+ tests including:
+254 tests across four test projects:
 
-- **User Journey Tests** - Complete authentication flows
-- **Security Tests** - SQL injection, XSS, privilege escalation protection
-- **Accessibility Tests** - ARIA compliance and keyboard navigation
-- **Unit Tests** - Domain and Application layer coverage
+- **Domain.UnitTests** (38 tests) - Pure domain logic and entity tests
+- **Application.UnitTests** (21 tests) - Application service and authorization tests
+- **Application.IntegrationTests** (20 tests) - Integration tests with real infrastructure via DI
+- **Presentation.FunctionalTests** (175 tests) - E2E Playwright tests including user journeys, security, and accessibility
 
 ```powershell
 dotnet test                                         # Run all tests
-dotnet test tests/Presentation.WebApp.Tests         # Run specific project
+dotnet test tests/Presentation.FunctionalTests      # Run E2E tests
 dotnet test --filter "FullyQualifiedName~UserJourney"  # Run filtered
 ```
 
