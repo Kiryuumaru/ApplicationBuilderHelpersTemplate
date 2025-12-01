@@ -9,6 +9,7 @@ if (Test-Path $ApplicationBuilderHelpersTemplatePath){
 }
 git clone https://github.com/Kiryuumaru/ApplicationBuilderHelpersTemplate "$ApplicationBuilderHelpersTemplatePath"
 
+New-Item -ItemType Directory -Force -Path "$Root/.github/instructions"; Copy-Item -Force -Recurse -Container "$ApplicationBuilderHelpersTemplatePath/.github/instructions/*" "$Root/.github/instructions"
 New-Item -ItemType Directory -Force -Path "$Root/.nuke"; Copy-Item -Force -Recurse -Container "$ApplicationBuilderHelpersTemplatePath/.nuke/*" "$Root/.nuke"
 New-Item -ItemType Directory -Force -Path "$Root/build"; Copy-Item -Force -Recurse -Container "$ApplicationBuilderHelpersTemplatePath/build/*" "$Root/build"
 New-Item -ItemType Directory -Force -Path "$Root/src"; Copy-Item -Force -Recurse -Container "$ApplicationBuilderHelpersTemplatePath/src/*" "$Root/src"
