@@ -6,11 +6,14 @@
 		<OutputType>Exe</OutputType>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<GenerateBuildConstants>false</GenerateBuildConstants>
+		<SkipDomainCodeGeneration>true</SkipDomainCodeGeneration>
 	</PropertyGroup>
 
 	<ItemGroup>
+		<!-- Reference Domain with isolated output paths to avoid polluting the main build -->
 		<ProjectReference Include="..\Domain\Domain.csproj">
-			<AdditionalProperties>SkipDomainCodeGeneration=true</AdditionalProperties>
+			<AdditionalProperties>SkipDomainCodeGeneration=true;OutputPath=bin\ForCodeGenerator\$(Configuration)\;IntermediateOutputPath=obj\ForCodeGenerator\$(Configuration)\;AppendTargetFrameworkToOutputPath=false</AdditionalProperties>
 		</ProjectReference>
 	</ItemGroup>
 

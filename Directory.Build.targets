@@ -18,74 +18,74 @@
 
 		<!-- Statically build wmi wrapper -->
 		<PublishWmiLightStaticallyLinked>true</PublishWmiLightStaticallyLinked>
-		<SkipApplicationCodeGeneration Condition="'$(SkipApplicationCodeGeneration)' == ''">false</SkipApplicationCodeGeneration>
-		<ApplicationCodeGeneratorProject Condition="'$(ApplicationCodeGeneratorProject)' == ''">$(MSBuildThisFileDirectory)src/Application.CodeGenerator/Application.CodeGenerator.csproj</ApplicationCodeGeneratorProject>
-		<ApplicationCodeGeneratorTargetFramework Condition="'$(ApplicationCodeGeneratorTargetFramework)' == ''">net9.0</ApplicationCodeGeneratorTargetFramework>
-		<_ApplicationCodeGeneratorPlatformFolder Condition="'$(Platform)' != '' and '$(Platform)' != 'AnyCPU'">$(Platform)</_ApplicationCodeGeneratorPlatformFolder>
-		<_ApplicationCodeGeneratorPlatformFolder Condition="'$(_ApplicationCodeGeneratorPlatformFolder)' == '' and '$(PlatformTarget)' != '' and '$(PlatformTarget)' != 'AnyCPU'">$(PlatformTarget)</_ApplicationCodeGeneratorPlatformFolder>
-		<ApplicationCodeGeneratorAssembly Condition="'$(ApplicationCodeGeneratorAssembly)' == ''">$([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', 'src', 'Application.CodeGenerator', 'bin', $(_ApplicationCodeGeneratorPlatformFolder), '$(Configuration)', '$(ApplicationCodeGeneratorTargetFramework)', 'Application.CodeGenerator.dll'))</ApplicationCodeGeneratorAssembly>
-		<_ApplicationCodeGeneratorBuildProperties>Configuration=$(Configuration);SkipApplicationCodeGeneration=true;Platform=$(Platform);PlatformTarget=$(PlatformTarget);RuntimeIdentifier=$(RuntimeIdentifier);RuntimeIdentifiers=$(RuntimeIdentifiers);SelfContained=false;PublishAot=false;PublishTrimmed=false;PublishSingleFile=false</_ApplicationCodeGeneratorBuildProperties>
-		<_ApplicationCodeGeneratorBuildProperties Condition="'$(OutDir)' != ''">$(_ApplicationCodeGeneratorBuildProperties);OutDir=$(OutDir)</_ApplicationCodeGeneratorBuildProperties>
-		<_ApplicationCodeGeneratorBuildProperties Condition="'$(OutputPath)' != ''">$(_ApplicationCodeGeneratorBuildProperties);OutputPath=$(OutputPath)</_ApplicationCodeGeneratorBuildProperties>
+		<SkipCodeGeneration Condition="'$(SkipCodeGeneration)' == ''">false</SkipCodeGeneration>
+		<DomainCodeGeneratorProject Condition="'$(DomainCodeGeneratorProject)' == ''">$(MSBuildThisFileDirectory)src/Domain.CodeGenerator/Domain.CodeGenerator.csproj</DomainCodeGeneratorProject>
+		<DomainCodeGeneratorTargetFramework Condition="'$(DomainCodeGeneratorTargetFramework)' == ''">net10.0</DomainCodeGeneratorTargetFramework>
+		<_DomainCodeGeneratorPlatformFolder Condition="'$(Platform)' != '' and '$(Platform)' != 'AnyCPU'">$(Platform)</_DomainCodeGeneratorPlatformFolder>
+		<_DomainCodeGeneratorPlatformFolder Condition="'$(_DomainCodeGeneratorPlatformFolder)' == '' and '$(PlatformTarget)' != '' and '$(PlatformTarget)' != 'AnyCPU'">$(PlatformTarget)</_DomainCodeGeneratorPlatformFolder>
+		<DomainCodeGeneratorAssembly Condition="'$(DomainCodeGeneratorAssembly)' == ''">$([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', 'src', 'Domain.CodeGenerator', 'bin', $(_DomainCodeGeneratorPlatformFolder), '$(Configuration)', '$(DomainCodeGeneratorTargetFramework)', 'Domain.CodeGenerator.dll'))</DomainCodeGeneratorAssembly>
+		<_DomainCodeGeneratorBuildProperties>Configuration=$(Configuration);SkipCodeGeneration=true;SkipDomainCodeGeneration=true;GenerateBuildConstants=false;Platform=$(Platform);PlatformTarget=$(PlatformTarget);RuntimeIdentifier=$(RuntimeIdentifier);RuntimeIdentifiers=$(RuntimeIdentifiers);SelfContained=false;PublishAot=false;PublishTrimmed=false;PublishSingleFile=false</_DomainCodeGeneratorBuildProperties>
+		<_DomainCodeGeneratorBuildProperties Condition="'$(OutDir)' != ''">$(_DomainCodeGeneratorBuildProperties);OutDir=$(OutDir)</_DomainCodeGeneratorBuildProperties>
+		<_DomainCodeGeneratorBuildProperties Condition="'$(OutputPath)' != ''">$(_DomainCodeGeneratorBuildProperties);OutputPath=$(OutputPath)</_DomainCodeGeneratorBuildProperties>
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(GenerateBuildConstants)' == 'true'">
-		<ProjectReference Include="$(ApplicationCodeGeneratorProject)"
+		<ProjectReference Include="$(DomainCodeGeneratorProject)"
 			ReferenceOutputAssembly="false"
 			SkipGetTargetFrameworkProperties="true">
-			<AdditionalProperties>SkipApplicationCodeGeneration=true</AdditionalProperties>
+			<AdditionalProperties>SkipCodeGeneration=true;SkipDomainCodeGeneration=true;GenerateBuildConstants=false</AdditionalProperties>
 		</ProjectReference>
 	</ItemGroup>
 
-	<Target Name="EnsureApplicationCodeGeneratorBuilt" Condition="'$(GenerateBuildConstants)' == 'true' and !Exists('$(ApplicationCodeGeneratorAssembly)')">
-		<MSBuild Projects="$(ApplicationCodeGeneratorProject)"
+	<Target Name="_EnsureDomainCodeGeneratorBuiltForBuildConstants" Condition="'$(GenerateBuildConstants)' == 'true' and !Exists('$(DomainCodeGeneratorAssembly)')">
+		<MSBuild Projects="$(DomainCodeGeneratorProject)"
 			Targets="Restore;Build"
-			Properties="$(_ApplicationCodeGeneratorBuildProperties)"
+			Properties="$(_DomainCodeGeneratorBuildProperties)"
 			BuildInParallel="false" />
 
-		<MSBuild Projects="$(ApplicationCodeGeneratorProject)"
+		<MSBuild Projects="$(DomainCodeGeneratorProject)"
 			Targets="GetTargetPath"
-			Properties="$(_ApplicationCodeGeneratorBuildProperties)"
+			Properties="$(_DomainCodeGeneratorBuildProperties)"
 			BuildInParallel="false">
-			<Output TaskParameter="TargetOutputs" ItemName="_ApplicationCodeGeneratorOutputs" />
+			<Output TaskParameter="TargetOutputs" ItemName="_DomainCodeGeneratorOutputs" />
 		</MSBuild>
 
 		<PropertyGroup>
-			<ApplicationCodeGeneratorAssembly Condition="'@(_ApplicationCodeGeneratorOutputs)' != ''">@(_ApplicationCodeGeneratorOutputs->'%(FullPath)')</ApplicationCodeGeneratorAssembly>
+			<DomainCodeGeneratorAssembly Condition="'@(_DomainCodeGeneratorOutputs)' != ''">@(_DomainCodeGeneratorOutputs->'%(FullPath)')</DomainCodeGeneratorAssembly>
 		</PropertyGroup>
 	</Target>
 
-	<Target Name="GenerateBuildConstants" BeforeTargets="BeforeCompile" DependsOnTargets="EnsureApplicationCodeGeneratorBuilt" Condition="'$(GenerateBuildConstants)' == 'true' and '$(SkipApplicationCodeGeneration)' != 'true'">
+	<Target Name="GenerateBuildConstants" BeforeTargets="BeforeCompile" DependsOnTargets="_EnsureDomainCodeGeneratorBuiltForBuildConstants" Condition="'$(GenerateBuildConstants)' == 'true' and '$(SkipCodeGeneration)' != 'true'">
 		<PropertyGroup>
-			<_GeneratorProject>$(ApplicationCodeGeneratorProject)</_GeneratorProject>
-			<_GeneratorAssembly>$(ApplicationCodeGeneratorAssembly)</_GeneratorAssembly>
+			<_GeneratorProject>$(DomainCodeGeneratorProject)</_GeneratorProject>
+			<_GeneratorAssembly>$(DomainCodeGeneratorAssembly)</_GeneratorAssembly>
 			<_GeneratorAssemblyDirectory>$([System.IO.Path]::GetDirectoryName($(_GeneratorAssembly)))</_GeneratorAssemblyDirectory>
-			<_GeneratorAssemblyCopyRoot>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'Application.CodeGenerator'))</_GeneratorAssemblyCopyRoot>
+			<_GeneratorAssemblyCopyRoot>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'Domain.CodeGenerator'))</_GeneratorAssemblyCopyRoot>
 			<_GeneratorAssemblyCopy>$([System.IO.Path]::Combine($(_GeneratorAssemblyCopyRoot), $([System.IO.Path]::GetFileName($(_GeneratorAssembly)))))</_GeneratorAssemblyCopy>
-			<_GeneratedFilePath>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'GeneratedBuildConstants.cs'))</_GeneratedFilePath>
-			<_GeneratedDirectory>$([System.IO.Path]::GetDirectoryName($(_GeneratedFilePath)))</_GeneratedDirectory>
+			<_GeneratedBuildConstantsPath>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'GeneratedBuildConstants.cs'))</_GeneratedBuildConstantsPath>
+			<_GeneratedDirectory>$([System.IO.Path]::GetDirectoryName($(_GeneratedBuildConstantsPath)))</_GeneratedDirectory>
 		</PropertyGroup>
 
-		<Message Condition="'$(DesignTimeBuild)' != 'true'" Importance="Low" Text="Generating build constants via Application.CodeGenerator." />
-		<Message Condition="'$(DesignTimeBuild)' == 'true' and !Exists('$(_GeneratedFilePath)')" Importance="Low" Text="Generating build constants for design-time build via Application.CodeGenerator." />
+		<Message Condition="'$(DesignTimeBuild)' != 'true'" Importance="Low" Text="Generating build constants via Domain.CodeGenerator." />
+		<Message Condition="'$(DesignTimeBuild)' == 'true' and !Exists('$(_GeneratedBuildConstantsPath)')" Importance="Low" Text="Generating build constants for design-time build via Domain.CodeGenerator." />
 
 		<MakeDir Condition="'$(DesignTimeBuild)' != 'true' or !Exists('$(_GeneratedDirectory)')" Directories="$(_GeneratedDirectory)" />
 		<MakeDir Condition="'$(DesignTimeBuild)' != 'true' or !Exists('$(_GeneratorAssemblyCopyRoot)')" Directories="$(_GeneratorAssemblyCopyRoot)" />
 
 		<ItemGroup>
-			<_ApplicationCodeGeneratorFiles Include="$(_GeneratorAssemblyDirectory)\**\*.*" />
+			<_DomainCodeGeneratorFiles Include="$(_GeneratorAssemblyDirectory)\**\*.*" />
 		</ItemGroup>
 
-		<Copy SourceFiles="@(_ApplicationCodeGeneratorFiles)"
-			DestinationFiles="@(_ApplicationCodeGeneratorFiles->'$(_GeneratorAssemblyCopyRoot)\%(RecursiveDir)%(Filename)%(Extension)')"
+		<Copy SourceFiles="@(_DomainCodeGeneratorFiles)"
+			DestinationFiles="@(_DomainCodeGeneratorFiles->'$(_GeneratorAssemblyCopyRoot)\%(RecursiveDir)%(Filename)%(Extension)')"
 			SkipUnchangedFiles="true" />
 
-		<Exec Condition="'$(DesignTimeBuild)' != 'true'" Command="dotnet &quot;$(_GeneratorAssemblyCopy)&quot; --output &quot;$(_GeneratedFilePath)&quot; --app-name &quot;$(AssemblyName)&quot; --app-title &quot;$(AssemblyTitle)&quot; --app-description &quot;$(Description)&quot; --version &quot;$(FullVersion)&quot; --app-tag &quot;$(AppTag)&quot; --build-payload-path &quot;$(CredsJsonPath)&quot;" />
+		<Exec Condition="'$(DesignTimeBuild)' != 'true'" Command="dotnet &quot;$(_GeneratorAssemblyCopy)&quot; --output &quot;$(_GeneratedBuildConstantsPath)&quot; --app-name &quot;$(AssemblyName)&quot; --app-title &quot;$(AssemblyTitle)&quot; --app-description &quot;$(Description)&quot; --version &quot;$(FullVersion)&quot; --app-tag &quot;$(AppTag)&quot; --build-payload-path &quot;$(CredsJsonPath)&quot;" />
 
-		<Exec Condition="'$(DesignTimeBuild)' == 'true' and !Exists('$(_GeneratedFilePath)')" Command="dotnet &quot;$(_GeneratorAssemblyCopy)&quot; --output &quot;$(_GeneratedFilePath)&quot; --app-name &quot;$(AssemblyName)&quot; --app-title &quot;$(AssemblyTitle)&quot; --app-description &quot;$(Description)&quot; --version &quot;$(FullVersion)&quot; --app-tag &quot;$(AppTag)&quot; --build-payload-path &quot;$(CredsJsonPath)&quot;" />
+		<Exec Condition="'$(DesignTimeBuild)' == 'true' and !Exists('$(_GeneratedBuildConstantsPath)')" Command="dotnet &quot;$(_GeneratorAssemblyCopy)&quot; --output &quot;$(_GeneratedBuildConstantsPath)&quot; --app-name &quot;$(AssemblyName)&quot; --app-title &quot;$(AssemblyTitle)&quot; --app-description &quot;$(Description)&quot; --version &quot;$(FullVersion)&quot; --app-tag &quot;$(AppTag)&quot; --build-payload-path &quot;$(CredsJsonPath)&quot;" />
 
-		<ItemGroup Condition="Exists('$(_GeneratedFilePath)')">
-			<Compile Include="$(_GeneratedFilePath)" />
+		<ItemGroup Condition="Exists('$(_GeneratedBuildConstantsPath)')">
+			<Compile Include="$(_GeneratedBuildConstantsPath)" />
 		</ItemGroup>
 	</Target>
 

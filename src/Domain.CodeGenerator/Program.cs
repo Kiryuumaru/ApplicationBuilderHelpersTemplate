@@ -9,6 +9,7 @@ var generators = new ICodeGenerationTask[]
 {
 	new PermissionIdsGenerator(),
 	new RoleIdsGenerator(),
+	new BuildConstantsGenerator(),
 };
 
 using var cancellationSource = new CancellationTokenSource();
@@ -19,8 +20,9 @@ Console.CancelKeyPress += (_, args) =>
 };
 
 var baseDirectory = AppContext.BaseDirectory;
-var outputPaths = BuildOutputPathMap(generators, args, baseDirectory);
-var context = new CodeGenerationContext(baseDirectory, DateTime.UtcNow, outputPaths);
+var options = ApplicationBuildOptions.Parse(args, baseDirectory);
+var outputPaths = BuildOutputPathMap(generators, options, baseDirectory);
+var context = new CodeGenerationContext(baseDirectory, DateTime.UtcNow, options, outputPaths);
 
 foreach (var generator in generators)
 {
@@ -30,7 +32,7 @@ foreach (var generator in generators)
 
 static IReadOnlyDictionary<string, string> BuildOutputPathMap(
 	IReadOnlyList<ICodeGenerationTask> tasks,
-	string[] arguments,
+	ApplicationBuildOptions options,
 	string baseDirectory)
 {
 	var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -41,43 +43,20 @@ static IReadOnlyDictionary<string, string> BuildOutputPathMap(
 		map[task.Id] = Path.GetFullPath(defaultPath, baseDirectory);
 	}
 
-	if (arguments.Length == 0)
+	// Override output paths if specified
+	if (!string.IsNullOrWhiteSpace(options.OutputPath))
 	{
-		return map;
+		map[BuildConstantsGenerator.TaskId] = options.OutputPath;
 	}
 
-	var positionalIndex = 0;
-	foreach (var rawArg in arguments)
+	if (!string.IsNullOrWhiteSpace(options.PermissionIdsOutputPath))
 	{
-		if (string.IsNullOrWhiteSpace(rawArg))
-		{
-			continue;
-		}
+		map["PermissionIds"] = options.PermissionIdsOutputPath;
+	}
 
-		var argument = rawArg.Trim();
-		var separatorIndex = argument.IndexOf('=', StringComparison.Ordinal);
-		if (separatorIndex > 0)
-		{
-			var key = argument[..separatorIndex].Trim();
-			var value = argument[(separatorIndex + 1)..].Trim();
-
-			if (!map.ContainsKey(key))
-			{
-				throw new InvalidOperationException($"Unknown generator id '{key}'.");
-			}
-
-			map[key] = Path.GetFullPath(value, baseDirectory);
-			continue;
-		}
-
-		if (positionalIndex >= tasks.Count)
-		{
-			throw new InvalidOperationException("Too many positional arguments were supplied.");
-		}
-
-		var taskId = tasks[positionalIndex].Id;
-		map[taskId] = Path.GetFullPath(argument, baseDirectory);
-		positionalIndex++;
+	if (!string.IsNullOrWhiteSpace(options.RoleIdsOutputPath))
+	{
+		map["RoleIds"] = options.RoleIdsOutputPath;
 	}
 
 	return map;

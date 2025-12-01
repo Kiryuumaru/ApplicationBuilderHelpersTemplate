@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Text;
 
-namespace Application.CodeGenerator;
+namespace Domain.CodeGenerator;
 
 internal sealed record ApplicationBuildOptions(
     string OutputPath,
+    string PermissionIdsOutputPath,
+    string RoleIdsOutputPath,
     string AppName,
     string AppTitle,
     string AppDescription,
@@ -94,14 +95,28 @@ internal sealed record ApplicationBuildOptions(
             return string.Empty;
         }
 
-        var outputPath = GetRequired(options, "output", "o");
-        var absoluteOutputPath = Path.GetFullPath(outputPath, baseDirectory);
+        var outputPath = GetOptional(options, "output", "o");
+        var absoluteOutputPath = string.IsNullOrWhiteSpace(outputPath)
+            ? string.Empty
+            : Path.GetFullPath(outputPath, baseDirectory);
+
+        var permissionIdsPath = GetOptional(options, "permission-ids-output", "permissionidsoutput");
+        var absolutePermissionIdsPath = string.IsNullOrWhiteSpace(permissionIdsPath)
+            ? string.Empty
+            : Path.GetFullPath(permissionIdsPath, baseDirectory);
+
+        var roleIdsPath = GetOptional(options, "role-ids-output", "roleidsoutput");
+        var absoluteRoleIdsPath = string.IsNullOrWhiteSpace(roleIdsPath)
+            ? string.Empty
+            : Path.GetFullPath(roleIdsPath, baseDirectory);
 
         var inlinePayload = GetOptional(options, "build-payload", "buildpayload");
         var payloadPath = GetOptional(options, "build-payload-path", "buildpayloadpath");
 
         return new ApplicationBuildOptions(
             absoluteOutputPath,
+            absolutePermissionIdsPath,
+            absoluteRoleIdsPath,
             GetRequired(options, "app-name", "appname"),
             GetRequired(options, "app-title", "apptitle"),
             GetOptional(options, "app-description", "appdescription"),
