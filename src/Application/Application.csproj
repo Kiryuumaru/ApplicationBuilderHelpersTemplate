@@ -11,7 +11,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="ApplicationBuilderHelpers" Version="4.0.59" />
+		<PackageReference Include="ApplicationBuilderHelpers" Version="4.0.63" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.0.0" />
