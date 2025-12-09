@@ -11,7 +11,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="ApplicationBuilderHelpers" Version="4.0.59" />
+		<PackageReference Include="ApplicationBuilderHelpers" Version="4.0.64" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.0.0" />
@@ -19,7 +19,7 @@
 		<PackageReference Include="Microsoft.Extensions.ServiceDiscovery" Version="10.0.0" />
 		<PackageReference Include="CliWrap" Version="3.10.0" />
 		<PackageReference Include="Semver" Version="3.0.0" />
-		<PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+		<PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
 		<PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
 		<PackageReference Include="Serilog.Enrichers.Process" Version="3.0.0" />
 		<PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />
