@@ -1,5 +1,6 @@
 using Application.Authorization.Models;
 using Application.Authorization.Services;
+using Application.UnitTests.Authorization.Fakes;
 using Domain.Authorization.Constants;
 using RolesConstants = Domain.Authorization.Constants.Roles;
 
