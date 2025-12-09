@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Application.Authorization.Interfaces;
-using Domain.Authorization.Models;
-using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
 
 namespace Application.Authorization.Services;
@@ -12,9 +11,10 @@ internal sealed class UserRoleResolver(IRoleLookup roleLookup) : IUserRoleResolv
 {
     private readonly IRoleLookup _roleLookup = roleLookup ?? throw new ArgumentNullException(nameof(roleLookup));
 
-    public IReadOnlyCollection<UserRoleResolution> ResolveRoles(User user)
+    public async Task<IReadOnlyCollection<UserRoleResolution>> ResolveRolesAsync(User user, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(user);
+        cancellationToken.ThrowIfCancellationRequested();
         if (user.RoleAssignments.Count == 0)
         {
             return Array.Empty<UserRoleResolution>();
@@ -25,7 +25,8 @@ internal sealed class UserRoleResolver(IRoleLookup roleLookup) : IUserRoleResolv
             .Distinct()
             .ToArray();
 
-        var roleIndex = _roleLookup.GetByIds(distinctIds).ToDictionary(static role => role.Id);
+        var roles = await _roleLookup.GetByIdsAsync(distinctIds, cancellationToken).ConfigureAwait(false);
+        var roleIndex = roles.ToDictionary(static role => role.Id);
         var resolutions = new List<UserRoleResolution>(user.RoleAssignments.Count);
         foreach (var assignment in user.RoleAssignments)
         {

@@ -20,7 +20,6 @@ public static class EFCoreIdentityServiceCollectionExtensions
         services.AddScoped<IRoleStore<Role>, EFCoreRoleStore>();
         services.AddScoped<EFCoreRoleRepository>();
         services.AddScoped<IRoleRepository>(sp => sp.GetRequiredService<EFCoreRoleRepository>());
-        services.AddScoped<IRoleLookup>(sp => sp.GetRequiredService<EFCoreRoleRepository>());
         return services;
     }
 }

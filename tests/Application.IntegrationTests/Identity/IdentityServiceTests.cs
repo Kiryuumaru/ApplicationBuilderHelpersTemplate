@@ -35,7 +35,6 @@ public class IdentityServiceTests
     public async Task RegisterUserAsync_PersistsActivatedUserWithPermissions()
     {
         var fixture = CreateFixture();
-        await fixture.RoleService.EnsureSystemRolesAsync(CancellationToken.None);
 
         var request = new UserRegistrationRequest(
             Username: "alice",
@@ -63,7 +62,6 @@ public class IdentityServiceTests
     public async Task RegisterUserAsync_GrantsSelfScopedAccessByDefault()
     {
         var fixture = CreateFixture();
-        await fixture.RoleService.EnsureSystemRolesAsync(CancellationToken.None);
 
         var user = await fixture.IdentityService.RegisterUserAsync(new UserRegistrationRequest("solo", "pa55word"), CancellationToken.None);
 
@@ -82,7 +80,6 @@ public class IdentityServiceTests
     public async Task AuthenticateAsync_ReturnsSessionWithRolePermissions()
     {
         var fixture = CreateFixture();
-        await fixture.RoleService.EnsureSystemRolesAsync(CancellationToken.None);
 
         var request = new UserRegistrationRequest(
             Username: "admin-user",
@@ -101,7 +98,6 @@ public class IdentityServiceTests
     public async Task AuthenticateAsync_ThrowsForInvalidPassword()
     {
         var fixture = CreateFixture();
-        await fixture.RoleService.EnsureSystemRolesAsync(CancellationToken.None);
 
         await fixture.IdentityService.RegisterUserAsync(new UserRegistrationRequest("bob", "correct-horse"), CancellationToken.None);
 
@@ -112,7 +108,6 @@ public class IdentityServiceTests
     public async Task AssignRoleAsync_AddsRoleToExistingUser()
     {
         var fixture = CreateFixture();
-        await fixture.RoleService.EnsureSystemRolesAsync(CancellationToken.None);
 
         var user = await fixture.IdentityService.RegisterUserAsync(new UserRegistrationRequest("charlie", "pass"), CancellationToken.None);
 
@@ -130,7 +125,6 @@ public class IdentityServiceTests
     public async Task AuthenticateAsync_UserReceivesRoleAndDirectPermissions()
     {
         var fixture = CreateFixture();
-        await fixture.RoleService.EnsureSystemRolesAsync(CancellationToken.None);
 
         const string additionalPermission = "api:market:assets:list";
         var request = new UserRegistrationRequest(
@@ -152,7 +146,6 @@ public class IdentityServiceTests
     public async Task AssignRoleAsync_FillsDefaultRoleParameters()
     {
         var fixture = CreateFixture();
-        await fixture.RoleService.EnsureSystemRolesAsync(CancellationToken.None);
 
         var user = await fixture.IdentityService.RegisterUserAsync(new UserRegistrationRequest("delta", "pass"), CancellationToken.None);
 
@@ -171,7 +164,6 @@ public class IdentityServiceTests
     public async Task AuthenticateAsync_ExpandsParameterizedRoleAssignments()
     {
         var fixture = CreateFixture();
-        await fixture.RoleService.EnsureSystemRolesAsync(CancellationToken.None);
 
         var descriptor = new RoleDescriptor(
             Code: "portfolio_reader",
@@ -219,7 +211,6 @@ public class IdentityServiceTests
     public async Task AssignRoleAsync_ThrowsWhenRequiredParametersMissing()
     {
         var fixture = CreateFixture();
-        await fixture.RoleService.EnsureSystemRolesAsync(CancellationToken.None);
 
         var descriptor = new RoleDescriptor(
             Code: "portfolio_reader",
@@ -246,7 +237,6 @@ public class IdentityServiceTests
     public async Task RegisterExternalAsync_PersistsIdentityLinkAndDefaultRole()
     {
         var fixture = CreateFixture();
-        await fixture.RoleService.EnsureSystemRolesAsync(CancellationToken.None);
 
         var request = new ExternalUserRegistrationRequest(
             Username: "oauth-alice",
@@ -276,7 +266,6 @@ public class IdentityServiceTests
     public async Task RegisterExternalAsync_PreventsDuplicateProviderSubject()
     {
         var fixture = CreateFixture();
-        await fixture.RoleService.EnsureSystemRolesAsync(CancellationToken.None);
 
         var request = new ExternalUserRegistrationRequest(
             Username: "oauth-bob",
@@ -292,7 +281,6 @@ public class IdentityServiceTests
     public async Task RegisterExternalAsync_ThrowsWhenProviderOrSubjectMissing()
     {
         var fixture = CreateFixture();
-        await fixture.RoleService.EnsureSystemRolesAsync(CancellationToken.None);
 
         await Assert.ThrowsAsync<ArgumentException>(() => fixture.IdentityService.RegisterExternalAsync(
             new ExternalUserRegistrationRequest("name", string.Empty, "subject"),

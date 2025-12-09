@@ -24,6 +24,11 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
             throw new InvalidOperationException($"Role with code '{descriptor.Code}' already exists.");
         }
 
+        if (RolesConstants.TryGetByCode(descriptor.Code, out _))
+        {
+            throw new InvalidOperationException($"Role code '{descriptor.Code}' is reserved for system roles.");
+        }
+
         var role = Role.Create(descriptor.Code, descriptor.Name, descriptor.Description, descriptor.IsSystemRole);
         role.ReplacePermissions(BuildTemplates(descriptor.PermissionTemplates ?? []));
         await _repository.SaveAsync(role, cancellationToken).ConfigureAwait(false);
@@ -33,25 +38,62 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
     public Task<Role?> GetByCodeAsync(string code, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+
+        if (RolesConstants.TryGetByCode(code, out var staticRole))
+        {
+            return Task.FromResult<Role?>(staticRole);
+        }
+
         return _repository.GetByCodeAsync(code, cancellationToken);
     }
 
     public Task<Role?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+
+        if (RolesConstants.TryGetById(id, out var staticRole))
+        {
+            return Task.FromResult<Role?>(staticRole);
+        }
+
         return _repository.GetByIdAsync(id, cancellationToken);
     }
 
-    public Task<IReadOnlyCollection<Role>> ListAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyCollection<Role>> ListAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return _repository.ListAsync(cancellationToken);
+
+        var result = new Dictionary<Guid, Role>();
+        foreach (var role in RolesConstants.AllRoles)
+        {
+            result[role.Id] = role;
+        }
+
+        var dynamicRoles = await _repository.ListAsync(cancellationToken).ConfigureAwait(false);
+        foreach (var role in dynamicRoles)
+        {
+            if (RolesConstants.IsStaticRole(role.Id))
+            {
+                continue;
+            }
+
+            result[role.Id] = role;
+        }
+
+        return result.Values
+            .OrderBy(static role => role.Code, StringComparer.Ordinal)
+            .ToArray();
     }
 
     public async Task<Role> ReplacePermissionsAsync(Guid roleId, IEnumerable<RolePermissionTemplateDescriptor> permissionTemplates, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(permissionTemplates);
         cancellationToken.ThrowIfCancellationRequested();
+
+        if (RolesConstants.IsStaticRole(roleId))
+        {
+            throw new InvalidOperationException("Cannot modify permissions of a static role.");
+        }
 
         var role = await _repository.GetByIdAsync(roleId, cancellationToken).ConfigureAwait(false) ?? throw new InvalidOperationException($"Role with ID '{roleId}' not found.");
         if (role.IsSystemRole)
@@ -68,6 +110,11 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
     {
         cancellationToken.ThrowIfCancellationRequested();
 
+        if (RolesConstants.IsStaticRole(roleId))
+        {
+            throw new InvalidOperationException("Cannot modify metadata of a static role.");
+        }
+
         var role = await _repository.GetByIdAsync(roleId, cancellationToken).ConfigureAwait(false) ?? throw new InvalidOperationException($"Role with ID '{roleId}' not found.");
         if (role.IsSystemRole)
         {
@@ -78,29 +125,6 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
         
         await _repository.SaveAsync(role, cancellationToken).ConfigureAwait(false);
         return role;
-    }
-
-    public async Task EnsureSystemRolesAsync(CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        
-        // Ensure User role
-        var userRole = await _repository.GetByCodeAsync(RolesConstants.User.Code, cancellationToken).ConfigureAwait(false);
-        if (userRole is null)
-        {
-            userRole = Role.Create(RolesConstants.User.Code, RolesConstants.User.Name, RolesConstants.User.Description, isSystemRole: true);
-            userRole.ReplacePermissions(RolesConstants.User.PermissionTemplates);
-            await _repository.SaveAsync(userRole, cancellationToken).ConfigureAwait(false);
-        }
-
-        // Ensure Admin role
-        var adminRole = await _repository.GetByCodeAsync(RolesConstants.Admin.Code, cancellationToken).ConfigureAwait(false);
-        if (adminRole is null)
-        {
-            adminRole = Role.Create(RolesConstants.Admin.Code, RolesConstants.Admin.Name, RolesConstants.Admin.Description, isSystemRole: true);
-            adminRole.ReplacePermissions(RolesConstants.Admin.PermissionTemplates);
-            await _repository.SaveAsync(adminRole, cancellationToken).ConfigureAwait(false);
-        }
     }
 
     private static IEnumerable<RolePermissionTemplate> BuildTemplates(IEnumerable<RolePermissionTemplateDescriptor> descriptors)

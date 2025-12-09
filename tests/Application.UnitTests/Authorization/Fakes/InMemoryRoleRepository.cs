@@ -1,14 +1,18 @@
 using System.Collections.Concurrent;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Application.Authorization.Interfaces;
 using Domain.Authorization.Models;
-using Domain.Identity.Interfaces;
 
 namespace Application.UnitTests.Authorization.Fakes;
 
 /// <summary>
 /// In-memory implementation of IRoleRepository for unit testing.
 /// </summary>
-internal sealed class InMemoryRoleRepository : IRoleRepository, IRoleLookup
+internal sealed class InMemoryRoleRepository : IRoleRepository
 {
     private readonly ConcurrentDictionary<Guid, Role> _roles = new();
     private readonly ConcurrentDictionary<string, Guid> _codeIndex = new(StringComparer.OrdinalIgnoreCase);
@@ -72,14 +76,13 @@ internal sealed class InMemoryRoleRepository : IRoleRepository, IRoleLookup
         return Task.FromResult(true);
     }
 
-    public Role? FindById(Guid id)
-        => _roles.TryGetValue(id, out var role) ? role : null;
-
-    public IReadOnlyCollection<Role> GetByIds(IEnumerable<Guid> ids)
+    public Task<IReadOnlyCollection<Role>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ids);
+        cancellationToken.ThrowIfCancellationRequested();
+
         var list = new List<Role>();
-        foreach (var id in ids)
+        foreach (var id in ids.Distinct())
         {
             if (_roles.TryGetValue(id, out var role))
             {
@@ -87,6 +90,9 @@ internal sealed class InMemoryRoleRepository : IRoleRepository, IRoleLookup
             }
         }
 
-        return list;
+        return Task.FromResult<IReadOnlyCollection<Role>>(list);
     }
+
+    private Role? FindById(Guid id)
+        => _roles.TryGetValue(id, out var role) ? role : null;
 }

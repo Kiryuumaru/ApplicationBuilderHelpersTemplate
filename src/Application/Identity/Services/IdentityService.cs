@@ -9,7 +9,6 @@ using Application.Identity.Interfaces;
 using Application.Identity.Models;
 using Domain.Authorization.Constants;
 using Domain.Authorization.Models;
-using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
 using Domain.Identity.Services;
 using Domain.Identity.ValueObjects;
@@ -21,7 +20,8 @@ namespace Application.Identity.Services;
 internal sealed class IdentityService(
     UserManager<User> userManager,
     IRoleRepository roleRepository,
-    IUserRoleResolver roleResolver) : IIdentityService
+    IUserRoleResolver roleResolver,
+    UserAuthenticationService authService) : IIdentityService
 {
     private static readonly Dictionary<string, Func<User, Role, string?>> DefaultRoleParameterResolvers =
         new(StringComparer.Ordinal)
@@ -32,6 +32,7 @@ internal sealed class IdentityService(
     private readonly UserManager<User> _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
     private readonly IRoleRepository _roleRepository = roleRepository ?? throw new ArgumentNullException(nameof(roleRepository));
     private readonly IUserRoleResolver _roleResolver = roleResolver ?? throw new ArgumentNullException(nameof(roleResolver));
+    private readonly UserAuthenticationService _authService = authService ?? throw new ArgumentNullException(nameof(authService));
 
     public async Task<User> RegisterUserAsync(UserRegistrationRequest request, CancellationToken cancellationToken)
     {
@@ -173,22 +174,29 @@ internal sealed class IdentityService(
         }
 
         var user = await _userManager.FindByNameAsync(username);
-        if (user == null || !await _userManager.CheckPasswordAsync(user, password))
+        if (user is null)
         {
             throw new AuthenticationException("Invalid credentials.");
         }
 
-        // We need to create a session. 
-        // Note: Identity usually uses Cookies/Tokens. UserSession might be a custom concept.
-        // If we keep UserSession, we need to generate it.
-        
-        var resolvedRoles = _roleResolver.ResolveRoles(user);
+        try
+        {
+            _authService.Authenticate(user, password);
+        }
+        catch (Domain.Identity.Exceptions.AuthenticationException ex)
+        {
+            await _userManager.UpdateAsync(user).ConfigureAwait(false);
+            throw new AuthenticationException(ex.Message, ex);
+        }
+
+        var resolvedRoles = await _roleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
         var roleCodes = resolvedRoles.Count == 0
-            ? null
-            : resolvedRoles.Select(static resolution => resolution.Role.Code);
+            ? Array.Empty<string>()
+            : resolvedRoles.Select(static resolution => resolution.Role.Code).ToArray();
         var permissions = user.BuildEffectivePermissions(resolvedRoles);
-        
-        // Assuming default lifetime
+
+        await _userManager.UpdateAsync(user).ConfigureAwait(false);
+
         return user.CreateSession(TimeSpan.FromHours(1), DateTimeOffset.UtcNow, permissions, roleCodes);
     }
 
@@ -213,8 +221,16 @@ internal sealed class IdentityService(
         }
 
         var roleCode = assignment.RoleCode.Trim();
-        var role = await _roleRepository.GetByCodeAsync(roleCode, cancellationToken).ConfigureAwait(false)
-            ?? throw new KeyNotFoundException($"Role '{roleCode}' was not found.");
+        Role role;
+        if (RolesConstants.TryGetByCode(roleCode, out var staticRole))
+        {
+            role = staticRole;
+        }
+        else
+        {
+            role = await _roleRepository.GetByCodeAsync(roleCode, cancellationToken).ConfigureAwait(false)
+                ?? throw new KeyNotFoundException($"Role '{roleCode}' was not found.");
+        }
 
         var parameters = ResolveAssignmentParameters(user, role, assignment);
         user.AssignRole(role.Id, parameters);

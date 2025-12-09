@@ -60,14 +60,14 @@ public class FederatedAuthTests
         prop?.SetValue(user, "hashed_secret");
 
         var service = new UserAuthenticationService(new StubPasswordVerifier("secret"));
-        var session = service.Authenticate(user, "secret", DateTimeOffset.UtcNow);
+        service.Authenticate(user, "secret", DateTimeOffset.UtcNow);
 
-        Assert.Equal(user.Id, session.UserId);
+        Assert.NotNull(user.LastLoginAt);
     }
 
     private sealed class StubPasswordVerifier(string expected) : IPasswordVerifier
     {
-        public bool Verify(string? hashedPassword, string providedPassword)
+        public bool Verify(string hashedPassword, string providedPassword)
         {
             return providedPassword == expected && hashedPassword == "hashed_secret";
         }

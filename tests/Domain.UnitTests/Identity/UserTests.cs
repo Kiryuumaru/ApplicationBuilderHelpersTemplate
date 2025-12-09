@@ -26,7 +26,7 @@ public class UserTests
     }
 
     [Fact]
-    public void AuthenticationService_ReturnsSession_WhenSecretIsValid()
+    public void Authenticate_RecordsSuccessfulLogin()
     {
         var user = CreateUser();
         user.Activate();
@@ -37,11 +37,10 @@ public class UserTests
         prop?.SetValue(user, "hashed_secret");
 
         var service = new UserAuthenticationService(new StubPasswordVerifier("secret"));
-        var session = service.Authenticate(user, "secret", DateTimeOffset.UtcNow);
+        service.Authenticate(user, "secret", DateTimeOffset.UtcNow);
 
-        Assert.Equal(user.Id, session.UserId);
-        Assert.Equal(user.UserName, session.Username);
-        Assert.NotEmpty(session.PermissionIdentifiers);
+        Assert.NotNull(user.LastLoginAt);
+        Assert.Equal(0, user.AccessFailedCount);
     }
 
     [Fact]
@@ -57,6 +56,7 @@ public class UserTests
         var service = new UserAuthenticationService(new StubPasswordVerifier("secret"));
 
         Assert.Throws<AuthenticationException>(() => service.Authenticate(user, "invalid", DateTimeOffset.UtcNow));
+        Assert.Equal(1, user.AccessFailedCount);
     }
 
     [Fact]
@@ -83,27 +83,6 @@ public class UserTests
 
         Assert.Contains("api:portfolio:accounts:list", identifiers);
         Assert.Contains("api:portfolio:positions:close", identifiers);
-    }
-
-    [Fact]
-    public void AuthenticationService_AppendsRoleCodesToSession()
-    {
-        var user = CreateUser();
-        user.Activate();
-        user.GrantPermission(UserPermissionGrant.Create("api:portfolio:accounts:list"));
-        
-        // Set password hash
-        var prop = typeof(User).GetProperty(nameof(User.PasswordHash));
-        prop?.SetValue(user, "hashed_secret");
-
-        var adminRole = Role.Create("admin", "Administrator");
-        adminRole.AssignPermission(RolePermissionTemplate.Create("api:_write"));
-
-        var service = new UserAuthenticationService(new StubPasswordVerifier("secret"), new StubRoleResolver(adminRole));
-        var session = service.Authenticate(user, "secret", DateTimeOffset.UtcNow);
-
-        Assert.Contains("ADMIN", session.RoleCodes);
-        Assert.Contains("api:_write", session.PermissionIdentifiers);
     }
 
     [Fact]
@@ -196,19 +175,10 @@ public class UserTests
 
     private sealed class StubPasswordVerifier(string expected) : IPasswordVerifier
     {
-        public bool Verify(string? hashedPassword, string providedPassword)
+        public bool Verify(string hashedPassword, string providedPassword)
         {
             return providedPassword == expected && hashedPassword == "hashed_secret";
         }
     }
 
-    private sealed class StubRoleResolver(params Role[] roles) : IUserRoleResolver
-    {
-        private readonly IReadOnlyCollection<Role> _roles = roles;
-
-        public IReadOnlyCollection<UserRoleResolution> ResolveRoles(User user)
-        {
-            return [.. _roles.Select(static role => new UserRoleResolution(role))];
-        }
-    }
 }

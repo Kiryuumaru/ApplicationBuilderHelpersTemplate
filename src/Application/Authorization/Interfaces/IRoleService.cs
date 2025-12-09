@@ -16,6 +16,4 @@ public interface IRoleService
     Task<Role> ReplacePermissionsAsync(Guid roleId, IEnumerable<RolePermissionTemplateDescriptor> permissionTemplates, CancellationToken cancellationToken);
 
     Task<Role> UpdateMetadataAsync(Guid roleId, string name, string? description, CancellationToken cancellationToken);
-
-    Task EnsureSystemRolesAsync(CancellationToken cancellationToken);
 }

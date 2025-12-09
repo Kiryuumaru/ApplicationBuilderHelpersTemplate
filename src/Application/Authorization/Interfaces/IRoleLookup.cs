@@ -4,7 +4,7 @@ namespace Application.Authorization.Interfaces;
 
 public interface IRoleLookup
 {
-    Role? FindById(Guid id);
+    Task<Role?> FindByIdAsync(Guid id, CancellationToken cancellationToken);
 
-    IReadOnlyCollection<Role> GetByIds(IEnumerable<Guid> ids);
+    Task<IReadOnlyCollection<Role>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken);
 }

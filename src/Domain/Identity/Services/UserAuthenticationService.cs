@@ -1,25 +1,19 @@
-using Domain.Authorization.Models;
 using Domain.Identity.Exceptions;
 using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
-using Domain.Identity.ValueObjects;
 
 namespace Domain.Identity.Services;
 
 public sealed class UserAuthenticationService
 {
     private readonly IPasswordVerifier _passwordVerifier;
-    private readonly IUserRoleResolver? _roleResolver;
-    private readonly TimeSpan _defaultLifetime;
 
-    public UserAuthenticationService(IPasswordVerifier passwordVerifier, IUserRoleResolver? roleResolver = null, TimeSpan? defaultLifetime = null)
+    public UserAuthenticationService(IPasswordVerifier passwordVerifier)
     {
         _passwordVerifier = passwordVerifier ?? throw new ArgumentNullException(nameof(passwordVerifier));
-        _roleResolver = roleResolver;
-        _defaultLifetime = defaultLifetime is { TotalSeconds: > 0 } lifetime ? lifetime : TimeSpan.FromHours(1);
     }
 
-    public UserSession Authenticate(User user, string secret, DateTimeOffset? issuedAt = null, TimeSpan? lifetime = null)
+    public void Authenticate(User user, string secret, DateTimeOffset? issuedAt = null)
     {
         ArgumentNullException.ThrowIfNull(user);
 
@@ -41,12 +35,5 @@ public sealed class UserAuthenticationService
         }
 
         user.RecordSuccessfulLogin(timestamp);
-        var effectiveLifetime = lifetime is { TotalSeconds: > 0 } provided ? provided : _defaultLifetime;
-        var resolvedRoles = _roleResolver?.ResolveRoles(user) ?? Array.Empty<UserRoleResolution>();
-        var roleCodes = resolvedRoles.Count == 0
-            ? null
-            : resolvedRoles.Select(static resolution => resolution.Role.Code);
-        var permissions = user.BuildEffectivePermissions(resolvedRoles);
-        return user.CreateSession(effectiveLifetime, timestamp, permissions, roleCodes);
     }
 }
