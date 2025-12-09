@@ -74,11 +74,7 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
             throw new InvalidOperationException("Cannot modify metadata of a system role.");
         }
 
-        role.SetName(name);
-        // role.SetDescription(description); // Assuming this method exists or we need to add it.
-        // Let's check Role.cs for SetDescription.
-        // It wasn't in the snippet I read earlier.
-        // But I can check.
+        role.UpdateMetadata(name, description);
         
         await _repository.SaveAsync(role, cancellationToken).ConfigureAwait(false);
         return role;
