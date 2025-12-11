@@ -19,12 +19,7 @@ sealed class BuildConstantsGenerator : ICodeGenerationTask
     public async Task GenerateAsync(CodeGenerationContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
-
-        if (context.Options is null)
-        {
-            // Skip if no build options provided (not a GenerateBuildConstants project)
-            return;
-        }
+        ArgumentNullException.ThrowIfNull(context.Options);
 
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -71,36 +66,36 @@ sealed class BuildConstantsGenerator : ICodeGenerationTask
         builder.AppendLine("        /// <inheritdoc/>");
         builder.AppendLine("        public static global::Application.Abstractions.Application.IApplicationConstants Instance { get; } = new global::Build.ApplicationConstants();");
         builder.AppendLine();
-        AppendStaticAccessor(builder, "AppName", "The application name.");
+        builder.AppendLine("        /// <inheritdoc/>");
+        builder.AppendLine("        public string AppName { get; } = global::Build.Constants.AppName;");
         builder.AppendLine();
-        AppendStaticAccessor(builder, "AppTitle", "The application title.");
+        builder.AppendLine("        /// <inheritdoc/>");
+        builder.AppendLine("        public string AppTitle { get; } = global::Build.Constants.AppTitle;");
         builder.AppendLine();
-        AppendStaticAccessor(builder, "AppDescription", "The application description.");
+        builder.AppendLine("        /// <inheritdoc/>");
+        builder.AppendLine("        public string AppDescription { get; } = global::Build.Constants.AppDescription;");
         builder.AppendLine();
-        AppendStaticAccessor(builder, "Version", "The application version.");
+        builder.AppendLine("        /// <inheritdoc/>");
+        builder.AppendLine("        public string Version { get; } = global::Build.Constants.Version;");
         builder.AppendLine();
-        AppendStaticAccessor(builder, "AppTag", "The application AppTag.");
+        builder.AppendLine("        /// <inheritdoc/>");
+        builder.AppendLine("        public string AppTag { get; } = global::Build.Constants.AppTag;");
         builder.AppendLine();
-        AppendStaticAccessor(builder, "BuildPayload", "The application build payload.");
-        builder.AppendLine();
-        builder.AppendLine("        string global::Application.Abstractions.Application.IApplicationConstants.AppName => AppName;");
-        builder.AppendLine();
-        builder.AppendLine("        string global::Application.Abstractions.Application.IApplicationConstants.AppTitle => AppTitle;");
-        builder.AppendLine();
-        builder.AppendLine("        string global::Application.Abstractions.Application.IApplicationConstants.AppDescription => AppDescription;");
-        builder.AppendLine();
-        builder.AppendLine("        string global::Application.Abstractions.Application.IApplicationConstants.Version => Version;");
-        builder.AppendLine();
-        builder.AppendLine("        string global::Application.Abstractions.Application.IApplicationConstants.AppTag => AppTag;");
-        builder.AppendLine();
-        builder.AppendLine("        string global::Application.Abstractions.Application.IApplicationConstants.BuildPayload => BuildPayload;");
+        builder.AppendLine("        /// <inheritdoc/>");
+        builder.AppendLine("        public string BuildPayload { get; } = global::Build.Constants.BuildPayload;");
         builder.AppendLine("    }");
         builder.AppendLine();
+
+        // Generate BaseCommand<T> class
+        var baseCommandType = string.IsNullOrWhiteSpace(options.BaseCommandType)
+            ? "global::Application.Abstractions.Application.BaseCommand"
+            : $"global::{options.BaseCommandType}";
+
         builder.AppendLine("    /// <summary>");
         builder.AppendLine("    /// Base command class with application constants support.");
         builder.AppendLine("    /// </summary>");
         builder.AppendLine("    /// <typeparam name=\"THostApplicationBuilder\">The type of host application builder.</typeparam>");
-        builder.AppendLine("    public abstract class BaseCommand<[global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] THostApplicationBuilder> : global::Application.Abstractions.Application.BaseCommand<THostApplicationBuilder>");
+        builder.AppendLine($"    internal abstract class BaseCommand<[global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] THostApplicationBuilder> : {baseCommandType}<THostApplicationBuilder>");
         builder.AppendLine("        where THostApplicationBuilder : global::Microsoft.Extensions.Hosting.IHostApplicationBuilder");
         builder.AppendLine("    {");
         builder.AppendLine("        /// <inheritdoc/>");
@@ -121,17 +116,6 @@ sealed class BuildConstantsGenerator : ICodeGenerationTask
 
         var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         await File.WriteAllTextAsync(outputPath, contents, encoding, cancellationToken);
-    }
-
-    private static void AppendStaticAccessor(StringBuilder builder, string name, string documentation)
-    {
-        builder.AppendLine("        /// <summary>");
-        builder.Append("        /// ");
-        builder.AppendLine(documentation);
-        builder.AppendLine("        /// </summary>");
-        builder.Append("        public static string ");
-        builder.Append(name);
-        builder.AppendLine(" => global::Build.Constants." + name + ";");
     }
 
     private static void AppendConstant(StringBuilder builder, string name, string value, string documentation)

@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Domain.CodeGenerator;
 
-internal sealed record ApplicationBuildOptions(
+sealed record ApplicationBuildOptions(
     string OutputPath,
     string PermissionIdsOutputPath,
     string RoleIdsOutputPath,
@@ -14,7 +14,8 @@ internal sealed record ApplicationBuildOptions(
     string AppDescription,
     string Version,
     string AppTag,
-    string BuildPayload)
+    string BuildPayload,
+    string BaseCommandType)
 {
     public static ApplicationBuildOptions Parse(IReadOnlyList<string> arguments, string baseDirectory)
     {
@@ -25,7 +26,6 @@ internal sealed record ApplicationBuildOptions(
         for (var index = 0; index < arguments.Count; index++)
         {
             var raw = arguments[index];
-
             if (string.IsNullOrWhiteSpace(raw))
             {
                 continue;
@@ -36,37 +36,38 @@ internal sealed record ApplicationBuildOptions(
                 break;
             }
 
-            if (raw.StartsWith("--", StringComparison.Ordinal))
+            if (!raw.StartsWith("--", StringComparison.Ordinal))
             {
-                var trimmed = raw[2..];
-                if (string.IsNullOrEmpty(trimmed))
-                {
-                    continue;
-                }
-
-                var separatorIndex = trimmed.IndexOf('=');
-                if (separatorIndex >= 0)
-                {
-                    var key = trimmed[..separatorIndex];
-                    var value = trimmed[(separatorIndex + 1)..];
-                    options[key] = value;
-                    continue;
-                }
-
-                string valueCandidate = string.Empty;
-                if (index + 1 < arguments.Count)
-                {
-                    var next = arguments[index + 1];
-                    if (!next.StartsWith("--", StringComparison.Ordinal))
-                    {
-                        valueCandidate = next;
-                        index++;
-                    }
-                }
-
-                options[trimmed] = valueCandidate;
                 continue;
             }
+
+            var trimmed = raw[2..];
+            if (string.IsNullOrEmpty(trimmed))
+            {
+                continue;
+            }
+
+            var separatorIndex = trimmed.IndexOf('=');
+            if (separatorIndex >= 0)
+            {
+                var key = trimmed[..separatorIndex];
+                var value = trimmed[(separatorIndex + 1)..];
+                options[key] = value;
+                continue;
+            }
+
+            var valueCandidate = string.Empty;
+            if (index + 1 < arguments.Count)
+            {
+                var next = arguments[index + 1];
+                if (!next.StartsWith("--", StringComparison.Ordinal))
+                {
+                    valueCandidate = next;
+                    index++;
+                }
+            }
+
+            options[trimmed] = valueCandidate;
         }
 
         static string GetRequired(IDictionary<string, string> source, params string[] keys)
@@ -122,7 +123,8 @@ internal sealed record ApplicationBuildOptions(
             GetOptional(options, "app-description", "appdescription"),
             GetRequired(options, "version"),
             GetRequired(options, "app-tag", "apptag"),
-            ResolveBuildPayload(inlinePayload, payloadPath, baseDirectory));
+            ResolveBuildPayload(inlinePayload, payloadPath, baseDirectory),
+            GetOptional(options, "base-command-type", "basecommandtype"));
     }
 
     private static string ResolveBuildPayload(string inlineValue, string payloadPath, string baseDirectory)

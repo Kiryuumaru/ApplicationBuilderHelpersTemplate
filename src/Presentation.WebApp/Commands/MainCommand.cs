@@ -11,7 +11,7 @@ using Presentation.WebApp.Components.Account;
 namespace Presentation.WebApp.Commands;
 
 [Command(description: "Main subcommand.")]
-public class MainCommand : Build.BaseCommand<WebApplicationBuilder>
+internal class MainCommand : Build.BaseCommand<WebApplicationBuilder>
 {
     protected override ValueTask<WebApplicationBuilder> ApplicationBuilder(CancellationToken stoppingToken)
     {

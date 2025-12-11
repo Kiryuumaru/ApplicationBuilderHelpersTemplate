@@ -5,65 +5,31 @@
 		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<TrimmerSingleWarn>false</TrimmerSingleWarn>
-		<EnableTrimAnalyzer>true</EnableTrimAnalyzer>
-		<IsTrimmable>true</IsTrimmable>
-		<SkipDomainCodeGeneration Condition="'$(SkipDomainCodeGeneration)' == ''">false</SkipDomainCodeGeneration>
-		<PermissionIdsGeneratedFile>Authorization\Constants\PermissionIds.Generated.cs</PermissionIdsGeneratedFile>
-		<RoleIdsGeneratedFile>Authorization\Constants\RoleIds.Generated.cs</RoleIdsGeneratedFile>
-		<DomainCodeGeneratorProject Condition="'$(DomainCodeGeneratorProject)' == ''">$(MSBuildThisFileDirectory)..\Domain.CodeGenerator\Domain.CodeGenerator.csproj</DomainCodeGeneratorProject>
-		<!-- These must be defined at PropertyGroup level so they're available across targets -->
-		<_DomainCodeGeneratorProjectFullPath>$([System.IO.Path]::GetFullPath('$(DomainCodeGeneratorProject)'))</_DomainCodeGeneratorProjectFullPath>
-		<_DomainCodeGeneratorProjectDirectory>$([System.IO.Path]::GetDirectoryName($(_DomainCodeGeneratorProjectFullPath)))</_DomainCodeGeneratorProjectDirectory>
 	</PropertyGroup>
 
-	<Target Name="EnsureDomainCodeGeneratorBuilt" Condition="'$(SkipDomainCodeGeneration)' != 'true'">
+	<Target Name="RunCodeGenerator" BeforeTargets="BeforeCompile">
 		<PropertyGroup>
-			<_DomainCodeGeneratorIntermediateDirectory>$([System.IO.Path]::Combine($(_DomainCodeGeneratorProjectDirectory), 'obj', 'DomainGenerator', '$(Configuration)'))\</_DomainCodeGeneratorIntermediateDirectory>
-			<_DomainCodeGeneratorRunDirectory>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'DomainCodeGenerator'))\</_DomainCodeGeneratorRunDirectory>
-			<_DomainCodeGeneratorPlatform>$(Platform)</_DomainCodeGeneratorPlatform>
-			<_DomainCodeGeneratorPlatformTarget>$(PlatformTarget)</_DomainCodeGeneratorPlatformTarget>
-			<_DomainCodeGeneratorRuntimeIdentifier>$(RuntimeIdentifier)</_DomainCodeGeneratorRuntimeIdentifier>
-			<_DomainCodeGeneratorRuntimeIdentifiers>$(RuntimeIdentifiers)</_DomainCodeGeneratorRuntimeIdentifiers>
-			<_DomainCodeGeneratorBuildProperties>Configuration=$(Configuration);Platform=$(_DomainCodeGeneratorPlatform);PlatformTarget=$(_DomainCodeGeneratorPlatformTarget);RuntimeIdentifier=$(_DomainCodeGeneratorRuntimeIdentifier);RuntimeIdentifiers=$(_DomainCodeGeneratorRuntimeIdentifiers);SelfContained=false;PublishAot=false;PublishTrimmed=false;PublishSingleFile=false;UseAppHost=false;SkipDomainCodeGeneration=true;GenerateBuildConstants=false;OutputPath=$(_DomainCodeGeneratorRunDirectory);IntermediateOutputPath=$(_DomainCodeGeneratorIntermediateDirectory);MSBuildProjectExtensionsPath=$(_DomainCodeGeneratorIntermediateDirectory);AppendTargetFrameworkToOutputPath=false;AppendRuntimeIdentifierToOutputPath=false</_DomainCodeGeneratorBuildProperties>
+			<_DomainCodeGeneratorProject>$(MSBuildThisFileDirectory)..\Domain.CodeGenerator\Domain.CodeGenerator.csproj</_DomainCodeGeneratorProject>
+			<_DomainCodeGeneratorDll>$(MSBuildThisFileDirectory)..\Domain.CodeGenerator\bin\$(Configuration)\net10.0\Domain.CodeGenerator.dll</_DomainCodeGeneratorDll>
+			<_GeneratedPermissionIdsFileFullPath>$([System.IO.Path]::Combine($(MSBuildThisFileDirectory), $(IntermediateOutputPath), 'PermissionIds.Generated.cs'))</_GeneratedPermissionIdsFileFullPath>
+			<_GeneratedRoleIdsFileFullPath>$([System.IO.Path]::Combine($(MSBuildProjectDirectory), $(IntermediateOutputPath), 'RoleIds.Generated.cs'))</_GeneratedRoleIdsFileFullPath>
 		</PropertyGroup>
 
-		<MakeDir Condition="'$(SkipDomainCodeGeneration)' != 'true'" Directories="$(_DomainCodeGeneratorRunDirectory);$(_DomainCodeGeneratorIntermediateDirectory)" />
+		<!-- Build the code generator first -->
+		<MSBuild Projects="$(_DomainCodeGeneratorProject)" Targets="Restore;Build" Properties="Configuration=$(Configuration)" />
 
-		<MSBuild Projects="$(DomainCodeGeneratorProject)" Targets="Restore;Build" Properties="$(_DomainCodeGeneratorBuildProperties)" BuildInParallel="false" />
-	</Target>
+		<Message Text="Using code generator: $(_DomainCodeGeneratorDll)" Importance="high" />
+		<Message Text="Generating build constants file: $(_GeneratedPermissionIdsFileFullPath)" Importance="high" />
+		<Message Text="Generating build constants file: $(_GeneratedRoleIdsFileFullPath)" Importance="high" />
 
-	<Target Name="GeneratePermissionIds" BeforeTargets="BeforeCompile" DependsOnTargets="EnsureDomainCodeGeneratorBuilt" Condition="'$(SkipDomainCodeGeneration)' != 'true'">
-		<PropertyGroup>
-			<_DomainCodeGeneratorRunDirectory>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'DomainCodeGenerator'))\</_DomainCodeGeneratorRunDirectory>
-			<_DomainCodeGeneratorExecutable>$(_DomainCodeGeneratorRunDirectory)Domain.CodeGenerator.dll</_DomainCodeGeneratorExecutable>
-			<_PermissionGeneratedFilePath>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', '$(PermissionIdsGeneratedFile)'))</_PermissionGeneratedFilePath>
-			<_PermissionGeneratedDirectory>$([System.IO.Path]::GetDirectoryName($(_PermissionGeneratedFilePath)))</_PermissionGeneratedDirectory>
-			<_RoleGeneratedFilePath>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', '$(RoleIdsGeneratedFile)'))</_RoleGeneratedFilePath>
-			<_RoleGeneratedDirectory>$([System.IO.Path]::GetDirectoryName($(_RoleGeneratedFilePath)))</_RoleGeneratedDirectory>
-		</PropertyGroup>
-
-		<Message Condition="'$(DesignTimeBuild)' != 'true'" Importance="Low" Text="Generating domain constants via Domain.CodeGenerator." />
-		<Message Condition="'$(DesignTimeBuild)' == 'true' and ( !Exists('$(_PermissionGeneratedFilePath)') Or !Exists('$(_RoleGeneratedFilePath)') )" Importance="Low" Text="Generating domain constants for design-time build via Domain.CodeGenerator." />
-
-		<MakeDir Condition="'$(DesignTimeBuild)' != 'true' Or !Exists('$(_PermissionGeneratedDirectory)') Or !Exists('$(_RoleGeneratedDirectory)')" Directories="$(_PermissionGeneratedDirectory);$(_RoleGeneratedDirectory)" />
-
-		<Exec Condition="'$(DesignTimeBuild)' != 'true'" WorkingDirectory="$(_DomainCodeGeneratorRunDirectory)" Command="dotnet exec &quot;$(_DomainCodeGeneratorExecutable)&quot; --permission-ids-output &quot;$(_PermissionGeneratedFilePath)&quot; --role-ids-output &quot;$(_RoleGeneratedFilePath)&quot; --app-name &quot;Domain&quot; --app-title &quot;Domain&quot; --version &quot;0.0.0&quot; --app-tag &quot;local&quot;" />
-		<Exec Condition="'$(DesignTimeBuild)' == 'true' and ( !Exists('$(_PermissionGeneratedFilePath)') Or !Exists('$(_RoleGeneratedFilePath)') )" WorkingDirectory="$(_DomainCodeGeneratorRunDirectory)" Command="dotnet exec &quot;$(_DomainCodeGeneratorExecutable)&quot; --permission-ids-output &quot;$(_PermissionGeneratedFilePath)&quot; --role-ids-output &quot;$(_RoleGeneratedFilePath)&quot; --app-name &quot;Domain&quot; --app-title &quot;Domain&quot; --version &quot;0.0.0&quot; --app-tag &quot;local&quot;" />
+		<Exec Command="dotnet &quot;$(_DomainCodeGeneratorDll)&quot; --permission-ids-output &quot;$(_GeneratedPermissionIdsFileFullPath)&quot; --role-ids-output &quot;$(_GeneratedRoleIdsFileFullPath)&quot; --app-name &quot;Domain&quot; --app-title &quot;Domain&quot; --version &quot;0.0.0&quot; --app-tag &quot;local&quot;" />
 
 		<ItemGroup>
-			<Compile Remove="$(PermissionIdsGeneratedFile)" />
-			<Compile Remove="$(RoleIdsGeneratedFile)" />
-		</ItemGroup>
-		<ItemGroup Condition="'$(SkipDomainCodeGeneration)' != 'true' and Exists('$(_PermissionGeneratedFilePath)')">
-			<Compile Include="$(_PermissionGeneratedFilePath)">
-				<Link>$(PermissionIdsGeneratedFile)</Link>
-			</Compile>
-		</ItemGroup>
-		<ItemGroup Condition="'$(SkipDomainCodeGeneration)' != 'true' and Exists('$(_RoleGeneratedFilePath)')">
-			<Compile Include="$(_RoleGeneratedFilePath)">
-				<Link>$(RoleIdsGeneratedFile)</Link>
-			</Compile>
+			<Compile Remove="$(_GeneratedPermissionIdsFileFullPath)" />
+			<Compile Include="$(_GeneratedPermissionIdsFileFullPath)" />
+			
+			<Compile Remove="$(_GeneratedRoleIdsFileFullPath)" />
+			<Compile Include="$(_GeneratedRoleIdsFileFullPath)" />
 		</ItemGroup>
 	</Target>
 

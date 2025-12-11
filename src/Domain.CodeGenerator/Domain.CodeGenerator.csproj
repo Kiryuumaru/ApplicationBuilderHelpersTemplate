@@ -2,19 +2,32 @@
 
 	<PropertyGroup>
 		<LangVersion>14</LangVersion>
-		<TargetFramework>net10.0</TargetFramework>
 		<OutputType>Exe</OutputType>
+		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<GenerateBuildConstants>false</GenerateBuildConstants>
-		<SkipDomainCodeGeneration>true</SkipDomainCodeGeneration>
+
+		<DomainSourceDir>$(MSBuildThisFileDirectory)..\Domain\</DomainSourceDir>
+		<DomainSourcesDir>$(BaseIntermediateOutputPath)DomainSources\</DomainSourcesDir>
 	</PropertyGroup>
 
+	<Target Name="CopyDomainSources" BeforeTargets="BeforeCompile">
+		<ItemGroup>
+			<DomainSourceFiles Include="$(DomainSourceDir)**\*.cs"
+			                   Exclude="$(DomainSourceDir)obj\**;$(DomainSourceDir)bin\**" />
+		</ItemGroup>
+
+		<Copy SourceFiles="@(DomainSourceFiles)"
+		      DestinationFiles="@(DomainSourceFiles->'$(DomainSourcesDir)%(RecursiveDir)%(Filename)%(Extension)')"
+		      SkipUnchangedFiles="true" />
+
+		<ItemGroup>
+			<Compile Include="$(DomainSourcesDir)**\*.cs" />
+		</ItemGroup>
+	</Target>
+
 	<ItemGroup>
-		<!-- Reference Domain with isolated output paths to avoid polluting the main build -->
-		<ProjectReference Include="..\Domain\Domain.csproj">
-			<AdditionalProperties>SkipDomainCodeGeneration=true;OutputPath=bin\ForCodeGenerator\$(Configuration)\;IntermediateOutputPath=obj\ForCodeGenerator\$(Configuration)\;AppendTargetFrameworkToOutputPath=false</AdditionalProperties>
-		</ProjectReference>
+		<PackageReference Include="DisposableHelpers" Version="1.2.150" />
 	</ItemGroup>
 
 </Project>

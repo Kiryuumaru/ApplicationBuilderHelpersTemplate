@@ -67,6 +67,7 @@ sealed class PermissionIdsGenerator : ICodeGenerationTask
         builder.AppendLine("using System;");
         builder.AppendLine("using System.Collections.Generic;");
         builder.AppendLine();
+        builder.AppendLine("using Domain.Authorization.Constants;");
         builder.AppendLine("using Domain.Authorization.Models;");
         builder.AppendLine();
         builder.AppendLine("namespace Domain.Authorization.Constants;");
@@ -236,7 +237,8 @@ sealed class PermissionIdsGenerator : ICodeGenerationTask
             {
                 var methodName = "With" + ToParameterIdentifier(parameterName);
                 builder.AppendLine();
-                builder.AppendLine($"{indent}    public static string {methodName}(string value) => new ParameterBuilder().{methodName}(value).Build();");
+                builder.AppendLine($"{indent}    /// <summary>Sets the '{EscapeForXml(parameterName)}' parameter and returns a builder for chaining.</summary>");
+                builder.AppendLine($"{indent}    public static ParameterBuilder {methodName}(string value) => new ParameterBuilder().{methodName}(value);");
             }
 
             builder.AppendLine();
@@ -287,6 +289,8 @@ sealed class PermissionIdsGenerator : ICodeGenerationTask
             builder.AppendLine($"{indent}        }}");
             builder.AppendLine();
             builder.AppendLine($"{indent}        public override string ToString() => Build();");
+            builder.AppendLine();
+            builder.AppendLine($"{indent}        public static implicit operator string(ParameterBuilder builder) => builder.Build();");
             builder.AppendLine($"{indent}    }}");
         }
 

@@ -1,100 +1,36 @@
 <Project>
-	<PropertyGroup>
-		<!-- Prevent file locking issues during parallel/CI builds -->
-		<UseSharedCompilation>false</UseSharedCompilation>
-		<!-- Disable MSBuild node reuse to prevent file locking in CI -->
-		<DisableOutOfProcTaskHost>true</DisableOutOfProcTaskHost>
-		<!-- Prevent graph isolation issues with diamond dependencies -->
-		<BuildInParallel>false</BuildInParallel>
-	</PropertyGroup>
-
 	<PropertyGroup Condition="'$(GenerateBuildConstants)' == 'true'">
 		<AssemblyName Condition="'$(AssemblyName)' == ''">vianaapp</AssemblyName>
 		<AssemblyTitle Condition="'$(AssemblyTitle)' == ''">Viana Edge Application</AssemblyTitle>
 		<Description Condition="'$(Description)' == ''">Viana Edge Application</Description>
-		<FullVersion Condition="'$(FullVersion)' == ''">0.0.0-prerelease.0+build.local</FullVersion>
-		<AppTag Condition="'$(AppTag)' == ''">prerelease</AppTag>
+		<FullVersion Condition="'$(FullVersion)' == ''">0.0.0-alpha.0+build.local</FullVersion>
+		<InformationalVersion Condition="'$(InformationalVersion)' == ''">$(FullVersion)</InformationalVersion>
+		<AppTag Condition="'$(AppTag)' == ''">alpha</AppTag>
 		<CredsJsonPath Condition="'$(CredsJsonPath)' == ''">$(MSBuildThisFileDirectory)creds.json</CredsJsonPath>
+		<BaseCommandType Condition="'$(BaseCommandType)' == ''"></BaseCommandType>
 
-		<!-- Statically build wmi wrapper -->
 		<PublishWmiLightStaticallyLinked>true</PublishWmiLightStaticallyLinked>
-		<SkipCodeGeneration Condition="'$(SkipCodeGeneration)' == ''">false</SkipCodeGeneration>
-		<DomainCodeGeneratorProject Condition="'$(DomainCodeGeneratorProject)' == ''">$(MSBuildThisFileDirectory)src/Domain.CodeGenerator/Domain.CodeGenerator.csproj</DomainCodeGeneratorProject>
-		<DomainCodeGeneratorTargetFramework Condition="'$(DomainCodeGeneratorTargetFramework)' == ''">net10.0</DomainCodeGeneratorTargetFramework>
-		<_DomainCodeGeneratorPlatformFolder Condition="'$(Platform)' != '' and '$(Platform)' != 'AnyCPU'">$(Platform)</_DomainCodeGeneratorPlatformFolder>
-		<_DomainCodeGeneratorPlatformFolder Condition="'$(_DomainCodeGeneratorPlatformFolder)' == '' and '$(PlatformTarget)' != '' and '$(PlatformTarget)' != 'AnyCPU'">$(PlatformTarget)</_DomainCodeGeneratorPlatformFolder>
-		<DomainCodeGeneratorAssembly Condition="'$(DomainCodeGeneratorAssembly)' == ''">$([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', 'src', 'Domain.CodeGenerator', 'bin', $(_DomainCodeGeneratorPlatformFolder), '$(Configuration)', '$(DomainCodeGeneratorTargetFramework)', 'Domain.CodeGenerator.dll'))</DomainCodeGeneratorAssembly>
-		<_DomainCodeGeneratorBuildProperties>Configuration=$(Configuration);SkipCodeGeneration=true;SkipDomainCodeGeneration=true;GenerateBuildConstants=false;Platform=$(Platform);PlatformTarget=$(PlatformTarget);RuntimeIdentifier=$(RuntimeIdentifier);RuntimeIdentifiers=$(RuntimeIdentifiers);SelfContained=false;PublishAot=false;PublishTrimmed=false;PublishSingleFile=false</_DomainCodeGeneratorBuildProperties>
-		<_DomainCodeGeneratorBuildProperties Condition="'$(OutDir)' != ''">$(_DomainCodeGeneratorBuildProperties);OutDir=$(OutDir)</_DomainCodeGeneratorBuildProperties>
-		<_DomainCodeGeneratorBuildProperties Condition="'$(OutputPath)' != ''">$(_DomainCodeGeneratorBuildProperties);OutputPath=$(OutputPath)</_DomainCodeGeneratorBuildProperties>
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(GenerateBuildConstants)' == 'true'">
-		<ProjectReference Include="$(DomainCodeGeneratorProject)"
-			ReferenceOutputAssembly="false"
-			SkipGetTargetFrameworkProperties="true">
-			<AdditionalProperties>SkipCodeGeneration=true;SkipDomainCodeGeneration=true;GenerateBuildConstants=false</AdditionalProperties>
-		</ProjectReference>
+		<PackageReference Include="WmiLight" Version="6.16.0" />
 	</ItemGroup>
 
-	<Target Name="_EnsureDomainCodeGeneratorBuiltForBuildConstants" Condition="'$(GenerateBuildConstants)' == 'true' and !Exists('$(DomainCodeGeneratorAssembly)')">
-		<MSBuild Projects="$(DomainCodeGeneratorProject)"
-			Targets="Restore;Build"
-			Properties="$(_DomainCodeGeneratorBuildProperties)"
-			BuildInParallel="false" />
-
-		<MSBuild Projects="$(DomainCodeGeneratorProject)"
-			Targets="GetTargetPath"
-			Properties="$(_DomainCodeGeneratorBuildProperties)"
-			BuildInParallel="false">
-			<Output TaskParameter="TargetOutputs" ItemName="_DomainCodeGeneratorOutputs" />
-		</MSBuild>
-
+	<Target Name="GenerateBuildConstantsEvent" BeforeTargets="BeforeCompile" Condition="'$(GenerateBuildConstants)' == 'true'">
 		<PropertyGroup>
-			<DomainCodeGeneratorAssembly Condition="'@(_DomainCodeGeneratorOutputs)' != ''">@(_DomainCodeGeneratorOutputs->'%(FullPath)')</DomainCodeGeneratorAssembly>
-		</PropertyGroup>
-	</Target>
-
-	<Target Name="GenerateBuildConstants" BeforeTargets="BeforeCompile" DependsOnTargets="_EnsureDomainCodeGeneratorBuiltForBuildConstants" Condition="'$(GenerateBuildConstants)' == 'true' and '$(SkipCodeGeneration)' != 'true'">
-		<PropertyGroup>
-			<_GeneratorProject>$(DomainCodeGeneratorProject)</_GeneratorProject>
-			<_GeneratorAssembly>$(DomainCodeGeneratorAssembly)</_GeneratorAssembly>
-			<_GeneratorAssemblyDirectory>$([System.IO.Path]::GetDirectoryName($(_GeneratorAssembly)))</_GeneratorAssemblyDirectory>
-			<_GeneratorAssemblyCopyRoot>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'Domain.CodeGenerator'))</_GeneratorAssemblyCopyRoot>
-			<_GeneratorAssemblyCopy>$([System.IO.Path]::Combine($(_GeneratorAssemblyCopyRoot), $([System.IO.Path]::GetFileName($(_GeneratorAssembly)))))</_GeneratorAssemblyCopy>
-			<_GeneratedBuildConstantsPath>$([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'GeneratedBuildConstants.cs'))</_GeneratedBuildConstantsPath>
-			<_GeneratedDirectory>$([System.IO.Path]::GetDirectoryName($(_GeneratedBuildConstantsPath)))</_GeneratedDirectory>
+			<_DomainCodeGeneratorDll>$([System.IO.Path]::Combine($(MSBuildThisFileDirectory), 'src', 'Domain.CodeGenerator', $(OutDir), 'Domain.CodeGenerator.dll'))</_DomainCodeGeneratorDll>
+			<_GeneratedFileFullPath>$([System.IO.Path]::Combine($(MSBuildProjectDirectory), $(IntermediateOutputPath), 'GeneratedBuildConstants.cs'))</_GeneratedFileFullPath>
 		</PropertyGroup>
 
-		<Message Condition="'$(DesignTimeBuild)' != 'true'" Importance="Low" Text="Generating build constants via Domain.CodeGenerator." />
-		<Message Condition="'$(DesignTimeBuild)' == 'true' and !Exists('$(_GeneratedBuildConstantsPath)')" Importance="Low" Text="Generating build constants for design-time build via Domain.CodeGenerator." />
+		<Message Text="Using code generator: $(_DomainCodeGeneratorDll)" Importance="high" />
+		<Message Text="Generating build constants file: $(_GeneratedFileFullPath)" Importance="high" />
 
-		<MakeDir Condition="'$(DesignTimeBuild)' != 'true' or !Exists('$(_GeneratedDirectory)')" Directories="$(_GeneratedDirectory)" />
-		<MakeDir Condition="'$(DesignTimeBuild)' != 'true' or !Exists('$(_GeneratorAssemblyCopyRoot)')" Directories="$(_GeneratorAssemblyCopyRoot)" />
+		<Exec Command="dotnet &quot;$(_DomainCodeGeneratorDll)&quot; --output &quot;$(_GeneratedFileFullPath)&quot; --app-name &quot;$(AssemblyName)&quot; --app-title &quot;$(AssemblyTitle)&quot; --app-description &quot;$(Description)&quot; --version &quot;$(FullVersion)&quot; --app-tag &quot;$(AppTag)&quot; --build-payload-path &quot;$(CredsJsonPath)&quot; --base-command-type &quot;$(BaseCommandType)&quot;" />
 
 		<ItemGroup>
-			<_DomainCodeGeneratorFiles Include="$(_GeneratorAssemblyDirectory)\**\*.*" />
-		</ItemGroup>
-
-		<Copy SourceFiles="@(_DomainCodeGeneratorFiles)"
-			DestinationFiles="@(_DomainCodeGeneratorFiles->'$(_GeneratorAssemblyCopyRoot)\%(RecursiveDir)%(Filename)%(Extension)')"
-			SkipUnchangedFiles="true" />
-
-		<Exec Condition="'$(DesignTimeBuild)' != 'true'" Command="dotnet &quot;$(_GeneratorAssemblyCopy)&quot; --output &quot;$(_GeneratedBuildConstantsPath)&quot; --app-name &quot;$(AssemblyName)&quot; --app-title &quot;$(AssemblyTitle)&quot; --app-description &quot;$(Description)&quot; --version &quot;$(FullVersion)&quot; --app-tag &quot;$(AppTag)&quot; --build-payload-path &quot;$(CredsJsonPath)&quot;" />
-
-		<Exec Condition="'$(DesignTimeBuild)' == 'true' and !Exists('$(_GeneratedBuildConstantsPath)')" Command="dotnet &quot;$(_GeneratorAssemblyCopy)&quot; --output &quot;$(_GeneratedBuildConstantsPath)&quot; --app-name &quot;$(AssemblyName)&quot; --app-title &quot;$(AssemblyTitle)&quot; --app-description &quot;$(Description)&quot; --version &quot;$(FullVersion)&quot; --app-tag &quot;$(AppTag)&quot; --build-payload-path &quot;$(CredsJsonPath)&quot;" />
-
-		<ItemGroup Condition="Exists('$(_GeneratedBuildConstantsPath)')">
-			<Compile Include="$(_GeneratedBuildConstantsPath)" />
+			<Compile Remove="$(_GeneratedFileFullPath)" />
+			<Compile Include="$(_GeneratedFileFullPath)" />
 		</ItemGroup>
 	</Target>
-
-	<PropertyGroup Condition=" '$(Configuration)' == 'Debug' AND '$(ActiveDebugProfile)' == 'Remote.Vagrant.Windows11' ">
-		<RemoteDeployPath>C$</RemoteDeployPath>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(IsQuietConsole)' == 'true' AND '$(OutputType)' == 'Exe'">
-		<OutputType>WinExe</OutputType>
-	</PropertyGroup>
 
 </Project>

@@ -10,7 +10,7 @@ using Application.LocalStore.Interfaces;
 namespace Presentation.Cli.Commands;
 
 [Command(description: "Main subcommand.")]
-public class MainCommand : Build.BaseCommand<HostApplicationBuilder>
+internal class MainCommand : Build.BaseCommand<HostApplicationBuilder>
 {
     protected override ValueTask<HostApplicationBuilder> ApplicationBuilder(CancellationToken stoppingToken)
     {

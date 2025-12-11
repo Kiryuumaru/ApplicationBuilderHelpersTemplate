@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using Domain.CodeGenerator;
 using Domain.CodeGenerator.Generators;
@@ -24,7 +25,8 @@ var options = ApplicationBuildOptions.Parse(args, baseDirectory);
 var outputPaths = BuildOutputPathMap(generators, options, baseDirectory);
 var context = new CodeGenerationContext(baseDirectory, DateTime.UtcNow, options, outputPaths);
 
-foreach (var generator in generators)
+// Only run generators that have output paths configured
+foreach (var generator in generators.Where(g => outputPaths.ContainsKey(g.Id)))
 {
 	cancellationSource.Token.ThrowIfCancellationRequested();
 	await generator.GenerateAsync(context, cancellationSource.Token);
@@ -37,18 +39,20 @@ static IReadOnlyDictionary<string, string> BuildOutputPathMap(
 {
 	var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-	foreach (var task in tasks)
+	// BuildConstants always uses default path if not specified
+	var buildConstantsGenerator = tasks.FirstOrDefault(t => t.Id == BuildConstantsGenerator.TaskId);
+	if (buildConstantsGenerator is not null)
 	{
-		var defaultPath = task.GetDefaultOutputPath(baseDirectory);
-		map[task.Id] = Path.GetFullPath(defaultPath, baseDirectory);
+		var defaultPath = buildConstantsGenerator.GetDefaultOutputPath(baseDirectory);
+		map[BuildConstantsGenerator.TaskId] = Path.GetFullPath(defaultPath, baseDirectory);
 	}
 
-	// Override output paths if specified
 	if (!string.IsNullOrWhiteSpace(options.OutputPath))
 	{
 		map[BuildConstantsGenerator.TaskId] = options.OutputPath;
 	}
 
+	// PermissionIds and RoleIds are ONLY generated when explicitly requested
 	if (!string.IsNullOrWhiteSpace(options.PermissionIdsOutputPath))
 	{
 		map["PermissionIds"] = options.PermissionIdsOutputPath;

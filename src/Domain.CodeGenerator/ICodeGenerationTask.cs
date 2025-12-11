@@ -17,7 +17,7 @@ interface ICodeGenerationTask
 sealed class CodeGenerationContext(
     string applicationBaseDirectory,
     DateTime utcNow,
-    ApplicationBuildOptions? options,
+    ApplicationBuildOptions options,
     IReadOnlyDictionary<string, string> outputPaths)
 {
     private readonly IReadOnlyDictionary<string, string> _outputPaths = outputPaths;
@@ -26,7 +26,7 @@ sealed class CodeGenerationContext(
 
     public DateTime UtcNow { get; } = utcNow;
 
-    public ApplicationBuildOptions? Options { get; } = options;
+    public ApplicationBuildOptions Options { get; } = options;
 
     public string GetOutputPath(string generatorId)
     {
