@@ -24,10 +24,10 @@ public static class Roles
             Name: "Administrator",
             Description: "Full access to all platform capabilities.",
             IsSystemRole: true,
-            PermissionTemplates:
+            ScopeTemplates:
             [
-                RolePermissionTemplate.Create(Permissions.RootReadIdentifier),
-                RolePermissionTemplate.Create(Permissions.RootWriteIdentifier)
+                ScopeTemplate.Allow(Permissions.RootReadIdentifier),
+                ScopeTemplate.Allow(Permissions.RootWriteIdentifier)
             ]);
 
         User = new RoleDefinition(
@@ -37,10 +37,10 @@ public static class Roles
             Description: "Default role for authenticated users accessing their own data.",
             IsSystemRole: true,
             TemplateParametersOverride: ["roleUserId"],
-            PermissionTemplates:
+            ScopeTemplates:
             [
-                RolePermissionTemplate.Create("[userId={roleUserId}]:_read"),
-                RolePermissionTemplate.Create("[userId={roleUserId}]:_write")
+                ScopeTemplate.Allow("_read", ("userId", "{roleUserId}")),
+                ScopeTemplate.Allow("_write", ("userId", "{roleUserId}"))
             ]);
 
         All = [Admin, User];
@@ -80,7 +80,7 @@ public static class Roles
         string Name,
         string? Description,
         bool IsSystemRole,
-        IReadOnlyList<RolePermissionTemplate> PermissionTemplates,
+        IReadOnlyList<ScopeTemplate> ScopeTemplates,
         IReadOnlyList<string>? TemplateParametersOverride = null)
     {
         public IReadOnlyList<string> TemplateParameters { get; init; } = TemplateParametersOverride ?? Array.Empty<string>();
@@ -88,8 +88,21 @@ public static class Roles
         public Role Instantiate()
         {
             var role = Models.Role.Hydrate(Id, revId: null, Code, Name, Description, IsSystemRole);
-            role.ReplacePermissions(PermissionTemplates);
+            role.ReplaceScopeTemplates(ScopeTemplates);
             return role;
+        }
+
+        /// <summary>
+        /// Expands all scope templates into scope directives using the provided parameter values.
+        /// </summary>
+        public IReadOnlyCollection<ScopeDirective> ExpandScope(IReadOnlyDictionary<string, string?> parameterValues)
+        {
+            ArgumentNullException.ThrowIfNull(parameterValues);
+
+            return [.. ScopeTemplates
+                .Select(template => template.Expand(parameterValues))
+                .Distinct()
+                .OrderBy(static directive => directive.ToString(), StringComparer.Ordinal)];
         }
     }
 }

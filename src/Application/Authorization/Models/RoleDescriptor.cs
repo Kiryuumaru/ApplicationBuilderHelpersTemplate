@@ -1,3 +1,5 @@
+using Domain.Authorization.ValueObjects;
+
 namespace Application.Authorization.Models;
 
 public sealed record RoleDescriptor(
@@ -5,4 +7,4 @@ public sealed record RoleDescriptor(
     string Name,
     string? Description,
     bool IsSystemRole,
-    IReadOnlyCollection<RolePermissionTemplateDescriptor>? PermissionTemplates = null);
+    IReadOnlyCollection<ScopeTemplate>? ScopeTemplates = null);

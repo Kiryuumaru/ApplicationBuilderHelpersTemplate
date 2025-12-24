@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Domain.Authorization.Constants;
 using Domain.Authorization.Enums;
 using Domain.Authorization.Models;
+using Domain.Authorization.ValueObjects;
 
 namespace Domain.CodeGenerator.Generators;
 
@@ -38,19 +39,26 @@ sealed class PermissionIdsGenerator : ICodeGenerationTask
         Directory.CreateDirectory(outputDirectory);
 
         var builder = new StringBuilder();
+        var allPermissions = Permissions.GetAll();
 
         AppendHeader(builder, context.UtcNow);
-        WriteAllPermissionPaths(builder, Permissions.GetAll());
+        WriteAllPermissionPaths(builder, allPermissions);
+        builder.AppendLine();
+        WriteAllParameters(builder, allPermissions);
         builder.AppendLine();
         WriteGlobalScopes(builder);
         builder.AppendLine();
 
         foreach (var root in Permissions.PermissionTreeRoots)
         {
-            WritePermissionNode(builder, root, 1, Array.Empty<string>());
+            WritePermissionNode(builder, root, 1, Array.Empty<string>(), false, false);
         }
 
         builder.AppendLine("}");
+        builder.AppendLine();
+
+        // Write PermissionMetadata class
+        WritePermissionMetadata(builder, allPermissions);
 
         var contents = builder.ToString();
         await File.WriteAllTextAsync(outputPath, contents, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), cancellationToken);
@@ -66,9 +74,7 @@ sealed class PermissionIdsGenerator : ICodeGenerationTask
         builder.AppendLine();
         builder.AppendLine("using System;");
         builder.AppendLine("using System.Collections.Generic;");
-        builder.AppendLine();
-        builder.AppendLine("using Domain.Authorization.Constants;");
-        builder.AppendLine("using Domain.Authorization.Models;");
+        builder.AppendLine("using Domain.Authorization.ValueObjects;");
         builder.AppendLine();
         builder.AppendLine("namespace Domain.Authorization.Constants;");
         builder.AppendLine();
@@ -79,7 +85,7 @@ sealed class PermissionIdsGenerator : ICodeGenerationTask
     private static void WriteAllPermissionPaths(StringBuilder builder, IReadOnlyCollection<Permission> permissions)
     {
         builder.AppendLine("    /// <summary>");
-        builder.AppendLine("    /// Flat list of all permission paths.");
+        builder.AppendLine("    /// Flat list of all valid permission paths.");
         builder.AppendLine("    /// </summary>");
         builder.AppendLine("    public static IReadOnlyCollection<string> All { get; } = new string[]");
         builder.AppendLine("    {");
@@ -98,6 +104,28 @@ sealed class PermissionIdsGenerator : ICodeGenerationTask
         builder.AppendLine("    };");
     }
 
+    private static void WriteAllParameters(StringBuilder builder, IReadOnlyCollection<Permission> permissions)
+    {
+        var allParameters = permissions
+            .SelectMany(p => p.Parameters)
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .ToList();
+
+        builder.AppendLine("    /// <summary>");
+        builder.AppendLine("    /// Flat list of all unique parameter names used in permissions.");
+        builder.AppendLine("    /// </summary>");
+        builder.AppendLine("    public static IReadOnlyCollection<string> AllParameters { get; } = new string[]");
+        builder.AppendLine("    {");
+
+        foreach (var param in allParameters)
+        {
+            builder.AppendLine($"        \"{EscapeForString(param)}\",");
+        }
+
+        builder.AppendLine("    };");
+    }
+
     private static void WriteGlobalScopes(StringBuilder builder)
     {
         builder.AppendLine("    /// <summary>");
@@ -105,48 +133,136 @@ sealed class PermissionIdsGenerator : ICodeGenerationTask
         builder.AppendLine("    /// </summary>");
         builder.AppendLine("    public static class Global");
         builder.AppendLine("    {");
-        builder.AppendLine("        /// <summary>Global read permission covering every feature.</summary>");
-        builder.AppendLine($"        public const string Read = \"{EscapeForString(Permissions.RootReadIdentifier)}\";");
+
+        // Global Read scope
+        builder.AppendLine("        /// <summary>Global read scope covering every feature.</summary>");
+        builder.AppendLine("        public static class Read");
+        builder.AppendLine("        {");
+        builder.AppendLine($"            private const string Path = \"{EscapeForString(Permissions.RootReadIdentifier)}\";");
         builder.AppendLine();
-        builder.AppendLine("        /// <summary>Global write permission covering every feature.</summary>");
-        builder.AppendLine($"        public const string Write = \"{EscapeForString(Permissions.RootWriteIdentifier)}\";");
+        builder.AppendLine("            /// <summary>Creates an allow directive for global read access.</summary>");
+        builder.AppendLine($"            public static string Allow() => \"allow;{EscapeForString(Permissions.RootReadIdentifier)}\";");
+        builder.AppendLine();
+        builder.AppendLine("            /// <summary>Creates a deny directive for global read access.</summary>");
+        builder.AppendLine($"            public static string Deny() => \"deny;{EscapeForString(Permissions.RootReadIdentifier)}\";");
+        builder.AppendLine();
+        builder.AppendLine("            /// <summary>Creates a scope builder with the userId parameter.</summary>");
+        builder.AppendLine("            public static ScopeBuilder WithUserId(string value) => new ScopeBuilder(Path, \"userId\", value);");
+        builder.AppendLine();
+        WriteScopeBuilderStruct(builder, 3, [("userId", "UserId")]);
+        builder.AppendLine("        }");
+
+        builder.AppendLine();
+
+        // Global Write scope
+        builder.AppendLine("        /// <summary>Global write scope covering every feature.</summary>");
+        builder.AppendLine("        public static class Write");
+        builder.AppendLine("        {");
+        builder.AppendLine($"            private const string Path = \"{EscapeForString(Permissions.RootWriteIdentifier)}\";");
+        builder.AppendLine();
+        builder.AppendLine("            /// <summary>Creates an allow directive for global write access.</summary>");
+        builder.AppendLine($"            public static string Allow() => \"allow;{EscapeForString(Permissions.RootWriteIdentifier)}\";");
+        builder.AppendLine();
+        builder.AppendLine("            /// <summary>Creates a deny directive for global write access.</summary>");
+        builder.AppendLine($"            public static string Deny() => \"deny;{EscapeForString(Permissions.RootWriteIdentifier)}\";");
+        builder.AppendLine();
+        builder.AppendLine("            /// <summary>Creates a scope builder with the userId parameter.</summary>");
+        builder.AppendLine("            public static ScopeBuilder WithUserId(string value) => new ScopeBuilder(Path, \"userId\", value);");
+        builder.AppendLine();
+        WriteScopeBuilderStruct(builder, 3, [("userId", "UserId")]);
+        builder.AppendLine("        }");
+
         builder.AppendLine("    }");
     }
 
-    private static void WritePermissionNode(StringBuilder builder, Permission permission, int indentLevel, IReadOnlyList<string> inheritedParameters)
+    private static void WritePermissionMetadata(StringBuilder builder, IReadOnlyCollection<Permission> permissions)
     {
-    var indent = new string(' ', indentLevel * 4);
-    var className = ToIdentifier(permission.Identifier);
-    var parameterConstants = new List<(string Parameter, string ConstName)>();
+        var rLeafs = permissions
+            .Where(p => !p.HasChildren && p.AccessCategory == PermissionAccessCategory.Read)
+            .Select(p => p.Path)
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .ToList();
+
+        var wLeafs = permissions
+            .Where(p => !p.HasChildren && p.AccessCategory == PermissionAccessCategory.Write)
+            .Select(p => p.Path)
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .ToList();
+
+        builder.AppendLine("/// <summary>");
+        builder.AppendLine("/// Metadata about permission categories for scope evaluation.");
+        builder.AppendLine("/// </summary>");
+        builder.AppendLine("public static class PermissionMetadata");
+        builder.AppendLine("{");
+
+        builder.AppendLine("    /// <summary>");
+        builder.AppendLine("    /// Collection of all Read leaf permission paths (RLeaf).");
+        builder.AppendLine("    /// These are granted by parent _read scopes.");
+        builder.AppendLine("    /// </summary>");
+        builder.AppendLine("    public static IReadOnlyCollection<string> RLeafPermissions { get; } = new string[]");
+        builder.AppendLine("    {");
+        foreach (var path in rLeafs)
+        {
+            builder.AppendLine($"        \"{EscapeForString(path)}\",");
+        }
+        builder.AppendLine("    };");
+
+        builder.AppendLine();
+
+        builder.AppendLine("    /// <summary>");
+        builder.AppendLine("    /// Collection of all Write leaf permission paths (WLeaf).");
+        builder.AppendLine("    /// These are granted by parent _write scopes.");
+        builder.AppendLine("    /// </summary>");
+        builder.AppendLine("    public static IReadOnlyCollection<string> WLeafPermissions { get; } = new string[]");
+        builder.AppendLine("    {");
+        foreach (var path in wLeafs)
+        {
+            builder.AppendLine($"        \"{EscapeForString(path)}\",");
+        }
+        builder.AppendLine("    };");
+
+        builder.AppendLine("}");
+    }
+
+    private static void WritePermissionNode(StringBuilder builder, Permission permission, int indentLevel, IReadOnlyList<string> inheritedParameters, bool parentHasReadScope, bool parentHasWriteScope)
+    {
+        var indent = new string(' ', indentLevel * 4);
+        var rawClassName = ToIdentifier(permission.Identifier);
+
+        // Handle naming conflicts: if parent has Read scope and this permission is "read", rename to "ReadPermission"
+        var className = rawClassName;
+        if (parentHasReadScope && string.Equals(rawClassName, "Read", StringComparison.Ordinal))
+        {
+            className = "ReadPermission";
+        }
+        else if (parentHasWriteScope && string.Equals(rawClassName, "Write", StringComparison.Ordinal))
+        {
+            className = "WritePermission";
+        }
 
         builder.AppendLine();
         builder.AppendLine($"{indent}/// <summary>{EscapeForXml(permission.Description)}</summary>");
         builder.AppendLine($"{indent}public static class {className}");
         builder.AppendLine($"{indent}{{");
 
-        var shouldEmitIdentifier = !permission.HasChildren || permission.AccessCategory != PermissionAccessCategory.Unspecified;
-        var shouldEmitParameterConstants = !permission.HasChildren;
-
-        if (shouldEmitIdentifier)
-        {
-            builder.AppendLine($"{indent}    /// <summary>Permission path for {EscapeForXml(permission.Description)}</summary>");
-            builder.AppendLine($"{indent}    public const string Identifier = \"{EscapeForString(permission.Path)}\";");
-        }
-
         var combinedParameters = CombineParameters(inheritedParameters, permission.Parameters);
-        var combinedParameterSet = new HashSet<string>(combinedParameters, StringComparer.Ordinal);
-        var parameterConstantNames = new HashSet<string>(StringComparer.Ordinal);
+        var parameterMethods = combinedParameters
+            .Select(p => (Parameter: p, MethodName: "With" + ToParameterIdentifier(p)))
+            .ToList();
 
-        if (shouldEmitParameterConstants && combinedParameters.Count > 0)
+        // Write parameter constants for discoverability
+        if (combinedParameters.Count > 0)
         {
-            builder.AppendLine();
+            var parameterConstantNames = new HashSet<string>(StringComparer.Ordinal);
             foreach (var parameter in combinedParameters)
             {
                 var constName = DetermineParameterConstName(parameter, parameterConstantNames);
-                parameterConstants.Add((parameter, constName));
-                builder.AppendLine($"{indent}    /// <summary>Template parameter '{EscapeForXml(parameter)}' used when materializing this permission.</summary>");
+                builder.AppendLine($"{indent}    /// <summary>Template parameter '{EscapeForXml(parameter)}' used when scoping this permission.</summary>");
                 builder.AppendLine($"{indent}    public const string {constName} = \"{EscapeForString(parameter)}\";");
             }
+            builder.AppendLine();
         }
 
         var orderedChildren = permission.Permissions
@@ -156,156 +272,228 @@ sealed class PermissionIdsGenerator : ICodeGenerationTask
         Permission? readChild = null;
         Permission? writeChild = null;
 
+        // Track whether we have _read/_write scopes to avoid naming conflicts
+        var hasReadScope = false;
+        var hasWriteScope = false;
+
         for (var index = orderedChildren.Count - 1; index >= 0; index--)
         {
             var child = orderedChildren[index];
             if (string.Equals(child.Identifier, "_read", StringComparison.Ordinal))
             {
                 readChild = child;
+                hasReadScope = true;
                 orderedChildren.RemoveAt(index);
             }
             else if (string.Equals(child.Identifier, "_write", StringComparison.Ordinal))
             {
                 writeChild = child;
+                hasWriteScope = true;
                 orderedChildren.RemoveAt(index);
             }
         }
 
-        void AppendAdditionalParameterConstants(Permission childPermission)
-        {
-            if (!shouldEmitParameterConstants)
-            {
-                return;
-            }
-
-            if (childPermission.Parameters.Length == 0)
-            {
-                return;
-            }
-
-            var additionalParameters = new List<string>();
-
-            foreach (var parameter in childPermission.Parameters)
-            {
-                if (!combinedParameterSet.Add(parameter))
-                {
-                    continue;
-                }
-
-                additionalParameters.Add(parameter);
-            }
-
-            if (additionalParameters.Count == 0)
-            {
-                return;
-            }
-
-            builder.AppendLine();
-
-            foreach (var parameter in additionalParameters)
-            {
-                var constName = DetermineParameterConstName(parameter, parameterConstantNames);
-                parameterConstants.Add((parameter, constName));
-                builder.AppendLine($"{indent}    /// <summary>Template parameter '{EscapeForXml(parameter)}' used when materializing this permission.</summary>");
-                builder.AppendLine($"{indent}    public const string {constName} = \"{EscapeForString(parameter)}\";");
-            }
-        }
-
+        // Write Read scope class if present
         if (readChild is not null)
         {
-            builder.AppendLine();
-            builder.AppendLine($"{indent}    /// <summary>{EscapeForXml(readChild.Description)}</summary>");
-            builder.AppendLine($"{indent}    public const string ReadIdentifier = \"{EscapeForString(readChild.Path)}\";");
-            AppendAdditionalParameterConstants(readChild);
+            WriteScopeClass(builder, indentLevel + 1, "Read", readChild.Path, readChild.Description, parameterMethods);
         }
 
+        // Write Write scope class if present
         if (writeChild is not null)
         {
-            builder.AppendLine();
-            builder.AppendLine($"{indent}    /// <summary>{EscapeForXml(writeChild.Description)}</summary>");
-            builder.AppendLine($"{indent}    public const string WriteIdentifier = \"{EscapeForString(writeChild.Path)}\";");
-            AppendAdditionalParameterConstants(writeChild);
+            WriteScopeClass(builder, indentLevel + 1, "Write", writeChild.Path, writeChild.Description, parameterMethods);
         }
 
-        if (shouldEmitIdentifier && parameterConstants.Count > 0)
+        // Write leaf permission class (for non-node permissions)
+        var isLeaf = !permission.HasChildren;
+        if (isLeaf && permission.AccessCategory != PermissionAccessCategory.Unspecified)
+        {
+            // This is a leaf permission - write Allow/Deny methods directly
+            builder.AppendLine($"{indent}    private const string Path = \"{EscapeForString(permission.Path)}\";");
+            builder.AppendLine();
+            builder.AppendLine($"{indent}    /// <summary>Creates an allow directive for this permission.</summary>");
+            builder.AppendLine($"{indent}    public static string Allow() => \"allow;{EscapeForString(permission.Path)}\";");
+            builder.AppendLine();
+            builder.AppendLine($"{indent}    /// <summary>Creates a deny directive for this permission.</summary>");
+            builder.AppendLine($"{indent}    public static string Deny() => \"deny;{EscapeForString(permission.Path)}\";");
+
+            if (parameterMethods.Count > 0)
+            {
+                builder.AppendLine();
+                foreach (var (parameter, methodName) in parameterMethods)
+                {
+                    builder.AppendLine($"{indent}    /// <summary>Creates a scope builder with the '{EscapeForXml(parameter)}' parameter.</summary>");
+                    builder.AppendLine($"{indent}    public static ScopeBuilder {methodName}(string value) => new ScopeBuilder(Path, \"{EscapeForString(parameter)}\", value);");
+                }
+
+                builder.AppendLine();
+                WriteScopeBuilderStruct(builder, indentLevel + 1, parameterMethods);
+
+                // Permission Request API: Permission property returning builder with With*() methods
+                builder.AppendLine();
+                builder.AppendLine($"{indent}    /// <summary>Creates a permission request builder for HasPermission calls.</summary>");
+                builder.AppendLine($"{indent}    public static PermissionRequestBuilder Permission => new PermissionRequestBuilder(Path);");
+
+                builder.AppendLine();
+                WritePermissionRequestBuilderStruct(builder, indentLevel + 1, parameterMethods);
+            }
+            else
+            {
+                // No parameters - just provide a simple Permission property
+                builder.AppendLine();
+                builder.AppendLine($"{indent}    /// <summary>Creates a permission request for HasPermission calls.</summary>");
+                builder.AppendLine($"{indent}    public static PermissionRequest Permission => new PermissionRequest(Path);");
+            }
+        }
+
+        // Write child nodes
+        foreach (var branch in orderedChildren.Where(child => child.HasChildren))
+        {
+            WritePermissionNode(builder, branch, indentLevel + 1, combinedParameters, hasReadScope, hasWriteScope);
+        }
+
+        foreach (var leaf in orderedChildren.Where(child => !child.HasChildren))
+        {
+            WritePermissionNode(builder, leaf, indentLevel + 1, combinedParameters, hasReadScope, hasWriteScope);
+        }
+
+        builder.AppendLine($"{indent}}}");
+    }
+
+    private static void WriteScopeClass(
+        StringBuilder builder,
+        int indentLevel,
+        string className,
+        string path,
+        string description,
+        List<(string Parameter, string MethodName)> parameterMethods)
+    {
+        var indent = new string(' ', indentLevel * 4);
+
+        builder.AppendLine();
+        builder.AppendLine($"{indent}/// <summary>{EscapeForXml(description)}</summary>");
+        builder.AppendLine($"{indent}public static class {className}");
+        builder.AppendLine($"{indent}{{");
+        builder.AppendLine($"{indent}    private const string Path = \"{EscapeForString(path)}\";");
+        builder.AppendLine();
+        builder.AppendLine($"{indent}    /// <summary>Creates an allow directive for this scope.</summary>");
+        builder.AppendLine($"{indent}    public static string Allow() => \"allow;{EscapeForString(path)}\";");
+        builder.AppendLine();
+        builder.AppendLine($"{indent}    /// <summary>Creates a deny directive for this scope.</summary>");
+        builder.AppendLine($"{indent}    public static string Deny() => \"deny;{EscapeForString(path)}\";");
+
+        if (parameterMethods.Count > 0)
         {
             builder.AppendLine();
-            builder.AppendLine($"{indent}    /// <summary>Creates a parameter builder for {EscapeForXml(permission.Description)}</summary>");
-            builder.AppendLine($"{indent}    public static ParameterBuilder CreateBuilder() => new ParameterBuilder();");
-
-            foreach (var (parameterName, constName) in parameterConstants)
+            foreach (var (parameter, methodName) in parameterMethods)
             {
-                var methodName = "With" + ToParameterIdentifier(parameterName);
-                builder.AppendLine();
-                builder.AppendLine($"{indent}    /// <summary>Sets the '{EscapeForXml(parameterName)}' parameter and returns a builder for chaining.</summary>");
-                builder.AppendLine($"{indent}    public static ParameterBuilder {methodName}(string value) => new ParameterBuilder().{methodName}(value);");
+                builder.AppendLine($"{indent}    /// <summary>Creates a scope builder with the '{EscapeForXml(parameter)}' parameter.</summary>");
+                builder.AppendLine($"{indent}    public static ScopeBuilder {methodName}(string value) => new ScopeBuilder(Path, \"{EscapeForString(parameter)}\", value);");
             }
 
             builder.AppendLine();
-            builder.AppendLine($"{indent}    private static Permission PermissionDefinition => _permissionDefinition ??= ResolvePermission();");
-            builder.AppendLine($"{indent}    private static Permission? _permissionDefinition;");
-            builder.AppendLine();
-            builder.AppendLine($"{indent}    private static Permission ResolvePermission()");
-            builder.AppendLine($"{indent}    {{");
-            builder.AppendLine($"{indent}        foreach (var candidate in Permissions.GetAll())");
-            builder.AppendLine($"{indent}        {{");
-            builder.AppendLine($"{indent}            if (string.Equals(candidate.Path, \"{EscapeForString(permission.Path)}\", StringComparison.Ordinal))");
-            builder.AppendLine($"{indent}            {{");
-            builder.AppendLine($"{indent}                return candidate;");
-            builder.AppendLine($"{indent}            }}");
-            builder.AppendLine($"{indent}        }}");
-            builder.AppendLine($"{indent}        throw new InvalidOperationException(\"Unable to locate permission definition '{EscapeForString(permission.Path)}'.\");");
-            builder.AppendLine($"{indent}    }}");
-            builder.AppendLine();
-            builder.AppendLine($"{indent}    public sealed class ParameterBuilder");
-            builder.AppendLine($"{indent}    {{");
-            builder.AppendLine($"{indent}        private readonly Dictionary<string, string?> _values = new Dictionary<string, string?>(StringComparer.Ordinal);");
-            builder.AppendLine();
-            builder.AppendLine($"{indent}        public ParameterBuilder WithRaw(string parameterName, string? value)");
-            builder.AppendLine($"{indent}        {{");
-            builder.AppendLine($"{indent}            _values[parameterName] = value;");
-            builder.AppendLine($"{indent}            return this;");
-            builder.AppendLine($"{indent}        }}");
-
-            foreach (var (parameterName, constName) in parameterConstants)
-            {
-                var methodName = "With" + ToParameterIdentifier(parameterName);
-                builder.AppendLine();
-                builder.AppendLine($"{indent}        public ParameterBuilder {methodName}(string value)");
-                builder.AppendLine($"{indent}        {{");
-                builder.AppendLine($"{indent}            return WithRaw({constName}, value);");
-                builder.AppendLine($"{indent}        }}");
-            }
-
-            builder.AppendLine();
-            builder.AppendLine($"{indent}        public string Build()");
-            builder.AppendLine($"{indent}        {{");
-            builder.AppendLine($"{indent}            if (_values.Count == 0)");
-            builder.AppendLine($"{indent}            {{");
-            builder.AppendLine($"{indent}                return Identifier;");
-            builder.AppendLine($"{indent}            }}");
-            builder.AppendLine();
-            builder.AppendLine($"{indent}            return PermissionDefinition.BuildPath(_values);");
-            builder.AppendLine($"{indent}        }}");
-            builder.AppendLine();
-            builder.AppendLine($"{indent}        public override string ToString() => Build();");
-            builder.AppendLine();
-            builder.AppendLine($"{indent}        public static implicit operator string(ParameterBuilder builder) => builder.Build();");
-            builder.AppendLine($"{indent}    }}");
+            WriteScopeBuilderStruct(builder, indentLevel + 1, parameterMethods);
         }
 
-        if (orderedChildren.Count > 0)
+        builder.AppendLine($"{indent}}}");
+    }
+
+    private static void WriteScopeBuilderStruct(
+        StringBuilder builder,
+        int indentLevel,
+        List<(string Parameter, string MethodName)> parameterMethods)
+    {
+        var indent = new string(' ', indentLevel * 4);
+
+        builder.AppendLine($"{indent}/// <summary>Immutable builder for constructing scoped directives with parameters.</summary>");
+        builder.AppendLine($"{indent}public readonly struct ScopeBuilder");
+        builder.AppendLine($"{indent}{{");
+        builder.AppendLine($"{indent}    private readonly string _path;");
+        builder.AppendLine($"{indent}    private readonly string _params;");
+        builder.AppendLine();
+        builder.AppendLine($"{indent}    internal ScopeBuilder(string path, string key, string value)");
+        builder.AppendLine($"{indent}    {{");
+        builder.AppendLine($"{indent}        _path = path;");
+        builder.AppendLine($"{indent}        _params = $\"{{key}}={{value}}\";");
+        builder.AppendLine($"{indent}    }}");
+        builder.AppendLine();
+        builder.AppendLine($"{indent}    private ScopeBuilder(string path, string existingParams, string key, string value)");
+        builder.AppendLine($"{indent}    {{");
+        builder.AppendLine($"{indent}        _path = path;");
+        builder.AppendLine($"{indent}        _params = $\"{{existingParams}};{{key}}={{value}}\";");
+        builder.AppendLine($"{indent}    }}");
+
+        foreach (var (parameter, methodName) in parameterMethods)
         {
-                foreach (var branch in orderedChildren.Where(child => child.HasChildren))
-                {
-                    WritePermissionNode(builder, branch, indentLevel + 1, combinedParameters);
-                }
-
-                foreach (var leaf in orderedChildren.Where(child => !child.HasChildren))
-                {
-                    WritePermissionNode(builder, leaf, indentLevel + 1, combinedParameters);
-                }
+            builder.AppendLine();
+            builder.AppendLine($"{indent}    /// <summary>Adds the '{EscapeForXml(parameter)}' parameter to this builder.</summary>");
+            builder.AppendLine($"{indent}    public ScopeBuilder {methodName}(string value) =>");
+            builder.AppendLine($"{indent}        new ScopeBuilder(_path, _params, \"{EscapeForString(parameter)}\", value);");
         }
+
+        builder.AppendLine();
+        builder.AppendLine($"{indent}    /// <summary>Creates an allow directive with the configured parameters.</summary>");
+        builder.AppendLine($"{indent}    public string Allow() => string.IsNullOrEmpty(_params)");
+        builder.AppendLine($"{indent}        ? $\"allow;{{_path}}\"");
+        builder.AppendLine($"{indent}        : $\"allow;{{_path}};{{_params}}\";");
+        builder.AppendLine();
+        builder.AppendLine($"{indent}    /// <summary>Creates a deny directive with the configured parameters.</summary>");
+        builder.AppendLine($"{indent}    public string Deny() => string.IsNullOrEmpty(_params)");
+        builder.AppendLine($"{indent}        ? $\"deny;{{_path}}\"");
+        builder.AppendLine($"{indent}        : $\"deny;{{_path}};{{_params}}\";");
+
+        builder.AppendLine($"{indent}}}");
+    }
+
+    private static void WritePermissionRequestBuilderStruct(
+        StringBuilder builder,
+        int indentLevel,
+        List<(string Parameter, string MethodName)> parameterMethods)
+    {
+        var indent = new string(' ', indentLevel * 4);
+
+        builder.AppendLine($"{indent}/// <summary>Immutable builder for constructing permission requests with parameters.</summary>");
+        builder.AppendLine($"{indent}public readonly struct PermissionRequestBuilder");
+        builder.AppendLine($"{indent}{{");
+        builder.AppendLine($"{indent}    private readonly string _path;");
+        builder.AppendLine($"{indent}    private readonly string? _params;");
+        builder.AppendLine();
+        builder.AppendLine($"{indent}    internal PermissionRequestBuilder(string path)");
+        builder.AppendLine($"{indent}    {{");
+        builder.AppendLine($"{indent}        _path = path;");
+        builder.AppendLine($"{indent}        _params = null;");
+        builder.AppendLine($"{indent}    }}");
+        builder.AppendLine();
+        builder.AppendLine($"{indent}    private PermissionRequestBuilder(string path, string key, string value)");
+        builder.AppendLine($"{indent}    {{");
+        builder.AppendLine($"{indent}        _path = path;");
+        builder.AppendLine($"{indent}        _params = $\"{{key}}={{value}}\";");
+        builder.AppendLine($"{indent}    }}");
+        builder.AppendLine();
+        builder.AppendLine($"{indent}    private PermissionRequestBuilder(string path, string existingParams, string key, string value)");
+        builder.AppendLine($"{indent}    {{");
+        builder.AppendLine($"{indent}        _path = path;");
+        builder.AppendLine($"{indent}        _params = $\"{{existingParams}};{{key}}={{value}}\";");
+        builder.AppendLine($"{indent}    }}");
+
+        foreach (var (parameter, methodName) in parameterMethods)
+        {
+            builder.AppendLine();
+            builder.AppendLine($"{indent}    /// <summary>Adds the '{EscapeForXml(parameter)}' parameter to this permission request.</summary>");
+            builder.AppendLine($"{indent}    public PermissionRequestBuilder {methodName}(string value) =>");
+            builder.AppendLine($"{indent}        string.IsNullOrEmpty(_params)");
+            builder.AppendLine($"{indent}            ? new PermissionRequestBuilder(_path, \"{EscapeForString(parameter)}\", value)");
+            builder.AppendLine($"{indent}            : new PermissionRequestBuilder(_path, _params, \"{EscapeForString(parameter)}\", value);");
+        }
+
+        builder.AppendLine();
+        builder.AppendLine($"{indent}    /// <summary>Converts this builder to its string representation for HasPermission calls.</summary>");
+        builder.AppendLine($"{indent}    public override string ToString() =>");
+        builder.AppendLine($"{indent}        string.IsNullOrEmpty(_params) ? _path : $\"{{_path}};{{_params}}\";");
+        builder.AppendLine();
+        builder.AppendLine($"{indent}    /// <summary>Implicit conversion to string for seamless use with HasPermission methods.</summary>");
+        builder.AppendLine($"{indent}    public static implicit operator string(PermissionRequestBuilder builder) => builder.ToString();");
 
         builder.AppendLine($"{indent}}}");
     }

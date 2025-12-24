@@ -170,11 +170,11 @@ public class IdentityServiceTests
             Name: "Portfolio Reader",
             Description: "Reads a single portfolio",
             IsSystemRole: false,
-            PermissionTemplates:
+            ScopeTemplates:
             [
-                new RolePermissionTemplateDescriptor(
-                    "api:portfolio:[portfolioId={portfolioId}]:positions:read",
-                    ["portfolioId"])
+                ScopeTemplate.Allow(
+                    "api:portfolio:positions:read",
+                    ("portfolioId", "{portfolioId}"))
             ]);
 
         await fixture.RoleService.CreateRoleAsync(descriptor, CancellationToken.None);
@@ -192,7 +192,7 @@ public class IdentityServiceTests
         await fixture.IdentityService.RegisterUserAsync(request, CancellationToken.None);
 
         var session = await fixture.IdentityService.AuthenticateAsync("scoped-user", "Scoped!123", CancellationToken.None);
-        Assert.Contains("api:portfolio:positions:read", session.PermissionIdentifiers);
+        Assert.Contains("api:portfolio:positions:read;portfolioId=portfolio-123", session.PermissionIdentifiers);
 
         var stored = await fixture.IdentityService.GetByUsernameAsync("scoped-user", CancellationToken.None);
         Assert.NotNull(stored);
@@ -213,15 +213,15 @@ public class IdentityServiceTests
         var fixture = CreateFixture();
 
         var descriptor = new RoleDescriptor(
-            Code: "portfolio_reader",
-            Name: "Portfolio Reader",
+            Code: "portfolio_reader2",
+            Name: "Portfolio Reader 2",
             Description: "Reads a single portfolio",
             IsSystemRole: false,
-            PermissionTemplates:
+            ScopeTemplates:
             [
-                new RolePermissionTemplateDescriptor(
-                    "api:portfolio:[portfolioId={portfolioId}]:positions:read",
-                    ["portfolioId"])
+                ScopeTemplate.Allow(
+                    "api:portfolio:positions:read",
+                    ("portfolioId", "{portfolioId}"))
             ]);
 
         await fixture.RoleService.CreateRoleAsync(descriptor, CancellationToken.None);
@@ -229,7 +229,7 @@ public class IdentityServiceTests
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.IdentityService.AssignRoleAsync(
             user.Id,
-            new RoleAssignmentRequest("portfolio_reader"),
+            new RoleAssignmentRequest("portfolio_reader2"),
             CancellationToken.None));
     }
 

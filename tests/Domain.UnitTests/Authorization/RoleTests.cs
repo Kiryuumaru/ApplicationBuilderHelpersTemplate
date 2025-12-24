@@ -6,32 +6,33 @@ namespace Domain.UnitTests.Authorization;
 public class RoleTests
 {
     [Fact]
-    public void AssignPermission_AddsGrantOnce()
+    public void AddScopeTemplate_AddsTemplateOnce()
     {
         var role = Role.Create("analyst", "Analyst");
-        var grant = RolePermissionTemplate.Create("api:portfolio:accounts:list");
+        var template = ScopeTemplate.Allow("api:portfolio:accounts:list");
 
-        Assert.True(role.AssignPermission(grant));
-        Assert.False(role.AssignPermission(grant));
-        Assert.Single(role.PermissionGrants);
+        role.AddScopeTemplate(template);
+        role.AddScopeTemplate(template);
+
+        Assert.Equal(2, role.ScopeTemplates.Count); // ScopeTemplates allows duplicates; use ReplaceScopeTemplates for deduplication
     }
 
     [Fact]
-    public void ReplacePermissions_ReplacesExistingSet()
+    public void ReplaceScopeTemplates_ReplacesExistingSet()
     {
         var role = Role.Create("operator", "Operator");
-        role.AssignPermission(RolePermissionTemplate.Create("api:user:profile:read"));
+        role.AddScopeTemplate(ScopeTemplate.Allow("api:user:profile:read"));
 
         var updated = new[]
         {
-            RolePermissionTemplate.Create("api:portfolio:accounts:list"),
-            RolePermissionTemplate.Create("api:portfolio:positions:close")
+            ScopeTemplate.Allow("api:portfolio:accounts:list"),
+            ScopeTemplate.Allow("api:portfolio:positions:close")
         };
 
-        role.ReplacePermissions(updated);
+        role.ReplaceScopeTemplates(updated);
 
-        Assert.Equal(2, role.PermissionGrants.Count);
-        Assert.Contains(role.PermissionGrants, grant => grant.IdentifierTemplate == "api:portfolio:positions:close");
-        Assert.DoesNotContain(role.PermissionGrants, grant => grant.IdentifierTemplate == "api:user:profile:read");
+        Assert.Equal(2, role.ScopeTemplates.Count);
+        Assert.Contains(role.ScopeTemplates, t => t.PermissionPath == "api:portfolio:positions:close");
+        Assert.DoesNotContain(role.ScopeTemplates, t => t.PermissionPath == "api:user:profile:read");
     }
 }

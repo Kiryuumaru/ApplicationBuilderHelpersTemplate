@@ -77,7 +77,7 @@ public class UserTests
         user.GrantPermission(UserPermissionGrant.Create("api:portfolio:accounts:list"));
 
         var role = Role.Create("admin", "Administrator");
-        role.AssignPermission(RolePermissionTemplate.Create("api:portfolio:positions:close"));
+        role.AddScopeTemplate(ScopeTemplate.Allow("api:portfolio:positions:close"));
 
         var identifiers = user.BuildEffectivePermissions([new UserRoleResolution(role)]);
 

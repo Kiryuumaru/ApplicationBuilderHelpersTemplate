@@ -79,9 +79,9 @@ public class IdentityEntityConfiguration : IEFCoreEntityConfiguration
 
         entity.HasIndex(r => r.Code).IsUnique();
         entity.HasIndex(r => r.NormalizedName).IsUnique();
-
-        // Ignore PermissionGrants - stored in separate table
-        entity.Ignore(r => r.PermissionGrants);
+        
+        // Ignore ScopeTemplates - roles are defined in code, not persisted
+        entity.Ignore(r => r.ScopeTemplates);
     }
 
     private static void ConfigureUserLogin(ModelBuilder modelBuilder)
