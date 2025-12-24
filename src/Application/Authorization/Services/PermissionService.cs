@@ -12,6 +12,8 @@ using Application.Authorization.Interfaces;
 using Application.Authorization.Models;
 using Domain.Authorization.Enums;
 using Domain.Authorization.Models;
+using Domain.Authorization.Services;
+using Domain.Authorization.ValueObjects;
 
 namespace Application.Authorization.Services;
 
@@ -20,6 +22,7 @@ internal sealed class PermissionService(
 {
     private const string ScopeClaimType = "scope";
     private const string RbacVersionClaimType = "rbac_version";
+    private const string CurrentRbacVersion = "2";
 
     private static readonly ReadOnlyCollection<Permission> PermissionTree;
     private static readonly ReadOnlyDictionary<string, Permission> PermissionLookup;
@@ -204,14 +207,18 @@ internal sealed class PermissionService(
             return false;
         }
 
-        var claimSet = ExtractPermissionClaims(principal);
+        // Check RBAC version and use appropriate evaluation strategy
+        var rbacVersion = GetRbacVersion(principal);
 
-        if (claimSet.Contains(parsed.Identifier))
+        if (IsLegacyRbacVersion(rbacVersion))
         {
+            // Legacy tokens (null or "1") get full admin access for backward compatibility
             return true;
         }
 
-        return HasPermissionInternal(claimSet, permission, parsed);
+        // Version 2+: Use new directive-based scope evaluation
+        var scope = ExtractScopeDirectives(principal);
+        return ScopeEvaluator.HasPermission(scope, parsed.Canonical, parsed.Parameters);
     }
 
     public bool HasAnyPermission(ClaimsPrincipal principal, IEnumerable<string> permissionIdentifiers)
@@ -223,7 +230,15 @@ internal sealed class PermissionService(
             return false;
         }
 
-        var claimSet = ExtractPermissionClaims(principal);
+        var rbacVersion = GetRbacVersion(principal);
+
+        if (IsLegacyRbacVersion(rbacVersion))
+        {
+            // Legacy tokens get full admin access
+            return permissionIdentifiers.Any(id => !string.IsNullOrWhiteSpace(id));
+        }
+
+        var scope = ExtractScopeDirectives(principal);
 
         foreach (var identifier in permissionIdentifiers)
         {
@@ -248,12 +263,7 @@ internal sealed class PermissionService(
                 continue;
             }
 
-            if (claimSet.Contains(parsed.Identifier))
-            {
-                return true;
-            }
-
-            if (HasPermissionInternal(claimSet, permission, parsed))
+            if (ScopeEvaluator.HasPermission(scope, parsed.Canonical, parsed.Parameters))
             {
                 return true;
             }
@@ -281,7 +291,15 @@ internal sealed class PermissionService(
             return false;
         }
 
-        var claimSet = ExtractPermissionClaims(principal);
+        var rbacVersion = GetRbacVersion(principal);
+
+        if (IsLegacyRbacVersion(rbacVersion))
+        {
+            // Legacy tokens get full admin access
+            return true;
+        }
+
+        var scope = ExtractScopeDirectives(principal);
 
         foreach (var identifier in identifiers)
         {
@@ -300,12 +318,7 @@ internal sealed class PermissionService(
                 return false;
             }
 
-            if (claimSet.Contains(parsed.Identifier))
-            {
-                continue;
-            }
-
-            if (!HasPermissionInternal(claimSet, permission, parsed))
+            if (!ScopeEvaluator.HasPermission(scope, parsed.Canonical, parsed.Parameters))
             {
                 return false;
             }
@@ -574,6 +587,7 @@ internal sealed class PermissionService(
             }
         }
 
+        // Legacy behavior: if no RBAC version, grant full access
         if (!principal.Claims.Any(claim => string.Equals(claim.Type, RbacVersionClaimType, StringComparison.Ordinal)))
         {
             claimSet.Add(Permissions.RootReadIdentifier);
@@ -581,6 +595,61 @@ internal sealed class PermissionService(
         }
 
         return claimSet;
+    }
+
+    /// <summary>
+    /// Extracts scope directives from the principal's claims.
+    /// </summary>
+    private static List<ScopeDirective> ExtractScopeDirectives(ClaimsPrincipal principal)
+    {
+        var directives = new List<ScopeDirective>();
+
+        foreach (var claim in principal.Claims)
+        {
+            if (string.IsNullOrWhiteSpace(claim.Value))
+            {
+                continue;
+            }
+
+            if (!string.Equals(claim.Type, ScopeClaimType, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var scopes = claim.Value.Split(
+                ' ',
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            foreach (var scope in scopes)
+            {
+                if (ScopeDirective.TryParse(scope, out var directive))
+                {
+                    directives.Add(directive!);
+                }
+            }
+        }
+
+        return directives;
+    }
+
+    /// <summary>
+    /// Gets the RBAC version from the principal's claims.
+    /// </summary>
+    private static string? GetRbacVersion(ClaimsPrincipal principal)
+    {
+        var claim = principal.Claims.FirstOrDefault(c =>
+            string.Equals(c.Type, RbacVersionClaimType, StringComparison.Ordinal));
+
+        return claim?.Value;
+    }
+
+    /// <summary>
+    /// Determines if the RBAC version indicates a legacy token that should get full admin access.
+    /// </summary>
+    private static bool IsLegacyRbacVersion(string? version)
+    {
+        // null (missing) or "1" = legacy token → grant full admin access
+        return string.IsNullOrEmpty(version) || string.Equals(version, "1", StringComparison.Ordinal);
     }
 
     private static bool HasPermissionInternal(HashSet<string> claimSet, Permission permission, Permission.ParsedIdentifier requestedIdentifier)

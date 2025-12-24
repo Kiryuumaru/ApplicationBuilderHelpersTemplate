@@ -1,5 +1,6 @@
 using Application.Authorization.Models;
 using Domain.Authorization.Models;
+using Domain.Authorization.ValueObjects;
 
 namespace Application.Authorization.Interfaces;
 
@@ -13,7 +14,7 @@ public interface IRoleService
 
     Task<IReadOnlyCollection<Role>> ListAsync(CancellationToken cancellationToken);
 
-    Task<Role> ReplacePermissionsAsync(Guid roleId, IEnumerable<RolePermissionTemplateDescriptor> permissionTemplates, CancellationToken cancellationToken);
+    Task<Role> ReplaceScopeTemplatesAsync(Guid roleId, IEnumerable<ScopeTemplate> scopeTemplates, CancellationToken cancellationToken);
 
     Task<Role> UpdateMetadataAsync(Guid roleId, string name, string? description, CancellationToken cancellationToken);
 }

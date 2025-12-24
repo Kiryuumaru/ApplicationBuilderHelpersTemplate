@@ -9,8 +9,8 @@ namespace Application.UnitTests.Authorization;
 
 public class PermissionServiceTests
 {
-    private const string AccountUpdatePermission = "api:portfolio:[userId=user-123]:accounts:update";
-    private const string PositionClosePermission = "api:portfolio:[userId=user-123]:positions:[positionId=pos-9]:close";
+    private const string AccountUpdatePermission = "api:portfolio:accounts:update;userId=user-123";
+    private const string PositionClosePermission = "api:portfolio:positions:close;userId=user-123;positionId=pos-9";
 
     [Fact]
     public async Task GenerateTokenWithPermissionsAsync_NormalizesAndDelegatesScopes()
@@ -52,7 +52,7 @@ public class PermissionServiceTests
     {
         var service = CreateService(new RecordingJwtTokenService());
 
-        var result = await service.ValidatePermissionsAsync(["api:[userId=user-123]:_read"]);
+        var result = await service.ValidatePermissionsAsync(["api:_read;userId=user-123"]);
 
         Assert.True(result);
     }
@@ -62,7 +62,7 @@ public class PermissionServiceTests
     {
         var service = CreateService(new RecordingJwtTokenService());
 
-        var result = await service.ValidatePermissionsAsync(["api:[tenantId=abc]:_read"]);
+        var result = await service.ValidatePermissionsAsync(["api:_read;tenantId=abc"]);
 
         Assert.False(result);
     }
@@ -71,29 +71,36 @@ public class PermissionServiceTests
     public void HasPermission_AllowsUserScopedRootGrant()
     {
         var service = CreateService(new RecordingJwtTokenService());
+        // New directive format: allow;permission_path;param=value
         var identity = new ClaimsIdentity(
         [
-            new Claim("scope", "api:[userId=user-123]:_read"),
-            new Claim("rbac_version", "1")
+            new Claim("scope", "allow;api:_read;userId=user-123"),
+            new Claim("rbac_version", "2")
         ]);
         var principal = new ClaimsPrincipal(identity);
 
-        var permitted = "api:portfolio:[userId=user-123]:accounts:[accountId=acct-1]:list";
-        var otherUser = "api:portfolio:[userId=user-456]:accounts:[accountId=acct-1]:list";
+        // Requests carry parameters in semicolon notation
+        var permitted = "api:portfolio:accounts:list;userId=user-123";
+        var otherUser = "api:portfolio:accounts:list;userId=user-456";
+        // Non-scoped request without userId - DENIED because scope requires userId
         var nonScoped = "api:market:assets:list";
 
         Assert.True(service.HasPermission(principal, permitted));
         Assert.False(service.HasPermission(principal, otherUser));
-        Assert.False(service.HasPermission(principal, nonScoped));
+        Assert.False(service.HasPermission(principal, nonScoped)); // Scope requires userId, request has none
     }
 
     [Fact]
     public void HasPermission_DeniesWhenParameterMissingOnRequest()
     {
         var service = CreateService(new RecordingJwtTokenService());
-        var principal = BuildPrincipalWithScopes("api:[userId=user-123]:_read");
+        // Scope requires userId parameter
+        var principal = BuildPrincipalWithScopes("allow;api:_read;userId=user-123");
+        // Request has no userId parameter - the scope requires userId so this DENIES
         var permissionWithoutParameter = "api:market:assets:list";
 
+        // The scope says "allow api:_read only for userId=user-123"
+        // A request without userId doesn't satisfy this - so it's DENIED
         Assert.False(service.HasPermission(principal, permissionWithoutParameter));
     }
 
@@ -101,9 +108,11 @@ public class PermissionServiceTests
     public void HasPermission_DeniesAccessToOtherUser()
     {
         var service = CreateService(new RecordingJwtTokenService());
-        var principal = BuildPrincipalWithScopes("api:[userId=user-123]:_read");
+        // Scope requires userId=user-123
+        var principal = BuildPrincipalWithScopes("allow;api:_read;userId=user-123");
 
-        var attempt = "api:portfolio:[userId=user-456]:accounts:list";
+        // Attempt with userId=user-456 (different user)
+        var attempt = "api:portfolio:accounts:list;userId=user-456";
 
         Assert.False(service.HasPermission(principal, attempt));
     }
@@ -112,10 +121,12 @@ public class PermissionServiceTests
     public void HasAnyPermission_DeniesWhenOnlyOtherUserSpecified()
     {
         var service = CreateService(new RecordingJwtTokenService());
-        var principal = BuildPrincipalWithScopes("api:[userId=user-123]:_read");
+        // Scope only allows user-123
+        var principal = BuildPrincipalWithScopes("allow;api:_read;userId=user-123");
 
-        var otherUser = "api:portfolio:[userId=user-456]:accounts:list";
-        var otherUserPositions = "api:portfolio:[userId=user-456]:positions:read";
+        // Both requests are for user-456 (different user)
+        var otherUser = "api:portfolio:accounts:list;userId=user-456";
+        var otherUserPositions = "api:portfolio:positions:read;userId=user-456";
 
         Assert.False(service.HasAnyPermission(principal, [otherUser, otherUserPositions]));
     }
@@ -124,7 +135,8 @@ public class PermissionServiceTests
     public void HasPermission_WriteScopeAllowsWriteOperations()
     {
         var service = CreateService(new RecordingJwtTokenService());
-        var principal = BuildPrincipalWithScopes("api:[userId=user-123]:_write");
+        // Use new directive format with _write scope
+        var principal = BuildPrincipalWithScopes("allow;api:_write;userId=user-123");
 
         var result = service.HasPermission(principal, AccountUpdatePermission);
 
@@ -135,7 +147,8 @@ public class PermissionServiceTests
     public void HasPermission_ReadScopeDoesNotAllowWriteOperations()
     {
         var service = CreateService(new RecordingJwtTokenService());
-        var principal = BuildPrincipalWithScopes("api:[userId=user-123]:_read");
+        // Only read scope, no write
+        var principal = BuildPrincipalWithScopes("allow;api:_read;userId=user-123");
 
         var result = service.HasPermission(principal, AccountUpdatePermission);
 
@@ -146,10 +159,11 @@ public class PermissionServiceTests
     public void HasAllPermissions_ReturnsFalseWhenAnyMissing()
     {
         var service = CreateService(new RecordingJwtTokenService());
+        // Only allows AccountUpdatePermission path, not position close
         var identity = new ClaimsIdentity(
         [
-            new Claim("scope", AccountUpdatePermission),
-            new Claim("rbac_version", "1")
+            new Claim("scope", "allow;api:portfolio:accounts:update;userId=user-123"),
+            new Claim("rbac_version", "2")
         ]);
         var principal = new ClaimsPrincipal(identity);
 
@@ -198,6 +212,18 @@ public class PermissionServiceTests
     }
 
     private static ClaimsPrincipal BuildPrincipalWithScopes(params string[] scopes)
+    {
+        var scopeValue = string.Join(' ', scopes);
+        var identity = new ClaimsIdentity(
+        [
+            new Claim("scope", scopeValue),
+            new Claim("rbac_version", "2")
+        ]);
+
+        return new ClaimsPrincipal(identity);
+    }
+
+    private static ClaimsPrincipal BuildLegacyPrincipalWithScopes(params string[] scopes)
     {
         var scopeValue = string.Join(' ', scopes);
         var identity = new ClaimsIdentity(

@@ -2,6 +2,7 @@ using Application.Authorization.Models;
 using Application.Authorization.Services;
 using Application.UnitTests.Authorization.Fakes;
 using Domain.Authorization.Constants;
+using Domain.Authorization.ValueObjects;
 using RolesConstants = Domain.Authorization.Constants.Roles;
 
 namespace Application.UnitTests.Authorization;
@@ -31,7 +32,7 @@ public class RoleServiceTests
             Name: "Duplicate Admin",
             Description: null,
             IsSystemRole: false,
-            PermissionTemplates: [new RolePermissionTemplateDescriptor(Permissions.RootReadIdentifier)]);
+            ScopeTemplates: [ScopeTemplate.Allow(Permissions.RootReadIdentifier)]);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => service.CreateRoleAsync(descriptor, CancellationToken.None));
     }
@@ -47,9 +48,9 @@ public class RoleServiceTests
             Name: "Portfolio Manager",
             Description: "Manages portfolios",
             IsSystemRole: false,
-            PermissionTemplates:
+            ScopeTemplates:
             [
-                new RolePermissionTemplateDescriptor("api:portfolio:[userId=user-123]:accounts:list")
+                ScopeTemplate.Allow("api:portfolio:accounts:list", ("userId", "user-123"))
             ]);
 
         await service.CreateRoleAsync(descriptor, CancellationToken.None);
@@ -58,7 +59,7 @@ public class RoleServiceTests
     }
 
     [Fact]
-    public async Task ReplacePermissionsAsync_UpdatesRoleGrants()
+    public async Task ReplaceScopeTemplatesAsync_UpdatesRoleScopeTemplates()
     {
         var repository = new InMemoryRoleRepository();
         var service = new RoleService(repository);
@@ -68,19 +69,19 @@ public class RoleServiceTests
             Name: "Read Only Analyst",
             Description: null,
             IsSystemRole: false,
-            PermissionTemplates:
+            ScopeTemplates:
             [
-                new RolePermissionTemplateDescriptor("api:market:assets:list")
+                ScopeTemplate.Allow("api:market:assets:list")
             ]);
 
         var role = await service.CreateRoleAsync(descriptor, CancellationToken.None);
 
-        role = await service.ReplacePermissionsAsync(
+        role = await service.ReplaceScopeTemplatesAsync(
             role.Id,
-            [new RolePermissionTemplateDescriptor(Permissions.RootReadIdentifier)],
+            [ScopeTemplate.Allow(Permissions.RootReadIdentifier)],
             CancellationToken.None);
 
-        Assert.Contains(Permissions.RootReadIdentifier, role.GetPermissionIdentifiers());
-        Assert.Single(role.GetPermissionIdentifiers());
+        Assert.Contains(role.ScopeTemplates, t => t.PermissionPath == Permissions.RootReadIdentifier);
+        Assert.Single(role.ScopeTemplates);
     }
 }

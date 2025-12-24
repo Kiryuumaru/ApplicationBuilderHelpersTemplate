@@ -121,89 +121,87 @@ public sealed class Permission
             throw new FormatException("Permission identifier cannot be empty.");
         }
 
-        var canonicalSegments = new List<string>();
-        Dictionary<string, string>? parameters = null;
-
-        var span = trimmed.AsSpan();
-        var position = 0;
-
-        while (position < span.Length)
+        // Format: "path;key=value;key2=value2" or just "path" (no parameters)
+        var semicolonIndex = trimmed.IndexOf(';');
+        if (semicolonIndex > 0)
         {
-            var remainder = span[position..];
-            var colonIndex = remainder.IndexOf(':');
-
-            ReadOnlySpan<char> segment;
-            if (colonIndex < 0)
-            {
-                segment = remainder;
-                position = span.Length;
-            }
-            else
-            {
-                segment = remainder[..colonIndex];
-                position += colonIndex + 1;
-            }
-
-            var segmentString = segment.Trim().ToString();
-            if (segmentString.Length == 0)
-            {
-                throw new FormatException("Permission identifier contains an empty path segment.");
-            }
-
-            if (segmentString[0] == '[')
-            {
-                if (segmentString[^1] != ']')
-                {
-                    throw new FormatException("Permission identifier contains an unterminated parameter segment.");
-                }
-
-                var inner = segmentString[1..^1];
-                if (inner.Length == 0)
-                {
-                    continue;
-                }
-
-                parameters ??= new Dictionary<string, string>(StringComparer.Ordinal);
-
-                var assignments = inner.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                foreach (var assignment in assignments)
-                {
-                    var parts = assignment.Split('=', 2, StringSplitOptions.TrimEntries);
-                    if (parts.Length != 2)
-                    {
-                        throw new FormatException("Permission identifier parameter segments must use the 'name=value' format.");
-                    }
-
-                    var name = parts[0];
-                    var value = parts[1];
-
-                    if (name.Length == 0)
-                    {
-                        throw new FormatException("Permission identifier parameter names cannot be empty.");
-                    }
-
-                    if (value.Length == 0)
-                    {
-                        throw new FormatException($"Permission identifier parameter '{name}' requires a value.");
-                    }
-
-                    parameters[name] = value;
-                }
-            }
-            else
-            {
-                canonicalSegments.Add(segmentString);
-            }
+            return ParseSemicolonFormat(trimmed, semicolonIndex);
         }
 
-        if (canonicalSegments.Count == 0)
+        // No semicolon - treat as path-only (no parameters)
+        return ParsePathOnly(trimmed);
+    }
+
+    private static ParsedIdentifier ParseSemicolonFormat(string identifier, int firstSemicolonIndex)
+    {
+        // Format: "api:user:profile:read;userId=abc;accountId=xyz"
+        // Everything before first semicolon is the path
+        // Everything after is key=value pairs separated by semicolons
+
+        var path = identifier[..firstSemicolonIndex].Trim();
+        if (path.Length == 0)
+        {
+            throw new FormatException("Permission identifier path cannot be empty.");
+        }
+
+        // Validate path segments (should be colon-separated)
+        var pathSegments = path.Split(':', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (pathSegments.Length == 0)
         {
             throw new FormatException("Permission identifier must contain at least one path segment.");
         }
 
-        var canonical = string.Join(':', canonicalSegments);
+        var canonical = string.Join(':', pathSegments);
 
-        return new ParsedIdentifier(trimmed, canonical, parameters is null ? EmptyParameters : new ReadOnlyDictionary<string, string>(parameters));
+        // Parse parameters from remaining semicolon-separated parts
+        Dictionary<string, string>? parameters = null;
+        var paramPart = identifier[(firstSemicolonIndex + 1)..];
+
+        if (paramPart.Length > 0)
+        {
+            parameters = new Dictionary<string, string>(StringComparer.Ordinal);
+            var assignments = paramPart.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            foreach (var assignment in assignments)
+            {
+                var parts = assignment.Split('=', 2, StringSplitOptions.TrimEntries);
+                if (parts.Length != 2)
+                {
+                    throw new FormatException("Permission identifier parameter segments must use the 'name=value' format.");
+                }
+
+                var name = parts[0];
+                var value = parts[1];
+
+                if (name.Length == 0)
+                {
+                    throw new FormatException("Permission identifier parameter names cannot be empty.");
+                }
+
+                if (value.Length == 0)
+                {
+                    throw new FormatException($"Permission identifier parameter '{name}' requires a value.");
+                }
+
+                parameters[name] = value;
+            }
+        }
+
+        return new ParsedIdentifier(identifier, canonical, parameters is null ? EmptyParameters : new ReadOnlyDictionary<string, string>(parameters));
+    }
+
+    private static ParsedIdentifier ParsePathOnly(string trimmed)
+    {
+        // Simple path without parameters: "api:user:profile:read"
+        var segments = trimmed.Split(':', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        
+        if (segments.Length == 0)
+        {
+            throw new FormatException("Permission identifier must contain at least one path segment.");
+        }
+
+        var canonical = string.Join(':', segments);
+        return new ParsedIdentifier(trimmed, canonical, EmptyParameters);
     }
 
     public static bool TryParseIdentifier(string identifier, out ParsedIdentifier parsed)

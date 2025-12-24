@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Domain.Authorization.Models;
+using Domain.Authorization.ValueObjects;
 using Domain.Identity.Enums;
 using Domain.Identity.ValueObjects;
 using Domain.Shared.Exceptions;
@@ -298,9 +299,13 @@ public sealed class User : AggregateRoot
                     continue;
                 }
 
-                foreach (var identifier in resolution.Role.ExpandPermissions(resolution.ParameterValues))
+                foreach (var directive in resolution.Role.ExpandScope(resolution.ParameterValues))
                 {
-                    identifiers.Add(identifier);
+                    var identifier = directive.ToPermissionIdentifier();
+                    if (identifier is not null)
+                    {
+                        identifiers.Add(identifier);
+                    }
                 }
             }
         }
@@ -429,7 +434,27 @@ public sealed class User : AggregateRoot
 
         var permissions = permissionIdentifiers ?? GetPermissionIdentifiers();
         var codes = roleCodes ?? Array.Empty<string>();
-        return UserSession.Create(Id, UserName, permissions, timestamp, timestamp + lifetime, codes);
+        return UserSession.CreateLegacy(Id, UserName, permissions, timestamp, timestamp + lifetime, codes);
+    }
+
+    /// <summary>
+    /// Creates a session with the new scope directive system.
+    /// </summary>
+    public UserSession CreateScopedSession(TimeSpan lifetime, IEnumerable<ScopeDirective> scope, DateTimeOffset? issuedAt = null, IEnumerable<string>? roleCodes = null)
+    {
+        if (lifetime <= TimeSpan.Zero)
+        {
+            throw new DomainException("Session lifetime must be positive.");
+        }
+
+        var timestamp = issuedAt ?? DateTimeOffset.UtcNow;
+        if (!CanAuthenticate(timestamp))
+        {
+            throw new DomainException("User cannot authenticate in the current state.");
+        }
+
+        var codes = roleCodes ?? Array.Empty<string>();
+        return UserSession.Create(Id, UserName, scope, timestamp, timestamp + lifetime, codes);
     }
 
     private UserIdentityLink LinkIdentityInternal(

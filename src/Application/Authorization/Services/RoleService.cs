@@ -30,7 +30,7 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
         }
 
         var role = Role.Create(descriptor.Code, descriptor.Name, descriptor.Description, descriptor.IsSystemRole);
-        role.ReplacePermissions(BuildTemplates(descriptor.PermissionTemplates ?? []));
+        role.ReplaceScopeTemplates(descriptor.ScopeTemplates ?? []);
         await _repository.SaveAsync(role, cancellationToken).ConfigureAwait(false);
         return role;
     }
@@ -85,23 +85,23 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
             .ToArray();
     }
 
-    public async Task<Role> ReplacePermissionsAsync(Guid roleId, IEnumerable<RolePermissionTemplateDescriptor> permissionTemplates, CancellationToken cancellationToken)
+    public async Task<Role> ReplaceScopeTemplatesAsync(Guid roleId, IEnumerable<ScopeTemplate> scopeTemplates, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(permissionTemplates);
+        ArgumentNullException.ThrowIfNull(scopeTemplates);
         cancellationToken.ThrowIfCancellationRequested();
 
         if (RolesConstants.IsStaticRole(roleId))
         {
-            throw new InvalidOperationException("Cannot modify permissions of a static role.");
+            throw new InvalidOperationException("Cannot modify scope templates of a static role.");
         }
 
         var role = await _repository.GetByIdAsync(roleId, cancellationToken).ConfigureAwait(false) ?? throw new InvalidOperationException($"Role with ID '{roleId}' not found.");
         if (role.IsSystemRole)
         {
-            throw new InvalidOperationException("Cannot modify permissions of a system role.");
+            throw new InvalidOperationException("Cannot modify scope templates of a system role.");
         }
 
-        role.ReplacePermissions(BuildTemplates(permissionTemplates));
+        role.ReplaceScopeTemplates(scopeTemplates);
         await _repository.SaveAsync(role, cancellationToken).ConfigureAwait(false);
         return role;
     }
@@ -125,11 +125,6 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
         
         await _repository.SaveAsync(role, cancellationToken).ConfigureAwait(false);
         return role;
-    }
-
-    private static IEnumerable<RolePermissionTemplate> BuildTemplates(IEnumerable<RolePermissionTemplateDescriptor> descriptors)
-    {
-        return descriptors.Select(static d => RolePermissionTemplate.Create(d.Template, d.RequiredParameters, d.Description));
     }
 }
 

@@ -238,8 +238,8 @@ internal sealed class IdentityService(
 
     private static Dictionary<string, string?>? ResolveAssignmentParameters(User user, Role role, RoleAssignmentRequest assignment)
     {
-        var requiredParameters = role.PermissionGrants
-            .Where(static template => template.RequiresParameters)
+        var requiredParameters = role.ScopeTemplates
+            .Where(static template => template.RequiredParameters.Count > 0)
             .SelectMany(static template => template.RequiredParameters)
             .Distinct(StringComparer.Ordinal)
             .ToArray();
