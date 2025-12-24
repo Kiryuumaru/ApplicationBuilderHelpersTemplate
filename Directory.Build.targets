@@ -1,8 +1,8 @@
 <Project>
 	<PropertyGroup Condition="'$(GenerateBuildConstants)' == 'true'">
-		<AssemblyName Condition="'$(AssemblyName)' == ''">vianaapp</AssemblyName>
-		<AssemblyTitle Condition="'$(AssemblyTitle)' == ''">Viana Edge Application</AssemblyTitle>
-		<Description Condition="'$(Description)' == ''">Viana Edge Application</Description>
+		<AssemblyName Condition="'$(AssemblyName)' == ''">sampleapp</AssemblyName>
+		<AssemblyTitle Condition="'$(AssemblyTitle)' == ''">Sample Application</AssemblyTitle>
+		<Description Condition="'$(Description)' == ''">Sample Application</Description>
 		<FullVersion Condition="'$(FullVersion)' == ''">0.0.0-prerelease.0+build.local</FullVersion>
 		<InformationalVersion Condition="'$(InformationalVersion)' == ''">$(FullVersion)</InformationalVersion>
 		<AppTag Condition="'$(AppTag)' == ''">prerelease</AppTag>
