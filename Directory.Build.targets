@@ -3,9 +3,9 @@
 		<AssemblyName Condition="'$(AssemblyName)' == ''">vianaapp</AssemblyName>
 		<AssemblyTitle Condition="'$(AssemblyTitle)' == ''">Viana Edge Application</AssemblyTitle>
 		<Description Condition="'$(Description)' == ''">Viana Edge Application</Description>
-		<FullVersion Condition="'$(FullVersion)' == ''">0.0.0-alpha.0+build.local</FullVersion>
+		<FullVersion Condition="'$(FullVersion)' == ''">0.0.0-prerelease.0+build.local</FullVersion>
 		<InformationalVersion Condition="'$(InformationalVersion)' == ''">$(FullVersion)</InformationalVersion>
-		<AppTag Condition="'$(AppTag)' == ''">alpha</AppTag>
+		<AppTag Condition="'$(AppTag)' == ''">prerelease</AppTag>
 		<CredsJsonPath Condition="'$(CredsJsonPath)' == ''">$(MSBuildThisFileDirectory)creds.json</CredsJsonPath>
 		<BaseCommandType Condition="'$(BaseCommandType)' == ''"></BaseCommandType>
 

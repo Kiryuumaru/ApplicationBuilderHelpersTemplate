@@ -39,8 +39,8 @@ public static class Roles
             TemplateParametersOverride: ["roleUserId"],
             PermissionTemplates:
             [
-                RolePermissionTemplate.Create("api:[userId={roleUserId}]:_read"),
-                RolePermissionTemplate.Create("api:[userId={roleUserId}]:_write")
+                RolePermissionTemplate.Create("[userId={roleUserId}]:_read"),
+                RolePermissionTemplate.Create("[userId={roleUserId}]:_write")
             ]);
 
         All = [Admin, User];
