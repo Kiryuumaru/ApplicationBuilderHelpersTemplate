@@ -81,7 +81,7 @@ public sealed class RolePermissionTemplate : ValueObject
         }
 
         var parsed = Permission.ParseIdentifier(resolved);
-        return parsed.Canonical;
+        return parsed.Identifier;
     }
 
     public IEnumerable<string> ExpandMany(IEnumerable<IReadOnlyDictionary<string, string?>> parameterSets)

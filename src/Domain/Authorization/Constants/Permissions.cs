@@ -72,6 +72,8 @@ public static class Permissions
     {
         var roots = new List<Permission>
         {
+            RootReadPermission,
+            RootWritePermission,
             BuildApiRoot()
         };
 
@@ -247,13 +249,13 @@ public static class Permissions
         string description,
         PermissionAccessCategory accessCategory = PermissionAccessCategory.Unspecified,
         string[]? parameters = null) => new()
-    {
-        Identifier = identifier,
-        Description = description,
-        Permissions = [],
-        Parameters = parameters is { Length: > 0 } values ? [.. values] : [],
-        AccessCategory = accessCategory
-    };
+        {
+            Identifier = identifier,
+            Description = description,
+            Permissions = [],
+            Parameters = parameters is { Length: > 0 } values ? [.. values] : [],
+            AccessCategory = accessCategory
+        };
 
     private static Permission RLeaf(string identifier, string description, string[]? parameters = null) =>
         Leaf(identifier, description, PermissionAccessCategory.Read, parameters);

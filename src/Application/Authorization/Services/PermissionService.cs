@@ -789,6 +789,12 @@ internal sealed class PermissionService(
             return true;
         }
 
+        if (permission.Identifier is "_read" or "_write" && permission.Parent is null)
+        {
+            invalidParameter = null;
+            return true;
+        }
+
         var allowedAncestors = CollectRelevantParameterNames(permission);
         var reachable = GetReachableParameterNames(permission);
 
