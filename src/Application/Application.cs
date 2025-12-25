@@ -1,5 +1,6 @@
 ﻿using Application.Abstractions.Application;
 using Application.AppEnvironment.Extensions;
+using Application.Authorization.Extensions;
 using Application.Common.Extensions;
 using Application.Identity.Extensions;
 using Application.LocalStore.Extensions;
@@ -59,6 +60,7 @@ public class Application : ApplicationDependency
         services.AddNativeCmdServices();
         services.AddLocalStoreServices();
         services.AddIdentityServices();
+        services.AddAuthenticationServices();
     }
 
     public override void AddMiddlewares(ApplicationHost applicationHost, IHost host)
