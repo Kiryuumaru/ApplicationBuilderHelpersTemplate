@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.EFCore.LocalStore;
 
-public class EFCoreLocalStoreInfrastructure : InfrastructureEFCore
+public class EFCoreLocalStoreInfrastructure : ApplicationDependency
 {
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
     {

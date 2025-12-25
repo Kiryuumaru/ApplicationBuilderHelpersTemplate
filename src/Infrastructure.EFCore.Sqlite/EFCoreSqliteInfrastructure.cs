@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.EFCore.Sqlite;
 
-public class EFCoreSqliteInfrastructure : InfrastructureEFCore
+public class EFCoreSqliteInfrastructure : ApplicationDependency
 {
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
     {

@@ -19,7 +19,7 @@
 
 		<Copy SourceFiles="@(DomainSourceFiles)"
 		      DestinationFiles="@(DomainSourceFiles->'$(DomainSourcesDir)%(RecursiveDir)%(Filename)%(Extension)')"
-		      SkipUnchangedFiles="true" />
+		      SkipUnchangedFiles="false" />
 
 		<ItemGroup>
 			<Compile Include="$(DomainSourcesDir)**\*.cs" />

@@ -23,6 +23,7 @@
 		<ProjectReference Include="..\Infrastructure.EFCore.Sqlite\Infrastructure.EFCore.Sqlite.csproj" />
 		<ProjectReference Include="..\Infrastructure.EFCore.Identity\Infrastructure.EFCore.Identity.csproj" />
 		<ProjectReference Include="..\Infrastructure.EFCore.LocalStore\Infrastructure.EFCore.LocalStore.csproj" />
+		<ProjectReference Include="..\Infrastructure.EFCore\Infrastructure.EFCore.csproj" />
 	</ItemGroup>
 
 </Project>

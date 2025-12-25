@@ -1,3 +1,4 @@
+using Infrastructure.EFCore;
 using Infrastructure.EFCore.Identity;
 using Infrastructure.EFCore.LocalStore;
 using Infrastructure.EFCore.Sqlite;
@@ -10,6 +11,7 @@ using Presentation.WebApp.Components.Account;
 
 return await ApplicationBuilderHelpers.ApplicationBuilder.Create()
     .AddApplication<Application.Application>()
+    .AddApplication<EFCoreInfrastructure>()
     .AddApplication<EFCoreSqliteInfrastructure>()
     .AddApplication<EFCoreIdentityInfrastructure>()
     .AddApplication<EFCoreLocalStoreInfrastructure>()
