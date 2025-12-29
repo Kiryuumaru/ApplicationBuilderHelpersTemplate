@@ -13,7 +13,7 @@
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(GenerateBuildConstants)' == 'true'">
-		<PackageReference Include="WmiLight" Version="6.17.0" />
+		<PackageReference Include="WmiLight" Version="6.19.0" />
 	</ItemGroup>
 
 	<Target Name="GenerateBuildConstantsEvent" BeforeTargets="BeforeCompile" Condition="'$(GenerateBuildConstants)' == 'true'">
