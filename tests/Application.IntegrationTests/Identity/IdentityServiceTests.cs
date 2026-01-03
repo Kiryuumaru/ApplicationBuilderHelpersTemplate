@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Application.Abstractions.Application;
 using Application.Authorization.Models;
 using Application.Identity.Extensions;
 using Application.Identity.Interfaces;
@@ -302,6 +303,9 @@ public class IdentityServiceTests
         // Add authentication services required by SignInManager
         services.AddAuthentication();
         
+        // Register stub IApplicationConstants for tests
+        services.AddSingleton<IApplicationConstants>(new TestApplicationConstants());
+        
         services.AddIdentityServices();
 
         // Use shared memory database with EF Core
@@ -347,5 +351,15 @@ public class IdentityServiceTests
         {
             Connection.Dispose();
         }
+    }
+
+    private sealed class TestApplicationConstants : IApplicationConstants
+    {
+        public string AppName => "TestApp";
+        public string AppTitle => "Test Application";
+        public string AppDescription => "Test application for integration tests";
+        public string Version => "1.0.0";
+        public string AppTag => "test";
+        public string BuildPayload => string.Empty;
     }
 }
