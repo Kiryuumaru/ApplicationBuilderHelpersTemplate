@@ -1,4 +1,4 @@
-using AbsolutePathHelpers;
+﻿using AbsolutePathHelpers;
 
 namespace Application.Common.Extensions;
 
@@ -80,7 +80,7 @@ public static class HttpClientDownloadExtensions
 
         using var file = File.OpenWrite(filePath);
 
-        await httpClient.DownloadFile(url, async onRead =>
+        await DownloadFile(httpClient, url, async onRead =>
         {
             hasReportedProgress = false;
             var now = DateTimeOffset.UtcNow;
@@ -90,7 +90,7 @@ public static class HttpClientDownloadExtensions
             lastDownloadProgress = new DownloadProgress(onRead.BytesRead, totalBytes, onRead.ContentLength);
             if (progressReporting != null)
             {
-                if (dateTimeOffset + progressReporting.Value < now)
+                if ((dateTimeOffset + progressReporting.Value) < now)
                 {
                     dateTimeOffset = now;
                     progress?.Invoke(lastDownloadProgress.Value);

@@ -1,89 +1,95 @@
-using Application.Abstractions.LocalStore;
+using Application.LocalStore.Common;
+using Application.LocalStore.Interfaces;
 using DisposableHelpers.Attributes;
-using System.Text.Json;
-using System.Text.Json.Serialization.Metadata;
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Infrastructure.Storage.Features;
 
 [Disposable]
-public partial class ConcurrentLocalStore(ILocalStoreService localStoreService) : IDisposable
+public partial class ConcurrentLocalStore(ILocalStoreService localStoreService, string group) : IDisposable
 {
-    public required string Group { get; init; }
+    private readonly ILocalStoreService localStoreService = localStoreService ?? throw new ArgumentNullException(nameof(localStoreService));
+    private readonly SemaphoreSlim gate = new(1, 1);
 
-    public async Task<bool> Contains(string id, CancellationToken cancellationToken = default)
+    public string Group { get; } = LocalStoreKey.NormalizeGroup(group);
+
+    public Task<bool> Contains(string id, CancellationToken cancellationToken = default)
     {
-        VerifyNotDisposed();
-        return await localStoreService.Contains(Group, id, cancellationToken);
+        var normalizedId = LocalStoreKey.NormalizeId(id);
+        return WithGateAsync(() => localStoreService.Contains(Group, normalizedId, cancellationToken), cancellationToken);
     }
 
     public async Task ContainsOrError(string id, CancellationToken cancellationToken = default)
     {
-        if (!await Contains(id, cancellationToken))
+        if (!await Contains(id, cancellationToken).ConfigureAwait(false))
         {
             throw new KeyNotFoundException($"The item with ID '{id}' does not exist in the group '{Group}'.");
         }
     }
 
-    public async Task<string> Get(string id, CancellationToken cancellationToken = default)
+    public Task<string?> Get(string id, CancellationToken cancellationToken = default)
     {
-        VerifyNotDisposed();
-        return await localStoreService.Get(Group, id, cancellationToken);
+        var normalizedId = LocalStoreKey.NormalizeId(id);
+        return WithGateAsync(() => localStoreService.Get(Group, normalizedId, cancellationToken), cancellationToken);
     }
 
-    public async Task<T?> Get<T>(string id, JsonTypeInfo<T?> jsonTypeInfo, CancellationToken cancellationToken = default)
-        where T : class
+    public Task<string[]> GetIds(CancellationToken cancellationToken = default)
     {
-        var value = await Get(id, cancellationToken);
-        if (!string.IsNullOrEmpty(value))
+        return WithGateAsync(() => localStoreService.GetIds(Group, cancellationToken), cancellationToken);
+    }
+
+    public Task Set(string id, string? value, CancellationToken cancellationToken = default)
+    {
+        var normalizedId = LocalStoreKey.NormalizeId(id);
+        return WithGateAsync(() => localStoreService.Set(Group, normalizedId, value, cancellationToken), cancellationToken);
+    }
+
+    public Task Delete(string id, CancellationToken cancellationToken = default)
+    {
+        return Set(id, null, cancellationToken);
+    }
+
+    public Task CommitAsync(CancellationToken cancellationToken = default)
+    {
+        return WithGateAsync(() => localStoreService.CommitAsync(cancellationToken), cancellationToken);
+    }
+
+    public Task RollbackAsync(CancellationToken cancellationToken = default)
+    {
+        return WithGateAsync(() => localStoreService.RollbackAsync(cancellationToken), cancellationToken);
+    }
+
+    private async Task<T> WithGateAsync<T>(Func<Task<T>> action, CancellationToken cancellationToken)
+    {
+        VerifyNotDisposed();
+        await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
         {
-            return JsonSerializer.Deserialize(value, jsonTypeInfo);
+            return await action().ConfigureAwait(false);
         }
-        else
+        finally
         {
-            return default;
+            gate.Release();
         }
     }
 
-    public async Task<string[]> GetIds(CancellationToken cancellationToken = default)
+    private async Task WithGateAsync(Func<Task> action, CancellationToken cancellationToken)
     {
-        VerifyNotDisposed();
-        return await localStoreService.GetIds(Group, cancellationToken);
-    }
-
-    public async Task Set(string id, string? value, CancellationToken cancellationToken = default)
-    {
-        VerifyNotDisposed();
-        await localStoreService.Set(Group, id, value, cancellationToken);
-    }
-
-    public async Task Set<T>(string id, T? obj, JsonTypeInfo<T?> jsonTypeInfo, CancellationToken cancellationToken = default)
-        where T : class
-    {
-        string data = JsonSerializer.Serialize(obj, jsonTypeInfo);
-        await Set(id, data, cancellationToken);
-    }
-
-    public async Task Delete(string id, CancellationToken cancellationToken = default)
-    {
-        await Set(id, null, cancellationToken);
-    }
-
-    public async Task CommitAsync(CancellationToken cancellationToken = default)
-    {
-        VerifyNotDisposed();
-        await localStoreService.CommitAsync(cancellationToken);
-    }
-
-    public async Task RollbackAsync(CancellationToken cancellationToken = default)
-    {
-        VerifyNotDisposed();
-        await localStoreService.RollbackAsync(cancellationToken);
+        await WithGateAsync(async () =>
+        {
+            await action().ConfigureAwait(false);
+            return true;
+        }, cancellationToken).ConfigureAwait(false);
     }
 
     protected void Dispose(bool disposing)
     {
         if (disposing)
         {
+            gate.Dispose();
             localStoreService?.Dispose();
         }
     }

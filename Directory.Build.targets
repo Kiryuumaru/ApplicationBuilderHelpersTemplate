@@ -1,0 +1,36 @@
+<Project>
+	<PropertyGroup Condition="'$(GenerateBuildConstants)' == 'true'">
+		<AssemblyName Condition="'$(AssemblyName)' == ''">sampleapp</AssemblyName>
+		<AssemblyTitle Condition="'$(AssemblyTitle)' == ''">Sample Application</AssemblyTitle>
+		<Description Condition="'$(Description)' == ''">Sample Application</Description>
+		<FullVersion Condition="'$(FullVersion)' == ''">0.0.0-prerelease.0+build.local</FullVersion>
+		<InformationalVersion Condition="'$(InformationalVersion)' == ''">$(FullVersion)</InformationalVersion>
+		<AppTag Condition="'$(AppTag)' == ''">prerelease</AppTag>
+		<CredsJsonPath Condition="'$(CredsJsonPath)' == ''">$(MSBuildThisFileDirectory)creds.json</CredsJsonPath>
+		<BaseCommandType Condition="'$(BaseCommandType)' == ''"></BaseCommandType>
+
+		<PublishWmiLightStaticallyLinked>true</PublishWmiLightStaticallyLinked>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(GenerateBuildConstants)' == 'true'">
+		<PackageReference Include="WmiLight" Version="6.19.0" />
+	</ItemGroup>
+
+	<Target Name="GenerateBuildConstantsEvent" BeforeTargets="BeforeCompile" Condition="'$(GenerateBuildConstants)' == 'true'">
+		<PropertyGroup>
+			<_DomainCodeGeneratorDll>$([System.IO.Path]::Combine($(MSBuildThisFileDirectory), 'src', 'Domain.CodeGenerator', $(OutDir), 'Domain.CodeGenerator.dll'))</_DomainCodeGeneratorDll>
+			<_GeneratedFileFullPath>$([System.IO.Path]::Combine($(MSBuildProjectDirectory), $(IntermediateOutputPath), 'GeneratedBuildConstants.cs'))</_GeneratedFileFullPath>
+		</PropertyGroup>
+
+		<Message Text="Using code generator: $(_DomainCodeGeneratorDll)" Importance="high" />
+		<Message Text="Generating build constants file: $(_GeneratedFileFullPath)" Importance="high" />
+
+		<Exec Command="dotnet &quot;$(_DomainCodeGeneratorDll)&quot; --output &quot;$(_GeneratedFileFullPath)&quot; --app-name &quot;$(AssemblyName)&quot; --app-title &quot;$(AssemblyTitle)&quot; --app-description &quot;$(Description)&quot; --version &quot;$(FullVersion)&quot; --app-tag &quot;$(AppTag)&quot; --build-payload-path &quot;$(CredsJsonPath)&quot; --base-command-type &quot;$(BaseCommandType)&quot;" />
+
+		<ItemGroup>
+			<Compile Remove="$(_GeneratedFileFullPath)" />
+			<Compile Include="$(_GeneratedFileFullPath)" />
+		</ItemGroup>
+	</Target>
+
+</Project>

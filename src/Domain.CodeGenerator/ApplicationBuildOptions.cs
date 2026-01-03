@@ -1,0 +1,167 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+
+namespace Domain.CodeGenerator;
+
+sealed record ApplicationBuildOptions(
+    string OutputPath,
+    string PermissionIdsOutputPath,
+    string RoleIdsOutputPath,
+    string AppName,
+    string AppTitle,
+    string AppDescription,
+    string Version,
+    string AppTag,
+    string BuildPayload,
+    string BaseCommandType)
+{
+    public static ApplicationBuildOptions Parse(IReadOnlyList<string> arguments, string baseDirectory)
+    {
+        ArgumentNullException.ThrowIfNull(arguments);
+
+        var options = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        for (var index = 0; index < arguments.Count; index++)
+        {
+            var raw = arguments[index];
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                continue;
+            }
+
+            if (raw == "--")
+            {
+                break;
+            }
+
+            if (!raw.StartsWith("--", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var trimmed = raw[2..];
+            if (string.IsNullOrEmpty(trimmed))
+            {
+                continue;
+            }
+
+            var separatorIndex = trimmed.IndexOf('=');
+            if (separatorIndex >= 0)
+            {
+                var key = trimmed[..separatorIndex];
+                var value = trimmed[(separatorIndex + 1)..];
+                options[key] = value;
+                continue;
+            }
+
+            var valueCandidate = string.Empty;
+            if (index + 1 < arguments.Count)
+            {
+                var next = arguments[index + 1];
+                if (!next.StartsWith("--", StringComparison.Ordinal))
+                {
+                    valueCandidate = next;
+                    index++;
+                }
+            }
+
+            options[trimmed] = valueCandidate;
+        }
+
+        static string GetRequired(IDictionary<string, string> source, params string[] keys)
+        {
+            foreach (var key in keys)
+            {
+                if (source.TryGetValue(key, out var value) && value is not null)
+                {
+                    return value;
+                }
+            }
+
+            throw new InvalidOperationException($"Missing required command line option '{string.Join("|", keys)}'.");
+        }
+
+        static string GetOptional(IDictionary<string, string> source, params string[] keys)
+        {
+            foreach (var key in keys)
+            {
+                if (source.TryGetValue(key, out var value) && value is not null)
+                {
+                    return value;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        var outputPath = GetOptional(options, "output", "o");
+        var absoluteOutputPath = string.IsNullOrWhiteSpace(outputPath)
+            ? string.Empty
+            : Path.GetFullPath(outputPath, baseDirectory);
+
+        var permissionIdsPath = GetOptional(options, "permission-ids-output", "permissionidsoutput");
+        var absolutePermissionIdsPath = string.IsNullOrWhiteSpace(permissionIdsPath)
+            ? string.Empty
+            : Path.GetFullPath(permissionIdsPath, baseDirectory);
+
+        var roleIdsPath = GetOptional(options, "role-ids-output", "roleidsoutput");
+        var absoluteRoleIdsPath = string.IsNullOrWhiteSpace(roleIdsPath)
+            ? string.Empty
+            : Path.GetFullPath(roleIdsPath, baseDirectory);
+
+        var inlinePayload = GetOptional(options, "build-payload", "buildpayload");
+        var payloadPath = GetOptional(options, "build-payload-path", "buildpayloadpath");
+
+        return new ApplicationBuildOptions(
+            absoluteOutputPath,
+            absolutePermissionIdsPath,
+            absoluteRoleIdsPath,
+            GetRequired(options, "app-name", "appname"),
+            GetRequired(options, "app-title", "apptitle"),
+            GetOptional(options, "app-description", "appdescription"),
+            GetRequired(options, "version"),
+            GetRequired(options, "app-tag", "apptag"),
+            ResolveBuildPayload(inlinePayload, payloadPath, baseDirectory),
+            GetOptional(options, "base-command-type", "basecommandtype"));
+    }
+
+    private static string ResolveBuildPayload(string inlineValue, string payloadPath, string baseDirectory)
+    {
+        if (!string.IsNullOrWhiteSpace(inlineValue))
+        {
+            return inlineValue;
+        }
+
+        if (!string.IsNullOrWhiteSpace(payloadPath))
+        {
+            try
+            {
+                var absolutePath = Path.GetFullPath(payloadPath, baseDirectory);
+                if (File.Exists(absolutePath))
+                {
+                    var raw = File.ReadAllText(absolutePath);
+                    if (string.IsNullOrEmpty(raw))
+                    {
+                        raw = "{}";
+                    }
+
+                    var bytes = Encoding.UTF8.GetBytes(raw);
+                    return Convert.ToBase64String(bytes);
+                }
+            }
+            catch (IOException)
+            {
+                // Fallback to default payload when the configured file is unavailable.
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Fallback to default payload when the configured file is inaccessible.
+            }
+        }
+
+        var defaultBytes = Encoding.UTF8.GetBytes("{}");
+        return Convert.ToBase64String(defaultBytes);
+    }
+}

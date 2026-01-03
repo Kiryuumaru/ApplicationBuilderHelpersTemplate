@@ -33,6 +33,78 @@ jobs:
       NUKE_PRE_SETUP_OUTPUT_TEST_MATRIX: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_OUTPUT_TEST_MATRIX }}
       NUKE_PRE_SETUP_OUTPUT_BUILD_MATRIX: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_OUTPUT_BUILD_MATRIX }}
       NUKE_PRE_SETUP_OUTPUT_PUBLISH_MATRIX: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_OUTPUT_PUBLISH_MATRIX }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_CONDITION: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_CONDITION }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_RUNS_ON: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_RUNS_ON }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_RUN_SCRIPT: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_RUN_SCRIPT }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_CACHE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_CACHE_KEY }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_CACHE_RESTORE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_CACHE_RESTORE_KEY }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_CACHE_MAIN_RESTORE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_CACHE_MAIN_RESTORE_KEY }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_CHECKOUT_FETCH_DEPTH: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_CHECKOUT_FETCH_DEPTH }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_CHECKOUT_FETCH_TAGS: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_CHECKOUT_FETCH_TAGS }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_CHECKOUT_SUBMODULES: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_CHECKOUT_SUBMODULES }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_CONDITION: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_CONDITION }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_RUNS_ON: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_RUNS_ON }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_RUN_SCRIPT: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_RUN_SCRIPT }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_CACHE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_CACHE_KEY }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_CACHE_RESTORE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_CACHE_RESTORE_KEY }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_CACHE_MAIN_RESTORE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_CACHE_MAIN_RESTORE_KEY }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_CHECKOUT_FETCH_DEPTH: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_CHECKOUT_FETCH_DEPTH }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_CHECKOUT_FETCH_TAGS: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_CHECKOUT_FETCH_TAGS }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_CHECKOUT_SUBMODULES: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_CHECKOUT_SUBMODULES }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_CONDITION: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_CONDITION }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_RUNS_ON: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_RUNS_ON }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_RUN_SCRIPT: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_RUN_SCRIPT }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_CACHE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_CACHE_KEY }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_CACHE_RESTORE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_CACHE_RESTORE_KEY }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_CACHE_MAIN_RESTORE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_CACHE_MAIN_RESTORE_KEY }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_CHECKOUT_FETCH_DEPTH: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_CHECKOUT_FETCH_DEPTH }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_CHECKOUT_FETCH_TAGS: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_CHECKOUT_FETCH_TAGS }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_CHECKOUT_SUBMODULES: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_CHECKOUT_SUBMODULES }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_CONDITION: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_CONDITION }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_RUNS_ON: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_RUNS_ON }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_RUN_SCRIPT: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_RUN_SCRIPT }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_CACHE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_CACHE_KEY }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_CACHE_RESTORE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_CACHE_RESTORE_KEY }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_CACHE_MAIN_RESTORE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_CACHE_MAIN_RESTORE_KEY }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_CHECKOUT_FETCH_DEPTH: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_CHECKOUT_FETCH_DEPTH }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_CHECKOUT_FETCH_TAGS: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_CHECKOUT_FETCH_TAGS }}
+      NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_CHECKOUT_SUBMODULES: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_CHECKOUT_SUBMODULES }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_CONDITION: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_CONDITION }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_RUNS_ON: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_RUNS_ON }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_RUN_SCRIPT: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_RUN_SCRIPT }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_CACHE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_CACHE_KEY }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_CACHE_RESTORE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_CACHE_RESTORE_KEY }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_CACHE_MAIN_RESTORE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_CACHE_MAIN_RESTORE_KEY }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_CHECKOUT_FETCH_DEPTH: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_CHECKOUT_FETCH_DEPTH }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_CHECKOUT_FETCH_TAGS: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_CHECKOUT_FETCH_TAGS }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_CHECKOUT_SUBMODULES: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_CHECKOUT_SUBMODULES }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_CONDITION: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_CONDITION }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_RUNS_ON: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_RUNS_ON }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_RUN_SCRIPT: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_RUN_SCRIPT }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_CACHE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_CACHE_KEY }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_CACHE_RESTORE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_CACHE_RESTORE_KEY }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_CACHE_MAIN_RESTORE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_CACHE_MAIN_RESTORE_KEY }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_CHECKOUT_FETCH_DEPTH: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_CHECKOUT_FETCH_DEPTH }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_CHECKOUT_FETCH_TAGS: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_CHECKOUT_FETCH_TAGS }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_CHECKOUT_SUBMODULES: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_CHECKOUT_SUBMODULES }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_CONDITION: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_CONDITION }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_RUNS_ON: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_RUNS_ON }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_RUN_SCRIPT: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_RUN_SCRIPT }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_CACHE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_CACHE_KEY }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_CACHE_RESTORE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_CACHE_RESTORE_KEY }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_CACHE_MAIN_RESTORE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_CACHE_MAIN_RESTORE_KEY }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_CHECKOUT_FETCH_DEPTH: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_CHECKOUT_FETCH_DEPTH }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_CHECKOUT_FETCH_TAGS: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_CHECKOUT_FETCH_TAGS }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_CHECKOUT_SUBMODULES: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_CHECKOUT_SUBMODULES }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_CONDITION: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_CONDITION }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_RUNS_ON: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_RUNS_ON }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_RUN_SCRIPT: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_RUN_SCRIPT }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_CACHE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_CACHE_KEY }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_CACHE_RESTORE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_CACHE_RESTORE_KEY }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_CACHE_MAIN_RESTORE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_CACHE_MAIN_RESTORE_KEY }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_CHECKOUT_FETCH_DEPTH: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_CHECKOUT_FETCH_DEPTH }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_CHECKOUT_FETCH_TAGS: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_CHECKOUT_FETCH_TAGS }}
+      NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_CHECKOUT_SUBMODULES: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_CHECKOUT_SUBMODULES }}
       NUKE_PRE_SETUP_BUILDENTRY_CONDITION: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_BUILDENTRY_CONDITION }}
       NUKE_PRE_SETUP_BUILDENTRY_RUNS_ON: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_BUILDENTRY_RUNS_ON }}
       NUKE_PRE_SETUP_BUILDENTRY_RUN_SCRIPT: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_BUILDENTRY_RUN_SCRIPT }}
@@ -42,15 +114,6 @@ jobs:
       NUKE_PRE_SETUP_BUILDENTRY_CHECKOUT_FETCH_DEPTH: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_BUILDENTRY_CHECKOUT_FETCH_DEPTH }}
       NUKE_PRE_SETUP_BUILDENTRY_CHECKOUT_FETCH_TAGS: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_BUILDENTRY_CHECKOUT_FETCH_TAGS }}
       NUKE_PRE_SETUP_BUILDENTRY_CHECKOUT_SUBMODULES: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_BUILDENTRY_CHECKOUT_SUBMODULES }}
-      NUKE_PRE_SETUP_TESTENTRY_CONDITION: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TESTENTRY_CONDITION }}
-      NUKE_PRE_SETUP_TESTENTRY_RUNS_ON: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TESTENTRY_RUNS_ON }}
-      NUKE_PRE_SETUP_TESTENTRY_RUN_SCRIPT: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TESTENTRY_RUN_SCRIPT }}
-      NUKE_PRE_SETUP_TESTENTRY_CACHE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TESTENTRY_CACHE_KEY }}
-      NUKE_PRE_SETUP_TESTENTRY_CACHE_RESTORE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TESTENTRY_CACHE_RESTORE_KEY }}
-      NUKE_PRE_SETUP_TESTENTRY_CACHE_MAIN_RESTORE_KEY: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TESTENTRY_CACHE_MAIN_RESTORE_KEY }}
-      NUKE_PRE_SETUP_TESTENTRY_CHECKOUT_FETCH_DEPTH: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TESTENTRY_CHECKOUT_FETCH_DEPTH }}
-      NUKE_PRE_SETUP_TESTENTRY_CHECKOUT_FETCH_TAGS: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TESTENTRY_CHECKOUT_FETCH_TAGS }}
-      NUKE_PRE_SETUP_TESTENTRY_CHECKOUT_SUBMODULES: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_TESTENTRY_CHECKOUT_SUBMODULES }}
       NUKE_PRE_SETUP_PUBLISHENTRY_CONDITION: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_PUBLISHENTRY_CONDITION }}
       NUKE_PRE_SETUP_PUBLISHENTRY_RUNS_ON: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_PUBLISHENTRY_RUNS_ON }}
       NUKE_PRE_SETUP_PUBLISHENTRY_RUN_SCRIPT: ${{ steps.NUKE_RUN.outputs.NUKE_PRE_SETUP_PUBLISHENTRY_RUN_SCRIPT }}
@@ -70,6 +133,11 @@ jobs:
         fetch-tags: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_BUILDENTRY_CHECKOUT_FETCH_TAGS }}
         submodules: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_BUILDENTRY_CHECKOUT_SUBMODULES }}
         persist-credentials: true
+    - name: Download sample_app pre_test artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./.nuke/temp/artifacts-download
+        pattern: pre_test___sample_app___*
     - name: Cache Run
       uses: actions/cache@v4
       with:
@@ -81,11 +149,18 @@ jobs:
     - id: NUKE_RUN
       name: Run Nuke BuildEntry
       run: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_BUILDENTRY_RUN_SCRIPT }} Run --args "BuildEntry"
-    - name: Upload Artifacts
+    - name: Upload sample_app build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: build___sample_app___BUILDENTRY
-        path: ./.nuke/temp/artifacts-upload/*
+        path: ./.nuke/temp/artifacts-upload/sample_app/*
+        if-no-files-found: error
+        retention-days: 1
+    - name: Upload common build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build___$common___BUILDENTRY
+        path: ./.nuke/temp/artifacts-upload/$common/*
         if-no-files-found: error
         retention-days: 1
     needs:
@@ -93,35 +168,412 @@ jobs:
     if: "! failure() && ! cancelled() && needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_BUILDENTRY_CONDITION == 'true'"
     env:
       NUKE_PRE_SETUP: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP }}
-  TESTENTRY:
-    name: Test - sample_app (TestEntry)
-    runs-on: ${{ fromJson(needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TESTENTRY_RUNS_ON) }}
+  TEST_WINDOWS_2022_DOMAIN_UNITTESTS:
+    name: Test Domain.UnitTests on windows-2022
+    runs-on: ${{ fromJson(needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_RUNS_ON) }}
     steps:
     - uses: actions/checkout@v4
       with:
-        fetch-depth: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TESTENTRY_CHECKOUT_FETCH_DEPTH }}
-        fetch-tags: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TESTENTRY_CHECKOUT_FETCH_TAGS }}
-        submodules: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TESTENTRY_CHECKOUT_SUBMODULES }}
+        fetch-depth: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_CHECKOUT_FETCH_DEPTH }}
+        fetch-tags: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_CHECKOUT_FETCH_TAGS }}
+        submodules: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_CHECKOUT_SUBMODULES }}
         persist-credentials: true
-    - name: Download Artifacts
+    - name: Download sample_app pre_test artifacts
       uses: actions/download-artifact@v4
       with:
         path: ./.nuke/temp/artifacts-download
+        pattern: pre_test___sample_app___*
+    - name: Download sample_app build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./.nuke/temp/artifacts-download
+        pattern: build___sample_app___*
     - name: Cache Run
       uses: actions/cache@v4
       with:
         path: ./.nuke/temp/cache
-        key: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TESTENTRY_CACHE_KEY }}
+        key: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_CACHE_KEY }}
         restore-keys: |-
-          ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TESTENTRY_CACHE_RESTORE_KEY }}
-          ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TESTENTRY_CACHE_MAIN_RESTORE_KEY }}
+          ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_CACHE_RESTORE_KEY }}
+          ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_CACHE_MAIN_RESTORE_KEY }}
     - id: NUKE_RUN
-      name: Run Nuke TestEntry
-      run: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TESTENTRY_RUN_SCRIPT }} Run --args "TestEntry"
+      name: Run Nuke test_windows_2022_domain_unittests
+      run: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_RUN_SCRIPT }} Run --args "test_windows_2022_domain_unittests"
+    - name: Upload sample_app post_test artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: post_test___sample_app___TEST_WINDOWS_2022_DOMAIN_UNITTESTS
+        path: ./.nuke/temp/artifacts-upload/sample_app/*
+        if-no-files-found: error
+        retention-days: 1
+    - name: Upload common post_test artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: post_test___$common___TEST_WINDOWS_2022_DOMAIN_UNITTESTS
+        path: ./.nuke/temp/artifacts-upload/$common/*
+        if-no-files-found: error
+        retention-days: 1
     needs:
     - PRE_SETUP
     - BUILDENTRY
-    if: "! failure() && ! cancelled() && needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TESTENTRY_CONDITION == 'true' && needs.BUILDENTRY.result == 'success'"
+    if: "! failure() && ! cancelled() && needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_CONDITION == 'true' && needs.BUILDENTRY.result == 'success'"
+    env:
+      NUKE_PRE_SETUP: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP }}
+  TEST_WINDOWS_2022_APPLICATION_UNITTESTS:
+    name: Test Application.UnitTests on windows-2022
+    runs-on: ${{ fromJson(needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_RUNS_ON) }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_CHECKOUT_FETCH_DEPTH }}
+        fetch-tags: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_CHECKOUT_FETCH_TAGS }}
+        submodules: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_CHECKOUT_SUBMODULES }}
+        persist-credentials: true
+    - name: Download sample_app pre_test artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./.nuke/temp/artifacts-download
+        pattern: pre_test___sample_app___*
+    - name: Download sample_app build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./.nuke/temp/artifacts-download
+        pattern: build___sample_app___*
+    - name: Cache Run
+      uses: actions/cache@v4
+      with:
+        path: ./.nuke/temp/cache
+        key: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_CACHE_KEY }}
+        restore-keys: |-
+          ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_CACHE_RESTORE_KEY }}
+          ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_CACHE_MAIN_RESTORE_KEY }}
+    - id: NUKE_RUN
+      name: Run Nuke test_windows_2022_application_unittests
+      run: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_RUN_SCRIPT }} Run --args "test_windows_2022_application_unittests"
+    - name: Upload sample_app post_test artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: post_test___sample_app___TEST_WINDOWS_2022_APPLICATION_UNITTESTS
+        path: ./.nuke/temp/artifacts-upload/sample_app/*
+        if-no-files-found: error
+        retention-days: 1
+    - name: Upload common post_test artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: post_test___$common___TEST_WINDOWS_2022_APPLICATION_UNITTESTS
+        path: ./.nuke/temp/artifacts-upload/$common/*
+        if-no-files-found: error
+        retention-days: 1
+    needs:
+    - PRE_SETUP
+    - BUILDENTRY
+    if: "! failure() && ! cancelled() && needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_CONDITION == 'true' && needs.BUILDENTRY.result == 'success'"
+    env:
+      NUKE_PRE_SETUP: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP }}
+  TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS:
+    name: Test Application.IntegrationTests on windows-2022
+    runs-on: ${{ fromJson(needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_RUNS_ON) }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_CHECKOUT_FETCH_DEPTH }}
+        fetch-tags: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_CHECKOUT_FETCH_TAGS }}
+        submodules: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_CHECKOUT_SUBMODULES }}
+        persist-credentials: true
+    - name: Download sample_app pre_test artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./.nuke/temp/artifacts-download
+        pattern: pre_test___sample_app___*
+    - name: Download sample_app build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./.nuke/temp/artifacts-download
+        pattern: build___sample_app___*
+    - name: Cache Run
+      uses: actions/cache@v4
+      with:
+        path: ./.nuke/temp/cache
+        key: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_CACHE_KEY }}
+        restore-keys: |-
+          ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_CACHE_RESTORE_KEY }}
+          ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_CACHE_MAIN_RESTORE_KEY }}
+    - id: NUKE_RUN
+      name: Run Nuke test_windows_2022_application_integrationtests
+      run: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_RUN_SCRIPT }} Run --args "test_windows_2022_application_integrationtests"
+    - name: Upload sample_app post_test artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: post_test___sample_app___TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS
+        path: ./.nuke/temp/artifacts-upload/sample_app/*
+        if-no-files-found: error
+        retention-days: 1
+    - name: Upload common post_test artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: post_test___$common___TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS
+        path: ./.nuke/temp/artifacts-upload/$common/*
+        if-no-files-found: error
+        retention-days: 1
+    needs:
+    - PRE_SETUP
+    - BUILDENTRY
+    if: "! failure() && ! cancelled() && needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS_CONDITION == 'true' && needs.BUILDENTRY.result == 'success'"
+    env:
+      NUKE_PRE_SETUP: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP }}
+  TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS:
+    name: Test Presentation.FunctionalTests on windows-2022
+    runs-on: ${{ fromJson(needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_RUNS_ON) }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_CHECKOUT_FETCH_DEPTH }}
+        fetch-tags: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_CHECKOUT_FETCH_TAGS }}
+        submodules: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_CHECKOUT_SUBMODULES }}
+        persist-credentials: true
+    - name: Download sample_app pre_test artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./.nuke/temp/artifacts-download
+        pattern: pre_test___sample_app___*
+    - name: Download sample_app build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./.nuke/temp/artifacts-download
+        pattern: build___sample_app___*
+    - name: Cache Run
+      uses: actions/cache@v4
+      with:
+        path: ./.nuke/temp/cache
+        key: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_CACHE_KEY }}
+        restore-keys: |-
+          ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_CACHE_RESTORE_KEY }}
+          ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_CACHE_MAIN_RESTORE_KEY }}
+    - id: NUKE_RUN
+      name: Run Nuke test_windows_2022_presentation_functionaltests
+      run: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_RUN_SCRIPT }} Run --args "test_windows_2022_presentation_functionaltests"
+    - name: Upload sample_app post_test artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: post_test___sample_app___TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS
+        path: ./.nuke/temp/artifacts-upload/sample_app/*
+        if-no-files-found: error
+        retention-days: 1
+    - name: Upload common post_test artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: post_test___$common___TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS
+        path: ./.nuke/temp/artifacts-upload/$common/*
+        if-no-files-found: error
+        retention-days: 1
+    needs:
+    - PRE_SETUP
+    - BUILDENTRY
+    if: "! failure() && ! cancelled() && needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS_CONDITION == 'true' && needs.BUILDENTRY.result == 'success'"
+    env:
+      NUKE_PRE_SETUP: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP }}
+  TEST_UBUNTU_22_04_DOMAIN_UNITTESTS:
+    name: Test Domain.UnitTests on ubuntu-22.04
+    runs-on: ${{ fromJson(needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_RUNS_ON) }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_CHECKOUT_FETCH_DEPTH }}
+        fetch-tags: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_CHECKOUT_FETCH_TAGS }}
+        submodules: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_CHECKOUT_SUBMODULES }}
+        persist-credentials: true
+    - name: Download sample_app pre_test artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./.nuke/temp/artifacts-download
+        pattern: pre_test___sample_app___*
+    - name: Download sample_app build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./.nuke/temp/artifacts-download
+        pattern: build___sample_app___*
+    - name: Cache Run
+      uses: actions/cache@v4
+      with:
+        path: ./.nuke/temp/cache
+        key: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_CACHE_KEY }}
+        restore-keys: |-
+          ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_CACHE_RESTORE_KEY }}
+          ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_CACHE_MAIN_RESTORE_KEY }}
+    - id: NUKE_RUN
+      name: Run Nuke test_ubuntu_22_04_domain_unittests
+      run: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_RUN_SCRIPT }} Run --args "test_ubuntu_22_04_domain_unittests"
+    - name: Upload sample_app post_test artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: post_test___sample_app___TEST_UBUNTU_22_04_DOMAIN_UNITTESTS
+        path: ./.nuke/temp/artifacts-upload/sample_app/*
+        if-no-files-found: error
+        retention-days: 1
+    - name: Upload common post_test artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: post_test___$common___TEST_UBUNTU_22_04_DOMAIN_UNITTESTS
+        path: ./.nuke/temp/artifacts-upload/$common/*
+        if-no-files-found: error
+        retention-days: 1
+    needs:
+    - PRE_SETUP
+    - BUILDENTRY
+    if: "! failure() && ! cancelled() && needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_CONDITION == 'true' && needs.BUILDENTRY.result == 'success'"
+    env:
+      NUKE_PRE_SETUP: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP }}
+  TEST_UBUNTU_22_04_APPLICATION_UNITTESTS:
+    name: Test Application.UnitTests on ubuntu-22.04
+    runs-on: ${{ fromJson(needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_RUNS_ON) }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_CHECKOUT_FETCH_DEPTH }}
+        fetch-tags: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_CHECKOUT_FETCH_TAGS }}
+        submodules: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_CHECKOUT_SUBMODULES }}
+        persist-credentials: true
+    - name: Download sample_app pre_test artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./.nuke/temp/artifacts-download
+        pattern: pre_test___sample_app___*
+    - name: Download sample_app build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./.nuke/temp/artifacts-download
+        pattern: build___sample_app___*
+    - name: Cache Run
+      uses: actions/cache@v4
+      with:
+        path: ./.nuke/temp/cache
+        key: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_CACHE_KEY }}
+        restore-keys: |-
+          ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_CACHE_RESTORE_KEY }}
+          ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_CACHE_MAIN_RESTORE_KEY }}
+    - id: NUKE_RUN
+      name: Run Nuke test_ubuntu_22_04_application_unittests
+      run: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_RUN_SCRIPT }} Run --args "test_ubuntu_22_04_application_unittests"
+    - name: Upload sample_app post_test artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: post_test___sample_app___TEST_UBUNTU_22_04_APPLICATION_UNITTESTS
+        path: ./.nuke/temp/artifacts-upload/sample_app/*
+        if-no-files-found: error
+        retention-days: 1
+    - name: Upload common post_test artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: post_test___$common___TEST_UBUNTU_22_04_APPLICATION_UNITTESTS
+        path: ./.nuke/temp/artifacts-upload/$common/*
+        if-no-files-found: error
+        retention-days: 1
+    needs:
+    - PRE_SETUP
+    - BUILDENTRY
+    if: "! failure() && ! cancelled() && needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_CONDITION == 'true' && needs.BUILDENTRY.result == 'success'"
+    env:
+      NUKE_PRE_SETUP: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP }}
+  TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS:
+    name: Test Application.IntegrationTests on ubuntu-22.04
+    runs-on: ${{ fromJson(needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_RUNS_ON) }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_CHECKOUT_FETCH_DEPTH }}
+        fetch-tags: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_CHECKOUT_FETCH_TAGS }}
+        submodules: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_CHECKOUT_SUBMODULES }}
+        persist-credentials: true
+    - name: Download sample_app pre_test artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./.nuke/temp/artifacts-download
+        pattern: pre_test___sample_app___*
+    - name: Download sample_app build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./.nuke/temp/artifacts-download
+        pattern: build___sample_app___*
+    - name: Cache Run
+      uses: actions/cache@v4
+      with:
+        path: ./.nuke/temp/cache
+        key: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_CACHE_KEY }}
+        restore-keys: |-
+          ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_CACHE_RESTORE_KEY }}
+          ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_CACHE_MAIN_RESTORE_KEY }}
+    - id: NUKE_RUN
+      name: Run Nuke test_ubuntu_22_04_application_integrationtests
+      run: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_RUN_SCRIPT }} Run --args "test_ubuntu_22_04_application_integrationtests"
+    - name: Upload sample_app post_test artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: post_test___sample_app___TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS
+        path: ./.nuke/temp/artifacts-upload/sample_app/*
+        if-no-files-found: error
+        retention-days: 1
+    - name: Upload common post_test artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: post_test___$common___TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS
+        path: ./.nuke/temp/artifacts-upload/$common/*
+        if-no-files-found: error
+        retention-days: 1
+    needs:
+    - PRE_SETUP
+    - BUILDENTRY
+    if: "! failure() && ! cancelled() && needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS_CONDITION == 'true' && needs.BUILDENTRY.result == 'success'"
+    env:
+      NUKE_PRE_SETUP: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP }}
+  TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS:
+    name: Test Presentation.FunctionalTests on ubuntu-22.04
+    runs-on: ${{ fromJson(needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_RUNS_ON) }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_CHECKOUT_FETCH_DEPTH }}
+        fetch-tags: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_CHECKOUT_FETCH_TAGS }}
+        submodules: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_CHECKOUT_SUBMODULES }}
+        persist-credentials: true
+    - name: Download sample_app pre_test artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./.nuke/temp/artifacts-download
+        pattern: pre_test___sample_app___*
+    - name: Download sample_app build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./.nuke/temp/artifacts-download
+        pattern: build___sample_app___*
+    - name: Cache Run
+      uses: actions/cache@v4
+      with:
+        path: ./.nuke/temp/cache
+        key: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_CACHE_KEY }}
+        restore-keys: |-
+          ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_CACHE_RESTORE_KEY }}
+          ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_CACHE_MAIN_RESTORE_KEY }}
+    - id: NUKE_RUN
+      name: Run Nuke test_ubuntu_22_04_presentation_functionaltests
+      run: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_RUN_SCRIPT }} Run --args "test_ubuntu_22_04_presentation_functionaltests"
+    - name: Upload sample_app post_test artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: post_test___sample_app___TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS
+        path: ./.nuke/temp/artifacts-upload/sample_app/*
+        if-no-files-found: error
+        retention-days: 1
+    - name: Upload common post_test artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: post_test___$common___TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS
+        path: ./.nuke/temp/artifacts-upload/$common/*
+        if-no-files-found: error
+        retention-days: 1
+    needs:
+    - PRE_SETUP
+    - BUILDENTRY
+    if: "! failure() && ! cancelled() && needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS_CONDITION == 'true' && needs.BUILDENTRY.result == 'success'"
     env:
       NUKE_PRE_SETUP: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP }}
   PUBLISHENTRY:
@@ -134,11 +586,21 @@ jobs:
         fetch-tags: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_PUBLISHENTRY_CHECKOUT_FETCH_TAGS }}
         submodules: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_PUBLISHENTRY_CHECKOUT_SUBMODULES }}
         persist-credentials: true
-    - name: Download artifacts
+    - name: Download sample_app pre_test artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./.nuke/temp/artifacts-download
+        pattern: pre_test___sample_app___*
+    - name: Download sample_app build artifacts
       uses: actions/download-artifact@v4
       with:
         path: ./.nuke/temp/artifacts-download
         pattern: build___sample_app___*
+    - name: Download sample_app post_test artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./.nuke/temp/artifacts-download
+        pattern: post_test___sample_app___*
     - name: Cache Run
       uses: actions/cache@v4
       with:
@@ -150,18 +612,25 @@ jobs:
     - id: NUKE_RUN
       name: Run Nuke PublishEntry
       run: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_PUBLISHENTRY_RUN_SCRIPT }} Run --args "PublishEntry"
-    - name: Upload Artifacts
+    - name: Upload common publish artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: publish___sample_app___PUBLISHENTRY
-        path: ./.nuke/temp/artifacts-upload/*
+        name: publish___$common___PUBLISHENTRY
+        path: ./.nuke/temp/artifacts-upload/$common/*
         if-no-files-found: error
         retention-days: 1
     needs:
     - PRE_SETUP
     - BUILDENTRY
-    - TESTENTRY
-    if: "! failure() && ! cancelled() && needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_PUBLISHENTRY_CONDITION == 'true' && needs.BUILDENTRY.result == 'success' && needs.TESTENTRY.result == 'success'"
+    - TEST_WINDOWS_2022_DOMAIN_UNITTESTS
+    - TEST_WINDOWS_2022_APPLICATION_UNITTESTS
+    - TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS
+    - TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS
+    - TEST_UBUNTU_22_04_DOMAIN_UNITTESTS
+    - TEST_UBUNTU_22_04_APPLICATION_UNITTESTS
+    - TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS
+    - TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS
+    if: "! failure() && ! cancelled() && needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_PUBLISHENTRY_CONDITION == 'true' && needs.BUILDENTRY.result == 'success' && needs.TEST_WINDOWS_2022_DOMAIN_UNITTESTS.result == 'success' && needs.TEST_WINDOWS_2022_APPLICATION_UNITTESTS.result == 'success' && needs.TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS.result == 'success' && needs.TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS.result == 'success' && needs.TEST_UBUNTU_22_04_DOMAIN_UNITTESTS.result == 'success' && needs.TEST_UBUNTU_22_04_APPLICATION_UNITTESTS.result == 'success' && needs.TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS.result == 'success' && needs.TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS.result == 'success'"
     env:
       NUKE_PRE_SETUP: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP }}
   POST_SETUP:
@@ -175,25 +644,40 @@ jobs:
         fetch-tags: true
         submodules: recursive
         persist-credentials: true
-    - name: Download Artifacts
+    - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
         path: ./.nuke/temp/artifacts-download
-        pattern: publish___*
+        pattern: '*___*'
     - name: Run Nuke PipelinePostSetup
       run: chmod +x ./build.sh && ./build.sh PipelinePostSetup
     needs:
     - PRE_SETUP
     - BUILDENTRY
-    - TESTENTRY
+    - TEST_WINDOWS_2022_DOMAIN_UNITTESTS
+    - TEST_WINDOWS_2022_APPLICATION_UNITTESTS
+    - TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS
+    - TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS
+    - TEST_UBUNTU_22_04_DOMAIN_UNITTESTS
+    - TEST_UBUNTU_22_04_APPLICATION_UNITTESTS
+    - TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS
+    - TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS
     - PUBLISHENTRY
     if: success() || failure() || always()
     timeout-minutes: 30
     env:
       NUKE_PRE_SETUP: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP }}
+      NUKE_RUN_RESULT_GITHUB_TEST_WINDOWS_2022_DOMAIN_UNITTESTS: ${{ needs.TEST_WINDOWS_2022_DOMAIN_UNITTESTS.result }}
+      NUKE_RUN_RESULT_GITHUB_TEST_WINDOWS_2022_APPLICATION_UNITTESTS: ${{ needs.TEST_WINDOWS_2022_APPLICATION_UNITTESTS.result }}
+      NUKE_RUN_RESULT_GITHUB_TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS: ${{ needs.TEST_WINDOWS_2022_APPLICATION_INTEGRATIONTESTS.result }}
+      NUKE_RUN_RESULT_GITHUB_TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS: ${{ needs.TEST_WINDOWS_2022_PRESENTATION_FUNCTIONALTESTS.result }}
+      NUKE_RUN_RESULT_GITHUB_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS: ${{ needs.TEST_UBUNTU_22_04_DOMAIN_UNITTESTS.result }}
+      NUKE_RUN_RESULT_GITHUB_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS: ${{ needs.TEST_UBUNTU_22_04_APPLICATION_UNITTESTS.result }}
+      NUKE_RUN_RESULT_GITHUB_TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS: ${{ needs.TEST_UBUNTU_22_04_APPLICATION_INTEGRATIONTESTS.result }}
+      NUKE_RUN_RESULT_GITHUB_TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS: ${{ needs.TEST_UBUNTU_22_04_PRESENTATION_FUNCTIONALTESTS.result }}
       NUKE_RUN_RESULT_GITHUB_BUILDENTRY: ${{ needs.BUILDENTRY.result }}
-      NUKE_RUN_RESULT_GITHUB_TESTENTRY: ${{ needs.TESTENTRY.result }}
       NUKE_RUN_RESULT_GITHUB_PUBLISHENTRY: ${{ needs.PUBLISHENTRY.result }}
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   NUKE_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  NUKE_APPLICATION_CREDENTIALS: ${{ secrets.APPLICATION_CREDENTIALS }}

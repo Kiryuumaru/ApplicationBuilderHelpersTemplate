@@ -1,0 +1,143 @@
+using System;
+using System.Collections.Generic;
+using System.Security.Claims;
+using System.Threading;
+using System.Threading.Tasks;
+using Application.Authorization.Models;
+using Domain.Authorization.Models;
+
+namespace Application.Authorization.Interfaces;
+
+/// <summary>
+/// Coordinates permission metadata and token issuance using <see cref="IJwtTokenService"/>.
+/// </summary>
+public interface IPermissionService
+{
+    /// <summary>
+    /// Gets the root permission tree defined in <see cref="Domain.Authorization.Constants.Permissions"/>.
+    /// </summary>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A hierarchical collection of permissions rooted at the cloud scope.</returns>
+    Task<IReadOnlyCollection<Permission>> GetPermissionTreeAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets the flat list of permission identifiers (paths) available for assignment.
+    /// </summary>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>The complete set of permission identifiers.</returns>
+    Task<IReadOnlyCollection<string>> GetAllPermissionIdentifiersAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Validates that the provided permission identifiers exist in the canonical permission set.
+    /// </summary>
+    /// <param name="permissionIdentifiers">Identifiers to validate.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns><c>true</c> when the identifiers are all recognized; otherwise <c>false</c>.</returns>
+    Task<bool> ValidatePermissionsAsync(IEnumerable<string> permissionIdentifiers, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Issues a JWT token containing the supplied permission claims via <see cref="IJwtTokenService"/>.
+    /// </summary>
+    /// <param name="userId">The unique identifier for the principal.</param>
+    /// <param name="username">The display name for the principal.</param>
+    /// <param name="permissionIdentifiers">Permission identifiers to embed as claims.</param>
+    /// <param name="additionalClaims">Additional claims to include in the token beyond permissions.</param>
+    /// <param name="expiration">Optional expiration override for the delegated token.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A signed JWT token string.</returns>
+    Task<string> GenerateTokenWithPermissionsAsync(
+        string userId,
+        string username,
+        IEnumerable<string> permissionIdentifiers,
+        IEnumerable<Claim>? additionalClaims = null,
+        DateTimeOffset? expiration = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Issues an API key token containing the supplied permission claims via <see cref="IJwtTokenService"/>.
+    /// </summary>
+    /// <param name="apiKeyName">The friendly name for the API key principal.</param>
+    /// <param name="permissionIdentifiers">Permission identifiers to embed as claims.</param>
+    /// <param name="additionalClaims">Additional claims to include alongside the API key metadata.</param>
+    /// <param name="expiration">Optional expiration override for the delegated token.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A signed JWT token string suitable for API key authentication.</returns>
+    Task<string> GenerateApiKeyTokenWithPermissionsAsync(
+        string apiKeyName,
+        IEnumerable<string> permissionIdentifiers,
+        IEnumerable<Claim>? additionalClaims = null,
+        DateTimeOffset? expiration = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Resolves the canonical <see cref="Permission"/> objects for the provided identifiers.
+    /// </summary>
+    /// <param name="permissionIdentifiers">Identifiers to resolve.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>The matching permission objects.</returns>
+    Task<IReadOnlyCollection<Permission>> ResolvePermissionsAsync(
+        IEnumerable<string> permissionIdentifiers,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Determines whether the specified principal holds the provided permission claim.
+    /// </summary>
+    /// <param name="principal">The principal to evaluate.</param>
+    /// <param name="permissionIdentifier">The permission identifier to check.</param>
+    /// <returns><c>true</c> when the principal has the permission; otherwise <c>false</c>.</returns>
+    bool HasPermission(ClaimsPrincipal principal, string permissionIdentifier);
+
+    /// <summary>
+    /// Determines whether the principal holds any of the supplied permissions.
+    /// </summary>
+    /// <param name="principal">The principal to evaluate.</param>
+    /// <param name="permissionIdentifiers">The permission identifiers to check.</param>
+    /// <returns><c>true</c> when any permission is present; otherwise <c>false</c>.</returns>
+    bool HasAnyPermission(ClaimsPrincipal principal, IEnumerable<string> permissionIdentifiers);
+
+    /// <summary>
+    /// Determines whether the principal holds all of the supplied permissions.
+    /// </summary>
+    /// <param name="principal">The principal to evaluate.</param>
+    /// <param name="permissionIdentifiers">The permission identifiers to check.</param>
+    /// <returns><c>true</c> when all permissions are present; otherwise <c>false</c>.</returns>
+    bool HasAllPermissions(ClaimsPrincipal principal, IEnumerable<string> permissionIdentifiers);
+
+    /// <summary>
+    /// Validates a JWT token using the configured <see cref="IJwtTokenService"/> pipeline.
+    /// </summary>
+    /// <param name="token">Token string to validate.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns><see cref="ClaimsPrincipal"/> when validation succeeds; otherwise <c>null</c>.</returns>
+    Task<ClaimsPrincipal?> ValidateTokenAsync(string token, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Decodes a JWT token without validation for inspection purposes.
+    /// </summary>
+    /// <param name="token">Token string to decode.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Token metadata when decoding succeeds; otherwise <c>null</c>.</returns>
+    Task<TokenInfo?> DecodeTokenAsync(string token, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Mutates an existing token by adding or removing permissions and arbitrary claims before reissuing it.
+    /// </summary>
+    /// <param name="token">The token to mutate.</param>
+    /// <param name="permissionsToAdd">Permission identifiers to append to the token as scope claims.</param>
+    /// <param name="permissionsToRemove">Permission identifiers to remove from the token.</param>
+    /// <param name="claimsToAdd">Additional non-scope claims to append to the token.</param>
+    /// <param name="claimsToRemove">Specific non-scope claims (type/value pairs) to remove from the token.</param>
+    /// <param name="claimTypesToRemove">Claim types to remove from the token (all values; identity and scope claims are protected).</param>
+    /// <param name="expiration">Optional expiration override for the reissued token.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The reissued token string containing the requested modifications.</returns>
+    Task<string> MutateTokenAsync(
+        string token,
+        IEnumerable<string>? permissionsToAdd = null,
+        IEnumerable<string>? permissionsToRemove = null,
+        IEnumerable<Claim>? claimsToAdd = null,
+        IEnumerable<Claim>? claimsToRemove = null,
+        IEnumerable<string>? claimTypesToRemove = null,
+        DateTimeOffset? expiration = null,
+        CancellationToken cancellationToken = default);
+}
