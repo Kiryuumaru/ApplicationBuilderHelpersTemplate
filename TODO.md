@@ -1,27 +1,14 @@
-# TODO: Auth & Identity - DDD and Clean Architecture Improvements
+# TODO: DDD and Clean Architecture Improvements
 
 ## Current Problems
 
-### 1. God Service Anti-Pattern
-`IIdentityService` has 25 methods handling too many responsibilities.
-
-### 2. ASP.NET Identity Coupling
-Application layer directly uses `UserManager<User>` and `SignInManager<User>`.
-
-### 3. Granular Stores (Not Aggregates)
-5 separate store interfaces instead of repositories per aggregate root.
-
-### 4. Infrastructure Interfaces in Application
-JWT, HTTP client, and factory interfaces don't belong in Application layer.
-
-### 5. Anemic Domain Model
-Business rules scattered in Application services instead of Domain.
-
-### 6. No Access Control on Repositories
-Repositories are public and can be injected by any consumer, breaking encapsulation.
-
-### 7. Leaking Domain Entities
-Public services return mutable `User` entities. Consumers can modify entities directly, bypassing business rules.
+1. **God Service**: `IIdentityService` has 25+ methods covering registration, authentication, 2FA, sessions, password management
+2. **Granular Stores**: 5 separate store interfaces (`IUserStore`, `ISessionStore`, `IPasskeyCredentialStore`, `IPasskeyChallengeStore`, `IExternalLoginStore`) - too fine-grained
+3. **Mixed Concerns**: `IIdentityService` handles both application logic AND data access coordination
+4. **Infrastructure Interfaces in Application**: Public infrastructure interfaces (factories, stores) live in Application - violates ignorance
+5. **ASP.NET Identity Coupling**: `IdentityService` directly uses ASP.NET Identity's `UserManager`, `SignInManager` in Application layer
+6. **Duplicate Interfaces**: `IRoleLookup` duplicates `IRoleRepository` functionality
+7. **Domain Entities Exposed**: Public services return mutable domain entities instead of DTOs
 
 ---
 
@@ -30,64 +17,57 @@ Public services return mutable `User` entities. Consumers can modify entities di
 ```
 Application/
 ├── Identity/
-│   ├── Interfaces/                              # namespace Application.Identity.Interfaces
-│   │   ├── IUserRegistrationService.cs          # public
-│   │   ├── IAuthenticationService.cs            # public
-│   │   ├── IPasswordService.cs                  # public
-│   │   ├── ITwoFactorService.cs                 # public
-│   │   ├── IUserProfileService.cs               # public
-│   │   ├── IUserRoleService.cs                  # public
-│   │   ├── IPasskeyService.cs                   # public (keep)
-│   │   ├── IOAuthService.cs                     # public (keep)
-│   │   ├── IAnonymousUserCleanupService.cs      # public (keep)
-│   │   │
-│   │   └── Internal/                            # namespace Application.Identity.Interfaces.Internal
-│   │       ├── IUserRepository.cs               # internal
-│   │       ├── ISessionRepository.cs            # internal
-│   │       └── IPasskeyRepository.cs            # internal
-│   │
-│   ├── Models/                                  # namespace Application.Identity.Models
-│   │   ├── UserRegistrationRequest.cs
-│   │   ├── AuthenticationResult.cs
-│   │   ├── UserDto.cs                           # Read-only DTO for User
-│   │   ├── UserSessionDto.cs                    # Read-only DTO for Session
-│   │   └── ...
-│   │
-│   └── Services/                                # namespace Application.Identity.Services
-│       ├── UserRegistrationService.cs           # implements IUserRegistrationService
-│       ├── AuthenticationService.cs             # implements IAuthenticationService
-│       └── ...
+│   ├── Interfaces/
+│   │   ├── IUserRegistrationService.cs      (public)
+│   │   ├── IAuthenticationService.cs        (public)
+│   │   ├── IPasswordService.cs              (public)
+│   │   ├── ITwoFactorService.cs             (public)
+│   │   ├── IUserProfileService.cs           (public)
+│   │   ├── IUserRoleService.cs              (public)
+│   │   ├── IPasskeyService.cs               (public)
+│   │   ├── IOAuthService.cs                 (public)
+│   │   ├── IAnonymousUserCleanupService.cs  (public)
+│   │   └── Infrastructure/
+│   │       ├── IUserRepository.cs           (internal)
+│   │       ├── ISessionRepository.cs        (internal)
+│   │       └── IPasskeyRepository.cs        (internal)
+│   └── Models/
+│       ├── UserDto.cs
+│       ├── ExternalLoginDto.cs
+│       ├── UserSessionDto.cs
+│       ├── AuthenticationResult.cs
+│       └── TwoFactorSetupInfo.cs
 │
 ├── Authorization/
-│   ├── Interfaces/                              # namespace Application.Authorization.Interfaces
-│   │   ├── IRoleService.cs                      # public (keep)
-│   │   ├── IPermissionService.cs                # public (keep)
-│   │   ├── IUserRoleResolver.cs                 # public (keep)
-│   │   ├── ITokenService.cs                     # public (new - abstract)
-│   │   │
-│   │   └── Internal/                            # namespace Application.Authorization.Interfaces.Internal
-│   │       └── IRoleRepository.cs               # internal
-│   │
-│   ├── Models/
-│   │   └── ...
-│   │
-│   └── Services/
-│       └── ...
-│
-└── AssemblyInfo.cs                              # InternalsVisibleTo declarations
+│   ├── Interfaces/
+│   │   ├── IRoleService.cs                  (public)
+│   │   ├── IPermissionService.cs            (public)
+│   │   ├── IUserRoleResolver.cs             (public)
+│   │   ├── ITokenService.cs                 (public)
+│   │   ├── Infrastructure/
+│   │   │   └── IRoleRepository.cs           (internal)
+│   │   └── Application/
+│   │       └── IAuthorizedHttpClientFactory.cs (internal)
+│   └── Models/
+│       └── TokenValidationResult.cs
 ```
 
-## Assembly Access Control
+### Folder Naming Convention
+
+- `Interfaces/` - Public interfaces for external consumers
+- `Interfaces/Infrastructure/` - Internal interfaces implemented by Infrastructure projects
+- `Interfaces/Application/` - Internal interfaces implemented by Application layer services (cross-service utilities)
+- `Models/` - DTOs and result types
+
+### Assembly Access Control
 
 ```csharp
-// Application/AssemblyInfo.cs
-[assembly: InternalsVisibleTo("Infrastructure.EFCore")]
+// In Application/AssemblyInfo.cs
 [assembly: InternalsVisibleTo("Infrastructure.EFCore.Identity")]
-[assembly: InternalsVisibleTo("Application.UnitTests")]
-[assembly: InternalsVisibleTo("Application.IntegrationTests")]
+[assembly: InternalsVisibleTo("Application.Tests")]
 ```
 
-## Consumer Usage
+### Consumer Usage
 
 ```csharp
 // ✅ Consumers can inject public services
@@ -98,8 +78,8 @@ public class OrderController(
     IAuthenticationService auth           // ✅ public - allowed
 ) { }
 
-// ❌ Consumers CANNOT inject internal repositories
-using Application.Identity.Interfaces.Internal;  // Namespace exists but...
+// ❌ Consumers CANNOT inject infrastructure interfaces
+using Application.Identity.Interfaces.Infrastructure;  // Namespace exists but...
 
 public class OrderController(
     IUserRepository repo                  // ❌ Compile error - internal
@@ -124,7 +104,7 @@ public class OrderController(
 | `IOAuthService` | 5 | Keep as-is |
 | `IAnonymousUserCleanupService` | 1 | Keep as-is |
 
-### Application/Identity/Interfaces/Internal/ (internal)
+### Application/Identity/Interfaces/Infrastructure/ (internal)
 
 | Interface | Source |
 |-----------|--------|
@@ -141,19 +121,24 @@ public class OrderController(
 | `IUserRoleResolver` | Keep |
 | `ITokenService` | New - abstract token operations |
 
-### Application/Authorization/Interfaces/Internal/ (internal)
+### Application/Authorization/Interfaces/Infrastructure/ (internal)
 
 | Interface | Action |
 |-----------|--------|
 | `IRoleRepository` | Keep (absorb IRoleLookup) |
 
-### Move to Infrastructure
+### Application/Authorization/Interfaces/Application/ (internal)
 
-| Interface | Move To |
-|-----------|---------|
-| `IJwtTokenService` | Infrastructure.Jwt |
-| `IJwtTokenServiceFactory` | Infrastructure.Jwt |
-| `IAuthorizedHttpClientFactory` | Infrastructure |
+| Interface | Action |
+|-----------|--------|
+| `IAuthorizedHttpClientFactory` | Internal utility for Application services |
+
+### Move to Infrastructure (implementation only)
+
+| Interface | Implemented In | Reason |
+|-----------|----------------|--------|
+| `IJwtTokenService` | `Infrastructure.EFCore.Identity` | JWT implementation detail |
+| `IJwtTokenServiceFactory` | `Infrastructure.EFCore.Identity` | JWT implementation detail |
 
 ### Delete
 
@@ -166,7 +151,7 @@ public class OrderController(
 
 ## Detailed Interface Definitions
 
-### DTOs (namespace Application.Identity.Models)
+### Identity DTOs (namespace Application.Identity.Models)
 
 Public services return **DTOs (read-only)**, not domain entities. This prevents consumers from modifying entities directly.
 
@@ -219,6 +204,23 @@ public sealed record TwoFactorSetupInfo(
     string SharedKey,
     string AuthenticatorUri,
     string QrCodeDataUri
+);
+```
+
+### Authorization DTOs (namespace Application.Authorization.Models)
+
+```csharp
+namespace Application.Authorization.Models;
+
+/// <summary>
+/// Result of token validation.
+/// </summary>
+public sealed record TokenValidationResult(
+    bool IsValid,
+    Guid? UserId,
+    Guid? SessionId,
+    IReadOnlyCollection<string>? Roles,
+    string? ErrorMessage
 );
 ```
 
@@ -309,11 +311,11 @@ public interface IUserRoleService
 }
 ```
 
-### Internal Repositories (namespace Application.Identity.Interfaces.Internal)
+### Identity Infrastructure Interfaces (namespace Application.Identity.Interfaces.Infrastructure)
 
 **IUserRepository (11 methods) - internal**
 ```csharp
-namespace Application.Identity.Interfaces.Internal;
+namespace Application.Identity.Interfaces.Infrastructure;
 
 internal interface IUserRepository
 {
@@ -336,7 +338,7 @@ internal interface IUserRepository
 
 **ISessionRepository (8 methods) - internal**
 ```csharp
-namespace Application.Identity.Interfaces.Internal;
+namespace Application.Identity.Interfaces.Infrastructure;
 
 internal interface ISessionRepository
 {
@@ -353,7 +355,7 @@ internal interface ISessionRepository
 
 **IPasskeyRepository (10 methods) - internal**
 ```csharp
-namespace Application.Identity.Interfaces.Internal;
+namespace Application.Identity.Interfaces.Infrastructure;
 
 internal interface IPasskeyRepository
 {
@@ -373,7 +375,7 @@ internal interface IPasskeyRepository
 }
 ```
 
-### Authorization (namespace Application.Authorization.Interfaces)
+### Authorization Public Interfaces (namespace Application.Authorization.Interfaces)
 
 **ITokenService (3 methods) - public, new**
 ```csharp
@@ -385,19 +387,13 @@ public interface ITokenService
     Task<string> GenerateRefreshTokenAsync(Guid sessionId, CancellationToken ct);
     Task<TokenValidationResult> ValidateTokenAsync(string token, CancellationToken ct);
 }
-
-public sealed record TokenValidationResult(
-    bool IsValid,
-    Guid? UserId,
-    Guid? SessionId,
-    IReadOnlyCollection<string>? Roles,
-    string? ErrorMessage
-);
 ```
 
-**IRoleRepository - internal (namespace Application.Authorization.Interfaces.Internal)**
+### Authorization Infrastructure Interfaces (namespace Application.Authorization.Interfaces.Infrastructure)
+
+**IRoleRepository - internal**
 ```csharp
-namespace Application.Authorization.Interfaces.Internal;
+namespace Application.Authorization.Interfaces.Infrastructure;
 
 internal interface IRoleRepository
 {
@@ -410,15 +406,33 @@ internal interface IRoleRepository
 }
 ```
 
+### Authorization Application Interfaces (namespace Application.Authorization.Interfaces.Application)
+
+**IAuthorizedHttpClientFactory - internal**
+```csharp
+namespace Application.Authorization.Interfaces.Application;
+
+/// <summary>
+/// Internal utility for Application services to create HTTP clients with authorization.
+/// Implemented by Application layer services, not Infrastructure.
+/// </summary>
+internal interface IAuthorizedHttpClientFactory
+{
+    HttpClient CreateClient(string name);
+    HttpClient CreateAuthorizedClient(Guid userId, IReadOnlyCollection<string> roles);
+}
+```
+
 ---
 
 ## Implementation Phases
 
 ### Phase 1: Folder & Namespace Reorganization
-- [ ] Create `Application/Identity/Interfaces/` folder
-- [ ] Create `Application/Identity/Interfaces/Internal/` folder
-- [ ] Create `Application/Authorization/Interfaces/` folder
-- [ ] Create `Application/Authorization/Interfaces/Internal/` folder
+- [ ] Create `Application/Identity/Interfaces/Infrastructure/` folder
+- [ ] Create `Application/Authorization/Interfaces/Infrastructure/` folder
+- [ ] Create `Application/Authorization/Interfaces/Application/` folder
+- [ ] Create `Application/Identity/Models/` folder
+- [ ] Create `Application/Authorization/Models/` folder
 - [ ] Add `InternalsVisibleTo` in `Application/AssemblyInfo.cs`
 - [ ] Move existing interfaces to new locations with updated namespaces
 
@@ -426,29 +440,35 @@ internal interface IRoleRepository
 - [ ] Create 6 new service interfaces (split from IIdentityService)
 - [ ] Create 3 merged repository interfaces (internal)
 - [ ] Create ITokenService abstraction (public)
+- [ ] Move IAuthorizedHttpClientFactory to Authorization/Interfaces/Application/
 - [ ] Mark all repository interfaces as `internal`
-- [ ] Move JWT interfaces to Infrastructure.Jwt
+- [ ] Move JWT interfaces to `Infrastructure.EFCore.Identity`
 - [ ] Delete IRoleLookup, IPermissionServiceFactory
 
-### Phase 3: Service Implementation
-- [ ] Implement 6 new services (delegate to existing IdentityService initially)
-- [ ] Implement merged repositories
+### Phase 3: DTO Creation
+- [ ] Create Identity DTOs in Application.Identity.Models
+- [ ] Create Authorization DTOs in Application.Authorization.Models
+- [ ] Update service interfaces to return DTOs instead of entities
+
+### Phase 4: Service Implementation
+- [ ] Implement 6 new services in `Infrastructure.EFCore.Identity` (delegate to existing IdentityService initially)
+- [ ] Implement merged repositories in `Infrastructure.EFCore.Identity`
 - [ ] Update DI registrations
 - [ ] Keep IIdentityService as deprecated facade
 
-### Phase 4: ASP.NET Identity Abstraction
-- [ ] Create IPasswordHasher interface
-- [ ] Create IAuthenticatorService interface
-- [ ] Create Infrastructure.Identity project
-- [ ] Move ASP.NET Identity usage to infrastructure
+### Phase 5: ASP.NET Identity Abstraction
+- [ ] Create IPasswordHasher interface in Application
+- [ ] Create IAuthenticatorService interface in Application
+- [ ] Implement abstractions in `Infrastructure.EFCore.Identity`
+- [ ] Move ASP.NET Identity usage fully to `Infrastructure.EFCore.Identity`
 
-### Phase 5: Domain Enrichment
+### Phase 6: Domain Enrichment
 - [ ] Add value objects: Username, Email, Password
 - [ ] Add domain events
 - [ ] Move business rules to User entity
 - [ ] Create domain services
 
-### Phase 6: Cleanup
+### Phase 7: Cleanup
 - [ ] Remove IIdentityService
 - [ ] Remove granular store interfaces
 - [ ] Update all consumers to new services
@@ -460,10 +480,12 @@ internal interface IRoleRepository
 | Category | Before | After |
 |----------|--------|-------|
 | Identity Public Services | 4 (1 god + 3 focused) | 9 (all focused) |
-| Identity Internal Repos | 5 (public, granular) | 3 (internal, per aggregate) |
+| Identity Infrastructure Interfaces | 5 (public, granular) | 3 (internal repos) |
 | Authorization Public Services | 3 | 4 (+ITokenService) |
-| Authorization Internal Repos | 2 (public, duplicate) | 1 (internal) |
+| Authorization Infrastructure Interfaces | 2 (public, duplicate) | 1 (internal) |
+| Authorization Application Interfaces | 0 | 1 (IAuthorizedHttpClientFactory) |
 | **Total Public Interfaces** | **9** | **13** |
-| **Total Internal Interfaces** | **0** | **4** |
-| Moved to Infrastructure | - | 3 |
-| Deleted | - | 2 |
+| **Total Internal Interfaces** | **0** | **5** (3 identity repos + 1 auth repo + 1 auth utility) |
+| JWT interfaces | In Application | Moved to `Infrastructure.EFCore.Identity` |
+| Deleted | - | 2 (IRoleLookup, IPermissionServiceFactory) |
+| **New Projects** | - | **0** (use existing) |
