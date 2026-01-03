@@ -1,4 +1,5 @@
 using Application.Authorization.Interfaces;
+using Application.Authorization.Interfaces.Infrastructure;
 using Application.Authorization.Models;
 using Application.Authorization.Services;
 using Microsoft.IdentityModel.Tokens;

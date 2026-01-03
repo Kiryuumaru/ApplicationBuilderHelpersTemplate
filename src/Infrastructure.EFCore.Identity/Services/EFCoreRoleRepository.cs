@@ -1,74 +1,148 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Application.Authorization.Interfaces;
+using Application.Authorization.Interfaces.Infrastructure;
 using Domain.Authorization.Models;
 using Microsoft.EntityFrameworkCore;
+using RolesConstants = Domain.Authorization.Constants.Roles;
 
 namespace Infrastructure.EFCore.Identity.Services;
 
-public sealed class EFCoreRoleRepository(EFCoreDbContext dbContext) : IRoleRepository
+/// <summary>
+/// EF Core implementation of the internal IRoleRepository.
+/// Checks static/system roles from domain constants first, then falls back to database.
+/// </summary>
+internal sealed class EFCoreRoleRepository(IDbContextFactory<EFCoreDbContext> contextFactory) : IRoleRepository
 {
-    private readonly EFCoreDbContext _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
-
     public async Task<Role?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        return await _dbContext.Set<Role>().FindAsync([id], cancellationToken);
+        // Check static roles first
+        if (RolesConstants.TryGetById(id, out var staticRole))
+        {
+            return staticRole;
+        }
+
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        return await context.Set<Role>().FindAsync([id], cancellationToken);
     }
 
     public async Task<Role?> GetByCodeAsync(string code, CancellationToken cancellationToken)
     {
+        // Check static roles first
+        if (RolesConstants.TryGetByCode(code, out var staticRole))
+        {
+            return staticRole;
+        }
+
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         var normalizedCode = code.Trim().ToUpperInvariant();
-        return await _dbContext.Set<Role>()
+        return await context.Set<Role>()
             .FirstOrDefaultAsync(r => r.Code == normalizedCode, cancellationToken);
     }
 
     public async Task<IReadOnlyCollection<Role>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(ids);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var idList = ids
-            .Distinct()
-            .ToArray();
+        var idList = ids.Distinct().ToArray();
         if (idList.Length == 0)
         {
-            return Array.Empty<Role>();
+            return [];
         }
 
-        return await _dbContext.Set<Role>()
-            .Where(r => idList.Contains(r.Id))
-            .ToListAsync(cancellationToken);
+        var result = new Dictionary<Guid, Role>();
+        var remainingIds = new List<Guid>();
+
+        // Check static roles first
+        foreach (var id in idList)
+        {
+            if (RolesConstants.TryGetById(id, out var staticRole))
+            {
+                result[id] = staticRole;
+            }
+            else
+            {
+                remainingIds.Add(id);
+            }
+        }
+
+        // Query database for non-static roles
+        if (remainingIds.Count > 0)
+        {
+            await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+            var dbRoles = await context.Set<Role>()
+                .Where(r => remainingIds.Contains(r.Id))
+                .ToListAsync(cancellationToken);
+            
+            foreach (var role in dbRoles)
+            {
+                result[role.Id] = role;
+            }
+        }
+
+        return [.. result.Values];
     }
 
     public async Task<IReadOnlyCollection<Role>> ListAsync(CancellationToken cancellationToken)
     {
-        return await _dbContext.Set<Role>().ToListAsync(cancellationToken);
+        var result = new Dictionary<Guid, Role>();
+
+        // Add all static roles first
+        foreach (var role in RolesConstants.AllRoles)
+        {
+            result[role.Id] = role;
+        }
+
+        // Add database roles (excluding duplicates of static roles)
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        var dbRoles = await context.Set<Role>().ToListAsync(cancellationToken);
+        foreach (var role in dbRoles)
+        {
+            if (!RolesConstants.IsStaticRole(role.Id))
+            {
+                result[role.Id] = role;
+            }
+        }
+
+        return [.. result.Values];
     }
 
     public async Task SaveAsync(Role role, CancellationToken cancellationToken)
     {
-        var existing = await _dbContext.Set<Role>().FindAsync([role.Id], cancellationToken);
-        if (existing == null)
+        // Static roles cannot be saved - they are defined in code
+        if (RolesConstants.IsStaticRole(role.Id))
         {
-            _dbContext.Set<Role>().Add(role);
+            throw new InvalidOperationException($"Cannot save static role '{role.Code}'. Static roles are defined in code.");
+        }
+
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        
+        var existing = await context.Set<Role>().FindAsync([role.Id], cancellationToken);
+        if (existing is null)
+        {
+            context.Set<Role>().Add(role);
         }
         else
         {
-            _dbContext.Entry(existing).CurrentValues.SetValues(role);
+            context.Entry(existing).CurrentValues.SetValues(role);
         }
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        
+        await context.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
-        var role = await _dbContext.Set<Role>().FindAsync([id], cancellationToken);
-        if (role == null) return false;
+        // Static roles cannot be deleted
+        if (RolesConstants.IsStaticRole(id))
+        {
+            throw new InvalidOperationException($"Cannot delete static role. Static roles are defined in code.");
+        }
+
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         
-        _dbContext.Set<Role>().Remove(role);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        var role = await context.Set<Role>().FindAsync([id], cancellationToken);
+        if (role is null)
+        {
+            return false;
+        }
+
+        context.Set<Role>().Remove(role);
+        await context.SaveChangesAsync(cancellationToken);
         return true;
     }
 }

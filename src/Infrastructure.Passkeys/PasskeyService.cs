@@ -1,4 +1,5 @@
 using Application.Identity.Interfaces;
+using Application.Identity.Interfaces.Infrastructure;
 using Application.Identity.Models;
 using Domain.Identity.Enums;
 using Domain.Identity.Models;
@@ -11,12 +12,11 @@ namespace Infrastructure.Passkeys;
 /// <summary>
 /// Passkey service implementation using Fido2.AspNet library.
 /// </summary>
-public class PasskeyService : IPasskeyService
+internal class PasskeyService : IPasskeyService
 {
     private readonly IFido2 _fido2;
-    private readonly IPasskeyChallengeStore _challengeStore;
-    private readonly IPasskeyCredentialStore _credentialStore;
-    private readonly IUserStore _userStore;
+    private readonly IPasskeyRepository _passkeyRepository;
+    private readonly IUserRepository _userRepository;
     private readonly JsonSerializerOptions _jsonOptions;
 
     // Temporary storage for credential names during registration flow
@@ -24,14 +24,12 @@ public class PasskeyService : IPasskeyService
 
     public PasskeyService(
         IFido2 fido2,
-        IPasskeyChallengeStore challengeStore,
-        IPasskeyCredentialStore credentialStore,
-        IUserStore userStore)
+        IPasskeyRepository passkeyRepository,
+        IUserRepository userRepository)
     {
         _fido2 = fido2 ?? throw new ArgumentNullException(nameof(fido2));
-        _challengeStore = challengeStore ?? throw new ArgumentNullException(nameof(challengeStore));
-        _credentialStore = credentialStore ?? throw new ArgumentNullException(nameof(credentialStore));
-        _userStore = userStore ?? throw new ArgumentNullException(nameof(userStore));
+        _passkeyRepository = passkeyRepository ?? throw new ArgumentNullException(nameof(passkeyRepository));
+        _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         _jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
     }
 
@@ -40,11 +38,11 @@ public class PasskeyService : IPasskeyService
         string credentialName,
         CancellationToken cancellationToken)
     {
-        var user = await _userStore.FindByIdAsync(userId, cancellationToken)
+        var user = await _userRepository.FindByIdAsync(userId, cancellationToken)
             ?? throw new InvalidOperationException($"User {userId} not found");
 
         // Get existing credentials to exclude
-        var existingCredentials = await _credentialStore.GetByUserIdAsync(userId, cancellationToken);
+        var existingCredentials = await _passkeyRepository.GetCredentialsByUserIdAsync(userId, cancellationToken);
         var excludeCredentials = existingCredentials
             .Select(c => new PublicKeyCredentialDescriptor(c.CredentialId))
             .ToList();
@@ -73,7 +71,7 @@ public class PasskeyService : IPasskeyService
             PasskeyChallengeType.Registration,
             options.ToJson());
 
-        await _challengeStore.SaveAsync(challenge, cancellationToken);
+        await _passkeyRepository.SaveChallengeAsync(challenge, cancellationToken);
 
         // Store the credential name for later
         _pendingCredentialNames[challenge.Id] = credentialName;
@@ -87,7 +85,7 @@ public class PasskeyService : IPasskeyService
         CancellationToken cancellationToken)
     {
         // Get the stored challenge
-        var challenge = await _challengeStore.GetByIdAsync(challengeId, cancellationToken)
+        var challenge = await _passkeyRepository.GetChallengeByIdAsync(challengeId, cancellationToken)
             ?? throw new InvalidOperationException("Challenge not found or expired");
 
         if (challenge.Type != PasskeyChallengeType.Registration)
@@ -95,7 +93,7 @@ public class PasskeyService : IPasskeyService
 
         if (challenge.IsExpired())
         {
-            await _challengeStore.DeleteAsync(challengeId, cancellationToken);
+            await _passkeyRepository.DeleteChallengeAsync(challengeId, cancellationToken);
             throw new InvalidOperationException("Challenge has expired");
         }
 
@@ -118,7 +116,7 @@ public class PasskeyService : IPasskeyService
             IsCredentialIdUniqueToUserCallback = async (args, ct) =>
             {
                 // Check if credential already exists
-                var existing = await _credentialStore.GetByCredentialIdAsync(args.CredentialId, ct);
+                var existing = await _passkeyRepository.GetCredentialByCredentialIdAsync(args.CredentialId, ct);
                 return existing == null;
             }
         }, cancellationToken);
@@ -142,10 +140,10 @@ public class PasskeyService : IPasskeyService
             result.User.Id,
             result.AttestationFormat);
 
-        await _credentialStore.SaveAsync(credential, cancellationToken);
+        await _passkeyRepository.SaveCredentialAsync(credential, cancellationToken);
 
         // Delete the used challenge
-        await _challengeStore.DeleteAsync(challengeId, cancellationToken);
+        await _passkeyRepository.DeleteChallengeAsync(challengeId, cancellationToken);
 
         return new PasskeyRegistrationResult(credential.Id, credential.Name);
     }
@@ -159,11 +157,11 @@ public class PasskeyService : IPasskeyService
 
         if (!string.IsNullOrEmpty(username))
         {
-            var user = await _userStore.FindByUsernameAsync(username, cancellationToken);
+            var user = await _userRepository.FindByUsernameAsync(username, cancellationToken);
             if (user != null)
             {
                 userId = user.Id;
-                var credentials = await _credentialStore.GetByUserIdAsync(user.Id, cancellationToken);
+                var credentials = await _passkeyRepository.GetCredentialsByUserIdAsync(user.Id, cancellationToken);
                 allowedCredentials = credentials
                     .Select(c => new PublicKeyCredentialDescriptor(c.CredentialId))
                     .ToList();
@@ -184,7 +182,7 @@ public class PasskeyService : IPasskeyService
             PasskeyChallengeType.Authentication,
             options.ToJson());
 
-        await _challengeStore.SaveAsync(challenge, cancellationToken);
+        await _passkeyRepository.SaveChallengeAsync(challenge, cancellationToken);
 
         return new PasskeyRequestOptions(challenge.Id, options.ToJson());
     }
@@ -195,7 +193,7 @@ public class PasskeyService : IPasskeyService
         CancellationToken cancellationToken)
     {
         // Get the stored challenge
-        var challenge = await _challengeStore.GetByIdAsync(challengeId, cancellationToken)
+        var challenge = await _passkeyRepository.GetChallengeByIdAsync(challengeId, cancellationToken)
             ?? throw new InvalidOperationException("Challenge not found or expired");
 
         if (challenge.Type != PasskeyChallengeType.Authentication)
@@ -203,7 +201,7 @@ public class PasskeyService : IPasskeyService
 
         if (challenge.IsExpired())
         {
-            await _challengeStore.DeleteAsync(challengeId, cancellationToken);
+            await _passkeyRepository.DeleteChallengeAsync(challengeId, cancellationToken);
             throw new InvalidOperationException("Challenge has expired");
         }
 
@@ -216,7 +214,7 @@ public class PasskeyService : IPasskeyService
             ?? throw new InvalidOperationException("Invalid assertion response");
 
         // Find the credential
-        var credential = await _credentialStore.GetByCredentialIdAsync(assertionResponse.RawId, cancellationToken)
+        var credential = await _passkeyRepository.GetCredentialByCredentialIdAsync(assertionResponse.RawId, cancellationToken)
             ?? throw new InvalidOperationException("Credential not found");
 
         // Verify the assertion
@@ -242,26 +240,40 @@ public class PasskeyService : IPasskeyService
         
         // Update the sign count
         credential.UpdateSignCount(result.SignCount);
-        await _credentialStore.UpdateAsync(credential, cancellationToken);
+        await _passkeyRepository.UpdateCredentialAsync(credential, cancellationToken);
 
         // Delete the used challenge
-        await _challengeStore.DeleteAsync(challengeId, cancellationToken);
+        await _passkeyRepository.DeleteChallengeAsync(challengeId, cancellationToken);
 
         // Get the user
-        var user = await _userStore.FindByIdAsync(credential.UserId, cancellationToken)
+        var user = await _userRepository.FindByIdAsync(credential.UserId, cancellationToken)
             ?? throw new InvalidOperationException($"User {credential.UserId} not found");
 
         // Create a session using the user's method
-        var session = user.CreateSession(TimeSpan.FromHours(24)); // Default 24 hour session
+        var domainSession = user.CreateSession(TimeSpan.FromHours(24)); // Default 24 hour session
 
-        return new PasskeyLoginResult(session, credential.Id);
+        // Convert to DTO (tokens will be set by the caller)
+        var sessionDto = new Application.Identity.Models.UserSessionDto
+        {
+            SessionId = Guid.NewGuid(),
+            UserId = domainSession.UserId,
+            Username = domainSession.Username,
+            IsAnonymous = domainSession.IsAnonymous,
+            AccessToken = string.Empty, // Will be set by caller
+            RefreshToken = string.Empty, // Will be set by caller
+            IssuedAt = domainSession.IssuedAt,
+            ExpiresAt = domainSession.ExpiresAt,
+            Roles = domainSession.RoleCodes.ToArray()
+        };
+
+        return new PasskeyLoginResult(sessionDto, credential.Id);
     }
 
     public async Task<IReadOnlyCollection<PasskeyInfo>> ListPasskeysAsync(
         Guid userId,
         CancellationToken cancellationToken)
     {
-        var credentials = await _credentialStore.GetByUserIdAsync(userId, cancellationToken);
+        var credentials = await _passkeyRepository.GetCredentialsByUserIdAsync(userId, cancellationToken);
         return credentials
             .Select(c => new PasskeyInfo(c.Id, c.Name, c.RegisteredAt, c.LastUsedAt))
             .OrderByDescending(c => c.RegisteredAt)
@@ -274,14 +286,14 @@ public class PasskeyService : IPasskeyService
         string newName,
         CancellationToken cancellationToken)
     {
-        var credential = await _credentialStore.GetByIdAsync(credentialId, cancellationToken)
+        var credential = await _passkeyRepository.GetCredentialByIdAsync(credentialId, cancellationToken)
             ?? throw new InvalidOperationException("Passkey not found");
 
         if (credential.UserId != userId)
             throw new UnauthorizedAccessException("You can only rename your own passkeys");
 
         credential.Rename(newName);
-        await _credentialStore.UpdateAsync(credential, cancellationToken);
+        await _passkeyRepository.UpdateCredentialAsync(credential, cancellationToken);
     }
 
     public async Task RevokePasskeyAsync(
@@ -289,12 +301,12 @@ public class PasskeyService : IPasskeyService
         Guid credentialId,
         CancellationToken cancellationToken)
     {
-        var credential = await _credentialStore.GetByIdAsync(credentialId, cancellationToken)
+        var credential = await _passkeyRepository.GetCredentialByIdAsync(credentialId, cancellationToken)
             ?? throw new InvalidOperationException("Passkey not found");
 
         if (credential.UserId != userId)
             throw new UnauthorizedAccessException("You can only revoke your own passkeys");
 
-        await _credentialStore.DeleteAsync(credentialId, cancellationToken);
+        await _passkeyRepository.DeleteCredentialAsync(credentialId, cancellationToken);
     }
 }

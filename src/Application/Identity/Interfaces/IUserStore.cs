@@ -2,6 +2,11 @@ using Domain.Identity.Models;
 
 namespace Application.Identity.Interfaces;
 
+/// <summary>
+/// Legacy interface for user persistence.
+/// Use IUserRepository from Application.Identity.Interfaces.Infrastructure instead.
+/// </summary>
+[Obsolete("Use IUserRepository from Application.Identity.Interfaces.Infrastructure instead. This interface will be removed in a future version.")]
 public interface IUserStore
 {
     Task<User?> FindByIdAsync(Guid id, CancellationToken cancellationToken);

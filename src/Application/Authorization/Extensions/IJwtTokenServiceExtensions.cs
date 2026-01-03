@@ -1,4 +1,4 @@
-using Application.Authorization.Interfaces;
+using Application.Authorization.Interfaces.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Application.Authorization.Extensions;
 
-public static class IJwtTokenServiceExtensions
+internal static class IJwtTokenServiceExtensions
 {
     public static Task<string> GenerateToken(
         this IJwtTokenService jwtTokenService,
@@ -56,6 +56,6 @@ public static class IJwtTokenServiceExtensions
             claimsToAdd: claimsToAdd,
             claimsToRemove: claimsToRemove,
             claimTypesToRemove: claimTypesToRemove,
-            expiration: expiration.HasValue ? DateTimeOffset.UtcNow.Add(expiration.Value) : null,
+            expiration: expiration.HasValue ? (DateTimeOffset?)DateTimeOffset.UtcNow.Add(expiration.Value) : null,
             cancellationToken: cancellationToken);
 }

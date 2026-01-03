@@ -17,7 +17,6 @@ public partial class AuthController
     /// </summary>
     /// <param name="userId">The user ID.</param>
     /// <param name="request">The password change details including current and new password.</param>
-    /// <param name="identityService">The identity service.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Success status.</returns>
     /// <response code="204">Password changed successfully.</response>
@@ -31,12 +30,11 @@ public partial class AuthController
     public async Task<IActionResult> ChangePassword(
         [FromRoute, Required, PermissionParameter(PermissionIds.Api.Auth.UserIdParameter)] Guid userId,
         [FromBody] ChangePasswordRequest request,
-        [FromServices] IIdentityService identityService,
         CancellationToken cancellationToken)
     {
         try
         {
-            await identityService.ChangePasswordAsync(userId, request.CurrentPassword, request.NewPassword, cancellationToken);
+            await passwordService.ChangePasswordAsync(userId, request.CurrentPassword, request.NewPassword, cancellationToken);
             return NoContent();
         }
         catch (UnauthorizedAccessException)
@@ -74,7 +72,7 @@ public partial class AuthController
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken cancellationToken)
     {
-        var token = await identityService.GeneratePasswordResetTokenAsync(request.Email, cancellationToken);
+        var token = await passwordService.GeneratePasswordResetTokenAsync(request.Email, cancellationToken);
         
         if (token is not null)
         {
@@ -105,7 +103,7 @@ public partial class AuthController
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken cancellationToken)
     {
-        var success = await identityService.ResetPasswordWithTokenAsync(
+        var success = await passwordService.ResetPasswordWithTokenAsync(
             request.Email, 
             request.Token, 
             request.NewPassword, 

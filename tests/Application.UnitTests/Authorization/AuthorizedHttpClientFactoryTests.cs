@@ -44,7 +44,7 @@ public class AuthorizedHttpClientFactoryTests
 			httpClientFactory: httpClientFactory,
 			permissionService: permissionService);
 
-		var client = await factory.CreateAuthorized("client-A", permissions, expiration, CancellationToken.None);
+		var client = await factory.CreateAuthorizedAsync("client-A", permissions, expiration, CancellationToken.None);
 
 		Assert.Equal("Bearer", client.DefaultRequestHeaders.Authorization?.Scheme);
 		Assert.Equal("api-token-value", client.DefaultRequestHeaders.Authorization?.Parameter);

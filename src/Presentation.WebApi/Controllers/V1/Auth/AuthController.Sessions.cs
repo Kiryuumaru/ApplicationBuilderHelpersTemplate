@@ -28,7 +28,7 @@ public partial class AuthController
         CancellationToken cancellationToken)
     {
         var currentSessionId = GetCurrentSessionId();
-        var sessions = await sessionStore.GetActiveByUserIdAsync(userId, cancellationToken);
+        var sessions = await sessionService.GetActiveByUserIdAsync(userId, cancellationToken);
 
         var sessionInfos = sessions.Select(s => new SessionInfoResponse
         {
@@ -65,7 +65,7 @@ public partial class AuthController
         CancellationToken cancellationToken)
     {
         // Verify the session belongs to the specified user
-        var session = await sessionStore.GetByIdAsync(id, cancellationToken);
+        var session = await sessionService.GetByIdAsync(id, cancellationToken);
         if (session is null || session.UserId != userId)
         {
             return NotFound(new ProblemDetails
@@ -76,7 +76,7 @@ public partial class AuthController
             });
         }
 
-        await sessionStore.RevokeAsync(id, cancellationToken);
+        await sessionService.RevokeAsync(id, cancellationToken);
         return NoContent();
     }
 
@@ -96,7 +96,7 @@ public partial class AuthController
         [FromRoute, Required, PermissionParameter(PermissionIds.Api.Auth.UserIdParameter)] Guid userId,
         CancellationToken cancellationToken)
     {
-        var revokedCount = await sessionStore.RevokeAllForUserAsync(userId, cancellationToken);
+        var revokedCount = await sessionService.RevokeAllForUserAsync(userId, cancellationToken);
         return Ok(new SessionRevokeAllResponse { RevokedCount = revokedCount });
     }
 

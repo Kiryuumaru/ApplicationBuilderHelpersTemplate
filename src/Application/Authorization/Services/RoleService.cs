@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Application.Authorization.Interfaces;
+using Application.Authorization.Interfaces.Infrastructure;
 using Application.Authorization.Models;
 using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;

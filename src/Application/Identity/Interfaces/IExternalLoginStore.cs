@@ -4,8 +4,10 @@ using Domain.Identity.Enums;
 namespace Application.Identity.Interfaces;
 
 /// <summary>
-/// Store for managing external login links between users and OAuth providers.
+/// Legacy store for managing external login links between users and OAuth providers.
+/// Use IUserRepository from Application.Identity.Interfaces.Infrastructure instead.
 /// </summary>
+[Obsolete("Use IUserRepository from Application.Identity.Interfaces.Infrastructure instead. This interface will be removed in a future version.")]
 public interface IExternalLoginStore
 {
     /// <summary>

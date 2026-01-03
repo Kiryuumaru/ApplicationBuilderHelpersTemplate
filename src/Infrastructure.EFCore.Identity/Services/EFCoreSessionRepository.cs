@@ -1,4 +1,4 @@
-using Application.Identity.Interfaces;
+using Application.Identity.Interfaces.Infrastructure;
 using Domain.Identity.Models;
 using Infrastructure.EFCore.Identity.Models;
 using Microsoft.EntityFrameworkCore;
@@ -6,39 +6,31 @@ using Microsoft.EntityFrameworkCore;
 namespace Infrastructure.EFCore.Identity.Services;
 
 /// <summary>
-/// EF Core implementation of the session store.
+/// EF Core implementation of ISessionRepository.
+/// Renamed from EFCoreSessionStore to follow repository naming convention.
 /// </summary>
-public class EFCoreSessionStore(EFCoreDbContext dbContext) : ISessionStore
+internal sealed class EFCoreSessionRepository(IDbContextFactory<EFCoreDbContext> contextFactory) : ISessionRepository
 {
-    private readonly EFCoreDbContext _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
-
-    private DbSet<LoginSessionEntity> Sessions => _dbContext.Set<LoginSessionEntity>();
-
     public async Task CreateAsync(LoginSession session, CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        ArgumentNullException.ThrowIfNull(session);
-
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         var entity = MapToEntity(session);
-        Sessions.Add(entity);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        context.Set<LoginSessionEntity>().Add(entity);
+        await context.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<LoginSession?> GetByIdAsync(Guid sessionId, CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var entity = await Sessions.FindAsync([sessionId], cancellationToken);
-        return entity == null ? null : MapToDomain(entity);
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        var entity = await context.Set<LoginSessionEntity>().FindAsync([sessionId], cancellationToken);
+        return entity is null ? null : MapToDomain(entity);
     }
 
     public async Task<IReadOnlyCollection<LoginSession>> GetActiveByUserIdAsync(Guid userId, CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        // Load user's non-revoked sessions, then filter and sort in memory
-        // This is necessary because SQLite doesn't handle DateTimeOffset in WHERE or ORDER BY clauses
-        var entities = await Sessions
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        
+        var entities = await context.Set<LoginSessionEntity>()
             .Where(s => s.UserId == userId && !s.IsRevoked)
             .ToListAsync(cancellationToken);
 
@@ -52,96 +44,88 @@ public class EFCoreSessionStore(EFCoreDbContext dbContext) : ISessionStore
 
     public async Task UpdateAsync(LoginSession session, CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        ArgumentNullException.ThrowIfNull(session);
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        
+        var entity = await context.Set<LoginSessionEntity>().FindAsync([session.Id], cancellationToken)
+            ?? throw new InvalidOperationException($"Session with ID {session.Id} not found.");
 
-        var entity = await Sessions.FindAsync([session.Id], cancellationToken);
-        if (entity == null)
-        {
-            throw new InvalidOperationException($"Session with ID {session.Id} not found.");
-        }
-
-        // Update the entity with current session values
         entity.RefreshTokenHash = session.RefreshTokenHash;
         entity.LastUsedAt = session.LastUsedAt;
         entity.ExpiresAt = session.ExpiresAt;
         entity.IsRevoked = session.IsRevoked;
         entity.RevokedAt = session.RevokedAt;
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<bool> RevokeAsync(Guid sessionId, CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var entity = await Sessions.FindAsync([sessionId], cancellationToken);
-        if (entity == null || entity.IsRevoked)
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        
+        var entity = await context.Set<LoginSessionEntity>().FindAsync([sessionId], cancellationToken);
+        if (entity is null || entity.IsRevoked)
         {
             return false;
         }
 
         entity.IsRevoked = true;
         entity.RevokedAt = DateTimeOffset.UtcNow;
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
         return true;
     }
 
     public async Task<int> RevokeAllForUserAsync(Guid userId, CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var now = DateTimeOffset.UtcNow;
-        var sessions = await Sessions
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        
+        var sessions = await context.Set<LoginSessionEntity>()
             .Where(s => s.UserId == userId && !s.IsRevoked)
             .ToListAsync(cancellationToken);
 
+        var now = DateTimeOffset.UtcNow;
         foreach (var session in sessions)
         {
             session.IsRevoked = true;
             session.RevokedAt = now;
         }
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
         return sessions.Count;
     }
 
     public async Task<int> RevokeAllExceptAsync(Guid userId, Guid exceptSessionId, CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var now = DateTimeOffset.UtcNow;
-        var sessions = await Sessions
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        
+        var sessions = await context.Set<LoginSessionEntity>()
             .Where(s => s.UserId == userId && !s.IsRevoked && s.Id != exceptSessionId)
             .ToListAsync(cancellationToken);
 
+        var now = DateTimeOffset.UtcNow;
         foreach (var session in sessions)
         {
             session.IsRevoked = true;
             session.RevokedAt = now;
         }
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
         return sessions.Count;
     }
 
     public async Task<int> DeleteExpiredAsync(DateTimeOffset olderThan, CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
+        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+        
+        var expiredSessions = await context.Set<LoginSessionEntity>()
+            .ToListAsync(cancellationToken);
 
-        // Load all sessions, filter in memory due to SQLite DateTimeOffset limitations
-        var allSessions = await Sessions.ToListAsync(cancellationToken);
-        var sessions = allSessions
-            .Where(s => s.ExpiresAt < olderThan || (s.IsRevoked && s.RevokedAt < olderThan))
+        var toDelete = expiredSessions
+            .Where(s => (s.IsRevoked && s.RevokedAt < olderThan) || s.ExpiresAt < olderThan)
             .ToList();
 
-        if (sessions.Count > 0)
-        {
-            Sessions.RemoveRange(sessions);
-            await _dbContext.SaveChangesAsync(cancellationToken);
-        }
-
-        return sessions.Count;
+        context.Set<LoginSessionEntity>().RemoveRange(toDelete);
+        await context.SaveChangesAsync(cancellationToken);
+        return toDelete.Count;
     }
 
     private static LoginSessionEntity MapToEntity(LoginSession session)
@@ -155,8 +139,8 @@ public class EFCoreSessionStore(EFCoreDbContext dbContext) : ISessionStore
             UserAgent = session.UserAgent,
             IpAddress = session.IpAddress,
             CreatedAt = session.CreatedAt,
-            LastUsedAt = session.LastUsedAt,
             ExpiresAt = session.ExpiresAt,
+            LastUsedAt = session.LastUsedAt,
             IsRevoked = session.IsRevoked,
             RevokedAt = session.RevokedAt
         };

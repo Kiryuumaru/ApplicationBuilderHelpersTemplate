@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Application.Authorization.Interfaces;
+using Application.Authorization.Interfaces.Infrastructure;
 using Domain.Identity.Models;
 
 namespace Application.Authorization.Services;
 
-internal sealed class UserRoleResolver(IRoleLookup roleLookup) : IUserRoleResolver
+internal sealed class UserRoleResolver(IRoleRepository roleRepository) : IUserRoleResolver
 {
-    private readonly IRoleLookup _roleLookup = roleLookup ?? throw new ArgumentNullException(nameof(roleLookup));
+    private readonly IRoleRepository _roleRepository = roleRepository ?? throw new ArgumentNullException(nameof(roleRepository));
 
     public async Task<IReadOnlyCollection<UserRoleResolution>> ResolveRolesAsync(User user, CancellationToken cancellationToken)
     {
@@ -25,7 +26,7 @@ internal sealed class UserRoleResolver(IRoleLookup roleLookup) : IUserRoleResolv
             .Distinct()
             .ToArray();
 
-        var roles = await _roleLookup.GetByIdsAsync(distinctIds, cancellationToken).ConfigureAwait(false);
+        var roles = await _roleRepository.GetByIdsAsync(distinctIds, cancellationToken).ConfigureAwait(false);
         var roleIndex = roles.ToDictionary(static role => role.Id);
         var resolutions = new List<UserRoleResolution>(user.RoleAssignments.Count);
         foreach (var assignment in user.RoleAssignments)

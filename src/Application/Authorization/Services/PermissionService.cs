@@ -9,6 +9,7 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using Domain.Authorization.Constants;
 using Application.Authorization.Interfaces;
+using Application.Authorization.Interfaces.Infrastructure;
 using Application.Authorization.Models;
 using Domain.Authorization.Enums;
 using Domain.Authorization.Models;
@@ -499,6 +500,13 @@ internal sealed class PermissionService(
             claimTypesToRemove: removalTypesList,
             expiration: expiration,
             cancellationToken: cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<TokenValidationParameters> GetTokenValidationParametersAsync(CancellationToken cancellationToken = default)
+    {
+        var jwtTokenService = await _jwtTokenServiceFactory(cancellationToken);
+        return await jwtTokenService.GetTokenValidationParameters(cancellationToken);
     }
 
     private static Claim CloneClaim(Claim source)

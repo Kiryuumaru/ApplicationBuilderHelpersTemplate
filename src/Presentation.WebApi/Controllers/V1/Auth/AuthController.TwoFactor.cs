@@ -29,7 +29,7 @@ public partial class AuthController
         [FromRoute, Required, PermissionParameter(PermissionIds.Api.Auth.UserIdParameter)] Guid userId,
         CancellationToken cancellationToken)
     {
-        var setupInfo = await identityService.Setup2faAsync(userId, cancellationToken);
+        var setupInfo = await twoFactorService.Setup2faAsync(userId, cancellationToken);
 
         return Ok(new TwoFactorSetupResponse
         {
@@ -61,7 +61,7 @@ public partial class AuthController
     {
         try
         {
-            var recoveryCodes = await identityService.Enable2faAsync(userId, request.VerificationCode, cancellationToken);
+            var recoveryCodes = await twoFactorService.Enable2faAsync(userId, request.VerificationCode, cancellationToken);
 
             return Ok(new EnableTwoFactorResponse
             {
@@ -98,7 +98,7 @@ public partial class AuthController
         CancellationToken cancellationToken)
     {
         // Get the user to verify password
-        var user = await identityService.GetByIdAsync(userId, cancellationToken);
+        var user = await userProfileService.GetByIdAsync(userId, cancellationToken);
         if (user is null)
         {
             return NotFound(new ProblemDetails
@@ -109,7 +109,7 @@ public partial class AuthController
             });
         }
 
-        if (user.UserName is null)
+        if (user.Username is null)
         {
             return BadRequest(new ProblemDetails
             {
@@ -121,10 +121,11 @@ public partial class AuthController
 
         try
         {
-            // Authenticate to verify password
-            await identityService.AuthenticateAsync(user.UserName, request.Password, cancellationToken);
+            // Authenticate to verify password (may throw InvalidOperationException for bad password or 2FA required)
+            await authenticationService.AuthenticateAsync(user.Username, request.Password, cancellationToken);
         }
-        catch (AuthenticationException)
+        catch (InvalidOperationException ex) when (ex.Message.Contains("Authentication failed", StringComparison.OrdinalIgnoreCase) ||
+                                                    ex.Message.Contains("Invalid username or password", StringComparison.OrdinalIgnoreCase))
         {
             return Unauthorized(new ProblemDetails
             {
@@ -133,9 +134,25 @@ public partial class AuthController
                 Detail = "The password is incorrect."
             });
         }
+        catch (InvalidOperationException)
+        {
+            // Other InvalidOperationException (e.g., 2FA required) - proceed, user is authenticated
+        }
 
-        await identityService.Disable2faAsync(userId, cancellationToken);
-        return NoContent();
+        try
+        {
+            await twoFactorService.Disable2faAsync(userId, cancellationToken);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Cannot disable 2FA",
+                Detail = ex.Message
+            });
+        }
     }
 
     /// <summary>
@@ -154,9 +171,37 @@ public partial class AuthController
     {
         try
         {
-            var userSession = await identityService.Complete2faAuthenticationAsync(request.UserId, request.Code, cancellationToken);
+            // Verify 2FA code first
+            var isValidCode = await twoFactorService.Verify2faCodeAsync(request.UserId, request.Code, cancellationToken);
+            if (!isValidCode)
+            {
+                return Unauthorized(new ProblemDetails
+                {
+                    Status = StatusCodes.Status401Unauthorized,
+                    Title = "Invalid code",
+                    Detail = "The 2FA code is invalid or has expired."
+                });
+            }
 
-            var (accessToken, refreshToken, loginSession) = await CreateSessionAndTokensAsync(userSession, cancellationToken);
+            // Get user info for session
+            var userResult = await authenticationService.GetUserForSessionAsync(request.UserId, cancellationToken);
+            if (!userResult.Succeeded)
+            {
+                return Unauthorized(new ProblemDetails
+                {
+                    Status = StatusCodes.Status401Unauthorized,
+                    Title = "Invalid request",
+                    Detail = "The user ID is invalid."
+                });
+            }
+
+            var (accessToken, refreshToken, sessionId) = await CreateSessionAndTokensAsync(
+                userResult.UserId!.Value,
+                userResult.Username,
+                userResult.Roles,
+                cancellationToken);
+
+            var permissions = await userRoleService.GetEffectivePermissionsAsync(userResult.UserId!.Value, cancellationToken);
 
             return Ok(new AuthResponse
             {
@@ -165,11 +210,11 @@ public partial class AuthController
                 ExpiresIn = AccessTokenExpirationMinutes * 60,
                 User = new UserInfo
                 {
-                    Id = userSession.UserId,
-                    Username = userSession.Username,
+                    Id = userResult.UserId!.Value,
+                    Username = userResult.Username,
                     Email = null, // Session doesn't include email currently
-                    Roles = userSession.RoleCodes,
-                    Permissions = userSession.PermissionIdentifiers
+                    Roles = userResult.Roles.ToArray(),
+                    Permissions = permissions.ToArray()
                 }
             });
         }
@@ -182,7 +227,7 @@ public partial class AuthController
                 Detail = "The user ID is invalid or the 2FA session has expired."
             });
         }
-        catch (UnauthorizedAccessException)
+        catch (InvalidOperationException)
         {
             return Unauthorized(new ProblemDetails
             {
@@ -217,7 +262,7 @@ public partial class AuthController
     {
         try
         {
-            var recoveryCodes = await identityService.GenerateRecoveryCodesAsync(userId, cancellationToken);
+            var recoveryCodes = await twoFactorService.GenerateRecoveryCodesAsync(userId, cancellationToken);
             return Ok(new RecoveryCodesResponse(recoveryCodes));
         }
         catch (InvalidOperationException ex)

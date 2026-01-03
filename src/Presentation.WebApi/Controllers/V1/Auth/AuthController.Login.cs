@@ -1,6 +1,5 @@
 using Application.Identity.Models;
 using Domain.Authorization.Constants;
-using Domain.Identity.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
@@ -33,7 +32,7 @@ public partial class AuthController
     {
         try
         {
-            var result = await identityService.AuthenticateWithResultAsync(request.Username, request.Password, cancellationToken);
+            var result = await authenticationService.ValidateCredentialsAsync(request.Username, request.Password, cancellationToken);
 
             if (!result.Succeeded && !result.RequiresTwoFactor)
             {
@@ -49,12 +48,18 @@ public partial class AuthController
             {
                 return Accepted(new TwoFactorRequiredResponse
                 {
-                    UserId = result.TwoFactorUserId!.Value
+                    UserId = result.UserId!.Value
                 });
             }
 
-            var userSession = result.Session!;
-            var (accessToken, refreshToken, loginSession) = await CreateSessionAndTokensAsync(userSession, cancellationToken);
+            // Create session and get effective permissions
+            var (accessToken, refreshToken, sessionId) = await CreateSessionAndTokensAsync(
+                result.UserId!.Value,
+                result.Username,
+                result.Roles,
+                cancellationToken);
+
+            var permissions = await userRoleService.GetEffectivePermissionsAsync(result.UserId!.Value, cancellationToken);
 
             return Ok(new AuthResponse
             {
@@ -63,11 +68,11 @@ public partial class AuthController
                 ExpiresIn = AccessTokenExpirationMinutes * 60,
                 User = new UserInfo
                 {
-                    Id = userSession.UserId,
-                    Username = userSession.Username,
+                    Id = result.UserId!.Value,
+                    Username = result.Username,
                     Email = null, // Session doesn't include email currently
-                    Roles = userSession.RoleCodes,
-                    Permissions = userSession.PermissionIdentifiers
+                    Roles = result.Roles.ToArray(),
+                    Permissions = permissions.ToArray()
                 }
             });
         }
@@ -152,15 +157,15 @@ public partial class AuthController
             // Check if this is anonymous registration
             if (request.IsAnonymous)
             {
-                var anonymousUser = await identityService.RegisterUserAsync(null, cancellationToken);
-                var anonymousSession = UserSession.Create(
-                    anonymousUser.Id,
-                    anonymousUser.UserName,
-                    [], // No roles for anonymous
-                    [], // No permissions for anonymous
-                    anonymousUser.IsAnonymous);
+                var anonymousUser = await userRegistrationService.RegisterUserAsync(null, cancellationToken);
 
-                var (accessToken, refreshToken, _) = await CreateSessionAndTokensAsync(anonymousSession, cancellationToken);
+                var (accessToken, refreshToken, _) = await CreateSessionAndTokensAsync(
+                    anonymousUser.Id,
+                    anonymousUser.Username,
+                    anonymousUser.Roles,
+                    cancellationToken);
+
+                var anonPermissions = await userRoleService.GetEffectivePermissionsAsync(anonymousUser.Id, cancellationToken);
 
                 return CreatedAtAction(nameof(GetMe), new AuthResponse
                 {
@@ -170,10 +175,10 @@ public partial class AuthController
                     User = new UserInfo
                     {
                         Id = anonymousUser.Id,
-                        Username = anonymousUser.UserName,
+                        Username = anonymousUser.Username,
                         Email = null,
-                        Roles = [],
-                        Permissions = [],
+                        Roles = anonymousUser.Roles.ToArray(),
+                        Permissions = anonPermissions.ToArray(),
                         IsAnonymous = true
                     }
                 });
@@ -181,7 +186,7 @@ public partial class AuthController
 
             // Full registration with username/password
             // Check if username already exists
-            var existingUser = await identityService.GetByUsernameAsync(request.Username!, cancellationToken);
+            var existingUser = await userProfileService.GetByUsernameAsync(request.Username!, cancellationToken);
             if (existingUser is not null)
             {
                 return Conflict(new ProblemDetails
@@ -195,7 +200,7 @@ public partial class AuthController
             // Check if email already exists (if provided)
             if (!string.IsNullOrWhiteSpace(request.Email))
             {
-                var existingByEmail = await identityService.GetByEmailAsync(request.Email, cancellationToken);
+                var existingByEmail = await userProfileService.GetByEmailAsync(request.Email, cancellationToken);
                 if (existingByEmail is not null)
                 {
                     return Conflict(new ProblemDetails
@@ -213,12 +218,16 @@ public partial class AuthController
                 request.Email,
                 AutoActivate: true);
 
-            var user = await identityService.RegisterUserAsync(registrationRequest, cancellationToken);
+            var user = await userRegistrationService.RegisterUserAsync(registrationRequest, cancellationToken);
 
-            // Authenticate the newly registered user to get session info
-            var userSession = await identityService.AuthenticateAsync(request.Username!, request.Password!, cancellationToken);
+            // Create session for the newly registered user (no double session)
+            var (newAccessToken, newRefreshToken, sessionId) = await CreateSessionAndTokensAsync(
+                user.Id,
+                user.Username,
+                user.Roles,
+                cancellationToken);
 
-            var (newAccessToken, newRefreshToken, loginSession) = await CreateSessionAndTokensAsync(userSession, cancellationToken);
+            var permissions = await userRoleService.GetEffectivePermissionsAsync(user.Id, cancellationToken);
 
             return CreatedAtAction(nameof(GetMe), new AuthResponse
             {
@@ -227,11 +236,11 @@ public partial class AuthController
                 ExpiresIn = AccessTokenExpirationMinutes * 60,
                 User = new UserInfo
                 {
-                    Id = userSession.UserId,
-                    Username = userSession.Username,
+                    Id = user.Id,
+                    Username = user.Username,
                     Email = request.Email,
-                    Roles = userSession.RoleCodes,
-                    Permissions = userSession.PermissionIdentifiers,
+                    Roles = user.Roles.ToArray(),
+                    Permissions = permissions.ToArray(),
                     IsAnonymous = false
                 }
             });
@@ -280,7 +289,7 @@ public partial class AuthController
         var sessionId = GetCurrentSessionId();
         if (sessionId.HasValue)
         {
-            await sessionStore.RevokeAsync(sessionId.Value, cancellationToken);
+            await sessionService.RevokeAsync(sessionId.Value, cancellationToken);
         }
         return NoContent();
     }

@@ -1,5 +1,6 @@
 using Application.Authorization.Extensions;
 using Application.Authorization.Interfaces;
+using Application.Authorization.Interfaces.Application;
 using Application.Logger.Extensions;
 using DisposableHelpers.Attributes;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,7 +18,7 @@ internal partial class AuthorizedHttpClientFactory(string serviceKey, ILogger<Au
 {
     private readonly List<HttpClient> httpClients = [];
 
-    public async Task<HttpClient> CreateAuthorized(string clientName, IEnumerable<string> permissionIdentifiers, TimeSpan expiration, CancellationToken cancellationToken = default)
+    public async Task<HttpClient> CreateAuthorizedAsync(string clientName, IEnumerable<string> permissionIdentifiers, TimeSpan expiration, CancellationToken cancellationToken = default)
     {
         using var _ = logger.BeginScopeMap();
         var httpClient = httpClientFactory.CreateClient(serviceKey);

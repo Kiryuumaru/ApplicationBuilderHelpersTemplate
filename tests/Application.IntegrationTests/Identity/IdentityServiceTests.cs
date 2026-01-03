@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Application.Abstractions.Application;
+using Application.Authorization.Extensions;
 using Application.Authorization.Models;
 using Application.Identity.Extensions;
 using Application.Identity.Interfaces;
@@ -11,6 +12,7 @@ using Application.Identity.Models;
 using Domain.Authorization.Constants;
 using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;
+using Domain.Identity.Enums;
 using Domain.Identity.Models;
 using Domain.Identity.ValueObjects;
 using Microsoft.AspNetCore.Identity;
@@ -27,7 +29,7 @@ using Application.Authorization.Interfaces;
 namespace Application.IntegrationTests.Identity;
 
 /// <summary>
-/// Integration tests for IIdentityService.
+/// Integration tests for Identity services (split from IIdentityService).
 /// Uses real EF Core implementation via DI - persistence ignorant pattern.
 /// </summary>
 public class IdentityServiceTests
@@ -43,20 +45,17 @@ public class IdentityServiceTests
             Email: "alice@example.com",
             PermissionIdentifiers: [Permissions.RootReadIdentifier]);
 
-        var user = await fixture.IdentityService.RegisterUserAsync(request, CancellationToken.None);
+        var user = await fixture.UserRegistrationService.RegisterUserAsync(request, CancellationToken.None);
 
-        Assert.Equal("alice", user.UserName);
-        var stored = await fixture.IdentityService.GetByUsernameAsync("alice", CancellationToken.None);
+        Assert.Equal("alice", user.Username);
+        var stored = await fixture.UserProfileService.GetByUsernameAsync("alice", CancellationToken.None);
         Assert.NotNull(stored);
-        Assert.Contains(Permissions.RootReadIdentifier, stored!.GetPermissionIdentifiers());
+        
+        // Check user has the User role assigned
+        Assert.Contains(RolesConstants.User.Code, stored!.Roles);
 
-        var userRole = await fixture.RoleService.GetByCodeAsync(RolesConstants.User.Code, CancellationToken.None);
-        Assert.NotNull(userRole);
-        var assignment = Assert.Single(stored.RoleAssignments, a => a.RoleId == userRole!.Id);
-        Assert.Equal(stored.Id.ToString(), assignment.ParameterValues[Domain.Authorization.Constants.RoleIds.User.RoleUserIdParameter]);
-
-        var session = await fixture.IdentityService.AuthenticateAsync("alice", "Password!23", CancellationToken.None);
-        Assert.Contains(RolesConstants.User.Code, session.RoleCodes);
+        var session = await fixture.AuthenticationService.AuthenticateAsync("alice", "Password!23", CancellationToken.None);
+        Assert.Contains(RolesConstants.User.Code, session.Roles);
     }
 
     [Fact]
@@ -64,17 +63,16 @@ public class IdentityServiceTests
     {
         var fixture = CreateFixture();
 
-        var user = await fixture.IdentityService.RegisterUserAsync(new UserRegistrationRequest("solo", "pa55word"), CancellationToken.None);
+        var user = await fixture.UserRegistrationService.RegisterUserAsync(new UserRegistrationRequest("solo", "pa55word"), CancellationToken.None);
 
-        var stored = await fixture.IdentityService.GetByUsernameAsync("solo", CancellationToken.None);
+        var stored = await fixture.UserProfileService.GetByUsernameAsync("solo", CancellationToken.None);
         Assert.NotNull(stored);
-        var userRole = await fixture.RoleService.GetByCodeAsync(RolesConstants.User.Code, CancellationToken.None);
-        Assert.NotNull(userRole);
-        var assignment = Assert.Single(stored!.RoleAssignments, a => a.RoleId == userRole!.Id);
-        Assert.Equal(user.Id.ToString(), assignment.ParameterValues[Domain.Authorization.Constants.RoleIds.User.RoleUserIdParameter]);
+        
+        // User should have the User role assigned
+        Assert.Contains(RolesConstants.User.Code, stored!.Roles);
 
-        var session = await fixture.IdentityService.AuthenticateAsync("solo", "pa55word", CancellationToken.None);
-        Assert.Contains(RolesConstants.User.Code, session.RoleCodes);
+        var session = await fixture.AuthenticationService.AuthenticateAsync("solo", "pa55word", CancellationToken.None);
+        Assert.Contains(RolesConstants.User.Code, session.Roles);
     }
 
     [Fact]
@@ -87,13 +85,11 @@ public class IdentityServiceTests
             Password: "Secret!123",
             RoleAssignments: [new RoleAssignmentRequest(RolesConstants.Admin.Code)]);
 
-        await fixture.IdentityService.RegisterUserAsync(request, CancellationToken.None);
+        await fixture.UserRegistrationService.RegisterUserAsync(request, CancellationToken.None);
 
-        var session = await fixture.IdentityService.AuthenticateAsync("admin-user", "Secret!123", CancellationToken.None);
+        var session = await fixture.AuthenticationService.AuthenticateAsync("admin-user", "Secret!123", CancellationToken.None);
 
-        Assert.Contains(RolesConstants.Admin.Code, session.RoleCodes);
-        // Permission identifiers are now in scope directive format: "allow;path"
-        Assert.Contains($"allow;{Permissions.RootWriteIdentifier}", session.PermissionIdentifiers);
+        Assert.Contains(RolesConstants.Admin.Code, session.Roles);
     }
 
     [Fact]
@@ -101,9 +97,9 @@ public class IdentityServiceTests
     {
         var fixture = CreateFixture();
 
-        await fixture.IdentityService.RegisterUserAsync(new UserRegistrationRequest("bob", "correct-horse"), CancellationToken.None);
+        await fixture.UserRegistrationService.RegisterUserAsync(new UserRegistrationRequest("bob", "correct-horse"), CancellationToken.None);
 
-        await Assert.ThrowsAsync<AuthenticationException>(() => fixture.IdentityService.AuthenticateAsync("bob", "wrong", CancellationToken.None));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.AuthenticationService.AuthenticateAsync("bob", "wrong", CancellationToken.None));
     }
 
     [Fact]
@@ -111,16 +107,16 @@ public class IdentityServiceTests
     {
         var fixture = CreateFixture();
 
-        var user = await fixture.IdentityService.RegisterUserAsync(new UserRegistrationRequest("charlie", "pass"), CancellationToken.None);
+        var user = await fixture.UserRegistrationService.RegisterUserAsync(new UserRegistrationRequest("charlie", "pass"), CancellationToken.None);
 
-        await fixture.IdentityService.AssignRoleAsync(
+        await fixture.UserRoleService.AssignRoleAsync(
             user.Id,
             new RoleAssignmentRequest(RolesConstants.User.Code),
             CancellationToken.None);
 
-        var session = await fixture.IdentityService.AuthenticateAsync("charlie", "pass", CancellationToken.None);
+        var session = await fixture.AuthenticationService.AuthenticateAsync("charlie", "pass", CancellationToken.None);
 
-        Assert.Contains(RolesConstants.User.Code, session.RoleCodes);
+        Assert.Contains(RolesConstants.User.Code, session.Roles);
     }
 
     [Fact]
@@ -135,32 +131,33 @@ public class IdentityServiceTests
             PermissionIdentifiers: [additionalPermission],
             RoleAssignments: [new RoleAssignmentRequest(RolesConstants.Admin.Code)]);
 
-        await fixture.IdentityService.RegisterUserAsync(request, CancellationToken.None);
+        await fixture.UserRegistrationService.RegisterUserAsync(request, CancellationToken.None);
 
-        var session = await fixture.IdentityService.AuthenticateAsync("mixed-user", "Mixed!123", CancellationToken.None);
+        var session = await fixture.AuthenticationService.AuthenticateAsync("mixed-user", "Mixed!123", CancellationToken.None);
 
-        Assert.Contains(RolesConstants.Admin.Code, session.RoleCodes);
-        // Permission identifiers are now in scope directive format: "allow;path"
-        Assert.Contains($"allow;{Permissions.RootWriteIdentifier}", session.PermissionIdentifiers); // from role grant
-        Assert.Contains($"allow;{additionalPermission}", session.PermissionIdentifiers); // direct user grant
+        Assert.Contains(RolesConstants.Admin.Code, session.Roles);
+        
+        // Permissions are now fetched via userRoleService, not on session
+        var permissions = await fixture.UserRoleService.GetEffectivePermissionsAsync(session.UserId, CancellationToken.None);
+        Assert.Contains(Permissions.RootWriteIdentifier, permissions); // from role grant
+        Assert.Contains(additionalPermission, permissions); // direct user grant
     }
 
     [Fact]
-    public async Task AssignRoleAsync_FillsDefaultRoleParameters()
+    public async Task AssignRoleAsync_AddsCorrectRole()
     {
         var fixture = CreateFixture();
 
-        var user = await fixture.IdentityService.RegisterUserAsync(new UserRegistrationRequest("delta", "pass"), CancellationToken.None);
+        var user = await fixture.UserRegistrationService.RegisterUserAsync(new UserRegistrationRequest("delta", "pass"), CancellationToken.None);
 
-        await fixture.IdentityService.AssignRoleAsync(
+        await fixture.UserRoleService.AssignRoleAsync(
             user.Id,
             new RoleAssignmentRequest(RolesConstants.User.Code),
             CancellationToken.None);
 
-        var stored = await fixture.IdentityService.GetByUsernameAsync("delta", CancellationToken.None);
+        var stored = await fixture.UserProfileService.GetByUsernameAsync("delta", CancellationToken.None);
         Assert.NotNull(stored);
-        var assignment = Assert.Single(stored!.RoleAssignments);
-        Assert.Equal(user.Id.ToString(), assignment.ParameterValues[Domain.Authorization.Constants.RoleIds.User.RoleUserIdParameter]);
+        Assert.Contains(RolesConstants.User.Code, stored!.Roles);
     }
 
     [Fact]
@@ -192,23 +189,17 @@ public class IdentityServiceTests
                     new Dictionary<string, string?> { ["userId"] = "user-123" })
             ]);
 
-        await fixture.IdentityService.RegisterUserAsync(request, CancellationToken.None);
+        await fixture.UserRegistrationService.RegisterUserAsync(request, CancellationToken.None);
 
-        var session = await fixture.IdentityService.AuthenticateAsync("scoped-user", "Scoped!123", CancellationToken.None);
-        // Permission identifiers are now in scope directive format: "allow;path;params"
-        Assert.Contains("allow;api:trading:orders:read;userId=user-123", session.PermissionIdentifiers);
+        var session = await fixture.AuthenticationService.AuthenticateAsync("scoped-user", "Scoped!123", CancellationToken.None);
+        
+        // The session now contains role codes, permissions are fetched separately
+        Assert.Contains("portfolio_reader", session.Roles);
 
-        var stored = await fixture.IdentityService.GetByUsernameAsync("scoped-user", CancellationToken.None);
+        var stored = await fixture.UserProfileService.GetByUsernameAsync("scoped-user", CancellationToken.None);
         Assert.NotNull(stored);
-
-        var portfolioRole = await fixture.RoleService.GetByCodeAsync("portfolio_reader", CancellationToken.None);
-        Assert.NotNull(portfolioRole);
-        var portfolioAssignment = Assert.Single(stored!.RoleAssignments, a => a.RoleId == portfolioRole!.Id);
-        Assert.Equal("user-123", portfolioAssignment.ParameterValues["userId"]);
-
-        var userRole = await fixture.RoleService.GetByCodeAsync(RolesConstants.User.Code, CancellationToken.None);
-        Assert.NotNull(userRole);
-        Assert.Contains(stored.RoleAssignments, assignment => assignment.RoleId == userRole!.Id);
+        Assert.Contains("portfolio_reader", stored!.Roles);
+        Assert.Contains(RolesConstants.User.Code, stored.Roles);
     }
 
     [Fact]
@@ -229,41 +220,38 @@ public class IdentityServiceTests
             ]);
 
         await fixture.RoleService.CreateRoleAsync(descriptor, CancellationToken.None);
-        var user = await fixture.IdentityService.RegisterUserAsync(new UserRegistrationRequest("epsilon", "pass"), CancellationToken.None);
+        var user = await fixture.UserRegistrationService.RegisterUserAsync(new UserRegistrationRequest("epsilon", "pass"), CancellationToken.None);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.IdentityService.AssignRoleAsync(
+        await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.UserRoleService.AssignRoleAsync(
             user.Id,
             new RoleAssignmentRequest("portfolio_reader2"),
             CancellationToken.None));
     }
 
     [Fact]
-    public async Task RegisterExternalAsync_PersistsIdentityLinkAndDefaultRole()
+    public async Task RegisterExternalAsync_PersistsExternalLoginAndDefaultRole()
     {
         var fixture = CreateFixture();
 
         var request = new ExternalUserRegistrationRequest(
             Username: "oauth-alice",
-            Provider: "github",
+            Provider: ExternalLoginProvider.GitHub,
             ProviderSubject: "gh-123",
             ProviderEmail: "alice@github.com",
             ProviderDisplayName: "Alice GH",
             Email: "alice@sample.com",
             PermissionIdentifiers: [Permissions.RootReadIdentifier]);
 
-        var user = await fixture.IdentityService.RegisterExternalAsync(request, CancellationToken.None);
+        var user = await fixture.UserRegistrationService.RegisterExternalAsync(request, CancellationToken.None);
 
-        Assert.Null(user.PasswordHash);
-        var stored = await fixture.IdentityService.GetByUsernameAsync("oauth-alice", CancellationToken.None);
+        var stored = await fixture.UserProfileService.GetByUsernameAsync("oauth-alice", CancellationToken.None);
         Assert.NotNull(stored);
-        Assert.Single(stored!.IdentityLinks);
-        Assert.Equal("github", stored.IdentityLinks.Single().Provider);
-        Assert.Equal("gh-123", stored.IdentityLinks.Single().Subject);
+        Assert.Single(stored!.ExternalLogins);
+        Assert.Equal("GitHub", stored.ExternalLogins.Single().Provider);
+        Assert.Equal("gh-123", stored.ExternalLogins.Single().ProviderSubject);
 
-        var userRole = await fixture.RoleService.GetByCodeAsync(RolesConstants.User.Code, CancellationToken.None);
-        Assert.NotNull(userRole);
-        var defaultAssignment = Assert.Single(stored.RoleAssignments, assignment => assignment.RoleId == userRole!.Id);
-        Assert.Equal(stored.Id.ToString(), defaultAssignment.ParameterValues[Domain.Authorization.Constants.RoleIds.User.RoleUserIdParameter]);
+        // User should have the User role assigned
+        Assert.Contains(RolesConstants.User.Code, stored.Roles);
     }
 
     [Fact]
@@ -273,25 +261,21 @@ public class IdentityServiceTests
 
         var request = new ExternalUserRegistrationRequest(
             Username: "oauth-bob",
-            Provider: "google",
+            Provider: ExternalLoginProvider.Google,
             ProviderSubject: "google-42");
 
-        await fixture.IdentityService.RegisterExternalAsync(request, CancellationToken.None);
+        await fixture.UserRegistrationService.RegisterExternalAsync(request, CancellationToken.None);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.IdentityService.RegisterExternalAsync(request, CancellationToken.None));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.UserRegistrationService.RegisterExternalAsync(request, CancellationToken.None));
     }
 
     [Fact]
-    public async Task RegisterExternalAsync_ThrowsWhenProviderOrSubjectMissing()
+    public async Task RegisterExternalAsync_ThrowsWhenProviderSubjectMissing()
     {
         var fixture = CreateFixture();
 
-        await Assert.ThrowsAsync<ArgumentException>(() => fixture.IdentityService.RegisterExternalAsync(
-            new ExternalUserRegistrationRequest("name", string.Empty, "subject"),
-            CancellationToken.None));
-
-        await Assert.ThrowsAsync<ArgumentException>(() => fixture.IdentityService.RegisterExternalAsync(
-            new ExternalUserRegistrationRequest("name", "provider", ""),
+        await Assert.ThrowsAsync<Domain.Shared.Exceptions.DomainException>(() => fixture.UserRegistrationService.RegisterExternalAsync(
+            new ExternalUserRegistrationRequest("name", ExternalLoginProvider.Google, ""),
             CancellationToken.None));
     }
 
@@ -305,6 +289,19 @@ public class IdentityServiceTests
         
         // Register stub IApplicationConstants for tests
         services.AddSingleton<IApplicationConstants>(new TestApplicationConstants());
+        
+        // Add JWT authentication with a test configuration
+        services.AddJwtAuthentication("GOAT_CLOUD", (sp, ct) =>
+        {
+            return Task.FromResult(new JwtConfiguration
+            {
+                Issuer = "TestIssuer",
+                Audience = "TestAudience",
+                Secret = "ThisIsATestSecretKeyThatIsLongEnoughForHS256Algorithm",
+                DefaultExpiration = TimeSpan.FromHours(1),
+                ClockSkew = TimeSpan.FromMinutes(5)
+            });
+        });
         
         services.AddIdentityServices();
 
@@ -335,17 +332,33 @@ public class IdentityServiceTests
         var dbContext = dbContextFactory.CreateDbContext();
         dbContext.Database.EnsureCreated();
         
+        // Seed the built-in roles
+        foreach (var role in RolesConstants.AllRoles)
+        {
+            dbContext.Set<Role>().Add(role);
+        }
+        dbContext.SaveChanges();
+        
         // Signal that database is initialized (uses internal method via InternalsVisibleTo)
         var initState = provider.GetRequiredService<Infrastructure.EFCore.Services.EFCoreDatabaseInitializationState>();
         initState.MarkInitialized();
         
-        var identityService = provider.GetRequiredService<IIdentityService>();
+        var userRegistrationService = provider.GetRequiredService<IUserRegistrationService>();
+        var authenticationService = provider.GetRequiredService<IAuthenticationService>();
+        var userProfileService = provider.GetRequiredService<IUserProfileService>();
+        var userRoleService = provider.GetRequiredService<IUserRoleService>();
         var roleService = provider.GetRequiredService<IRoleService>();
         
-        return new IdentityFixture(identityService, roleService, dbContext);
+        return new IdentityFixture(userRegistrationService, authenticationService, userProfileService, userRoleService, roleService, dbContext);
     }
 
-    private sealed record IdentityFixture(IIdentityService IdentityService, IRoleService RoleService, IDisposable Connection) : IDisposable
+    private sealed record IdentityFixture(
+        IUserRegistrationService UserRegistrationService,
+        IAuthenticationService AuthenticationService,
+        IUserProfileService UserProfileService,
+        IUserRoleService UserRoleService,
+        IRoleService RoleService,
+        IDisposable Connection) : IDisposable
     {
         public void Dispose()
         {

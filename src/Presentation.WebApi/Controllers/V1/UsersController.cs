@@ -20,7 +20,11 @@ namespace Presentation.WebApi.Controllers.V1;
 [Produces("application/json")]
 [Tags("User Management")]
 [Authorize]
-public class UsersController(IIdentityService identityService) : ControllerBase
+public class UsersController(
+    IUserProfileService userProfileService,
+    IUserRoleService userRoleService,
+    IUserRegistrationService userRegistrationService,
+    IPasswordService passwordService) : ControllerBase
 {
     /// <summary>
     /// Lists all users (admin only).
@@ -33,7 +37,7 @@ public class UsersController(IIdentityService identityService) : ControllerBase
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> ListUsers(CancellationToken cancellationToken)
     {
-        var users = await identityService.ListAsync(cancellationToken);
+        var users = await userProfileService.ListAsync(cancellationToken);
 
         var response = new UserListResponse
         {
@@ -58,7 +62,7 @@ public class UsersController(IIdentityService identityService) : ControllerBase
         [PermissionParameter(PermissionIds.Api.Users.ReadPermission.UserIdParameter)] Guid id,
         CancellationToken cancellationToken)
     {
-        var user = await identityService.GetByIdAsync(id, cancellationToken);
+        var user = await userProfileService.GetByIdAsync(id, cancellationToken);
 
         if (user is null)
         {
@@ -92,14 +96,14 @@ public class UsersController(IIdentityService identityService) : ControllerBase
     {
         try
         {
-            await identityService.UpdateUserAsync(id, new UserUpdateRequest
+            await userProfileService.UpdateUserAsync(id, new UserUpdateRequest
             {
                 Email = request.Email,
                 PhoneNumber = request.PhoneNumber,
                 LockoutEnabled = request.LockoutEnabled
             }, cancellationToken);
 
-            var user = await identityService.GetByIdAsync(id, cancellationToken);
+            var user = await userProfileService.GetByIdAsync(id, cancellationToken);
             return Ok(MapToResponse(user!));
         }
         catch (KeyNotFoundException)
@@ -130,7 +134,7 @@ public class UsersController(IIdentityService identityService) : ControllerBase
     {
         try
         {
-            await identityService.DeleteUserAsync(id, cancellationToken);
+            await userRegistrationService.DeleteUserAsync(id, cancellationToken);
             return NoContent();
         }
         catch (KeyNotFoundException)
@@ -163,7 +167,7 @@ public class UsersController(IIdentityService identityService) : ControllerBase
     {
         try
         {
-            await identityService.AssignRoleAsync(id, new RoleAssignmentRequest(
+            await userRoleService.AssignRoleAsync(id, new RoleAssignmentRequest(
                 request.RoleCode,
                 request.ParameterValues), cancellationToken);
             return NoContent();
@@ -207,7 +211,7 @@ public class UsersController(IIdentityService identityService) : ControllerBase
     {
         try
         {
-            await identityService.RemoveRoleAsync(id, roleId, cancellationToken);
+            await userRoleService.RemoveRoleAsync(id, roleId, cancellationToken);
             return NoContent();
         }
         catch (KeyNotFoundException ex)
@@ -246,7 +250,7 @@ public class UsersController(IIdentityService identityService) : ControllerBase
     {
         try
         {
-            var permissions = await identityService.GetEffectivePermissionsAsync(id, cancellationToken);
+            var permissions = await userRoleService.GetEffectivePermissionsAsync(id, cancellationToken);
 
             return Ok(new PermissionsResponse
             {
@@ -284,7 +288,7 @@ public class UsersController(IIdentityService identityService) : ControllerBase
     {
         try
         {
-            await identityService.ResetPasswordAsync(id, request.NewPassword, cancellationToken);
+            await passwordService.ResetPasswordAsync(id, request.NewPassword, cancellationToken);
             return NoContent();
         }
         catch (KeyNotFoundException)
@@ -307,12 +311,12 @@ public class UsersController(IIdentityService identityService) : ControllerBase
         }
     }
 
-    private static UserResponse MapToResponse(User user)
+    private static UserResponse MapToResponse(UserDto user)
     {
         return new UserResponse
         {
             Id = user.Id,
-            Username = user.UserName,
+            Username = user.Username,
             Email = user.Email,
             EmailConfirmed = user.EmailConfirmed,
             PhoneNumber = user.PhoneNumber,
@@ -322,7 +326,7 @@ public class UsersController(IIdentityService identityService) : ControllerBase
             LockoutEnd = user.LockoutEnd,
             AccessFailedCount = user.AccessFailedCount,
             Created = user.Created,
-            RoleIds = user.RoleIds
+            RoleIds = user.RoleIds.ToList()
         };
     }
 }

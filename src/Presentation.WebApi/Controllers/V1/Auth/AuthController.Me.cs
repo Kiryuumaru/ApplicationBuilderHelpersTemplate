@@ -27,7 +27,7 @@ public partial class AuthController
         [FromJwt(ClaimTypes.NameIdentifier), PermissionParameter(PermissionIds.Api.Auth.Me.UserIdParameter)] Guid userId,
         CancellationToken cancellationToken)
     {
-        var user = await identityService.GetByIdAsync(userId, cancellationToken);
+        var user = await userProfileService.GetByIdAsync(userId, cancellationToken);
         if (user is null)
         {
             return Unauthorized(new ProblemDetails
@@ -38,18 +38,16 @@ public partial class AuthController
             });
         }
 
-        // Get permission identifiers from grants
-        var permissionIdentifiers = user.PermissionGrants
-            .Select(g => g.Identifier)
-            .ToArray();
+        // Get permission identifiers from role service
+        var permissionIdentifiers = await userRoleService.GetEffectivePermissionsAsync(userId, cancellationToken);
 
         return Ok(new UserInfo
         {
             Id = userId,
-            Username = user.UserName,
+            Username = user.Username,
             Email = user.Email,
-            Roles = user.RoleAssignments.Select(r => r.RoleId.ToString()).ToArray(),
-            Permissions = permissionIdentifiers,
+            Roles = user.Roles.ToArray(),
+            Permissions = permissionIdentifiers.ToArray(),
             IsAnonymous = user.IsAnonymous
         });
     }

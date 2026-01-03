@@ -29,7 +29,7 @@ public partial class AuthController
         [FromRoute, Required, PermissionParameter(PermissionIds.Api.Auth.UserIdParameter)] Guid userId,
         CancellationToken cancellationToken)
     {
-        var user = await identityService.GetByIdAsync(userId, cancellationToken);
+        var user = await userProfileService.GetByIdAsync(userId, cancellationToken);
         if (user is null)
         {
             return NotFound(new ProblemDetails
@@ -41,7 +41,7 @@ public partial class AuthController
         }
 
         // Get linked OAuth providers
-        var linkedProviders = user.IdentityLinks
+        var linkedProviders = user.ExternalLogins
             .Select(link => new LinkedProviderInfo
             {
                 Provider = link.Provider,
@@ -65,7 +65,7 @@ public partial class AuthController
         {
             IsAnonymous = user.IsAnonymous,
             LinkedAt = user.LinkedAt,
-            HasPassword = !string.IsNullOrEmpty(user.PasswordHash),
+            HasPassword = user.HasPassword,
             Email = user.Email,
             EmailConfirmed = user.EmailConfirmed,
             LinkedProviders = linkedProviders,
@@ -96,7 +96,7 @@ public partial class AuthController
         [FromBody] LinkPasswordRequest request,
         CancellationToken cancellationToken)
     {
-        var user = await identityService.GetByIdAsync(userId, cancellationToken);
+        var user = await userProfileService.GetByIdAsync(userId, cancellationToken);
         if (user is null)
         {
             return NotFound(new ProblemDetails
@@ -108,7 +108,7 @@ public partial class AuthController
         }
 
         // Check if password is already linked
-        if (!string.IsNullOrEmpty(user.PasswordHash))
+        if (user.HasPassword)
         {
             return BadRequest(new ProblemDetails
             {
@@ -119,9 +119,9 @@ public partial class AuthController
         }
 
         // Check if username is already taken (only if username is changing)
-        if (!string.Equals(user.UserName, request.Username, StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(user.Username, request.Username, StringComparison.OrdinalIgnoreCase))
         {
-            var existingUser = await identityService.GetByUsernameAsync(request.Username, cancellationToken);
+            var existingUser = await userProfileService.GetByUsernameAsync(request.Username, cancellationToken);
             if (existingUser is not null)
             {
                 return Conflict(new ProblemDetails
@@ -136,7 +136,7 @@ public partial class AuthController
         // Check if email is already taken
         if (!string.IsNullOrWhiteSpace(request.Email))
         {
-            var existingByEmail = await identityService.GetByEmailAsync(request.Email, cancellationToken);
+            var existingByEmail = await userProfileService.GetByEmailAsync(request.Email, cancellationToken);
             if (existingByEmail is not null && existingByEmail.Id != user.Id)
             {
                 return Conflict(new ProblemDetails
@@ -150,7 +150,7 @@ public partial class AuthController
 
         try
         {
-            await identityService.LinkPasswordAsync(
+            await passwordService.LinkPasswordAsync(
                 userId,
                 request.Username,
                 request.Password,
@@ -158,15 +158,16 @@ public partial class AuthController
                 cancellationToken);
 
             // Get updated user info
-            var updatedUser = await identityService.GetByIdAsync(userId, cancellationToken);
+            var updatedUser = await userProfileService.GetByIdAsync(userId, cancellationToken);
+            var permissions = await userRoleService.GetEffectivePermissionsAsync(userId, cancellationToken);
 
             return Ok(new UserInfo
             {
                 Id = userId,
-                Username = updatedUser!.UserName,
+                Username = updatedUser!.Username,
                 Email = updatedUser.Email,
-                Roles = updatedUser.RoleAssignments.Select(r => r.RoleId.ToString()).ToArray(),
-                Permissions = updatedUser.PermissionGrants.Select(g => g.Identifier).ToArray(),
+                Roles = updatedUser.Roles.ToArray(),
+                Permissions = permissions.ToArray(),
                 IsAnonymous = false
             });
         }
@@ -204,7 +205,7 @@ public partial class AuthController
         [FromBody] LinkEmailRequest request,
         CancellationToken cancellationToken)
     {
-        var user = await identityService.GetByIdAsync(userId, cancellationToken);
+        var user = await userProfileService.GetByIdAsync(userId, cancellationToken);
         if (user is null)
         {
             return NotFound(new ProblemDetails
@@ -216,7 +217,7 @@ public partial class AuthController
         }
 
         // Check if email is already taken by another user
-        var existingByEmail = await identityService.GetByEmailAsync(request.Email, cancellationToken);
+        var existingByEmail = await userProfileService.GetByEmailAsync(request.Email, cancellationToken);
         if (existingByEmail is not null && existingByEmail.Id != user.Id)
         {
             return Conflict(new ProblemDetails
@@ -229,18 +230,19 @@ public partial class AuthController
 
         try
         {
-            await identityService.LinkEmailAsync(userId, request.Email, cancellationToken);
+            await userProfileService.LinkEmailAsync(userId, request.Email, cancellationToken);
 
             // Get updated user info
-            var updatedUser = await identityService.GetByIdAsync(userId, cancellationToken);
+            var updatedUser = await userProfileService.GetByIdAsync(userId, cancellationToken);
+            var permissions = await userRoleService.GetEffectivePermissionsAsync(userId, cancellationToken);
 
             return Ok(new UserInfo
             {
                 Id = userId,
-                Username = updatedUser!.UserName,
+                Username = updatedUser!.Username,
                 Email = updatedUser.Email,
-                Roles = updatedUser.RoleAssignments.Select(r => r.RoleId.ToString()).ToArray(),
-                Permissions = updatedUser.PermissionGrants.Select(g => g.Identifier).ToArray(),
+                Roles = updatedUser.Roles.ToArray(),
+                Permissions = permissions.ToArray(),
                 IsAnonymous = updatedUser.IsAnonymous
             });
         }
@@ -281,7 +283,7 @@ public partial class AuthController
         [FromBody] PasskeyRegistrationRequest request,
         CancellationToken cancellationToken)
     {
-        var user = await identityService.GetByIdAsync(userId, cancellationToken);
+        var user = await userProfileService.GetByIdAsync(userId, cancellationToken);
         if (user is null)
         {
             return NotFound(new ProblemDetails
@@ -300,19 +302,20 @@ public partial class AuthController
             // If user was anonymous, upgrade them
             if (user.IsAnonymous)
             {
-                await identityService.UpgradeAnonymousWithPasskeyAsync(userId, cancellationToken);
+                await userRegistrationService.UpgradeAnonymousWithPasskeyAsync(userId, cancellationToken);
             }
 
             // Get updated user info
-            var updatedUser = await identityService.GetByIdAsync(userId, cancellationToken);
+            var updatedUser = await userProfileService.GetByIdAsync(userId, cancellationToken);
+            var permissions = await userRoleService.GetEffectivePermissionsAsync(userId, cancellationToken);
 
             return Ok(new UserInfo
             {
                 Id = userId,
-                Username = updatedUser!.UserName,
+                Username = updatedUser!.Username,
                 Email = updatedUser.Email,
-                Roles = updatedUser.RoleAssignments.Select(r => r.RoleId.ToString()).ToArray(),
-                Permissions = updatedUser.PermissionGrants.Select(g => g.Identifier).ToArray(),
+                Roles = updatedUser.Roles.ToArray(),
+                Permissions = permissions.ToArray(),
                 IsAnonymous = updatedUser.IsAnonymous
             });
         }
@@ -349,7 +352,7 @@ public partial class AuthController
         string provider,
         CancellationToken cancellationToken)
     {
-        var user = await identityService.GetByIdAsync(userId, cancellationToken);
+        var user = await userProfileService.GetByIdAsync(userId, cancellationToken);
         if (user is null)
         {
             return NotFound(new ProblemDetails
@@ -361,7 +364,7 @@ public partial class AuthController
         }
 
         // Check if provider is linked
-        var link = user.IdentityLinks.FirstOrDefault(l => string.Equals(l.Provider, provider, StringComparison.OrdinalIgnoreCase));
+        var link = user.ExternalLogins.FirstOrDefault(l => string.Equals(l.Provider.ToString(), provider, StringComparison.OrdinalIgnoreCase));
         if (link is null)
         {
             return NotFound(new ProblemDetails
@@ -373,11 +376,11 @@ public partial class AuthController
         }
 
         // Check if this is the last auth method
-        var hasPassword = !string.IsNullOrEmpty(user.PasswordHash);
-        var otherProviders = user.IdentityLinks.Count(l => !string.Equals(l.Provider, provider, StringComparison.OrdinalIgnoreCase));
+        var otherProviders = user.ExternalLogins.Count(l => !string.Equals(l.Provider.ToString(), provider, StringComparison.OrdinalIgnoreCase));
         var passkeys = await passkeyService.ListPasskeysAsync(userId, cancellationToken);
 
-        if (!hasPassword && otherProviders == 0 && passkeys.Count == 0)
+        // If this OAuth provider is the only auth method (no password, no passkeys, no other providers), prevent unlinking
+        if (!user.HasPassword && otherProviders == 0 && passkeys.Count == 0)
         {
             return BadRequest(new ProblemDetails
             {
@@ -400,7 +403,7 @@ public partial class AuthController
 
         try
         {
-            await externalLoginStore.RemoveLoginAsync(userId, providerEnum, cancellationToken);
+            await userProfileService.UnlinkExternalLoginAsync(userId, providerEnum, cancellationToken);
             return NoContent();
         }
         catch (InvalidOperationException ex)
@@ -436,7 +439,7 @@ public partial class AuthController
         [FromBody] ChangeUsernameRequest request,
         CancellationToken cancellationToken)
     {
-        var user = await identityService.GetByIdAsync(userId, cancellationToken);
+        var user = await userProfileService.GetByIdAsync(userId, cancellationToken);
         if (user is null)
         {
             return NotFound(new ProblemDetails
@@ -459,9 +462,9 @@ public partial class AuthController
         }
 
         // Check if username is already taken
-        if (!string.Equals(user.UserName, request.Username, StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(user.Username, request.Username, StringComparison.OrdinalIgnoreCase))
         {
-            var existingUser = await identityService.GetByUsernameAsync(request.Username, cancellationToken);
+            var existingUser = await userProfileService.GetByUsernameAsync(request.Username, cancellationToken);
             if (existingUser is not null)
             {
                 return Conflict(new ProblemDetails
@@ -475,18 +478,19 @@ public partial class AuthController
 
         try
         {
-            await identityService.ChangeUsernameAsync(userId, request.Username, cancellationToken);
+            await userProfileService.ChangeUsernameAsync(userId, request.Username, cancellationToken);
 
             // Get updated user info
-            var updatedUser = await identityService.GetByIdAsync(userId, cancellationToken);
+            var updatedUser = await userProfileService.GetByIdAsync(userId, cancellationToken);
+            var permissions = await userRoleService.GetEffectivePermissionsAsync(userId, cancellationToken);
 
             return Ok(new UserInfo
             {
                 Id = userId,
-                Username = updatedUser!.UserName,
+                Username = updatedUser!.Username,
                 Email = updatedUser.Email,
-                Roles = updatedUser.RoleAssignments.Select(r => r.RoleId.ToString()).ToArray(),
-                Permissions = updatedUser.PermissionGrants.Select(g => g.Identifier).ToArray(),
+                Roles = updatedUser.Roles.ToArray(),
+                Permissions = permissions.ToArray(),
                 IsAnonymous = updatedUser.IsAnonymous
             });
         }
@@ -523,7 +527,7 @@ public partial class AuthController
         [FromBody] ChangeEmailRequest request,
         CancellationToken cancellationToken)
     {
-        var user = await identityService.GetByIdAsync(userId, cancellationToken);
+        var user = await userProfileService.GetByIdAsync(userId, cancellationToken);
         if (user is null)
         {
             return NotFound(new ProblemDetails
@@ -535,7 +539,7 @@ public partial class AuthController
         }
 
         // Check if email is already taken by another user
-        var existingByEmail = await identityService.GetByEmailAsync(request.Email, cancellationToken);
+        var existingByEmail = await userProfileService.GetByEmailAsync(request.Email, cancellationToken);
         if (existingByEmail is not null && existingByEmail.Id != user.Id)
         {
             return Conflict(new ProblemDetails
@@ -548,18 +552,19 @@ public partial class AuthController
 
         try
         {
-            await identityService.ChangeEmailAsync(userId, request.Email, cancellationToken);
+            await userProfileService.ChangeEmailAsync(userId, request.Email, cancellationToken);
 
             // Get updated user info
-            var updatedUser = await identityService.GetByIdAsync(userId, cancellationToken);
+            var updatedUser = await userProfileService.GetByIdAsync(userId, cancellationToken);
+            var permissions = await userRoleService.GetEffectivePermissionsAsync(userId, cancellationToken);
 
             return Ok(new UserInfo
             {
                 Id = userId,
-                Username = updatedUser!.UserName,
+                Username = updatedUser!.Username,
                 Email = updatedUser.Email,
-                Roles = updatedUser.RoleAssignments.Select(r => r.RoleId.ToString()).ToArray(),
-                Permissions = updatedUser.PermissionGrants.Select(g => g.Identifier).ToArray(),
+                Roles = updatedUser.Roles.ToArray(),
+                Permissions = permissions.ToArray(),
                 IsAnonymous = updatedUser.IsAnonymous
             });
         }
@@ -593,7 +598,7 @@ public partial class AuthController
         [FromRoute, Required, PermissionParameter(PermissionIds.Api.Auth.UserIdParameter)] Guid userId,
         CancellationToken cancellationToken)
     {
-        var user = await identityService.GetByIdAsync(userId, cancellationToken);
+        var user = await userProfileService.GetByIdAsync(userId, cancellationToken);
         if (user is null)
         {
             return NotFound(new ProblemDetails
@@ -616,11 +621,9 @@ public partial class AuthController
         }
 
         // Check if email is required for login (no username set)
-        // If user has no username and has password, email is the only way to login
-        var hasPassword = !string.IsNullOrEmpty(user.PasswordHash);
-        var hasUsername = !string.IsNullOrWhiteSpace(user.UserName);
+        var hasUsername = !string.IsNullOrWhiteSpace(user.Username);
         
-        if (hasPassword && !hasUsername)
+        if (!hasUsername)
         {
             return BadRequest(new ProblemDetails
             {
@@ -632,7 +635,7 @@ public partial class AuthController
 
         try
         {
-            await identityService.UnlinkEmailAsync(userId, cancellationToken);
+            await userProfileService.UnlinkEmailAsync(userId, cancellationToken);
             return NoContent();
         }
         catch (InvalidOperationException ex)

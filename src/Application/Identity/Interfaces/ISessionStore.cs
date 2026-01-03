@@ -3,8 +3,10 @@ using Domain.Identity.Models;
 namespace Application.Identity.Interfaces;
 
 /// <summary>
-/// Interface for storing and managing user login sessions.
+/// Legacy interface for storing and managing user login sessions.
+/// Use ISessionRepository from Application.Identity.Interfaces.Infrastructure instead.
 /// </summary>
+[Obsolete("Use ISessionRepository from Application.Identity.Interfaces.Infrastructure instead. This interface will be removed in a future version.")]
 public interface ISessionStore
 {
     /// <summary>

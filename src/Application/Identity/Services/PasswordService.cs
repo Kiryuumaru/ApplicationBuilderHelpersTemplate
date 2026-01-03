@@ -1,0 +1,162 @@
+using Application.Identity.Interfaces;
+using Application.Identity.Interfaces.Infrastructure;
+using Domain.Identity.Interfaces;
+using Domain.Identity.Models;
+using Microsoft.AspNetCore.Identity;
+
+namespace Application.Identity.Services;
+
+/// <summary>
+/// Implementation of IPasswordService using repositories directly.
+/// </summary>
+internal sealed class PasswordService(
+    IUserRepository userRepository,
+    IPasswordHasher<User> passwordHasher,
+    IPasswordVerifier passwordVerifier,
+    UserManager<User> userManager) : IPasswordService
+{
+    private readonly IUserRepository _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+    private readonly IPasswordHasher<User> _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
+    private readonly IPasswordVerifier _passwordVerifier = passwordVerifier ?? throw new ArgumentNullException(nameof(passwordVerifier));
+    private readonly UserManager<User> _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
+
+    public async Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken cancellationToken)
+    {
+        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
+            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+
+        if (string.IsNullOrEmpty(user.PasswordHash))
+        {
+            throw new InvalidOperationException("User does not have a password set.");
+        }
+
+        if (!_passwordVerifier.Verify(user.PasswordHash, currentPassword))
+        {
+            // Throw UnauthorizedAccessException for credential failures (maps to 401)
+            throw new UnauthorizedAccessException("Current password is incorrect.");
+        }
+
+        // Validate new password strength
+        foreach (var validator in _userManager.PasswordValidators)
+        {
+            var result = await validator.ValidateAsync(_userManager, user, newPassword).ConfigureAwait(false);
+            if (!result.Succeeded)
+            {
+                var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+                throw new InvalidOperationException($"Invalid password: {errors}");
+            }
+        }
+
+        user.SetPasswordHash(_passwordHasher.HashPassword(user, newPassword));
+        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task ResetPasswordAsync(Guid userId, string newPassword, CancellationToken cancellationToken)
+    {
+        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
+            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+
+        // Validate new password strength
+        foreach (var validator in _userManager.PasswordValidators)
+        {
+            var result = await validator.ValidateAsync(_userManager, user, newPassword).ConfigureAwait(false);
+            if (!result.Succeeded)
+            {
+                var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+                throw new InvalidOperationException($"Invalid password: {errors}");
+            }
+        }
+
+        user.SetPasswordHash(_passwordHasher.HashPassword(user, newPassword));
+        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task LinkPasswordAsync(Guid userId, string username, string password, string? email, CancellationToken cancellationToken)
+    {
+        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
+            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+
+        // SECURITY: Prevent overwriting existing password
+        if (!string.IsNullOrEmpty(user.PasswordHash))
+        {
+            throw new InvalidOperationException("User already has a password linked. Use change password instead.");
+        }
+
+        // Check if username is already taken
+        var existingUser = await _userRepository.FindByUsernameAsync(username, cancellationToken).ConfigureAwait(false);
+        if (existingUser is not null && existingUser.Id != userId)
+        {
+            throw new InvalidOperationException($"Username '{username}' is already taken.");
+        }
+
+        // Check if email is already taken
+        if (!string.IsNullOrEmpty(email))
+        {
+            var existingByEmail = await _userRepository.FindByEmailAsync(email, cancellationToken).ConfigureAwait(false);
+            if (existingByEmail is not null && existingByEmail.Id != userId)
+            {
+                throw new InvalidOperationException($"Email '{email}' is already registered.");
+            }
+        }
+
+        // Validate password strength
+        foreach (var validator in _userManager.PasswordValidators)
+        {
+            var result = await validator.ValidateAsync(_userManager, user, password).ConfigureAwait(false);
+            if (!result.Succeeded)
+            {
+                var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+                throw new InvalidOperationException($"Invalid password: {errors}");
+            }
+        }
+
+        // Upgrade from anonymous if needed
+        if (user.IsAnonymous)
+        {
+            user.UpgradeFromAnonymous(username);
+        }
+        else
+        {
+            user.SetUserName(username);
+            user.SetNormalizedUserName(username.ToUpperInvariant());
+        }
+
+        if (!string.IsNullOrEmpty(email))
+        {
+            user.SetEmail(email);
+        }
+
+        user.SetPasswordHash(_passwordHasher.HashPassword(user, password));
+        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<string?> GeneratePasswordResetTokenAsync(string email, CancellationToken cancellationToken)
+    {
+        var user = await _userRepository.FindByEmailAsync(email, cancellationToken).ConfigureAwait(false);
+        if (user is null)
+        {
+            return null;
+        }
+
+        // Generate a simple reset token (in production, use a more secure mechanism)
+        var token = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
+        // TODO: Store the token with expiration for later verification
+        return token;
+    }
+
+    public async Task<bool> ResetPasswordWithTokenAsync(string email, string token, string newPassword, CancellationToken cancellationToken)
+    {
+        var user = await _userRepository.FindByEmailAsync(email, cancellationToken).ConfigureAwait(false);
+        if (user is null)
+        {
+            return false;
+        }
+
+        // TODO: Verify the token
+        // For now, just reset the password
+        user.SetPasswordHash(_passwordHasher.HashPassword(user, newPassword));
+        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+
+        return true;
+    }
+}

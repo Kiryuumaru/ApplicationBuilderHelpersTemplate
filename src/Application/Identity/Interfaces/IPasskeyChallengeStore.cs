@@ -3,8 +3,10 @@ using Domain.Identity.Models;
 namespace Application.Identity.Interfaces;
 
 /// <summary>
-/// Store for managing passkey challenges during WebAuthn operations.
+/// Legacy store for managing passkey challenges during WebAuthn operations.
+/// Use IPasskeyRepository from Application.Identity.Interfaces.Infrastructure instead.
 /// </summary>
+[Obsolete("Use IPasskeyRepository from Application.Identity.Interfaces.Infrastructure instead. This interface will be removed in a future version.")]
 public interface IPasskeyChallengeStore
 {
     /// <summary>

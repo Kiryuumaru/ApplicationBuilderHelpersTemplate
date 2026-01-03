@@ -37,7 +37,16 @@ internal static class IdentityServiceCollectionExtensions
 
         services.AddScoped<IPasswordVerifier, PasswordHasherVerifier>();
         services.AddScoped<UserAuthenticationService>();
-        services.AddScoped<IIdentityService, IdentityService>();
+        
+        // Focused identity services
+        services.AddScoped<IUserRegistrationService, UserRegistrationService>();
+        services.AddScoped<IAuthenticationService, AuthenticationService>();
+        services.AddScoped<IPasswordService, PasswordService>();
+        services.AddScoped<ITwoFactorService, TwoFactorService>();
+        services.AddScoped<IUserProfileService, UserProfileService>();
+        services.AddScoped<IUserRoleService, UserRoleService>();
+        services.AddScoped<ISessionService, SessionService>();
+        
         services.AddScoped<IAnonymousUserCleanupService, AnonymousUserCleanupService>();
 
         // OAuth service - using mock implementation by default

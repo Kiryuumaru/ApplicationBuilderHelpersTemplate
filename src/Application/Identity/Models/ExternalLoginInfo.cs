@@ -11,6 +11,11 @@ public sealed record ExternalLoginInfo
     public required string Provider { get; init; }
 
     /// <summary>
+    /// The user's unique identifier at the provider (subject claim).
+    /// </summary>
+    public required string ProviderSubject { get; init; }
+
+    /// <summary>
     /// The display name for this linked account.
     /// </summary>
     public string? DisplayName { get; init; }

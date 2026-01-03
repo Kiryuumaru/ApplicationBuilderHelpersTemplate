@@ -1,13 +1,14 @@
 using Application.Identity.Interfaces;
+using Application.Identity.Interfaces.Infrastructure;
 using Microsoft.Extensions.Logging;
 
 namespace Application.Identity.Services;
 
 internal sealed class AnonymousUserCleanupService(
-    IUserStore userStore,
+    IUserRepository userRepository,
     ILogger<AnonymousUserCleanupService> logger) : IAnonymousUserCleanupService
 {
-    private readonly IUserStore _userStore = userStore ?? throw new ArgumentNullException(nameof(userStore));
+    private readonly IUserRepository _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
     private readonly ILogger<AnonymousUserCleanupService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     public async Task<int> CleanupAbandonedAccountsAsync(int retentionDays, CancellationToken cancellationToken)
@@ -24,7 +25,7 @@ internal sealed class AnonymousUserCleanupService(
             cutoffDate,
             retentionDays);
 
-        var deletedCount = await _userStore.DeleteAbandonedAnonymousUsersAsync(cutoffDate, cancellationToken);
+        var deletedCount = await _userRepository.DeleteAbandonedAnonymousUsersAsync(cutoffDate, cancellationToken);
 
         if (deletedCount > 0)
         {

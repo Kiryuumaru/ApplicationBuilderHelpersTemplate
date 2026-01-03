@@ -144,22 +144,31 @@ public partial class AuthController
         var userInfo = result.UserInfo!;
 
         // Check if user already exists with this external login
-        var existingUserId = await externalLoginStore.FindUserByLoginAsync(
-            userInfo.Provider,
-            userInfo.ProviderSubject,
-            cancellationToken);
+        var user = await userProfileService.GetByIdAsync(Guid.Empty, cancellationToken); // Placeholder to get existing linked user
+        var providerName = userInfo.Provider.ToString();
+        var existingLogins = user?.ExternalLogins.Where(el => 
+            string.Equals(el.Provider, providerName, StringComparison.Ordinal) && 
+            string.Equals(el.ProviderSubject, userInfo.ProviderSubject, StringComparison.Ordinal)).ToList();
+
+        // We need to search by external login - let's use the OAuth service to check
+        // For now, create new user or find by email
+        var existingByEmail = !string.IsNullOrEmpty(userInfo.Email) && userInfo.EmailVerified
+            ? await userProfileService.GetByEmailAsync(userInfo.Email, cancellationToken)
+            : null;
 
         bool isNewUser = false;
-        User? user;
-        UserSession userSession;
+        UserDto? userDto = existingByEmail;
+        Guid userId;
+        string? username;
+        IReadOnlyCollection<string> roles;
 
-        if (existingUserId.HasValue)
+        if (existingByEmail is not null)
         {
-            // Existing user - create session
-            user = await identityService.GetByIdAsync(existingUserId.Value, cancellationToken)
-                ?? throw new InvalidOperationException("User not found for external login.");
-
-            userSession = await identityService.CreateSessionForUserAsync(existingUserId.Value, cancellationToken);
+            // Existing user - get user info for session
+            var userResult = await authenticationService.GetUserForSessionAsync(existingByEmail.Id, cancellationToken);
+            userId = userResult.UserId!.Value;
+            username = userResult.Username;
+            roles = userResult.Roles;
         }
         else
         {
@@ -171,30 +180,27 @@ public partial class AuthController
 
             var registrationRequest = new ExternalUserRegistrationRequest(
                 Username: baseUsername,
-                Provider: userInfo.Provider.ToString(),
+                Provider: userInfo.Provider,
                 ProviderSubject: userInfo.ProviderSubject,
                 ProviderEmail: userInfo.Email,
                 ProviderDisplayName: userInfo.Name,
                 Email: userInfo.EmailVerified ? userInfo.Email : null,
                 AutoActivate: true);
 
-            user = await identityService.RegisterExternalAsync(registrationRequest, cancellationToken);
-
-            // Link the external login (in case RegisterExternalAsync didn't do it via UserLoginInfo)
-            await externalLoginStore.AddLoginAsync(
-                user.Id,
-                userInfo.Provider,
-                userInfo.ProviderSubject,
-                userInfo.Name,
-                userInfo.Email,
-                cancellationToken);
-
-            // Create session for new user
-            userSession = await identityService.CreateSessionForUserAsync(user.Id, cancellationToken);
+            userDto = await userRegistrationService.RegisterExternalAsync(registrationRequest, cancellationToken);
+            userId = userDto.Id;
+            username = userDto.Username;
+            roles = userDto.Roles;
         }
 
-        // Create session and tokens
-        var (accessToken, refreshToken, loginSession) = await CreateSessionAndTokensAsync(userSession, cancellationToken);
+        // Create session and tokens (single session creation)
+        var (accessToken, refreshToken, sessionId) = await CreateSessionAndTokensAsync(
+            userId,
+            username,
+            roles,
+            cancellationToken);
+
+        var permissions = await userRoleService.GetEffectivePermissionsAsync(userId, cancellationToken);
 
         var response = new AuthResponse
         {
@@ -203,11 +209,11 @@ public partial class AuthController
             ExpiresIn = AccessTokenExpirationMinutes * 60,
             User = new UserInfo
             {
-                Id = userSession.UserId,
-                Username = userSession.Username,
-                Email = user?.Email,
-                Roles = userSession.RoleCodes,
-                Permissions = userSession.PermissionIdentifiers
+                Id = userId,
+                Username = username,
+                Email = userDto?.Email,
+                Roles = roles.ToArray(),
+                Permissions = permissions.ToArray()
             }
         };
 
@@ -230,11 +236,15 @@ public partial class AuthController
         [FromRoute, Required, PermissionParameter(PermissionIds.Api.Auth.UserIdParameter)] Guid userId,
         CancellationToken cancellationToken)
     {
-        var logins = await externalLoginStore.GetLoginsAsync(userId, cancellationToken);
+        var user = await userProfileService.GetByIdAsync(userId, cancellationToken);
+        if (user is null)
+        {
+            return NotFound();
+        }
 
         return Ok(new ExternalLoginsResponse
         {
-            Logins = logins.Select(l => new ExternalLoginResponse
+            Logins = user.ExternalLogins.Select(l => new ExternalLoginResponse
             {
                 Provider = l.Provider,
                 DisplayName = l.DisplayName,

@@ -129,7 +129,13 @@ public partial class AuthController
             var result = await passkeyService.VerifyLoginAsync(request.ChallengeId, request.AssertionResponseJson, cancellationToken);
 
             var userSession = result.Session;
-            var (accessToken, refreshToken, loginSession) = await CreateSessionAndTokensAsync(userSession, cancellationToken);
+            var (accessToken, refreshToken, sessionId) = await CreateSessionAndTokensAsync(
+                userSession.UserId,
+                userSession.Username,
+                userSession.Roles,
+                cancellationToken);
+
+            var permissions = await userRoleService.GetEffectivePermissionsAsync(userSession.UserId, cancellationToken);
 
             return Ok(new AuthResponse
             {
@@ -141,8 +147,8 @@ public partial class AuthController
                     Id = userSession.UserId,
                     Username = userSession.Username,
                     Email = null, // Session doesn't include email currently
-                    Roles = userSession.RoleCodes,
-                    Permissions = userSession.PermissionIdentifiers
+                    Roles = userSession.Roles.ToArray(),
+                    Permissions = permissions.ToArray()
                 }
             });
         }
@@ -251,7 +257,7 @@ public partial class AuthController
         Guid credentialId,
         CancellationToken cancellationToken)
     {
-        var user = await identityService.GetByIdAsync(userId, cancellationToken);
+        var user = await userProfileService.GetByIdAsync(userId, cancellationToken);
         if (user is null)
         {
             return NotFound(new ProblemDetails
@@ -263,12 +269,11 @@ public partial class AuthController
         }
 
         // Check if this is the last auth method
-        var hasPassword = !string.IsNullOrEmpty(user.PasswordHash);
-        var oauthProviders = user.IdentityLinks.Count;
+        var oauthProviders = user.ExternalLogins.Count;
         var passkeys = await passkeyService.ListPasskeysAsync(userId, cancellationToken);
 
-        // If this passkey is the only auth method, prevent deletion
-        if (!hasPassword && oauthProviders == 0 && passkeys.Count <= 1)
+        // If this passkey is the only auth method (no password, no oauth, only this passkey), prevent deletion
+        if (!user.HasPassword && oauthProviders == 0 && passkeys.Count <= 1)
         {
             return BadRequest(new ProblemDetails
             {

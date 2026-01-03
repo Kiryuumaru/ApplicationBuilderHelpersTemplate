@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Application.Authorization.Interfaces;
+using Application.Authorization.Interfaces.Infrastructure;
 using Domain.Authorization.Models;
 
 namespace Application.UnitTests.Authorization.Fakes;

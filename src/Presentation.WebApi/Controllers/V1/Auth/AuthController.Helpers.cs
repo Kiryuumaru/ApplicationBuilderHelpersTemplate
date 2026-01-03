@@ -1,6 +1,5 @@
 using Domain.Authorization.Constants;
 using Domain.Authorization.ValueObjects;
-using Domain.Identity.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -53,13 +52,20 @@ public partial class AuthController
     /// <summary>
     /// Creates a new login session and generates access and refresh tokens.
     /// </summary>
-    private async Task<(string AccessToken, string RefreshToken, LoginSession Session)> CreateSessionAndTokensAsync(
-        UserSession userSession,
+    /// <param name="userId">The user's ID.</param>
+    /// <param name="username">The user's username (null for anonymous users).</param>
+    /// <param name="roles">The user's role codes.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Access token, refresh token, and session ID.</returns>
+    private async Task<(string AccessToken, string RefreshToken, Guid SessionId)> CreateSessionAndTokensAsync(
+        Guid userId,
+        string? username,
+        IReadOnlyCollection<string> roles,
         CancellationToken cancellationToken)
     {
         // Generate a temporary refresh token to get its hash
         var sessionId = Guid.NewGuid();
-        var refreshToken = await GenerateRefreshTokenAsync(userSession.UserId, userSession.Username, sessionId, cancellationToken);
+        var refreshToken = await GenerateRefreshTokenAsync(userId, username, sessionId, cancellationToken);
         var tokenHash = HashToken(refreshToken);
 
         // Extract device info from request headers
@@ -67,42 +73,32 @@ public partial class AuthController
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
         var deviceName = ParseDeviceName(userAgent);
 
-        // Create the login session
-        var loginSession = LoginSession.Create(
-            userSession.UserId,
+        // Create the login session via service
+        await sessionService.CreateSessionAsync(
+            userId,
             tokenHash,
             DateTimeOffset.UtcNow.AddDays(RefreshTokenExpirationDays),
             deviceName,
             userAgent,
-            ipAddress);
-
-        // Override the generated session ID to match
-        // We need to reconstruct with the known session ID
-        loginSession = LoginSession.Reconstruct(
+            ipAddress,
             sessionId,
-            loginSession.UserId,
-            loginSession.RefreshTokenHash,
-            loginSession.DeviceName,
-            loginSession.UserAgent,
-            loginSession.IpAddress,
-            loginSession.CreatedAt,
-            loginSession.LastUsedAt,
-            loginSession.ExpiresAt,
-            loginSession.IsRevoked,
-            loginSession.RevokedAt);
+            cancellationToken);
 
-        await sessionStore.CreateAsync(loginSession, cancellationToken);
+        var accessToken = await GenerateAccessTokenForSessionAsync(userId, username, roles, sessionId, cancellationToken);
 
-        var accessToken = await GenerateAccessTokenAsync(userSession, sessionId, cancellationToken);
-
-        return (accessToken, refreshToken, loginSession);
+        return (accessToken, refreshToken, sessionId);
     }
 
     /// <summary>
-    /// Generates an access token for the given session with all user permissions.
+    /// Generates an access token for a new session with all user permissions.
     /// Access tokens explicitly DENY the refresh permission - they cannot be used to refresh.
     /// </summary>
-    private async Task<string> GenerateAccessTokenAsync(UserSession session, Guid loginSessionId, CancellationToken cancellationToken)
+    private async Task<string> GenerateAccessTokenForSessionAsync(
+        Guid userId,
+        string? username,
+        IReadOnlyCollection<string> roles,
+        Guid loginSessionId,
+        CancellationToken cancellationToken)
     {
         var additionalClaims = new List<Claim>
         {
@@ -110,35 +106,25 @@ public partial class AuthController
         };
 
         // Add role claims
-        foreach (var role in session.RoleCodes)
+        foreach (var role in roles)
         {
             additionalClaims.Add(new Claim(ClaimTypes.Role, role));
         }
 
-        // Build scopes with explicit deny for refresh permission
-        var scopes = new List<ScopeDirective>();
+        // Get permissions for the user from role service
+        // GetEffectivePermissionsAsync returns scope directive strings (e.g., "allow;_read;userId=xxx")
+        var permissions = await userRoleService.GetEffectivePermissionsAsync(userId, cancellationToken);
         
-        // Use new scope-based token generation if session has scope directives
-        if (session.Scope.Count > 0)
-        {
-            scopes.AddRange(session.Scope);
-        }
-        else
-        {
-            // Fall back to legacy permission identifiers - convert to ScopeDirective
-            foreach (var permissionId in session.PermissionIdentifiers)
-            {
-                scopes.Add(ScopeDirective.Allow(permissionId));
-            }
-        }
+        // Parse the scope directive strings - they're already in directive format
+        var scopes = permissions.Select(ScopeDirective.Parse).ToList();
         
         // SECURITY: Explicitly deny refresh permission on access tokens
         // This ensures access tokens cannot be used to call the refresh endpoint
         scopes.Add(ScopeDirective.Parse(PermissionIds.Api.Auth.Refresh.Deny()));
 
         return await permissionService.GenerateTokenWithScopeAsync(
-            session.UserId.ToString(),
-            session.Username ?? string.Empty,
+            userId.ToString(),
+            username ?? string.Empty,
             scopes,
             additionalClaims,
             DateTimeOffset.UtcNow.AddMinutes(AccessTokenExpirationMinutes),
@@ -156,8 +142,8 @@ public partial class AuthController
             new(SessionIdClaimType, loginSessionId.ToString())
         };
 
-        // Build scopes with explicit deny for refresh permission - convert permission strings to Allow directives
-        var scopes = permissions.Select(p => ScopeDirective.Allow(p)).ToList();
+        // Parse scope directive strings - they're already in directive format (e.g., "allow;_read;userId=xxx")
+        var scopes = permissions.Select(ScopeDirective.Parse).ToList();
         
         // SECURITY: Explicitly deny refresh permission on access tokens
         scopes.Add(ScopeDirective.Parse(PermissionIds.Api.Auth.Refresh.Deny()));

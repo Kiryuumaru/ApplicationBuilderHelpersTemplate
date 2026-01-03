@@ -14,11 +14,6 @@ public static class RoleServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddScoped<IRoleService, RoleService>();
-        services.AddScoped<IRoleLookup>(static sp =>
-        {
-            var repository = sp.GetService<IRoleRepository>();
-            return new RoleLookupService(repository);
-        });
         services.AddScoped<IUserRoleResolver, UserRoleResolver>();
         return services;
     }

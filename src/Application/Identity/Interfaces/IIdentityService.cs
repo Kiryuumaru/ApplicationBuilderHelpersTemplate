@@ -3,6 +3,18 @@ using Domain.Identity.Models;
 
 namespace Application.Identity.Interfaces;
 
+/// <summary>
+/// Legacy god service that handles all identity operations.
+/// This interface will be removed in a future version.
+/// Use the focused service interfaces instead:
+/// - IUserRegistrationService for registration
+/// - IAuthenticationService for authentication
+/// - IPasswordService for password management
+/// - ITwoFactorService for 2FA
+/// - IUserProfileService for profile management
+/// - IUserRoleService for role management
+/// </summary>
+[Obsolete("Use focused service interfaces (IUserRegistrationService, IAuthenticationService, etc.) instead. This interface will be removed in a future version.")]
 public interface IIdentityService
 {
     /// <summary>
@@ -56,7 +68,7 @@ public interface IIdentityService
 
     Task<bool> Verify2faCodeAsync(Guid userId, string code, CancellationToken cancellationToken);
 
-    Task<AuthenticationResult> AuthenticateWithResultAsync(string username, string password, CancellationToken cancellationToken);
+    Task<AuthenticationResultDto> AuthenticateWithResultAsync(string username, string password, CancellationToken cancellationToken);
 
     Task<UserSession> Complete2faAuthenticationAsync(Guid userId, string code, CancellationToken cancellationToken);
 

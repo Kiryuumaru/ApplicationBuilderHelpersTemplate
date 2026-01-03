@@ -1,5 +1,5 @@
-using Application.Authorization.Interfaces;
-using Application.Identity.Interfaces;
+using Application.Authorization.Interfaces.Infrastructure;
+using Application.Identity.Interfaces.Infrastructure;
 using Domain.Authorization.Models;
 using Domain.Identity.Models;
 using Infrastructure.EFCore.Identity.Configurations;
@@ -18,22 +18,15 @@ public static class EFCoreIdentityServiceCollectionExtensions
         // Register entity configuration for modular DbContext composition
         services.AddSingleton<IEFCoreEntityConfiguration, IdentityEntityConfiguration>();
 
-        services.AddScoped<EFCoreUserStore>();
-        services.AddScoped<IUserStore<User>>(sp => sp.GetRequiredService<EFCoreUserStore>());
-        services.AddScoped<IUserStore>(sp => sp.GetRequiredService<EFCoreUserStore>());
-        services.AddScoped<IRoleStore<Role>, EFCoreRoleStore>();
-        services.AddScoped<EFCoreRoleRepository>();
-        services.AddScoped<IRoleRepository>(sp => sp.GetRequiredService<EFCoreRoleRepository>());
+        // ASP.NET Core Identity stores (required for UserManager/SignInManager)
+        services.AddScoped<IUserStore<User>, EFCoreAspNetUserStore>();
+        services.AddScoped<IRoleStore<Role>, EFCoreAspNetRoleStore>();
 
-        // Passkey stores
-        services.AddScoped<IPasskeyChallengeStore, EFCorePasskeyChallengeStore>();
-        services.AddScoped<IPasskeyCredentialStore, EFCorePasskeyCredentialStore>();
-
-        // Session store
-        services.AddScoped<ISessionStore, EFCoreSessionStore>();
-
-        // External login store
-        services.AddScoped<IExternalLoginStore, EFCoreExternalLoginStore>();
+        // Internal repositories for Application layer
+        services.AddScoped<IUserRepository, EFCoreUserRepository>();
+        services.AddScoped<ISessionRepository, EFCoreSessionRepository>();
+        services.AddScoped<IPasskeyRepository, EFCorePasskeyRepository>();
+        services.AddScoped<IRoleRepository, EFCoreRoleRepository>();
 
         // Background worker for anonymous user cleanup
         services.AddHostedService<AnonymousUserCleanupWorker>();

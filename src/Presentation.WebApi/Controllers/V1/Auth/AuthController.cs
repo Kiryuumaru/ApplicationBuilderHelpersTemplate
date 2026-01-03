@@ -26,12 +26,16 @@ namespace Presentation.WebApi.Controllers.V1;
 [Produces("application/json")]
 [Tags("Authentication")]
 public partial class AuthController(
-    IIdentityService identityService,
+    IUserRegistrationService userRegistrationService,
+    IAuthenticationService authenticationService,
+    IPasswordService passwordService,
+    ITwoFactorService twoFactorService,
+    IUserProfileService userProfileService,
+    IUserRoleService userRoleService,
+    ISessionService sessionService,
     IEmailService emailService,
     IPasskeyService passkeyService,
-    ISessionStore sessionStore,
     IOAuthService oauthService,
-    IExternalLoginStore externalLoginStore,
     [FromKeyedServices("GOAT_CLOUD")] IPermissionService permissionService) : ControllerBase
 {
     private const string SessionIdClaimType = "sid";

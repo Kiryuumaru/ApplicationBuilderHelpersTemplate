@@ -1,13 +1,10 @@
 using Application.Authorization.Interfaces;
-using Application.Authorization.Services;
 using Application.Identity.Interfaces;
 using ApplicationBuilderHelpers.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Presentation.WebApi.ConfigureOptions;
@@ -25,9 +22,9 @@ internal class ConfigureJwtBearerOptions(ILogger<ConfigureJwtBearerOptions> logg
     {
         using var scope = serviceProvider.CreateScope();
         var lifetimeService = scope.ServiceProvider.GetRequiredService<LifetimeService>();
-        var jwtTokenService = scope.ServiceProvider.GetRequiredKeyedService<IJwtTokenService>("GOAT_CLOUD");
+        var permissionService = scope.ServiceProvider.GetRequiredService<IPermissionService>();
 
-        options.TokenValidationParameters = jwtTokenService.GetTokenValidationParameters(lifetimeService.CreateCancellationToken()).Result;
+        options.TokenValidationParameters = permissionService.GetTokenValidationParametersAsync(lifetimeService.CreateCancellationToken()).Result;
 
         options.Events = new JwtBearerEvents
         {
@@ -45,9 +42,9 @@ internal class ConfigureJwtBearerOptions(ILogger<ConfigureJwtBearerOptions> logg
                 if (sessionIdClaim is not null && Guid.TryParse(sessionIdClaim.Value, out var sessionId))
                 {
                     using var validationScope = serviceProvider.CreateScope();
-                    var sessionStore = validationScope.ServiceProvider.GetRequiredService<ISessionStore>();
+                    var sessionService = validationScope.ServiceProvider.GetRequiredService<ISessionService>();
 
-                    var session = await sessionStore.GetByIdAsync(sessionId, context.HttpContext.RequestAborted);
+                    var session = await sessionService.GetByIdAsync(sessionId, context.HttpContext.RequestAborted);
                     if (session is null || !session.IsValid)
                     {
                         logger.LogWarning("Session {SessionId} is revoked or invalid for user: {User}",

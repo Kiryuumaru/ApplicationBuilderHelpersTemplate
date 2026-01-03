@@ -1,10 +1,11 @@
+using Domain.Identity.Enums;
 using System.Collections.Generic;
 
 namespace Application.Identity.Models;
 
 public sealed record ExternalUserRegistrationRequest(
     string Username,
-    string Provider,
+    ExternalLoginProvider Provider,
     string ProviderSubject,
     string? ProviderEmail = null,
     string? ProviderDisplayName = null,

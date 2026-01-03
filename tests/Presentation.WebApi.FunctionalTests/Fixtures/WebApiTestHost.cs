@@ -40,12 +40,15 @@ public class WebApiTestHost : IAsyncDisposable
         timeout ??= TimeSpan.FromSeconds(60);
 
         _output.WriteLine($"[HOST] Starting WebApi on {BaseUrl}...");
+        _output.WriteLine($"[HOST] AppContext.BaseDirectory: {AppContext.BaseDirectory}");
 
         // Find the WebApi executable - it should be built already
         var exePath = Path.GetFullPath(Path.Combine(
             AppContext.BaseDirectory,
             "..", "..", "..", "..", "..",
             "src", "Presentation.WebApi", "bin", "Debug", "net10.0", "Presentation.WebApi.exe"));
+
+        _output.WriteLine($"[HOST] Computed exe path: {exePath}");
 
         // Fallback to dll if exe doesn't exist (Linux/macOS)
         if (!File.Exists(exePath))
@@ -54,9 +57,11 @@ public class WebApiTestHost : IAsyncDisposable
                 AppContext.BaseDirectory,
                 "..", "..", "..", "..", "..",
                 "src", "Presentation.WebApi", "bin", "Debug", "net10.0", "Presentation.WebApi.dll"));
+            _output.WriteLine($"[HOST] Exe not found, trying DLL: {exePath}");
         }
 
         _output.WriteLine($"[HOST] Using executable: {exePath}");
+        _output.WriteLine($"[HOST] File exists: {File.Exists(exePath)}");
 
         if (!File.Exists(exePath))
         {
@@ -64,17 +69,24 @@ public class WebApiTestHost : IAsyncDisposable
         }
 
         var isExe = exePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
+        var workDir = Path.GetDirectoryName(exePath);
+        var args = isExe ? $"--urls {BaseUrl}" : $"\"{exePath}\" --urls {BaseUrl}";
+        var fileName = isExe ? exePath : "dotnet";
+
+        _output.WriteLine($"[HOST] FileName: {fileName}");
+        _output.WriteLine($"[HOST] Arguments: {args}");
+        _output.WriteLine($"[HOST] WorkingDirectory: {workDir}");
 
         var startInfo = new ProcessStartInfo
         {
-            FileName = isExe ? exePath : "dotnet",
+            FileName = fileName,
             // Pass --urls argument to configure the listening URL
-            Arguments = isExe ? $"--urls {BaseUrl}" : $"\"{exePath}\" --urls {BaseUrl}",
+            Arguments = args,
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             CreateNoWindow = true,
-            WorkingDirectory = Path.GetDirectoryName(exePath)
+            WorkingDirectory = workDir
         };
 
         // Also set environment variables as fallback
@@ -121,6 +133,12 @@ public class WebApiTestHost : IAsyncDisposable
 
         while (sw.Elapsed < timeout)
         {
+            // Check if process has exited unexpectedly
+            if (_process != null && _process.HasExited)
+            {
+                throw new InvalidOperationException($"WebApi process exited unexpectedly with code {_process.ExitCode}. Check the output logs above for errors.");
+            }
+
             try
             {
                 var response = await _httpClient.GetAsync("/");
@@ -130,9 +148,13 @@ public class WebApiTestHost : IAsyncDisposable
                     return;
                 }
             }
-            catch (HttpRequestException)
+            catch (HttpRequestException ex)
             {
-                // Server not ready yet
+                // Server not ready yet - log every 5 seconds
+                if (sw.ElapsedMilliseconds % 5000 < 100)
+                {
+                    _output.WriteLine($"[HOST] Waiting for server... ({sw.ElapsedMilliseconds}ms elapsed, error: {ex.Message})");
+                }
             }
 
             await Task.Delay(100);

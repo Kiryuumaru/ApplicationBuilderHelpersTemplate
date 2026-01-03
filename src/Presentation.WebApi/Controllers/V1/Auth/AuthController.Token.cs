@@ -73,8 +73,9 @@ public partial class AuthController
         }
 
         // Validate the session exists and is not revoked
-        var loginSession = await sessionStore.GetByIdAsync(sessionId, cancellationToken);
-        if (loginSession is null || !loginSession.IsValid)
+        var tokenHash = HashToken(request.RefreshToken);
+        var loginSession = await sessionService.ValidateSessionAsync(sessionId, tokenHash, cancellationToken);
+        if (loginSession is null)
         {
             return Unauthorized(new ProblemDetails
             {
@@ -84,22 +85,8 @@ public partial class AuthController
             });
         }
 
-        // Verify the refresh token hash matches (detect token theft)
-        var tokenHash = HashToken(request.RefreshToken);
-        if (!string.Equals(loginSession.RefreshTokenHash, tokenHash, StringComparison.Ordinal))
-        {
-            // Token theft detected! Revoke the entire session
-            await sessionStore.RevokeAsync(sessionId, cancellationToken);
-            return Unauthorized(new ProblemDetails
-            {
-                Status = StatusCodes.Status401Unauthorized,
-                Title = "Session revoked",
-                Detail = "This session has been revoked for security reasons."
-            });
-        }
-
         // Fetch fresh user info by userId (not username, since username can change)
-        var user = await identityService.GetByIdAsync(userId, cancellationToken);
+        var user = await userProfileService.GetByIdAsync(userId, cancellationToken);
         if (user is null)
         {
             return Unauthorized(new ProblemDetails
@@ -111,18 +98,18 @@ public partial class AuthController
         }
 
         // Get fresh permissions by re-building effective permissions
-        var effectivePermissions = user.PermissionGrants.Select(g => g.Identifier).ToList();
+        var effectivePermissions = await userRoleService.GetEffectivePermissionsAsync(userId, cancellationToken);
 
         // Generate new tokens - refresh token rotation (use current username from DB)
-        var currentUsername = user.UserName ?? userId.ToString();
+        var currentUsername = user.Username ?? userId.ToString();
         var newRefreshToken = await GenerateRefreshTokenAsync(userId, currentUsername, sessionId, cancellationToken);
         var newTokenHash = HashToken(newRefreshToken);
+        var newExpiresAt = DateTimeOffset.UtcNow.AddDays(RefreshTokenExpirationDays);
         
         // Rotate the refresh token in the session
-        loginSession.RotateRefreshToken(newTokenHash, DateTimeOffset.UtcNow.AddDays(RefreshTokenExpirationDays));
-        await sessionStore.UpdateAsync(loginSession, cancellationToken);
+        await sessionService.UpdateRefreshTokenAsync(sessionId, newTokenHash, newExpiresAt, cancellationToken);
 
-        var accessToken = await GenerateAccessTokenForUserAsync(userId, currentUsername, effectivePermissions, sessionId, cancellationToken);
+        var accessToken = await GenerateAccessTokenForUserAsync(userId, currentUsername, effectivePermissions.ToList(), sessionId, cancellationToken);
 
         return Ok(new AuthResponse
         {
@@ -134,8 +121,8 @@ public partial class AuthController
                 Id = userId,
                 Username = currentUsername,
                 Email = user.Email,
-                Roles = user.RoleAssignments.Select(r => r.RoleId.ToString()).ToArray(),
-                Permissions = effectivePermissions
+                Roles = user.Roles.ToArray(),
+                Permissions = effectivePermissions.ToArray()
             }
         });
     }
