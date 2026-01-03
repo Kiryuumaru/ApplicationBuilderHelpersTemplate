@@ -1,0 +1,353 @@
+@page "/trading/view/{symbol?}"
+@using Presentation.WebApp.Components.Trading
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+<PageTitle>@(_symbol ?? "Trading") - Jack of All Trades</PageTitle>
+
+<div class="trading-page">
+    <div class="container-fluid p-3">
+        <!-- Header with symbol selector -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex align-items-center gap-3">
+                <select class="form-select bg-dark text-light border-secondary" style="width: 200px;" @bind="_symbol">
+                    <option value="BTCUSDT">BTC/USDT</option>
+                    <option value="ETHUSDT">ETH/USDT</option>
+                    <option value="BNBUSDT">BNB/USDT</option>
+                    <option value="SOLUSDT">SOL/USDT</option>
+                    <option value="XRPUSDT">XRP/USDT</option>
+                </select>
+                
+                <div class="d-flex align-items-center gap-2">
+                    <span class="price-ticker @GetPriceClass()">
+                        @_currentPrice.ToString("N2")
+                    </span>
+                    <span class="price-change @GetChangeClass()">
+                        @_priceChangePercent.ToString("N2")%
+                    </span>
+                </div>
+            </div>
+            
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm @GetTimeframeClass("1m")" @onclick="@(() => SetTimeframe("1m"))">1m</button>
+                <button class="btn btn-sm @GetTimeframeClass("5m")" @onclick="@(() => SetTimeframe("5m"))">5m</button>
+                <button class="btn btn-sm @GetTimeframeClass("15m")" @onclick="@(() => SetTimeframe("15m"))">15m</button>
+                <button class="btn btn-sm @GetTimeframeClass("1h")" @onclick="@(() => SetTimeframe("1h"))">1h</button>
+                <button class="btn btn-sm @GetTimeframeClass("4h")" @onclick="@(() => SetTimeframe("4h"))">4h</button>
+                <button class="btn btn-sm @GetTimeframeClass("1d")" @onclick="@(() => SetTimeframe("1d"))">1D</button>
+            </div>
+        </div>
+
+        <!-- Main trading layout -->
+        <div class="row g-2">
+            <!-- Chart area (left side - 8 cols) -->
+            <div class="col-lg-8">
+                <div class="trading-card mb-2">
+                    <div class="trading-card-header d-flex justify-content-between">
+                        <span>@(_symbol ?? "BTCUSDT") Chart</span>
+                        <span class="text-muted">@_selectedTimeframe</span>
+                    </div>
+                    <TradingChart @ref="_chart" Height="450" />
+                </div>
+                
+                <!-- Stats row -->
+                <div class="trading-grid trading-grid-4 mb-2">
+                    <div class="stat-card">
+                        <div class="stat-card-label">24h High</div>
+                        <div class="stat-card-value price-positive">@_high24h.ToString("N2")</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-label">24h Low</div>
+                        <div class="stat-card-value price-negative">@_low24h.ToString("N2")</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-label">24h Volume</div>
+                        <div class="stat-card-value">@FormatVolume(_volume24h)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-label">24h Trades</div>
+                        <div class="stat-card-value">@_trades24h.ToString("N0")</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right sidebar -->
+            <div class="col-lg-4">
+                <!-- Order Book Depth -->
+                <div class="trading-card mb-2">
+                    <div class="trading-card-header">Order Book Depth</div>
+                    <OrderBookDepth @ref="_orderBook" Height="200" />
+                </div>
+                
+                <!-- Time & Sales -->
+                <div class="trading-card mb-2">
+                    <div class="trading-card-header">Time & Sales</div>
+                    <TimeSales @ref="_timeSales" Height="200" />
+                </div>
+                
+                <!-- Quick Order Form -->
+                <div class="trading-card">
+                    <div class="trading-card-header">Quick Order</div>
+                    <div class="trading-card-body">
+                        <div class="d-flex gap-2 mb-3">
+                            <button class="btn flex-fill @GetBuySellClass("buy")" @onclick="@(() => SetOrderSide("buy"))">BUY</button>
+                            <button class="btn flex-fill @GetBuySellClass("sell")" @onclick="@(() => SetOrderSide("sell"))">SELL</button>
+                        </div>
+                        
+                        <div class="mb-2">
+                            <label class="form-label text-muted small">Order Type</label>
+                            <select class="form-select form-select-sm bg-dark text-light border-secondary" @bind="_orderType">
+                                <option value="market">Market</option>
+                                <option value="limit">Limit</option>
+                                <option value="stop">Stop-Limit</option>
+                            </select>
+                        </div>
+                        
+                        @if (_orderType != "market")
+                        {
+                            <div class="mb-2">
+                                <label class="form-label text-muted small">Price</label>
+                                <input type="number" class="form-control form-control-sm bg-dark text-light border-secondary mono" 
+                                       @bind="_orderPrice" placeholder="0.00" step="0.01" />
+                            </div>
+                        }
+                        
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">Amount</label>
+                            <input type="number" class="form-control form-control-sm bg-dark text-light border-secondary mono" 
+                                   @bind="_orderAmount" placeholder="0.00" step="0.001" />
+                            <div class="d-flex justify-content-between mt-1">
+                                <button class="btn btn-sm btn-outline-secondary px-2 py-0" @onclick="@(() => SetAmountPercent(25))">25%</button>
+                                <button class="btn btn-sm btn-outline-secondary px-2 py-0" @onclick="@(() => SetAmountPercent(50))">50%</button>
+                                <button class="btn btn-sm btn-outline-secondary px-2 py-0" @onclick="@(() => SetAmountPercent(75))">75%</button>
+                                <button class="btn btn-sm btn-outline-secondary px-2 py-0" @onclick="@(() => SetAmountPercent(100))">100%</button>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between text-muted small mb-2">
+                            <span>Total:</span>
+                            <span class="mono">@GetOrderTotal() USDT</span>
+                        </div>
+                        
+                        <button class="btn w-100 @GetOrderButtonClass()" disabled>
+                            @_orderSide.ToUpper() @(_symbol ?? "BTCUSDT")
+                        </button>
+                        <div class="text-center text-muted small mt-2">
+                            <em>Paper trading only</em>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Open positions / orders -->
+        <div class="row mt-2">
+            <div class="col-12">
+                <div class="trading-card">
+                    <div class="trading-card-header">
+                        <ul class="nav nav-tabs card-header-tabs border-0">
+                            <li class="nav-item">
+                                <button class="nav-link @GetTabClass("positions")" @onclick="@(() => SetActiveTab("positions"))">Open Positions</button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link @GetTabClass("orders")" @onclick="@(() => SetActiveTab("orders"))">Open Orders</button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link @GetTabClass("history")" @onclick="@(() => SetActiveTab("history"))">Trade History</button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="trading-card-body">
+                        @if (_activeTab == "positions")
+                        {
+                            <table class="trading-table">
+                                <thead>
+                                    <tr>
+                                        <th>Symbol</th>
+                                        <th>Side</th>
+                                        <th class="text-right">Size</th>
+                                        <th class="text-right">Entry Price</th>
+                                        <th class="text-right">Mark Price</th>
+                                        <th class="text-right">PnL</th>
+                                        <th class="text-right">ROE%</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted py-4">No open positions</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        }
+                        else if (_activeTab == "orders")
+                        {
+                            <table class="trading-table">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Symbol</th>
+                                        <th>Type</th>
+                                        <th>Side</th>
+                                        <th class="text-right">Price</th>
+                                        <th class="text-right">Amount</th>
+                                        <th class="text-right">Filled</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted py-4">No open orders</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        }
+                        else
+                        {
+                            <table class="trading-table">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Symbol</th>
+                                        <th>Side</th>
+                                        <th class="text-right">Price</th>
+                                        <th class="text-right">Quantity</th>
+                                        <th class="text-right">Fee</th>
+                                        <th class="text-right">Realized PnL</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted py-4">No trade history</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string? Symbol { get; set; }
+
+    private TradingChart? _chart;
+    private OrderBookDepth? _orderBook;
+    private TimeSales? _timeSales;
+
+    private string? _symbol = "BTCUSDT";
+    private string _selectedTimeframe = "1h";
+    private string _orderSide = "buy";
+    private string _orderType = "limit";
+    private string _activeTab = "positions";
+    
+    private decimal _currentPrice = 67432.50m;
+    private decimal _priceChangePercent = 2.34m;
+    private decimal _high24h = 68500.00m;
+    private decimal _low24h = 65800.00m;
+    private decimal _volume24h = 42567890123m;
+    private long _trades24h = 1234567;
+    
+    private decimal _orderPrice;
+    private decimal _orderAmount;
+
+    protected override void OnInitialized()
+    {
+        if (!string.IsNullOrEmpty(Symbol))
+        {
+            _symbol = Symbol.ToUpperInvariant();
+        }
+        _orderPrice = _currentPrice;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadSampleData();
+        }
+    }
+
+    private async Task LoadSampleData()
+    {
+        if (_chart == null) return;
+
+        var candles = new List<TradingChart.CandleData>();
+        var baseTime = DateTime.UtcNow.AddDays(-30);
+        var random = new Random(42);
+        decimal price = 65000m;
+
+        for (int i = 0; i < 720; i++)
+        {
+            var change = (decimal)(random.NextDouble() - 0.5) * 500;
+            var open = price;
+            var close = price + change;
+            var high = Math.Max(open, close) + (decimal)random.NextDouble() * 200;
+            var low = Math.Min(open, close) - (decimal)random.NextDouble() * 200;
+            var volume = (decimal)(random.NextDouble() * 100 + 50);
+
+            candles.Add(new TradingChart.CandleData(
+                OpenTime: baseTime.AddHours(i),
+                Open: open,
+                High: high,
+                Low: low,
+                Close: close,
+                Volume: volume,
+                CloseTime: baseTime.AddHours(i + 1),
+                NumberOfTrades: random.Next(100, 5000)
+            ));
+
+            price = close;
+        }
+
+        await _chart.SetDataAsync(candles);
+        await _chart.AddTradeMarkerAsync(baseTime.AddDays(5), true, "Entry");
+        await _chart.AddTradeMarkerAsync(baseTime.AddDays(15), false, "Exit");
+
+        if (_orderBook != null)
+        {
+            var bids = Enumerable.Range(0, 20).Select(i => 
+                new OrderBookDepth.OrderBookLevel(price - i * 10, (decimal)(random.NextDouble() * 5))).ToList();
+            var asks = Enumerable.Range(0, 20).Select(i => 
+                new OrderBookDepth.OrderBookLevel(price + i * 10, (decimal)(random.NextDouble() * 5))).ToList();
+            
+            await _orderBook.UpdateAsync(bids, asks);
+        }
+
+        if (_timeSales != null)
+        {
+            var trades = Enumerable.Range(0, 50).Select(i => (
+                Time: DateTime.UtcNow.AddSeconds(-i * 3),
+                Price: price + (decimal)(random.NextDouble() - 0.5) * 50,
+                Quantity: (decimal)(random.NextDouble() * 2),
+                IsBuyerMaker: random.Next(2) == 0
+            ));
+            
+            _timeSales.AddTrades(trades);
+        }
+    }
+
+    private string GetPriceClass() => _priceChangePercent >= 0 ? "price-positive" : "price-negative";
+    private string GetChangeClass() => _priceChangePercent >= 0 ? "up price-positive" : "down price-negative";
+    private string GetTimeframeClass(string tf) => _selectedTimeframe == tf ? "btn-primary" : "btn-outline-secondary";
+    private string GetBuySellClass(string side) => _orderSide == side ? (side == "buy" ? "btn-trading-buy" : "btn-trading-sell") : "btn-outline-secondary";
+    private string GetOrderButtonClass() => _orderSide == "buy" ? "btn-trading-buy" : "btn-trading-sell";
+    private string GetTabClass(string tab) => _activeTab == tab ? "active bg-dark text-light" : "text-muted";
+    private string GetOrderTotal() => ((_orderPrice > 0 ? _orderPrice : _currentPrice) * _orderAmount).ToString("N2");
+
+    private void SetTimeframe(string timeframe) => _selectedTimeframe = timeframe;
+    private void SetOrderSide(string side) => _orderSide = side;
+    private void SetActiveTab(string tab) => _activeTab = tab;
+    private void SetAmountPercent(int percent) => _orderAmount = 0.1m * percent / 100;
+
+    private string FormatVolume(decimal volume)
+    {
+        if (volume >= 1_000_000_000) return $"{volume / 1_000_000_000:N2}B";
+        if (volume >= 1_000_000) return $"{volume / 1_000_000:N2}M";
+        if (volume >= 1_000) return $"{volume / 1_000:N2}K";
+        return volume.ToString("N2");
+    }
+}

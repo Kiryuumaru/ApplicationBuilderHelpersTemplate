@@ -1,0 +1,376 @@
+@page "/trading/bots/templates/{TemplateId:guid}/instances"
+@page "/trading/bots/instances"
+@using Application.Trading.Bots.Abstractions
+@using Application.Trading.Interfaces
+@using Domain.Trading.Bots.Enums
+@using Domain.Trading.Bots.Models
+@using Domain.Trading.Bots.ValueObjects
+@using Microsoft.AspNetCore.Authorization
+@inject IBotInstanceStore BotInstanceStore
+@inject IBotTemplateStore BotTemplateStore
+@inject IBotInstanceRunner BotInstanceRunner
+@inject IExchangeRegistry ExchangeRegistry
+@inject ILogger<BotInstances> Logger
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+<PageTitle>Bot Instances</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>
+                <span class="bi bi-collection-play me-2"></span>Bot Instances
+            </h1>
+            <p class="text-muted">
+                @if (TemplateId.HasValue && _template is not null)
+                {
+                    <text>Instances of template: <strong>@_template.Name</strong></text>
+                }
+                else
+                {
+                    <text>Manage running bot instances</text>
+                }
+            </p>
+        </div>
+        <div class="col-auto">
+            @if (TemplateId.HasValue)
+            {
+                <button class="btn btn-primary" @onclick="ShowCreateModal">
+                    <span class="bi bi-plus-lg me-2"></span>Create Instance
+                </button>
+            }
+        </div>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="d-flex justify-content-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (_instances.Count == 0)
+    {
+        <div class="alert alert-info">
+            <span class="bi bi-info-circle me-2"></span>
+            No bot instances found. @(TemplateId.HasValue ? "Create your first instance to start trading." : "Create a template first, then spawn instances.")
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Status</th>
+                        <th>Exchange</th>
+                        <th>Mode</th>
+                        <th>Initial Balance</th>
+                        <th>Current Balance</th>
+                        <th>P&L</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var instance in _instances)
+                    {
+                        var pnl = instance.CurrentBalance - instance.InitialBalance;
+                        var pnlPercent = instance.InitialBalance > 0 
+                            ? (pnl / instance.InitialBalance) * 100 
+                            : 0;
+                        <tr>
+                            <td>
+                                <span class="badge bg-@GetStatusBadgeColor(instance.Status)">
+                                    @instance.Status
+                                </span>
+                            </td>
+                            <td>@instance.ExchangeCode.ToUpperInvariant()</td>
+                            <td>
+                                <span class="badge bg-@GetModeBadgeColor(instance.Mode)">
+                                    @instance.Mode
+                                </span>
+                            </td>
+                            <td>@instance.InitialBalance.ToString("F2") USDT</td>
+                            <td>@instance.CurrentBalance.ToString("F2") USDT</td>
+                            <td class="@(pnl >= 0 ? "text-success" : "text-danger")">
+                                @(pnl >= 0 ? "+" : "")@pnl.ToString("F2") (@pnlPercent.ToString("F2")%)
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    @if (instance.Status == BotInstanceStatus.Running)
+                                    {
+                                        <button class="btn btn-outline-warning" @onclick="() => PauseInstance(instance.Id)">
+                                            <span class="bi bi-pause-fill"></span>
+                                        </button>
+                                        <button class="btn btn-outline-danger" @onclick="() => StopInstance(instance.Id)">
+                                            <span class="bi bi-stop-fill"></span>
+                                        </button>
+                                    }
+                                    else if (instance.Status == BotInstanceStatus.Starting || instance.Status == BotInstanceStatus.Paused)
+                                    {
+                                        <button class="btn btn-outline-success" @onclick="() => StartInstance(instance.Id)">
+                                            <span class="bi bi-play-fill"></span>
+                                        </button>
+                                        <button class="btn btn-outline-danger" @onclick="() => StopInstance(instance.Id)">
+                                            <span class="bi bi-stop-fill"></span>
+                                        </button>
+                                    }
+                                    <button class="btn btn-outline-danger" @onclick="() => DeleteInstance(instance.Id)" 
+                                            disabled="@(instance.Status == BotInstanceStatus.Running)">
+                                        <span class="bi bi-trash"></span>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@* Create Instance Modal *@
+@if (_showModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create Bot Instance</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="_formModel" OnValidSubmit="CreateInstance">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger" />
+
+                        <div class="mb-3">
+                            <label class="form-label">Exchange</label>
+                            <InputSelect class="form-select" @bind-Value="_formModel.ExchangeCode">
+                                @foreach (var exchange in _availableExchanges)
+                                {
+                                    <option value="@exchange">@exchange.ToUpperInvariant()</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Execution Mode</label>
+                            <InputSelect class="form-select" @bind-Value="_formModel.Mode">
+                                <option value="@ExecutionMode.Paper">Paper Trading (Simulated)</option>
+                                <option value="@ExecutionMode.Backtest">Backtest (Historical)</option>
+                                @* <option value="@ExecutionMode.Live">Live Trading (Real Money)</option> *@
+                            </InputSelect>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Initial Balance (USDT)</label>
+                            <InputNumber class="form-control" @bind-Value="_formModel.InitialBalance" />
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Target Profit (optional)</label>
+                                <InputNumber class="form-control" @bind-Value="_formModel.TargetProfit" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Max Loss (optional)</label>
+                                <InputNumber class="form-control" @bind-Value="_formModel.MaxLoss" />
+                            </div>
+                        </div>
+
+                        <div class="modal-footer px-0 pb-0">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Create & Start</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Guid? TemplateId { get; set; }
+
+    private bool _isLoading = true;
+    private List<BotInstance> _instances = [];
+    private BotTemplate? _template;
+    private List<string> _availableExchanges = [];
+    private bool _showModal;
+    private BotInstanceFormModel _formModel = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _availableExchanges = ExchangeRegistry.GetAllCodes().ToList();
+        await LoadDataAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            if (TemplateId.HasValue)
+            {
+                _template = await BotTemplateStore.GetByIdAsync(TemplateId.Value);
+                var instances = await BotInstanceStore.GetByTemplateIdAsync(TemplateId.Value);
+                _instances = instances.ToList();
+            }
+            else
+            {
+                var instances = await BotInstanceStore.GetRunningAsync();
+                _instances = instances.ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading bot instances");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void ShowCreateModal()
+    {
+        _formModel = new BotInstanceFormModel
+        {
+            ExchangeCode = _availableExchanges.FirstOrDefault() ?? "binance",
+            Mode = ExecutionMode.Paper,
+            InitialBalance = 1000
+        };
+        _showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        _showModal = false;
+    }
+
+    private async Task CreateInstance()
+    {
+        if (!TemplateId.HasValue) return;
+
+        try
+        {
+            var instance = BotInstance.Create(
+                TemplateId.Value,
+                Guid.Empty, // TODO: Get current user ID
+                _formModel.ExchangeCode ?? "binance",
+                _formModel.Mode,
+                _formModel.InitialBalance,
+                targetProfit: _formModel.TargetProfit,
+                maxLoss: _formModel.MaxLoss);
+
+            await BotInstanceStore.CreateAsync(instance);
+            
+            // Auto-start the instance
+            try
+            {
+                await BotInstanceRunner.StartAsync(instance.Id);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Failed to auto-start instance {InstanceId}", instance.Id);
+            }
+
+            CloseModal();
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error creating bot instance");
+        }
+    }
+
+    private async Task StartInstance(Guid instanceId)
+    {
+        try
+        {
+            await BotInstanceRunner.StartAsync(instanceId);
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error starting bot instance");
+        }
+    }
+
+    private async Task PauseInstance(Guid instanceId)
+    {
+        try
+        {
+            await BotInstanceRunner.PauseAsync(instanceId);
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error pausing bot instance");
+        }
+    }
+
+    private async Task StopInstance(Guid instanceId)
+    {
+        try
+        {
+            await BotInstanceRunner.StopAsync(instanceId);
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error stopping bot instance");
+        }
+    }
+
+    private async Task DeleteInstance(Guid instanceId)
+    {
+        try
+        {
+            await BotInstanceStore.DeleteAsync(instanceId);
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error deleting bot instance");
+        }
+    }
+
+    private string GetStatusBadgeColor(BotInstanceStatus status) => status switch
+    {
+        BotInstanceStatus.Running => "success",
+        BotInstanceStatus.Starting => "info",
+        BotInstanceStatus.Paused => "warning",
+        BotInstanceStatus.Stopping => "warning",
+        BotInstanceStatus.Stopped => "secondary",
+        BotInstanceStatus.Error => "danger",
+        BotInstanceStatus.Completed => "primary",
+        _ => "secondary"
+    };
+
+    private string GetModeBadgeColor(ExecutionMode mode) => mode switch
+    {
+        ExecutionMode.Live => "danger",
+        ExecutionMode.Paper => "info",
+        ExecutionMode.Backtest => "secondary",
+        _ => "secondary"
+    };
+
+    private class BotInstanceFormModel
+    {
+        public string? ExchangeCode { get; set; }
+        public ExecutionMode Mode { get; set; }
+        public decimal InitialBalance { get; set; }
+        public decimal? TargetProfit { get; set; }
+        public decimal? MaxLoss { get; set; }
+    }
+}

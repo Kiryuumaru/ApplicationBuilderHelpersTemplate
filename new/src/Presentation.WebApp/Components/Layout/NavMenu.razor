@@ -1,0 +1,156 @@
+@implements IDisposable
+
+@inject NavigationManager NavigationManager
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">Presentation.WebApp</a>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <nav class="nav flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="counter">
+                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="weather">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="auth">
+                <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Auth Required
+            </NavLink>
+        </div>
+
+        <AuthorizeView>
+            <Authorized>
+                <div class="nav-item px-3 mt-2">
+                    <small class="text-muted ps-2">TRADING</small>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="trading">
+                        <span class="bi bi-graph-up-nav-menu" aria-hidden="true"></span> Markets
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="trading/view">
+                        <span class="bi bi-bar-chart-nav-menu" aria-hidden="true"></span> Trading View
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="trading/accounts">
+                        <span class="bi bi-key-nav-menu" aria-hidden="true"></span> Accounts
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="trading/orders">
+                        <span class="bi bi-list-check-nav-menu" aria-hidden="true"></span> Orders
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="trading/data">
+                        <span class="bi bi-database-nav-menu" aria-hidden="true"></span> Data Sync
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3 mt-2">
+                    <small class="text-muted ps-2">BOTS</small>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="trading/bot-dashboard">
+                        <span class="bi bi-robot-nav-menu" aria-hidden="true"></span> Bot Dashboard
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="trading/bots/templates">
+                        <span class="bi bi-file-earmark-code-nav-menu" aria-hidden="true"></span> Templates
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="trading/bots/instances">
+                        <span class="bi bi-collection-nav-menu" aria-hidden="true"></span> Instances
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="trading/backtest">
+                        <span class="bi bi-clock-history-nav-menu" aria-hidden="true"></span> Backtest
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="trading/analytics">
+                        <span class="bi bi-pie-chart-nav-menu" aria-hidden="true"></span> Analytics
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="trading/portfolio">
+                        <span class="bi bi-briefcase-nav-menu" aria-hidden="true"></span> Portfolio
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3 mt-2">
+                    <small class="text-muted ps-2">ACCOUNT</small>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="Account/Manage">
+                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @context.User.Identity?.Name
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <form action="Account/Logout" method="post">
+                        <AntiforgeryToken />
+                        <input type="hidden" name="ReturnUrl" value="@currentUrl" />
+                        <button type="submit" class="nav-link">
+                            <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
+                        </button>
+                    </form>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="Account/Register">
+                        <span class="bi bi-person-nav-menu" aria-hidden="true"></span> Register
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="Account/Login">
+                        <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Login
+                    </NavLink>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+    </nav>
+</div>
+
+@code {
+    private string? currentUrl;
+
+    protected override void OnInitialized()
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+}
+

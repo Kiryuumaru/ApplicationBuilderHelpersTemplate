@@ -1,0 +1,6 @@
+<Project>
+  <!-- Apply global VSTest settings to *all* test projects so a hung test run fails fast. -->
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
+    <RunSettingsFilePath>$(MSBuildThisFileDirectory)test.runsettings</RunSettingsFilePath>
+  </PropertyGroup>
+</Project>

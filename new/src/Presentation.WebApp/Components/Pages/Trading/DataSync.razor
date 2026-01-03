@@ -1,0 +1,180 @@
+@page "/trading/data"
+@using Application.Trading.Abstractions
+@using Domain.Trading.Enums
+@inject IMarketDataCollectorStatus CollectorStatus
+@inject IMarketDataBackfillService Backfill
+@attribute [Authorize]
+
+<PageTitle>Data Sync</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1>
+                <span class="bi bi-database me-2"></span>Data Sync
+            </h1>
+            <p class="text-muted">Historical market data collection status</p>
+        </div>
+        <div class="col text-end">
+            <button class="btn btn-primary" @onclick="Refresh">
+                <span class="bi bi-arrow-clockwise me-1"></span>Refresh
+            </button>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Collector</h5>
+                    @if (_snapshot.Enabled && _snapshot.IsRunning)
+                    {
+                        <span class="badge bg-success">
+                            <span class="bi bi-broadcast me-1"></span>Running
+                        </span>
+                    }
+                    else if (_snapshot.Enabled)
+                    {
+                        <span class="badge bg-warning text-dark">Enabled (Not Running)</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Disabled</span>
+                    }
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Started</dt>
+                        <dd class="col-sm-8">@FormatTime(_snapshot.StartedAt)</dd>
+
+                        <dt class="col-sm-4">Active Exchanges</dt>
+                        <dd class="col-sm-8">@_snapshot.ActiveExchanges</dd>
+
+                        <dt class="col-sm-4">Candle Streams</dt>
+                        <dd class="col-sm-8">@_snapshot.ActiveCandleSubscriptions</dd>
+
+                        <dt class="col-sm-4">Last Price Tick</dt>
+                        <dd class="col-sm-8">@FormatTime(_snapshot.LastPriceTickAt)</dd>
+
+                        <dt class="col-sm-4">Last Candle</dt>
+                        <dd class="col-sm-8">@FormatTime(_snapshot.LastCandleAt)</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Historical Backfill</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Exchange</label>
+                        <input class="form-control" @bind="_exchangeCode" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Base Asset</label>
+                        <input class="form-control" @bind="_baseAsset" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Quote Asset (optional)</label>
+                        <input class="form-control" @bind="_quoteAsset" />
+                        <div class="form-text">Leave blank to use exchange default stable.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Interval</label>
+                        <select class="form-select" @bind="_interval">
+                            @foreach (var i in Enum.GetValues<CandleInterval>())
+                            {
+                                <option value="@i">@i</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Candle Count</label>
+                        <input class="form-control" type="number" min="1" max="1500" @bind="_candleCount" />
+                    </div>
+
+                    <button class="btn btn-outline-primary" disabled="@_backfillRunning" @onclick="RunBackfillAsync">
+                        @if (_backfillRunning)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            <span>Backfilling…</span>
+                        }
+                        else
+                        {
+                            <span class="bi bi-download me-1"></span>
+                            <span>Backfill Candles</span>
+                        }
+                    </button>
+
+                    @if (_lastBackfill is not null)
+                    {
+                        <hr />
+                        <div>
+                            <div><strong>Pair:</strong> @_lastBackfill.BaseAsset/@_lastBackfill.QuoteAsset</div>
+                            <div><strong>Returned:</strong> @_lastBackfill.ReturnedCount / @_lastBackfill.RequestedCount</div>
+                            <div><strong>Completed:</strong> @_lastBackfill.CompletedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</div>
+                            @if (!string.IsNullOrWhiteSpace(_lastBackfill.Error))
+                            {
+                                <div class="text-danger"><strong>Error:</strong> @_lastBackfill.Error</div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private MarketDataCollectorStatusSnapshot _snapshot = new(
+        Enabled: false,
+        IsRunning: false,
+        StartedAt: null,
+        LastPriceTickAt: null,
+        LastCandleAt: null,
+        ActiveExchanges: 0,
+        ActiveCandleSubscriptions: 0);
+
+    private string _exchangeCode = "binance";
+    private string _baseAsset = "BTC";
+    private string? _quoteAsset = null;
+    private CandleInterval _interval = CandleInterval.OneHour;
+    private int _candleCount = 250;
+    private bool _backfillRunning;
+    private MarketDataBackfillResult? _lastBackfill;
+
+    protected override void OnInitialized()
+    {
+        Refresh();
+    }
+
+    private void Refresh()
+    {
+        _snapshot = CollectorStatus.GetSnapshot();
+        StateHasChanged();
+    }
+
+    private async Task RunBackfillAsync()
+    {
+        _backfillRunning = true;
+        try
+        {
+            _lastBackfill = await Backfill.BackfillCandlesAsync(
+                _exchangeCode,
+                _baseAsset,
+                string.IsNullOrWhiteSpace(_quoteAsset) ? null : _quoteAsset,
+                _interval,
+                _candleCount);
+        }
+        finally
+        {
+            _backfillRunning = false;
+        }
+    }
+
+    private static string FormatTime(DateTimeOffset? t)
+        => t is null ? "—" : t.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
+}

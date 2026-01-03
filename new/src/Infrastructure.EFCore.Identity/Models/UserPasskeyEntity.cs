@@ -1,0 +1,21 @@
+namespace Infrastructure.EFCore.Identity.Models;
+
+/// <summary>
+/// Entity for storing user passkey information (used by ASP.NET Identity SignInManager).
+/// This is separate from PasskeyCredentialEntity which is used by the REST API passkey service.
+/// </summary>
+public class UserPasskeyEntity
+{
+    public required Guid UserId { get; set; }
+    public required byte[] CredentialId { get; set; }
+    public byte[]? PublicKey { get; set; }
+    public string? Name { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public uint SignCount { get; set; }
+    public string? Transports { get; set; }
+    public bool IsUserVerified { get; set; }
+    public bool IsBackupEligible { get; set; }
+    public bool IsBackedUp { get; set; }
+    public byte[]? AttestationObject { get; set; }
+    public byte[]? ClientDataJson { get; set; }
+}
