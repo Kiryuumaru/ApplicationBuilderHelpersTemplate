@@ -375,3 +375,7 @@ FodyWeavers.xsd
 /src/Presentation.WebApi/app.db
 /src/Presentation.WebApi/app.db-shm
 /src/Presentation.WebApi/app.db-wal
+new/creds.json
+new/src/Presentation.WebApi/app.db
+new/src/Presentation.WebApi/app.db-shm
+new/src/Presentation.WebApi/app.db-wal
