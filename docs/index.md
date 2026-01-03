@@ -1,4 +1,4 @@
-# ProjectOffworlder Documentation
+# Application Builder Helpers Template - Documentation
 
 ## Feature Documentation
 

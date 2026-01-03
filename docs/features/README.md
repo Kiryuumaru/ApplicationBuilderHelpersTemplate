@@ -1,6 +1,6 @@
 # Feature Documentation
 
-This directory contains detailed documentation for implemented features in ProjectOffworlder.
+This directory contains detailed documentation for implemented features in this application template.
 
 ## Backend API Features
 
@@ -16,7 +16,3 @@ This directory contains detailed documentation for implemented features in Proje
 |----------|-------------|
 | [Authorization Architecture](../architecture/authorization-architecture.md) | Permission system, RBAC |
 | [Test Architecture](../architecture/test-architecture.md) | WebApi functional test setup |
-
-## Game Concept
-
-For game design documentation, see [concept/](../concept/README.md).

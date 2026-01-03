@@ -1,43 +1,27 @@
-# ProjectOffworlder
+# Application Builder Helpers Template
 
-A cryptocurrency trading platform with automated bots, paper trading, and real-time market data. Built with .NET 10, Clean Architecture, and comprehensive test coverage.
-
-> **Status:** ✅ Backend MVP Complete (December 25, 2025)
+A clean architecture application template for building .NET applications with authentication, authorization, and user management out of the box. Built with .NET 10 and Clean Architecture principles.
 
 ## 📋 Overview
 
-ProjectOffworlder is a full-featured trading platform that supports:
+This template provides a solid foundation for building web applications with:
 
-- **Paper Trading** - Test strategies with real market prices and simulated execution
-- **Live Trading** - Connect to exchanges with real API credentials
-- **Trading Bots** - Automated trading with configurable strategies
-- **Real-Time Data** - Live market prices via REST API and SignalR
-- **Comprehensive Testing** - 622 tests ensuring reliability
-
-## ✅ Current Status
-
-| Component | Status |
-|-----------|--------|
-| REST API | ✅ 110 functional tests |
-| Authentication | ✅ JWT with RBAC |
-| Exchange Accounts | ✅ Paper + Live support |
-| Trading Orders | ✅ Market + Limit |
-| SignalR Hubs | ✅ Real-time streaming |
-| Bot Framework | ✅ Templates + Instances |
-| User Management | ✅ Admin + Self-service |
-| UI/WebApp | 🔲 Deferred |
+- **JWT Authentication** - Full auth flow with 2FA, passkeys (WebAuthn), and sessions
+- **User Management** - Admin and self-service user operations
+- **RBAC Authorization** - Role-based access control with fine-grained permissions
+- **Clean Architecture** - Domain-driven design with proper layer separation
+- **Comprehensive Testing** - Unit, integration, and functional test structure
 
 ## 📚 Documentation
 
 | Document | Description |
 |----------|-------------|
-| [API Reference](docs/api-reference.md) | Complete REST API documentation |
-| [Authentication](docs/authentication.md) | JWT auth and RBAC |
-| [Paper Trading](docs/paper-trading.md) | Paper account system |
-| [Trading Bots](docs/trading-bots.md) | Bot framework guide |
-| [Market Data](docs/market-data.md) | Market data endpoints |
-| [Testing](docs/testing.md) | Test architecture |
-| [Future Roadmap](docs/roadmap-future.md) | Planned features |
+| [Documentation Index](docs/index.md) | Complete documentation index |
+| [Authentication](docs/features/authentication.md) | JWT auth, 2FA, passkeys, sessions |
+| [Anonymous Auth](docs/features/anonymous-authentication.md) | Guest mode and account linking |
+| [User Management](docs/features/user-management.md) | User CRUD, roles, permissions |
+| [Authorization Architecture](docs/architecture/authorization-architecture.md) | Permission system, RBAC |
+| [Test Architecture](docs/architecture/test-architecture.md) | Test setup and conventions |
 
 ## 🏗️ Architecture
 
@@ -47,13 +31,13 @@ ProjectOffworlder is a full-featured trading platform that supports:
 │                   WebApi (REST + SignalR) │ WebApp (Blazor)             │
 │  ┌───────────────────────────────────────────────────────────────────┐  │
 │  │                          INFRASTRUCTURE                           │  │
-│  │    Binance │ EFCore.Trading │ EFCore.Identity │ EFCore.LocalStore │  │
+│  │   EFCore │ EFCore.Identity │ EFCore.LocalStore │ Passkeys │ Serilog│  │
 │  │  ┌─────────────────────────────────────────────────────────────┐  │  │
 │  │  │                        APPLICATION                          │  │  │
-│  │  │   Trading │ Authorization │ Identity │ Configuration        │  │  │
+│  │  │       Authorization │ Identity │ Configuration │ Logger     │  │  │
 │  │  │  ┌───────────────────────────────────────────────────────┐  │  │  │
 │  │  │  │                       DOMAIN                          │  │  │  │
-│  │  │  │   Trading │ Identity │ Authorization │ AppEnvironment │  │  │  │
+│  │  │  │       Identity │ Authorization │ AppEnvironment       │  │  │  │
 │  │  │  │                   No Dependencies                     │  │  │  │
 │  │  │  └───────────────────────────────────────────────────────┘  │  │  │
 │  │  └─────────────────────────────────────────────────────────────┘  │  │
@@ -65,62 +49,58 @@ Dependencies flow inward: Outer layers depend on inner layers, never reverse.
 
 | Layer | Description |
 |-------|-------------|
-| **Domain** | Core trading entities (`Order`, `Trade`, `BotTemplate`, `ExchangeAccount`) and rules. Has no external dependencies. |
-| **Application** | Business logic, services, interfaces. Depends only on Domain. Exchange/persistence ignorant. |
-| **Infrastructure** | Binance integration, EF Core stores. Implements Application interfaces. |
-| **Presentation** | REST API (WebApi), SignalR hubs, Blazor UI. Composes all layers. |
+| **Domain** | Core entities, value objects, and business rules. Has no external dependencies. |
+| **Application** | Business logic, services, interfaces. Depends only on Domain. Persistence/infrastructure ignorant. |
+| **Infrastructure** | EF Core, Identity, Passkeys, Logging. Implements Application interfaces. |
+| **Presentation** | REST API (WebApi), Blazor UI (WebApp). Composes all layers via DI. |
 
 ## ✨ Features
 
-### Trading
-- **Paper Trading** - Real market prices, simulated execution, no API keys needed
-- **Live Trading** - Connect to Binance with API credentials
-- **Market & Limit Orders** - Full order lifecycle support
-- **Balance Management** - Track wallets across accounts
+### Authentication
+- **JWT Tokens** - Access tokens (60 min) + refresh tokens (7 days)
+- **Two-Factor Auth (2FA)** - TOTP-based with recovery codes
+- **Passkeys (WebAuthn)** - Passwordless authentication
+- **Session Management** - Track and revoke active sessions
+- **Anonymous Auth** - Guest mode with account upgrade path
+- **OAuth Support** - External provider integration ready
 
-### Trading Bots
-- **Bot Templates** - Reusable strategy configurations
-- **Bot Instances** - Running bots with lifecycle management
-- **Pluggable Strategies** - Grid trading (more strategies planned)
-- **Signal & Trade Tracking** - Full audit trail
-
-### Real-Time Data
-- **REST API** - Market data, prices, candles
-- **SignalR Hubs** - Live streaming for prices, bot status, notifications
+### User Management
+- **User CRUD** - Create, read, update, delete users
+- **Role Assignment** - Assign roles with scope templates
+- **Self-Service** - Profile management, password changes
+- **Admin Operations** - Manage any user's data
 
 ### Security
-- **JWT Authentication** - Access + refresh tokens
-- **RBAC** - Role-based access with scope templates
-- **Permission Resolution** - Fine-grained endpoint authorization
+- **RBAC** - Role-based access control
+- **Permission Scopes** - Fine-grained endpoint authorization
+- **`[FromJwt]` Pattern** - Automatic JWT claim binding
 
 ## 📁 Project Structure
 
 ```
 ├── build/                                  # NUKE build automation
 ├── docs/                                   # Documentation
-│   ├── api-reference.md                    # REST API documentation
-│   ├── authentication.md                   # Auth & RBAC
-│   ├── paper-trading.md                    # Paper trading guide
-│   ├── trading-bots.md                     # Bot framework
-│   ├── market-data.md                      # Market data
-│   └── testing.md                          # Test architecture
+│   ├── index.md                            # Documentation index
+│   ├── api/                                # API documentation
+│   ├── architecture/                       # Architecture docs
+│   └── features/                           # Feature documentation
 ├── src/
 │   ├── Domain/                             # Entities, ValueObjects, Business Rules
-│   ├── Domain.CodeGenerator/               # Code generators
+│   ├── Domain.CodeGenerator/               # Source generators
 │   ├── Application/                        # Services, Interfaces
-│   ├── Infrastructure.Binance/             # Binance exchange integration
 │   ├── Infrastructure.EFCore/              # Base EF Core DbContext
-│   ├── Infrastructure.EFCore.Trading/      # Trading stores
 │   ├── Infrastructure.EFCore.Identity/     # Identity stores
 │   ├── Infrastructure.EFCore.LocalStore/   # Key-value storage
-│   ├── Presentation.WebApi/                # REST API + SignalR
-│   └── Presentation.WebApp/                # Blazor Server (deferred)
+│   ├── Infrastructure.Passkeys/            # WebAuthn/Passkey support
+│   ├── Infrastructure.Serilog.Logger/      # Structured logging
+│   ├── Presentation.WebApi/                # REST API controllers
+│   └── Presentation.WebApp/                # Blazor Server UI
 ├── tests/
-│   ├── Domain.UnitTests/                   # 376 domain tests
-│   ├── Application.UnitTests/              # 92 application tests
-│   ├── Application.IntegrationTests/       # 37 integration tests
-│   └── Presentation.WebApi.FunctionalTests/# 110 API tests
-└── ProjectOffworlder.sln
+│   ├── Domain.UnitTests/                   # Domain logic tests
+│   ├── Application.UnitTests/              # Application service tests
+│   ├── Application.IntegrationTests/       # Integration tests
+│   └── Presentation.WebApi.FunctionalTests/# API functional tests
+└── ApplicationBuilderHelpersTemplate.sln
 ```
 
 ## ⚙️ Environment Configuration
@@ -194,41 +174,41 @@ The file will not be overwritten if it already exists.
 dotnet build                # Build the solution
 dotnet test                 # Run all tests
 
-dotnet run --project src/Presentation.WebApp  # Run web app
-dotnet run --project src/Presentation.Cli     # Run CLI app
+dotnet run --project src/Presentation.WebApi   # Run REST API
+dotnet run --project src/Presentation.WebApp   # Run Blazor web app
 ```
 
 ## 🧪 Testing
 
-622 tests across four test projects:
+Test projects are organized by layer:
 
-| Project | Tests | Description |
-|---------|-------|-------------|
-| Domain.UnitTests | 376 | Pure domain logic |
-| Application.UnitTests | 92 | Application services |
-| Application.IntegrationTests | 37 | Real infrastructure |
-| Presentation.WebApi.FunctionalTests | 110 | Full API coverage |
+| Project | Description |
+|---------|-------------|
+| Domain.UnitTests | Pure domain logic tests |
+| Application.UnitTests | Application service tests |
+| Application.IntegrationTests | Tests with real infrastructure |
+| Presentation.WebApi.FunctionalTests | Full API endpoint tests |
 
 ```powershell
-dotnet test                                         # Run all tests
-dotnet test tests/Presentation.WebApi.FunctionalTests  # Run API tests
+dotnet test                                          # Run all tests
+dotnet test tests/Domain.UnitTests                   # Run domain tests
+dotnet test tests/Presentation.WebApi.FunctionalTests # Run API tests
 ```
 
-## 🔧 Configuration
+## 🔧 Customization
+
+### Adding New Features
+1. Define entities in `Domain/`
+2. Create interfaces and services in `Application/`
+3. Implement infrastructure in `Infrastructure.*/`
+4. Add controllers in `Presentation.WebApi/`
 
 ### Switching Database Provider
-Replace SQLite with PostgreSQL, SQL Server, etc. by creating a new Infrastructure provider project.
+Replace SQLite with PostgreSQL, SQL Server, etc. by creating a new Infrastructure provider project that implements the same interfaces.
 
-### Exchange Integration
-Currently supports Binance. Multi-exchange support (Bybit, Kraken, etc.) is planned.
+### Adding External Integrations
+Create a new `Infrastructure.{Provider}/` project that implements Application interfaces.
 
 ## 📜 License
 
 This project is licensed under the MIT License - see the [LICENSE.txt](LICENSE.txt) file for details.
-
-## 🙏 Acknowledgments
-
-- [ASP.NET Core](https://github.com/dotnet/aspnetcore)
-- [Entity Framework Core](https://github.com/dotnet/efcore)
-- [NUKE Build](https://nuke.build/)
-- [Playwright](https://playwright.dev/)

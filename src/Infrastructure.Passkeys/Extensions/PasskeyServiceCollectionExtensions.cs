@@ -27,14 +27,19 @@ public static class PasskeyServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Adds passkey (WebAuthn/FIDO2) services to the service collection with configuration action.
+    /// Adds passkey (WebAuthn/FIDO2) services to the service collection with configuration factory.
     /// </summary>
     public static IServiceCollection AddPasskeyInfrastructure(
         this IServiceCollection services,
-        Action<Fido2Configuration> configure)
+        Func<IServiceProvider, Fido2Configuration> configFactory)
     {
-        var config = new Fido2Configuration();
-        configure(config);
-        return services.AddPasskeyInfrastructure(config);
+        // Add Fido2 library with factory
+        services.AddSingleton(configFactory);
+        services.AddSingleton<IFido2, Fido2>();
+
+        // Add passkey service
+        services.AddScoped<IPasskeyService, PasskeyService>();
+
+        return services;
     }
 }

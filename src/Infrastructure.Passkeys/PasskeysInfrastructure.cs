@@ -1,3 +1,4 @@
+using Application.Abstractions.Application;
 using ApplicationBuilderHelpers;
 using Fido2NetLib;
 using Infrastructure.Passkeys.Extensions;
@@ -16,12 +17,16 @@ public class PasskeysInfrastructure : ApplicationDependency
         var configuration = applicationBuilder.Configuration;
 
         // Configure Fido2 from configuration or use defaults
-        services.AddPasskeyInfrastructure(config =>
+        services.AddPasskeyInfrastructure(sp =>
         {
+            var applicationConstants = sp.GetRequiredService<IApplicationConstants>();
             var fido2Section = configuration.GetSection("Fido2");
 
-            config.ServerName = fido2Section["ServerName"] ?? "ProjectOffworlder";
-            config.ServerDomain = fido2Section["ServerDomain"] ?? "localhost";
+            var config = new Fido2Configuration
+            {
+                ServerName = fido2Section["ServerName"] ?? applicationConstants.AppName,
+                ServerDomain = fido2Section["ServerDomain"] ?? "localhost"
+            };
 
             var originsSection = fido2Section.GetSection("Origins");
             if (originsSection.Exists())
@@ -32,6 +37,8 @@ public class PasskeysInfrastructure : ApplicationDependency
             {
                 config.Origins = new HashSet<string> { "https://localhost" };
             }
+
+            return config;
         });
     }
 }

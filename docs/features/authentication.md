@@ -279,7 +279,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1...
 {
   "sharedKey": "JBSWY3DPEHPK3PXP",
   "formattedSharedKey": "jbsw y3dp ehpk 3pxp",
-  "authenticatorUri": "otpauth://totp/ProjectOffworlder:player1?secret=JBSWY3DPEHPK3PXP&issuer=ProjectOffworlder&digits=6"
+  "authenticatorUri": "otpauth://totp/AppName:user1?secret=JBSWY3DPEHPK3PXP&issuer=AppName&digits=6"
 }
 ```
 

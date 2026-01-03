@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Authentication;
 using System.Threading;
 using System.Threading.Tasks;
+using Application.Abstractions.Application;
 using Application.Authorization.Interfaces;
 using Application.Identity.Interfaces;
 using Application.Identity.Models;
@@ -23,7 +24,8 @@ internal sealed class IdentityService(
     IRoleRepository roleRepository,
     IUserRoleResolver roleResolver,
     IUserStore userStore,
-    UserAuthenticationService authService) : IIdentityService
+    UserAuthenticationService authService,
+    IApplicationConstants applicationConstants) : IIdentityService
 {
     private static readonly Dictionary<string, Func<User, Role, string?>> DefaultRoleParameterResolvers =
         new(StringComparer.Ordinal)
@@ -37,6 +39,7 @@ internal sealed class IdentityService(
     private readonly IUserRoleResolver _roleResolver = roleResolver ?? throw new ArgumentNullException(nameof(roleResolver));
     private readonly IUserStore _userStore = userStore ?? throw new ArgumentNullException(nameof(userStore));
     private readonly UserAuthenticationService _authService = authService ?? throw new ArgumentNullException(nameof(authService));
+    private readonly IApplicationConstants _applicationConstants = applicationConstants ?? throw new ArgumentNullException(nameof(applicationConstants));
 
     public async Task<User> RegisterUserAsync(UserRegistrationRequest? request, CancellationToken cancellationToken)
     {
@@ -513,7 +516,7 @@ internal sealed class IdentityService(
 
         var formattedKey = FormatAuthenticatorKey(unformattedKey);
         var email = user.Email ?? user.UserName ?? userId.ToString();
-        var authenticatorUri = GenerateAuthenticatorUri("ProjectOffworlder", email, unformattedKey);
+        var authenticatorUri = GenerateAuthenticatorUri(_applicationConstants.AppName, email, unformattedKey);
 
         return new TwoFactorSetupInfo(unformattedKey, authenticatorUri, formattedKey);
     }
