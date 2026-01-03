@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -90,92 +90,209 @@ public static class Permissions
             "api",
             "Permissions related to API operations.",
             "API operations",
+
+            // Auth API - Self-service authentication operations (all user-scoped)
             Node(
-                "user",
-                "Manage authenticated user profile and security settings.",
-                "user APIs",
+                "auth",
+                "Self-service authentication and security operations.",
+                "auth APIs",
                 new[] { "userId" },
+
+                // Token operations
+                WLeaf("refresh", "Refresh access token using refresh token. Only granted to refresh tokens."),
+
+                // Profile operations
+                RLeaf("me", "Read own user profile information."),
+                WLeaf("logout", "Invalidate own session."),
+
+                // Sessions management
                 Node(
-                    "profile",
-                    "Manage user profile data.",
-                    "profile management",
-                    RLeaf("read", "Read the authenticated user's profile."),
-                    WLeaf("update", "Update profile attributes such as display name."),
-                    WLeaf("avatar", "Upload or replace the user's profile avatar.")
+                    "sessions",
+                    "Manage own login sessions.",
+                    "session operations",
+                    RLeaf("list", "List own active sessions."),
+                    WLeaf("revoke", "Revoke a specific session."),
+                    WLeaf("revoke_all", "Revoke all sessions except current.")
                 ),
+
+                // Two-factor authentication
                 Node(
-                    "security",
-                    "Manage user security credentials.",
-                    "user security",
-                    RLeaf("activity", "Read recent security-related activity."),
-                    WLeaf("change_password", "Change the user's password with the current credential."),
-                    WLeaf("reset_password", "Reset a password using an out-of-band token."),
-                    WLeaf("mfa_configure", "Configure multi-factor authentication devices.")
+                    "2fa",
+                    "Manage two-factor authentication settings.",
+                    "2FA operations",
+                    RLeaf("setup", "Get 2FA setup information."),
+                    WLeaf("enable", "Enable 2FA on account."),
+                    WLeaf("disable", "Disable 2FA on account."),
+                    WLeaf("regenerate_codes", "Regenerate recovery codes.")
+                ),
+
+                // Identity management - consolidated under /identity
+                Node(
+                    "identity",
+                    "Manage own identity settings.",
+                    "identity operations",
+                    RLeaf("read", "Read own identity information."),
+
+                    // Username
+                    Node(
+                        "username",
+                        "Manage username.",
+                        "username operations",
+                        WLeaf("link", "Link a username to the account."),
+                        WLeaf("change", "Change own username.")
+                    ),
+
+                    // Password
+                    Node(
+                        "password",
+                        "Manage password.",
+                        "password operations",
+                        WLeaf("link", "Link a password to the account."),
+                        WLeaf("change", "Change own password.")
+                    ),
+
+                    // Email
+                    Node(
+                        "email",
+                        "Manage email.",
+                        "email operations",
+                        WLeaf("link", "Link an email to the account."),
+                        WLeaf("change", "Change own email address."),
+                        WLeaf("unlink", "Unlink email from the account.")
+                    ),
+
+                    // Passkeys (WebAuthn)
+                    Node(
+                        "passkeys",
+                        "Manage own passkeys for passwordless login.",
+                        "passkey operations",
+                        RLeaf("list", "List own registered passkeys."),
+                        WLeaf("register", "Register a new passkey."),
+                        WLeaf("rename", "Rename a passkey."),
+                        WLeaf("delete", "Delete a passkey.")
+                    ),
+
+                    // External logins (OAuth)
+                    // Note: Linking happens via OAuth flow at POST /external/{provider} + callback (unauthenticated)
+                    Node(
+                        "external",
+                        "Manage linked external login providers.",
+                        "external login operations",
+                        RLeaf("list", "List linked external providers."),
+                        WLeaf("unlink", "Unlink an external provider.")
+                    )
                 )
             ),
+
+            // Users API - Admin operations for user management
+            Node(
+                "users",
+                "User management operations.",
+                "user management APIs",
+                new[] { "userId" },
+                RLeaf("list", "List all users in the system (admin only)."),
+                RLeaf("read", "Read a user's details."),
+                RLeaf("permissions", "Read a user's effective permissions."),
+                WLeaf("update", "Update a user's profile."),
+                WLeaf("delete", "Delete a user account (admin only)."),
+                WLeaf("assign_role", "Assign a role to a user (admin only)."),
+                WLeaf("remove_role", "Remove a role from a user (admin only)."),
+                WLeaf("reset_password", "Reset a user's password (admin only).")
+            ),
+
+            // Portfolio API - Portfolio analytics and account management
             Node(
                 "portfolio",
-                "Portfolio management operations scoped to a single user.",
+                "Portfolio aggregation and account management.",
                 "portfolio APIs",
                 new[] { "userId" },
+                RLeaf("read", "Read aggregated portfolio data."),
                 Node(
                     "accounts",
-                    "Manage trading accounts within a portfolio.",
-                    "portfolio accounts",
-                    new[] { "accountId" },
-                    RLeaf("list", "List all accounts for the portfolio."),
-                    RLeaf("read", "Read account details."),
-                    WLeaf("create", "Create a new account record."),
-                    WLeaf("update", "Update account metadata."),
+                    "Manage exchange accounts (Live and Paper).",
+                    "exchange account operations",
+                    RLeaf("list", "List all exchange accounts."),
+                    RLeaf("read", "Read account details and balances."),
+                    WLeaf("create", "Create a new exchange account."),
+                    WLeaf("update", "Update account settings or credentials."),
                     WLeaf("archive", "Archive or deactivate an account.")
-                ),
-                Node(
-                    "positions",
-                    "Manage open trading positions for the portfolio.",
-                    "portfolio positions",
-                    new[] { "positionId" },
-                    RLeaf("list", "List open and closed positions."),
-                    RLeaf("read", "Read a specific position."),
-                    WLeaf("open", "Open a new manual position entry."),
-                    WLeaf("close", "Close an existing position.")
-                ),
-                Node(
-                    "performance",
-                    "Analyze portfolio performance.",
-                    "portfolio performance",
-                    RLeaf("summary", "Read aggregate performance metrics."),
-                    RLeaf("timeseries", "Read performance data points over time."),
-                    RLeaf("distribution", "Read allocation distribution data.")
                 )
             ),
+
+            // Trading API - Order management
             Node(
-                "market",
-                "Market intelligence and discovery APIs.",
-                "market APIs",
+                "trading",
+                "Trading operations for placing and managing orders.",
+                "trading APIs",
+                new[] { "userId" },
                 Node(
-                    "assets",
-                    "Manage the asset catalog.",
-                    "asset catalog",
-                    RLeaf("list", "List all supported assets."),
-                    RLeaf("metadata", "Read metadata for a specific asset.", ["symbol"]),
-                    RLeaf("search", "Search for assets matching filter criteria.")
-                ),
-                Node(
-                    "prices",
-                    "Price discovery operations.",
-                    "price data",
-                    new[] { "symbol" },
-                    RLeaf("latest", "Read the latest price tick for an asset."),
-                    RLeaf("historical", "Read historical candles for an asset.", ["granularity"])
-                ),
-                Node(
-                    "orderbooks",
-                    "Order book snapshot and stream data.",
-                    "order book data",
-                    new[] { "symbol" },
-                    RLeaf("read", "Read a current order book snapshot."),
-                    RLeaf("stream", "Subscribe to incremental order book updates.")
+                    "orders",
+                    "Manage trading orders.",
+                    "order operations",
+                    RLeaf("list", "List orders with optional filters."),
+                    RLeaf("read", "Read order details."),
+                    WLeaf("place", "Place a new trading order."),
+                    WLeaf("cancel", "Cancel an open order.")
                 )
+            ),
+
+            // Bots API - Bot templates and instances
+            Node(
+                "bots",
+                "Bot management for automated trading.",
+                "bot APIs",
+                Node(
+                    "templates",
+                    "Manage bot templates (strategy configurations).",
+                    "bot template operations",
+                    new[] { "userId" },
+                    RLeaf("list", "List all bot templates."),
+                    RLeaf("read", "Read a bot template."),
+                    WLeaf("create", "Create a new bot template."),
+                    WLeaf("update", "Update a bot template."),
+                    WLeaf("delete", "Delete a bot template."),
+                    WLeaf("clone", "Clone an existing bot template.")
+                ),
+                Node(
+                    "instances",
+                    "Manage live bot instances.",
+                    "bot instance operations",
+                    new[] { "userId" },
+                    RLeaf("list", "List all bot instances."),
+                    RLeaf("read", "Read a bot instance."),
+                    WLeaf("create", "Create a new bot instance."),
+                    WLeaf("delete", "Delete a bot instance."),
+                    WLeaf("start", "Start a stopped bot instance."),
+                    WLeaf("stop", "Stop a running bot instance."),
+                    WLeaf("pause", "Pause a running bot instance.")
+                ),
+                Node(
+                    "strategies",
+                    "Browse available trading strategies (public catalog).",
+                    "strategy catalog",
+                    RLeaf("list", "List all available strategies."),
+                    RLeaf("read", "Read strategy details.")
+                )
+            ),
+
+            // Favorites API - User's favorite trading pairs
+            Node(
+                "favorites",
+                "Manage favorite trading pairs.",
+                "favorites APIs",
+                new[] { "userId" },
+                RLeaf("read", "Read favorite pairs."),
+                WLeaf("write", "Add or remove favorite pairs.")
+            ),
+
+            // Backtests API - Strategy backtesting
+            Node(
+                "backtests",
+                "Backtest trading strategies against historical data.",
+                "backtest APIs",
+                new[] { "userId" },
+                RLeaf("read", "Read backtests and results."),
+                WLeaf("write", "Create, cancel, or delete backtests.")
             )
         );
     }

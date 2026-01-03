@@ -1,4 +1,4 @@
-﻿using AbsolutePathHelpers;
+using AbsolutePathHelpers;
 
 namespace Application.Common.Extensions;
 

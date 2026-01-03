@@ -35,7 +35,7 @@ public class JwtTokenServiceTests
 		var nameIdentifierClaims = jwt.Claims.Where(static claim => claim.Type == ClaimTypes.NameIdentifier).ToArray();
 		Assert.Single(nameIdentifierClaims);
 		Assert.Equal("user-1", nameIdentifierClaims[0].Value);
-		Assert.Contains(jwt.Claims, claim => claim.Type == "rbac_version" && claim.Value == "1");
+		Assert.Contains(jwt.Claims, claim => claim.Type == "rbac_version" && claim.Value == "2");
 	}
 
 	[Fact]

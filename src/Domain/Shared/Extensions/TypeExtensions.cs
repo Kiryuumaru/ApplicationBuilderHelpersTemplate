@@ -1,4 +1,4 @@
-﻿namespace Domain.Shared.Extensions;
+namespace Domain.Shared.Extensions;
 
 public static class TypeExtensions
 {

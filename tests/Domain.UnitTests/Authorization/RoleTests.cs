@@ -26,13 +26,13 @@ public class RoleTests
         var updated = new[]
         {
             ScopeTemplate.Allow("api:portfolio:accounts:list"),
-            ScopeTemplate.Allow("api:portfolio:positions:close")
+            ScopeTemplate.Allow("api:trading:orders:cancel")
         };
 
         role.ReplaceScopeTemplates(updated);
 
         Assert.Equal(2, role.ScopeTemplates.Count);
-        Assert.Contains(role.ScopeTemplates, t => t.PermissionPath == "api:portfolio:positions:close");
+        Assert.Contains(role.ScopeTemplates, t => t.PermissionPath == "api:trading:orders:cancel");
         Assert.DoesNotContain(role.ScopeTemplates, t => t.PermissionPath == "api:user:profile:read");
     }
 }

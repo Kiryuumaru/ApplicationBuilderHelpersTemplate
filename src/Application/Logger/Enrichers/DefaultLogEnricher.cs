@@ -1,4 +1,4 @@
-﻿using Application.Configuration.Extensions;
+using Application.Configuration.Extensions;
 using Application.Logger.Abstractions;
 using Application.Logger.Extensions;
 using Application.Logger.LogEventPropertyTypes;

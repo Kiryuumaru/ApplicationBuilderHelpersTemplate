@@ -1,4 +1,4 @@
-﻿namespace Application.Common.Extensions;
+namespace Application.Common.Extensions;
 
 /// <summary>
 /// Provides extension methods for the TimeSpan struct to create cancellation tokens and sources.

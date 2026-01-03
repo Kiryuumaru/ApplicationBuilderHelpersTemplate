@@ -10,7 +10,7 @@ namespace Application.UnitTests.Authorization;
 public class PermissionServiceTests
 {
     private const string AccountUpdatePermission = "api:portfolio:accounts:update;userId=user-123";
-    private const string PositionClosePermission = "api:portfolio:positions:close;userId=user-123;positionId=pos-9";
+    private const string OrderCancelPermission = "api:trading:orders:cancel;userId=user-123";
 
     [Fact]
     public async Task GenerateTokenWithPermissionsAsync_NormalizesAndDelegatesScopes()
@@ -22,7 +22,7 @@ public class PermissionServiceTests
         {
             "  " + AccountUpdatePermission + "  ",
             AccountUpdatePermission,
-            PositionClosePermission
+            OrderCancelPermission
         };
 
         await service.GenerateTokenWithPermissionsAsync(
@@ -31,7 +31,7 @@ public class PermissionServiceTests
             permissionIdentifiers: permissions,
             cancellationToken: CancellationToken.None);
 
-        Assert.Equal([AccountUpdatePermission, PositionClosePermission], jwtService.LastGeneratedScopes);
+        Assert.Equal([AccountUpdatePermission, OrderCancelPermission], jwtService.LastGeneratedScopes);
         Assert.Equal("user-123", jwtService.LastGenerateTokenUserId);
         Assert.Equal("user@test", jwtService.LastGenerateTokenUsername);
     }
@@ -42,7 +42,7 @@ public class PermissionServiceTests
         var service = CreateService(new RecordingJwtTokenService());
         var principal = new ClaimsPrincipal(new ClaimsIdentity());
 
-        var result = service.HasPermission(principal, PositionClosePermission);
+        var result = service.HasPermission(principal, OrderCancelPermission);
 
         Assert.True(result);
     }
@@ -83,7 +83,7 @@ public class PermissionServiceTests
         var permitted = "api:portfolio:accounts:list;userId=user-123";
         var otherUser = "api:portfolio:accounts:list;userId=user-456";
         // Non-scoped request without userId - DENIED because scope requires userId
-        var nonScoped = "api:market:assets:list";
+        var nonScoped = "api:favorites:read";
 
         Assert.True(service.HasPermission(principal, permitted));
         Assert.False(service.HasPermission(principal, otherUser));
@@ -97,7 +97,7 @@ public class PermissionServiceTests
         // Scope requires userId parameter
         var principal = BuildPrincipalWithScopes("allow;api:_read;userId=user-123");
         // Request has no userId parameter - the scope requires userId so this DENIES
-        var permissionWithoutParameter = "api:market:assets:list";
+        var permissionWithoutParameter = "api:favorites:read";
 
         // The scope says "allow api:_read only for userId=user-123"
         // A request without userId doesn't satisfy this - so it's DENIED
@@ -126,7 +126,7 @@ public class PermissionServiceTests
 
         // Both requests are for user-456 (different user)
         var otherUser = "api:portfolio:accounts:list;userId=user-456";
-        var otherUserPositions = "api:portfolio:positions:read;userId=user-456";
+        var otherUserPositions = "api:trading:orders:read;userId=user-456";
 
         Assert.False(service.HasAnyPermission(principal, [otherUser, otherUserPositions]));
     }
@@ -167,7 +167,7 @@ public class PermissionServiceTests
         ]);
         var principal = new ClaimsPrincipal(identity);
 
-        var result = service.HasAllPermissions(principal, [AccountUpdatePermission, PositionClosePermission]);
+        var result = service.HasAllPermissions(principal, [AccountUpdatePermission, OrderCancelPermission]);
 
         Assert.False(result);
     }
@@ -177,11 +177,11 @@ public class PermissionServiceTests
     {
         var jwtService = new RecordingJwtTokenService
         {
-            ValidateTokenResult = BuildPrincipalWithScopes(AccountUpdatePermission, PositionClosePermission)
+            ValidateTokenResult = BuildPrincipalWithScopes(AccountUpdatePermission, OrderCancelPermission)
         };
         var service = CreateService(jwtService);
 
-        var permissionsToAdd = new[] { "  " + PositionClosePermission + " ", PositionClosePermission };
+        var permissionsToAdd = new[] { "  " + OrderCancelPermission + " ", OrderCancelPermission };
         var permissionsToRemove = new[] { AccountUpdatePermission, "  " + AccountUpdatePermission };
 
         var result = await service.MutateTokenAsync(

@@ -1,4 +1,4 @@
-﻿using AbsolutePathHelpers;
+using AbsolutePathHelpers;
 using Application.Logger.Extensions;
 using Application.NativeCmd.Exceptions;
 using CliWrap;

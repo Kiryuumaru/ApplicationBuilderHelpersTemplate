@@ -1,4 +1,4 @@
-﻿using AbsolutePathHelpers;
+using AbsolutePathHelpers;
 using Application.Common.Extensions;
 using Application.Configuration.Extensions;
 using Application.Logger.Interfaces;

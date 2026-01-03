@@ -1,4 +1,4 @@
-﻿using Application.AppEnvironment.Services;
+using Application.AppEnvironment.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Application.AppEnvironment.Extensions;

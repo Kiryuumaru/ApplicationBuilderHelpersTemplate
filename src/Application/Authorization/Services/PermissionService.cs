@@ -60,18 +60,13 @@ internal sealed class PermissionService(
 
     public async Task<string> GenerateTokenWithPermissionsAsync(
         string userId,
-        string username,
+        string? username,
         IEnumerable<string> permissionIdentifiers,
         IEnumerable<Claim>? additionalClaims = null,
         DateTimeOffset? expiration = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(userId);
-
-        if (string.IsNullOrWhiteSpace(username))
-        {
-            throw new ArgumentException("Username must be provided.", nameof(username));
-        }
 
         var normalizedPermissions = NormalizeAndValidate(permissionIdentifiers, allowEmpty: true);
 
@@ -80,7 +75,7 @@ internal sealed class PermissionService(
 
         return await jwtTokenService.GenerateToken(
             userId: userId,
-            username: username,
+            username: username ?? string.Empty,
             scopes: normalizedPermissions,
             additionalClaims: additionalClaimSet,
             expiration: expiration,
@@ -104,6 +99,34 @@ internal sealed class PermissionService(
         return await jwtTokenService.GenerateApiKeyToken(
             apiKeyName: apiKeyName,
             scopes: normalizedPermissions,
+            additionalClaims: additionalClaimSet,
+            expiration: expiration,
+            cancellationToken: cancellationToken);
+    }
+
+    public async Task<string> GenerateTokenWithScopeAsync(
+        string userId,
+        string? username,
+        IEnumerable<ScopeDirective> scopeDirectives,
+        IEnumerable<Claim>? additionalClaims = null,
+        DateTimeOffset? expiration = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(userId);
+
+        // Convert scope directives to their string representation
+        var scopes = scopeDirectives?
+            .Where(static d => d != null)
+            .Select(static d => d.ToString())
+            .ToArray() ?? Array.Empty<string>();
+
+        var jwtTokenService = await _jwtTokenServiceFactory(cancellationToken);
+        var additionalClaimSet = additionalClaims?.ToArray();
+
+        return await jwtTokenService.GenerateToken(
+            userId: userId,
+            username: username ?? string.Empty,
+            scopes: scopes,
             additionalClaims: additionalClaimSet,
             expiration: expiration,
             cancellationToken: cancellationToken);

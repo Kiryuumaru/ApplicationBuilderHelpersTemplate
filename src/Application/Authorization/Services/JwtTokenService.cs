@@ -15,7 +15,7 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
 {
     private const string RbacVersionClaimType = "rbac_version";
     private const string ScopeClaimType = "scope";
-    private const string CurrentRbacVersion = "1";
+    private const string CurrentRbacVersion = "2";
 
     public async Task<string> GenerateToken(
         string userId,

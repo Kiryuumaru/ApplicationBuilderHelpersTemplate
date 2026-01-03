@@ -39,7 +39,7 @@ public interface IPermissionService
     /// Issues a JWT token containing the supplied permission claims via <see cref="IJwtTokenService"/>.
     /// </summary>
     /// <param name="userId">The unique identifier for the principal.</param>
-    /// <param name="username">The display name for the principal.</param>
+    /// <param name="username">The display name for the principal (null for anonymous users).</param>
     /// <param name="permissionIdentifiers">Permission identifiers to embed as claims.</param>
     /// <param name="additionalClaims">Additional claims to include in the token beyond permissions.</param>
     /// <param name="expiration">Optional expiration override for the delegated token.</param>
@@ -47,7 +47,7 @@ public interface IPermissionService
     /// <returns>A signed JWT token string.</returns>
     Task<string> GenerateTokenWithPermissionsAsync(
         string userId,
-        string username,
+        string? username,
         IEnumerable<string> permissionIdentifiers,
         IEnumerable<Claim>? additionalClaims = null,
         DateTimeOffset? expiration = null,
@@ -65,6 +65,25 @@ public interface IPermissionService
     Task<string> GenerateApiKeyTokenWithPermissionsAsync(
         string apiKeyName,
         IEnumerable<string> permissionIdentifiers,
+        IEnumerable<Claim>? additionalClaims = null,
+        DateTimeOffset? expiration = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Issues a JWT token containing scope directives via <see cref="IJwtTokenService"/>.
+    /// This method uses the new directive-based scope system (RBAC v2).
+    /// </summary>
+    /// <param name="userId">The unique identifier for the principal.</param>
+    /// <param name="username">The display name for the principal (null for anonymous users).</param>
+    /// <param name="scopeDirectives">Scope directives to embed as claims.</param>
+    /// <param name="additionalClaims">Additional claims to include in the token beyond scopes.</param>
+    /// <param name="expiration">Optional expiration override for the delegated token.</param>
+    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+    /// <returns>A signed JWT token string.</returns>
+    Task<string> GenerateTokenWithScopeAsync(
+        string userId,
+        string? username,
+        IEnumerable<Domain.Authorization.ValueObjects.ScopeDirective> scopeDirectives,
         IEnumerable<Claim>? additionalClaims = null,
         DateTimeOffset? expiration = null,
         CancellationToken cancellationToken = default);

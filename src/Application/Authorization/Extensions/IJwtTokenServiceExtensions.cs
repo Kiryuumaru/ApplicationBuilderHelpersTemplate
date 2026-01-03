@@ -1,4 +1,4 @@
-﻿using Application.Authorization.Interfaces;
+using Application.Authorization.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;

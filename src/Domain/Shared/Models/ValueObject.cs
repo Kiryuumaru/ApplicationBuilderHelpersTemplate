@@ -1,4 +1,4 @@
-﻿namespace Domain.Shared.Models;
+namespace Domain.Shared.Models;
 
 public abstract class ValueObject : DomainObject
 {

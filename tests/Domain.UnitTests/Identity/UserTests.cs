@@ -77,12 +77,12 @@ public class UserTests
         user.GrantPermission(UserPermissionGrant.Create("api:portfolio:accounts:list"));
 
         var role = Role.Create("admin", "Administrator");
-        role.AddScopeTemplate(ScopeTemplate.Allow("api:portfolio:positions:close"));
+        role.AddScopeTemplate(ScopeTemplate.Allow("api:trading:orders:cancel"));
 
         var identifiers = user.BuildEffectivePermissions([new UserRoleResolution(role)]);
 
         Assert.Contains("api:portfolio:accounts:list", identifiers);
-        Assert.Contains("api:portfolio:positions:close", identifiers);
+        Assert.Contains("api:trading:orders:cancel", identifiers);
     }
 
     [Fact]

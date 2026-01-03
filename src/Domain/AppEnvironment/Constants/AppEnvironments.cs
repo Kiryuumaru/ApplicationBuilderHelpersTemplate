@@ -1,4 +1,4 @@
-﻿namespace Domain.AppEnvironment.Constants;
+namespace Domain.AppEnvironment.Constants;
 
 /// <summary>
 /// Application environment definitions. This is the single source of truth for all environments.

@@ -12,6 +12,7 @@ public static class EFCoreInfrastructureServiceCollectionExtensions
         services.AddSingleton<EFCoreDatabaseInitializationState>();
         services.AddSingleton<IDatabaseInitializationState>(sp => sp.GetRequiredService<EFCoreDatabaseInitializationState>());
         services.AddHostedService<EFCoreDatabaseBootstrapperWorker>();
+        
         return services;
     }
 }

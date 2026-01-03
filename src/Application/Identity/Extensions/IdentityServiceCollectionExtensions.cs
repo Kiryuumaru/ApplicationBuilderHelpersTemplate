@@ -7,6 +7,7 @@ using Domain.Identity.Models;
 using Domain.Identity.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Application.Identity.Extensions;
 
@@ -20,11 +21,29 @@ internal static class IdentityServiceCollectionExtensions
 
         services.AddIdentityCore<User>()
             .AddRoles<Role>()
-            .AddSignInManager();
+            .AddSignInManager()
+            .AddDefaultTokenProviders();
+
+        // Replace default user validator with our custom one that allows null usernames for anonymous users
+        // Must be done after AddIdentityCore to override the default UserValidator<User>
+        var defaultValidatorDescriptor = services.FirstOrDefault(d =>
+            d.ServiceType == typeof(IUserValidator<User>) &&
+            d.ImplementationType == typeof(UserValidator<User>));
+        if (defaultValidatorDescriptor != null)
+        {
+            services.Remove(defaultValidatorDescriptor);
+        }
+        services.AddScoped<IUserValidator<User>, AnonymousUserValidator>();
 
         services.AddScoped<IPasswordVerifier, PasswordHasherVerifier>();
         services.AddScoped<UserAuthenticationService>();
         services.AddScoped<IIdentityService, IdentityService>();
+        services.AddScoped<IAnonymousUserCleanupService, AnonymousUserCleanupService>();
+
+        // OAuth service - using mock implementation by default
+        // Replace with real implementation when configuring actual OAuth providers
+        services.AddScoped<IOAuthService, MockOAuthService>();
+
         return services;
     }
 }

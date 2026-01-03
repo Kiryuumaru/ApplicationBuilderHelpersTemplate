@@ -3,6 +3,8 @@ using System.Text.Json.Serialization;
 using Domain.AppEnvironment.Models;
 using Domain.Authorization.Enums;
 using Domain.Authorization.Models;
+using Domain.Authorization.ValueObjects;
+using Domain.Identity.Enums;
 using Domain.Identity.Models;
 using Domain.Identity.ValueObjects;
 using Domain.Shared.Serialization.Converters;
@@ -17,15 +19,36 @@ namespace Domain.Shared.Serialization;
     {
         typeof(PermissionAccessCategoryJsonConverter)
     })]
-[JsonSerializable(typeof(AppEnvironment.Models.AppEnvironment))]
+// AppEnvironment
+[JsonSerializable(typeof(Domain.AppEnvironment.Models.AppEnvironment))]
+// Authorization Enums
+[JsonSerializable(typeof(PermissionAccessCategory))]
+[JsonSerializable(typeof(ScopeDirectiveType))]
+// Authorization Models
 [JsonSerializable(typeof(Permission))]
 [JsonSerializable(typeof(Permission.ParsedIdentifier))]
-[JsonSerializable(typeof(PermissionAccessCategory))]
+[JsonSerializable(typeof(Role))]
+// Authorization ValueObjects
+[JsonSerializable(typeof(RoleId))]
+[JsonSerializable(typeof(RolePermissionTemplate))]
+[JsonSerializable(typeof(ScopeDirective))]
+[JsonSerializable(typeof(ScopeTemplate))]
+// Identity Enums
+[JsonSerializable(typeof(ExternalLoginProvider))]
+[JsonSerializable(typeof(PasskeyChallengeType))]
+[JsonSerializable(typeof(UserStatus))]
+// Identity Models
+[JsonSerializable(typeof(LoginSession))]
+[JsonSerializable(typeof(PasskeyChallenge))]
+[JsonSerializable(typeof(PasskeyCredential))]
 [JsonSerializable(typeof(User))]
+[JsonSerializable(typeof(UserRoleResolution))]
 [JsonSerializable(typeof(UserSession))]
+// Identity ValueObjects
+[JsonSerializable(typeof(UserId))]
+[JsonSerializable(typeof(UserIdentityLink))]
 [JsonSerializable(typeof(UserPermissionGrant))]
 [JsonSerializable(typeof(UserRoleAssignment))]
-[JsonSerializable(typeof(UserIdentityLink))]
 public partial class DomainJsonContext : JsonSerializerContext
 {
     public static JsonSerializerOptions CreateOptions(JsonSerializerOptions? baseOptions = null)
@@ -36,6 +59,7 @@ public partial class DomainJsonContext : JsonSerializerContext
 
         options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         options.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
+        AddConverterIfMissing<CamelCaseStringEnumConverter>(options);
         AddConverterIfMissing<PermissionAccessCategoryJsonConverter>(options);
 
         if (!options.TypeInfoResolverChain.Contains(Default))

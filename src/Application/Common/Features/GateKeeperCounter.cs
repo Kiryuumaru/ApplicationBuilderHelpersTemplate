@@ -1,4 +1,4 @@
-﻿namespace Application.Common.Features;
+namespace Application.Common.Features;
 
 public class GateKeeperCounter : GateKeeper
 {

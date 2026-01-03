@@ -1,4 +1,4 @@
-﻿using ApplicationBuilderHelpers;
+using ApplicationBuilderHelpers;
 using Infrastructure.EFCore.Sqlite.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 

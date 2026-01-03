@@ -16,8 +16,8 @@ public sealed class User : AggregateRoot
     private readonly HashSet<UserRoleAssignment> _roleAssignments = new();
     private readonly Dictionary<string, UserIdentityLink> _identityLinks = new(StringComparer.Ordinal);
 
-    public string UserName { get; private set; }
-    public string NormalizedUserName { get; private set; }
+    public string? UserName { get; private set; }
+    public string? NormalizedUserName { get; private set; }
     public string? Email { get; private set; }
     public string? NormalizedEmail { get; private set; }
     public bool EmailConfirmed { get; private set; }
@@ -32,6 +32,10 @@ public sealed class User : AggregateRoot
     public bool LockoutEnabled { get; private set; }
     public int AccessFailedCount { get; private set; }
 
+    // Anonymous/Guest support
+    public bool IsAnonymous { get; private set; }
+    public DateTimeOffset? LinkedAt { get; private set; }
+
     // Legacy/Custom fields
     public UserStatus Status { get; private set; }
     public DateTimeOffset? LastLoginAt { get; private set; }
@@ -44,24 +48,28 @@ public sealed class User : AggregateRoot
     public IReadOnlyCollection<UserRoleAssignment> RoleAssignments => _roleAssignments.ToList().AsReadOnly();
     public IReadOnlyCollection<UserIdentityLink> IdentityLinks => _identityLinks.Values.ToList().AsReadOnly();
 
-    private User(Guid id, string userName, string? email) : base(id)
+    private User(Guid id, string? userName, string? email, bool isAnonymous = false) : base(id)
     {
-        if (string.IsNullOrWhiteSpace(userName))
+        if (!isAnonymous && string.IsNullOrWhiteSpace(userName))
         {
-            throw new ArgumentException("UserName cannot be empty", nameof(userName));
+            throw new ArgumentException("UserName cannot be empty for non-anonymous users", nameof(userName));
         }
 
         UserName = userName;
-        NormalizedUserName = userName.ToUpperInvariant();
+        NormalizedUserName = userName?.ToUpperInvariant();
         Email = email;
         NormalizedEmail = email?.ToUpperInvariant();
         SecurityStamp = Guid.NewGuid().ToString();
         Status = UserStatus.PendingActivation;
         LockoutEnabled = true;
+        IsAnonymous = isAnonymous;
     }
 
     public static User Register(string userName, string? email = null)
         => new(Guid.NewGuid(), userName, email);
+
+    public static User RegisterAnonymous()
+        => new(Guid.NewGuid(), null, null, isAnonymous: true);
 
     /// <summary>
     /// Factory method for hydrating a User from persistence. AOT-compatible.
@@ -69,8 +77,8 @@ public sealed class User : AggregateRoot
     public static User Hydrate(
         Guid id,
         Guid? revId,
-        string userName,
-        string normalizedUserName,
+        string? userName,
+        string? normalizedUserName,
         string? email,
         string? normalizedEmail,
         bool emailConfirmed,
@@ -83,9 +91,11 @@ public sealed class User : AggregateRoot
         string? recoveryCodes,
         DateTimeOffset? lockoutEnd,
         bool lockoutEnabled,
-        int accessFailedCount)
+        int accessFailedCount,
+        bool isAnonymous,
+        DateTimeOffset? linkedAt)
     {
-        var user = new User(id, userName, email)
+        var user = new User(id, userName, email, isAnonymous)
         {
             NormalizedUserName = normalizedUserName,
             NormalizedEmail = normalizedEmail,
@@ -99,7 +109,8 @@ public sealed class User : AggregateRoot
             RecoveryCodes = recoveryCodes,
             LockoutEnd = lockoutEnd,
             LockoutEnabled = lockoutEnabled,
-            AccessFailedCount = accessFailedCount
+            AccessFailedCount = accessFailedCount,
+            LinkedAt = linkedAt
         };
         if (revId.HasValue)
         {
@@ -220,6 +231,45 @@ public sealed class User : AggregateRoot
         MarkAsModified();
     }
 
+    /// <summary>
+    /// Upgrades an anonymous user to a full account by setting username.
+    /// Call this when linking password or OAuth for the first time.
+    /// </summary>
+    public void UpgradeFromAnonymous(string userName)
+    {
+        if (!IsAnonymous)
+        {
+            throw new InvalidOperationException("User is not anonymous");
+        }
+
+        if (string.IsNullOrWhiteSpace(userName))
+        {
+            throw new ArgumentException("UserName cannot be empty when upgrading from anonymous", nameof(userName));
+        }
+
+        UserName = userName;
+        NormalizedUserName = userName.ToUpperInvariant();
+        IsAnonymous = false;
+        LinkedAt = DateTimeOffset.UtcNow;
+        MarkAsModified();
+    }
+
+    /// <summary>
+    /// Upgrades an anonymous user to a full account without requiring a username.
+    /// Call this when linking a passkey for the first time (passwordless auth doesn't need username).
+    /// </summary>
+    public void UpgradeFromAnonymousWithPasskey()
+    {
+        if (!IsAnonymous)
+        {
+            throw new InvalidOperationException("User is not anonymous");
+        }
+
+        IsAnonymous = false;
+        LinkedAt = DateTimeOffset.UtcNow;
+        MarkAsModified();
+    }
+
     public void Activate()
     {
         EnsureNotDeactivated();
@@ -281,6 +331,39 @@ public sealed class User : AggregateRoot
             .Select(grant => grant.Identifier)
             .Distinct(StringComparer.Ordinal)
             .OrderBy(identifier => identifier, StringComparer.Ordinal)];
+
+    /// <summary>
+    /// Builds the effective scope directives from roles.
+    /// </summary>
+    public IReadOnlyCollection<ScopeDirective> BuildEffectiveScopeDirectives(IEnumerable<UserRoleResolution>? roleResolutions)
+    {
+        var directives = new List<ScopeDirective>();
+
+        // Add direct permission grants as allow directives
+        foreach (var permission in GetPermissionIdentifiers())
+        {
+            directives.Add(ScopeDirective.Allow(permission));
+        }
+
+        // Add directives from roles
+        if (roleResolutions is not null)
+        {
+            foreach (var resolution in roleResolutions)
+            {
+                if (resolution?.Role is null)
+                {
+                    continue;
+                }
+
+                foreach (var directive in resolution.Role.ExpandScope(resolution.ParameterValues))
+                {
+                    directives.Add(directive);
+                }
+            }
+        }
+
+        return directives;
+    }
 
     public IReadOnlyCollection<string> BuildEffectivePermissions(IEnumerable<UserRoleResolution>? roleResolutions)
     {

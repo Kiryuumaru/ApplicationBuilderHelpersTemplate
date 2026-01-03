@@ -1,4 +1,4 @@
-﻿using Domain.Shared.Interfaces;
+using Domain.Shared.Interfaces;
 
 namespace Domain.Shared.Models;
 
