@@ -7,7 +7,7 @@ namespace Domain.Identity.Models;
 public sealed class UserSession : ValueObject
 {
     public Guid UserId { get; }
-    public string Username { get; }
+    public string? Username { get; }
     /// <summary>
     /// Gets the scope directives for this session (new directive-based system).
     /// </summary>
@@ -19,15 +19,20 @@ public sealed class UserSession : ValueObject
     public IReadOnlyCollection<string> RoleCodes { get; }
     public DateTimeOffset IssuedAt { get; }
     public DateTimeOffset ExpiresAt { get; }
+    /// <summary>
+    /// Whether this session belongs to an anonymous (guest) user.
+    /// </summary>
+    public bool IsAnonymous { get; }
 
     private UserSession(
         Guid userId,
-        string username,
+        string? username,
         IReadOnlyCollection<ScopeDirective> scope,
         IReadOnlyCollection<string> permissionIdentifiers,
         IReadOnlyCollection<string> roleCodes,
         DateTimeOffset issuedAt,
-        DateTimeOffset expiresAt)
+        DateTimeOffset expiresAt,
+        bool isAnonymous = false)
     {
         UserId = userId;
         Username = username;
@@ -36,6 +41,39 @@ public sealed class UserSession : ValueObject
         RoleCodes = roleCodes;
         IssuedAt = issuedAt;
         ExpiresAt = expiresAt;
+        IsAnonymous = isAnonymous;
+    }
+
+    /// <summary>
+    /// Creates a simple UserSession for anonymous users or simple scenarios.
+    /// </summary>
+    public static UserSession Create(
+        Guid userId,
+        string? username,
+        IReadOnlyCollection<string> roleCodes,
+        IReadOnlyCollection<string> permissionIdentifiers,
+        bool isAnonymous = false)
+    {
+        if (userId == Guid.Empty)
+        {
+            throw new ArgumentException("User identifier cannot be empty.", nameof(userId));
+        }
+
+        if (!isAnonymous && string.IsNullOrWhiteSpace(username))
+        {
+            throw new ArgumentException("Username cannot be empty for non-anonymous users.", nameof(username));
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        return new UserSession(
+            userId,
+            username?.Trim(),
+            Array.Empty<ScopeDirective>(),
+            permissionIdentifiers ?? Array.Empty<string>(),
+            roleCodes ?? Array.Empty<string>(),
+            now,
+            now.AddHours(1),
+            isAnonymous);
     }
 
     /// <summary>
@@ -43,20 +81,21 @@ public sealed class UserSession : ValueObject
     /// </summary>
     public static UserSession Create(
         Guid userId,
-        string username,
+        string? username,
         IEnumerable<ScopeDirective> scope,
         DateTimeOffset issuedAt,
         DateTimeOffset expiresAt,
-        IEnumerable<string>? roleCodes = null)
+        IEnumerable<string>? roleCodes = null,
+        bool isAnonymous = false)
     {
         if (userId == Guid.Empty)
         {
             throw new ArgumentException("User identifier cannot be empty.", nameof(userId));
         }
 
-        if (string.IsNullOrWhiteSpace(username))
+        if (!isAnonymous && string.IsNullOrWhiteSpace(username))
         {
-            throw new ArgumentException("Username cannot be empty.", nameof(username));
+            throw new ArgumentException("Username cannot be empty for non-anonymous users.", nameof(username));
         }
 
         if (expiresAt <= issuedAt)
@@ -83,7 +122,7 @@ public sealed class UserSession : ValueObject
             .OrderBy(static code => code, StringComparer.Ordinal)
             .ToArray() ?? Array.Empty<string>();
 
-        return new UserSession(userId, username.Trim(), scopeList, permissions, roles, issuedAt, expiresAt);
+        return new UserSession(userId, username?.Trim(), scopeList, permissions, roles, issuedAt, expiresAt, isAnonymous);
     }
 
     /// <summary>
@@ -91,20 +130,21 @@ public sealed class UserSession : ValueObject
     /// </summary>
     public static UserSession CreateLegacy(
         Guid userId,
-        string username,
+        string? username,
         IEnumerable<string> permissionIdentifiers,
         DateTimeOffset issuedAt,
         DateTimeOffset expiresAt,
-        IEnumerable<string>? roleCodes = null)
+        IEnumerable<string>? roleCodes = null,
+        bool isAnonymous = false)
     {
         if (userId == Guid.Empty)
         {
             throw new ArgumentException("User identifier cannot be empty.", nameof(userId));
         }
 
-        if (string.IsNullOrWhiteSpace(username))
+        if (!isAnonymous && string.IsNullOrWhiteSpace(username))
         {
-            throw new ArgumentException("Username cannot be empty.", nameof(username));
+            throw new ArgumentException("Username cannot be empty for non-anonymous users.", nameof(username));
         }
 
         if (expiresAt <= issuedAt)
@@ -127,7 +167,7 @@ public sealed class UserSession : ValueObject
             .ToArray() ?? Array.Empty<string>();
 
         // Empty scope for legacy sessions
-        return new UserSession(userId, username.Trim(), Array.Empty<ScopeDirective>(), permissions, roles, issuedAt, expiresAt);
+        return new UserSession(userId, username?.Trim(), Array.Empty<ScopeDirective>(), permissions, roles, issuedAt, expiresAt, isAnonymous);
     }
 
     /// <summary>
@@ -168,7 +208,7 @@ public sealed class UserSession : ValueObject
     protected override IEnumerable<object> GetEqualityComponents()
     {
         yield return UserId;
-        yield return Username;
+        yield return Username ?? string.Empty;
         yield return IssuedAt;
         yield return ExpiresAt;
     }

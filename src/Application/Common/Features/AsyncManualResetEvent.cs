@@ -1,4 +1,4 @@
-﻿using DisposableHelpers.Attributes;
+using DisposableHelpers.Attributes;
 
 namespace Application.Common.Features;
 

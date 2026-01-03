@@ -1,4 +1,4 @@
-﻿using ApplicationBuilderHelpers;
+using ApplicationBuilderHelpers;
 using Infrastructure.EFCore.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 

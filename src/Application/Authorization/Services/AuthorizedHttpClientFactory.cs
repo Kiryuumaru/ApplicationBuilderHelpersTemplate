@@ -1,4 +1,4 @@
-﻿using Application.Authorization.Extensions;
+using Application.Authorization.Extensions;
 using Application.Authorization.Interfaces;
 using Application.Logger.Extensions;
 using DisposableHelpers.Attributes;

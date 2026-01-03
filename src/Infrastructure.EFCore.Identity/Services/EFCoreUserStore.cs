@@ -1,9 +1,11 @@
+using Application.Identity.Interfaces;
 using Domain.Authorization.Models;
 using Domain.Identity.Models;
 using Domain.Identity.ValueObjects;
 using Infrastructure.EFCore.Identity.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace Infrastructure.EFCore.Identity.Services;
 
@@ -19,7 +21,8 @@ public class EFCoreUserStore(EFCoreDbContext dbContext) :
     IUserAuthenticatorKeyStore<User>,
     IUserTwoFactorRecoveryCodeStore<User>,
     IUserLoginStore<User>,
-    IUserPasskeyStore<User>
+    IUserPasskeyStore<User>,
+    Application.Identity.Interfaces.IUserStore
 {
     private readonly EFCoreDbContext _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
     
@@ -27,6 +30,7 @@ public class EFCoreUserStore(EFCoreDbContext dbContext) :
     private DbSet<Role> Roles => _dbContext.Set<Role>();
     private DbSet<UserLoginEntity> UserLogins => _dbContext.Set<UserLoginEntity>();
     private DbSet<UserPasskeyEntity> UserPasskeys => _dbContext.Set<UserPasskeyEntity>();
+    private DbSet<UserRoleAssignmentEntity> UserRoleAssignments => _dbContext.Set<UserRoleAssignmentEntity>();
 
     public async Task<IdentityResult> CreateAsync(User user, CancellationToken cancellationToken)
     {
@@ -36,6 +40,9 @@ public class EFCoreUserStore(EFCoreDbContext dbContext) :
         try
         {
             Users.Add(user);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            // Save role assignments after user is created
+            await SaveRoleAssignmentsAsync(user, cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
             return IdentityResult.Success;
         }
@@ -53,6 +60,8 @@ public class EFCoreUserStore(EFCoreDbContext dbContext) :
         try
         {
             Users.Update(user);
+            // Save role assignments when updating user
+            await SaveRoleAssignmentsAsync(user, cancellationToken);
             var rows = await _dbContext.SaveChangesAsync(cancellationToken);
             if (rows == 0)
             {
@@ -70,6 +79,12 @@ public class EFCoreUserStore(EFCoreDbContext dbContext) :
     {
         cancellationToken.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(user);
+
+        // Remove role assignments first
+        var roleAssignments = await UserRoleAssignments
+            .Where(ura => ura.UserId == user.Id)
+            .ToListAsync(cancellationToken);
+        UserRoleAssignments.RemoveRange(roleAssignments);
 
         Users.Remove(user);
         await _dbContext.SaveChangesAsync(cancellationToken);
@@ -107,6 +122,71 @@ public class EFCoreUserStore(EFCoreDbContext dbContext) :
         foreach (var login in logins)
         {
             user.LinkIdentity(login.LoginProvider, login.ProviderKey, login.Email, login.ProviderDisplayName);
+        }
+
+        // Load role assignments
+        await LoadRoleAssignmentsAsync(user, cancellationToken);
+    }
+
+    private async Task LoadRoleAssignmentsAsync(User user, CancellationToken cancellationToken)
+    {
+        var roleAssignments = await UserRoleAssignments
+            .Where(ura => ura.UserId == user.Id)
+            .ToListAsync(cancellationToken);
+
+        var rolesField = typeof(User).GetField("_roleAssignments", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        var rolesSet = (HashSet<UserRoleAssignment>)rolesField!.GetValue(user)!;
+        rolesSet.Clear();
+
+        foreach (var assignment in roleAssignments)
+        {
+            IReadOnlyDictionary<string, string?>? parameters = null;
+            if (!string.IsNullOrEmpty(assignment.ParameterValuesJson))
+            {
+                parameters = JsonSerializer.Deserialize<Dictionary<string, string?>>(assignment.ParameterValuesJson);
+            }
+            rolesSet.Add(UserRoleAssignment.Create(assignment.RoleId, parameters));
+        }
+    }
+
+    private async Task SaveRoleAssignmentsAsync(User user, CancellationToken cancellationToken)
+    {
+        // Get existing assignments from DB
+        var existingAssignments = await UserRoleAssignments
+            .Where(ura => ura.UserId == user.Id)
+            .ToListAsync(cancellationToken);
+
+        var currentRoleIds = user.RoleAssignments.Select(ra => ra.RoleId).ToHashSet();
+        var existingRoleIds = existingAssignments.Select(ea => ea.RoleId).ToHashSet();
+
+        // Remove assignments that are no longer present
+        var toRemove = existingAssignments.Where(ea => !currentRoleIds.Contains(ea.RoleId)).ToList();
+        UserRoleAssignments.RemoveRange(toRemove);
+
+        // Add new assignments
+        foreach (var assignment in user.RoleAssignments)
+        {
+            if (!existingRoleIds.Contains(assignment.RoleId))
+            {
+                var entity = new UserRoleAssignmentEntity
+                {
+                    UserId = user.Id,
+                    RoleId = assignment.RoleId,
+                    ParameterValuesJson = assignment.ParameterValues.Count > 0
+                        ? JsonSerializer.Serialize(assignment.ParameterValues)
+                        : null,
+                    AssignedAt = DateTimeOffset.UtcNow
+                };
+                UserRoleAssignments.Add(entity);
+            }
+            else
+            {
+                // Update existing assignment's parameters
+                var existing = existingAssignments.First(ea => ea.RoleId == assignment.RoleId);
+                existing.ParameterValuesJson = assignment.ParameterValues.Count > 0
+                    ? JsonSerializer.Serialize(assignment.ParameterValues)
+                    : null;
+            }
         }
     }
 
@@ -539,6 +619,132 @@ public class EFCoreUserStore(EFCoreDbContext dbContext) :
         }
         return user;
     }
+
+    #region Application.Identity.Interfaces.IUserStore Implementation
+
+    async Task<User?> Application.Identity.Interfaces.IUserStore.FindByIdAsync(Guid id, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var user = await Users.FindAsync([id], cancellationToken);
+        if (user != null)
+        {
+            await LoadIdentityLinksAsync(user, cancellationToken);
+        }
+        return user;
+    }
+
+    async Task<User?> Application.Identity.Interfaces.IUserStore.FindByUsernameAsync(string username, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var normalizedUsername = username.ToUpperInvariant();
+        var user = await Users
+            .FirstOrDefaultAsync(u => u.NormalizedUserName == normalizedUsername, cancellationToken);
+        if (user != null)
+        {
+            await LoadIdentityLinksAsync(user, cancellationToken);
+        }
+        return user;
+    }
+
+    async Task<User?> Application.Identity.Interfaces.IUserStore.FindByExternalIdentityAsync(string provider, string providerSubject, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var login = await UserLogins
+            .FirstOrDefaultAsync(ul => ul.LoginProvider == provider && ul.ProviderKey == providerSubject, cancellationToken);
+        
+        if (login == null) return null;
+
+        var user = await Users.FindAsync([login.UserId], cancellationToken);
+        if (user != null)
+        {
+            await LoadIdentityLinksAsync(user, cancellationToken);
+        }
+        return user;
+    }
+
+    async Task Application.Identity.Interfaces.IUserStore.SaveAsync(User user, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(user);
+
+        var existingUser = await Users.FindAsync([user.Id], cancellationToken);
+        if (existingUser == null)
+        {
+            Users.Add(user);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        else
+        {
+            _dbContext.Entry(existingUser).CurrentValues.SetValues(user);
+        }
+        // Save role assignments
+        await SaveRoleAssignmentsAsync(user, cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    async Task<IReadOnlyCollection<User>> Application.Identity.Interfaces.IUserStore.ListAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var users = await Users.ToListAsync(cancellationToken);
+        foreach (var user in users)
+        {
+            await LoadIdentityLinksAsync(user, cancellationToken);
+        }
+        return users;
+    }
+
+    async Task<int> Application.Identity.Interfaces.IUserStore.DeleteAbandonedAnonymousUsersAsync(
+        DateTimeOffset cutoffDate,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        // Find anonymous users who have not been active since the cutoff date
+        // Anonymous users have IsAnonymous = true
+        // We check LastLoginAt if available, otherwise fall back to Created (from AuditableEntity)
+        // Note: EF Core SQLite has issues translating nullable DateTimeOffset comparisons,
+        // so we fetch anonymous users first, then filter in memory
+        var anonymousUsers = await Users
+            .Where(u => u.IsAnonymous)
+            .ToListAsync(cancellationToken);
+        
+        var abandonedUsers = anonymousUsers
+            .Where(u => (u.LastLoginAt.HasValue && u.LastLoginAt.Value < cutoffDate) ||
+                       (!u.LastLoginAt.HasValue && u.Created < cutoffDate))
+            .ToList();
+
+        if (abandonedUsers.Count == 0)
+        {
+            return 0;
+        }
+
+        var userIds = abandonedUsers.Select(u => u.Id).ToList();
+
+        // Remove related entities first (role assignments, passkeys, logins)
+        var roleAssignments = await UserRoleAssignments
+            .Where(ura => userIds.Contains(ura.UserId))
+            .ToListAsync(cancellationToken);
+        UserRoleAssignments.RemoveRange(roleAssignments);
+
+        var passkeys = await UserPasskeys
+            .Where(p => userIds.Contains(p.UserId))
+            .ToListAsync(cancellationToken);
+        UserPasskeys.RemoveRange(passkeys);
+
+        var logins = await UserLogins
+            .Where(l => userIds.Contains(l.UserId))
+            .ToListAsync(cancellationToken);
+        UserLogins.RemoveRange(logins);
+
+        // Remove the users
+        Users.RemoveRange(abandonedUsers);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return abandonedUsers.Count;
+    }
+
+    #endregion
 
     public void Dispose()
     {

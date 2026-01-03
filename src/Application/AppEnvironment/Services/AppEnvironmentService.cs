@@ -1,4 +1,4 @@
-﻿using Application.Abstractions.Application;
+using Application.Abstractions.Application;
 using Application.AppEnvironment.Extensions;
 using Application.LocalStore.Interfaces;
 using Microsoft.Extensions.Configuration;

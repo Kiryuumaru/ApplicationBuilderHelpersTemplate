@@ -1,4 +1,4 @@
-﻿using ApplicationBuilderHelpers.Extensions;
+using ApplicationBuilderHelpers.Extensions;
 using Domain.Shared.Extensions;
 using Grpc.Core;
 using Microsoft.Extensions.Configuration;

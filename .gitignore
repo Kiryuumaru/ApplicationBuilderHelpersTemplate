@@ -361,9 +361,17 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-
+/Src/Presentation/Presentation.Web.Client/wwwroot/css/app.min.css
+/Src/Presentation/Presentation.Web.Client/package-lock.json
+/output
 /.nuke/temp
 /creds.json
 /src/Presentation.WebApp/app.db
 /src/Presentation.WebApp/app.db-shm
 /src/Presentation.WebApp/app.db-wal
+/src/Presentation.WebApi/app.db
+/src/Presentation.WebApi/app.db-shm
+/src/Presentation.WebApi/app.db-wal
+/src/Presentation.WebApi/app.db
+/src/Presentation.WebApi/app.db-shm
+/src/Presentation.WebApi/app.db-wal

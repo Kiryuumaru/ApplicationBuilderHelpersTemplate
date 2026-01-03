@@ -51,6 +51,12 @@ sealed class PermissionIdsGenerator : ICodeGenerationTask
 
         foreach (var root in Permissions.PermissionTreeRoots)
         {
+            // Skip root-level _read and _write permissions - they're handled by WriteGlobalScopes
+            if (string.Equals(root.Identifier, "_read", StringComparison.Ordinal) ||
+                string.Equals(root.Identifier, "_write", StringComparison.Ordinal))
+            {
+                continue;
+            }
             WritePermissionNode(builder, root, 1, Array.Empty<string>(), false, false);
         }
 
@@ -128,50 +134,44 @@ sealed class PermissionIdsGenerator : ICodeGenerationTask
 
     private static void WriteGlobalScopes(StringBuilder builder)
     {
-        builder.AppendLine("    /// <summary>");
-        builder.AppendLine("    /// Global permission scope identifiers covering the entire platform.");
-        builder.AppendLine("    /// </summary>");
-        builder.AppendLine("    public static class Global");
+        // Root-level Read scope
+        builder.AppendLine("    /// <summary>Global read scope covering every feature.</summary>");
+        builder.AppendLine("    public static class Read");
         builder.AppendLine("    {");
-
-        // Global Read scope
-        builder.AppendLine("        /// <summary>Global read scope covering every feature.</summary>");
-        builder.AppendLine("        public static class Read");
-        builder.AppendLine("        {");
-        builder.AppendLine($"            private const string Path = \"{EscapeForString(Permissions.RootReadIdentifier)}\";");
+        builder.AppendLine($"        public const string Identifier = \"{EscapeForString(Permissions.RootReadIdentifier)}\";");
+        builder.AppendLine($"        private const string Path = Identifier;");
         builder.AppendLine();
-        builder.AppendLine("            /// <summary>Creates an allow directive for global read access.</summary>");
-        builder.AppendLine($"            public static string Allow() => \"allow;{EscapeForString(Permissions.RootReadIdentifier)}\";");
+        builder.AppendLine("        /// <summary>Creates an allow directive for global read access.</summary>");
+        builder.AppendLine($"        public static string Allow() => \"allow;{EscapeForString(Permissions.RootReadIdentifier)}\";");
         builder.AppendLine();
-        builder.AppendLine("            /// <summary>Creates a deny directive for global read access.</summary>");
-        builder.AppendLine($"            public static string Deny() => \"deny;{EscapeForString(Permissions.RootReadIdentifier)}\";");
+        builder.AppendLine("        /// <summary>Creates a deny directive for global read access.</summary>");
+        builder.AppendLine($"        public static string Deny() => \"deny;{EscapeForString(Permissions.RootReadIdentifier)}\";");
         builder.AppendLine();
-        builder.AppendLine("            /// <summary>Creates a scope builder with the userId parameter.</summary>");
-        builder.AppendLine("            public static ScopeBuilder WithUserId(string value) => new ScopeBuilder(Path, \"userId\", value);");
+        builder.AppendLine("        /// <summary>Creates a scope builder with the userId parameter.</summary>");
+        builder.AppendLine("        public static ScopeBuilder WithUserId(string value) => new ScopeBuilder(Path, \"userId\", value);");
         builder.AppendLine();
-        WriteScopeBuilderStruct(builder, 3, [("userId", "UserId")]);
-        builder.AppendLine("        }");
+        WriteScopeBuilderStruct(builder, 2, [("userId", "UserId")]);
+        builder.AppendLine("    }");
 
         builder.AppendLine();
 
-        // Global Write scope
-        builder.AppendLine("        /// <summary>Global write scope covering every feature.</summary>");
-        builder.AppendLine("        public static class Write");
-        builder.AppendLine("        {");
-        builder.AppendLine($"            private const string Path = \"{EscapeForString(Permissions.RootWriteIdentifier)}\";");
+        // Root-level Write scope
+        builder.AppendLine("    /// <summary>Global write scope covering every feature.</summary>");
+        builder.AppendLine("    public static class Write");
+        builder.AppendLine("    {");
+        builder.AppendLine($"        public const string Identifier = \"{EscapeForString(Permissions.RootWriteIdentifier)}\";");
+        builder.AppendLine($"        private const string Path = Identifier;");
         builder.AppendLine();
-        builder.AppendLine("            /// <summary>Creates an allow directive for global write access.</summary>");
-        builder.AppendLine($"            public static string Allow() => \"allow;{EscapeForString(Permissions.RootWriteIdentifier)}\";");
+        builder.AppendLine("        /// <summary>Creates an allow directive for global write access.</summary>");
+        builder.AppendLine($"        public static string Allow() => \"allow;{EscapeForString(Permissions.RootWriteIdentifier)}\";");
         builder.AppendLine();
-        builder.AppendLine("            /// <summary>Creates a deny directive for global write access.</summary>");
-        builder.AppendLine($"            public static string Deny() => \"deny;{EscapeForString(Permissions.RootWriteIdentifier)}\";");
+        builder.AppendLine("        /// <summary>Creates a deny directive for global write access.</summary>");
+        builder.AppendLine($"        public static string Deny() => \"deny;{EscapeForString(Permissions.RootWriteIdentifier)}\";");
         builder.AppendLine();
-        builder.AppendLine("            /// <summary>Creates a scope builder with the userId parameter.</summary>");
-        builder.AppendLine("            public static ScopeBuilder WithUserId(string value) => new ScopeBuilder(Path, \"userId\", value);");
+        builder.AppendLine("        /// <summary>Creates a scope builder with the userId parameter.</summary>");
+        builder.AppendLine("        public static ScopeBuilder WithUserId(string value) => new ScopeBuilder(Path, \"userId\", value);");
         builder.AppendLine();
-        WriteScopeBuilderStruct(builder, 3, [("userId", "UserId")]);
-        builder.AppendLine("        }");
-
+        WriteScopeBuilderStruct(builder, 2, [("userId", "UserId")]);
         builder.AppendLine("    }");
     }
 
@@ -309,8 +309,11 @@ sealed class PermissionIdsGenerator : ICodeGenerationTask
         var isLeaf = !permission.HasChildren;
         if (isLeaf && permission.AccessCategory != PermissionAccessCategory.Unspecified)
         {
-            // This is a leaf permission - write Allow/Deny methods directly
-            builder.AppendLine($"{indent}    private const string Path = \"{EscapeForString(permission.Path)}\";");
+            // This is a leaf permission - write Identifier constant and Allow/Deny methods
+            builder.AppendLine($"{indent}    /// <summary>The canonical permission identifier for this permission.</summary>");
+            builder.AppendLine($"{indent}    public const string Identifier = \"{EscapeForString(permission.Path)}\";");
+            builder.AppendLine();
+            builder.AppendLine($"{indent}    private const string Path = Identifier;");
             builder.AppendLine();
             builder.AppendLine($"{indent}    /// <summary>Creates an allow directive for this permission.</summary>");
             builder.AppendLine($"{indent}    public static string Allow() => \"allow;{EscapeForString(permission.Path)}\";");
@@ -375,7 +378,10 @@ sealed class PermissionIdsGenerator : ICodeGenerationTask
         builder.AppendLine($"{indent}/// <summary>{EscapeForXml(description)}</summary>");
         builder.AppendLine($"{indent}public static class {className}");
         builder.AppendLine($"{indent}{{");
-        builder.AppendLine($"{indent}    private const string Path = \"{EscapeForString(path)}\";");
+        builder.AppendLine($"{indent}    /// <summary>The canonical permission identifier for this scope.</summary>");
+        builder.AppendLine($"{indent}    public const string Identifier = \"{EscapeForString(path)}\";");
+        builder.AppendLine();
+        builder.AppendLine($"{indent}    private const string Path = Identifier;");
         builder.AppendLine();
         builder.AppendLine($"{indent}    /// <summary>Creates an allow directive for this scope.</summary>");
         builder.AppendLine($"{indent}    public static string Allow() => \"allow;{EscapeForString(path)}\";");

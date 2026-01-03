@@ -1,4 +1,4 @@
-﻿using AbsolutePathHelpers;
+using AbsolutePathHelpers;
 using Application.AppEnvironment.Services;
 using Application.Authorization.Extensions;
 using Application.Configuration.Extensions;

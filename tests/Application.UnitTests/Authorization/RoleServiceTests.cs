@@ -71,7 +71,7 @@ public class RoleServiceTests
             IsSystemRole: false,
             ScopeTemplates:
             [
-                ScopeTemplate.Allow("api:market:assets:list")
+                ScopeTemplate.Allow("api:favorites:read")
             ]);
 
         var role = await service.CreateRoleAsync(descriptor, CancellationToken.None);

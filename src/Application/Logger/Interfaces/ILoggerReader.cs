@@ -1,4 +1,4 @@
-﻿namespace Application.Logger.Interfaces;
+namespace Application.Logger.Interfaces;
 
 public interface ILoggerReader
 {

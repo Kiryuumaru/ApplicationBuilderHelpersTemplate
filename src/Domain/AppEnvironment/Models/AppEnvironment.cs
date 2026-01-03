@@ -1,4 +1,4 @@
-﻿namespace Domain.AppEnvironment.Models;
+namespace Domain.AppEnvironment.Models;
 
 /// <summary>
 /// Represents a complete application environment configuration for the Jack Of All Trades platform.

@@ -91,7 +91,8 @@ public class IdentityServiceTests
         var session = await fixture.IdentityService.AuthenticateAsync("admin-user", "Secret!123", CancellationToken.None);
 
         Assert.Contains(RolesConstants.Admin.Code, session.RoleCodes);
-        Assert.Contains(Permissions.RootWriteIdentifier, session.PermissionIdentifiers);
+        // Permission identifiers are now in scope directive format: "allow;path"
+        Assert.Contains($"allow;{Permissions.RootWriteIdentifier}", session.PermissionIdentifiers);
     }
 
     [Fact]
@@ -126,7 +127,7 @@ public class IdentityServiceTests
     {
         var fixture = CreateFixture();
 
-        const string additionalPermission = "api:market:assets:list";
+        const string additionalPermission = "api:favorites:read";
         var request = new UserRegistrationRequest(
             Username: "mixed-user",
             Password: "Mixed!123",
@@ -138,8 +139,9 @@ public class IdentityServiceTests
         var session = await fixture.IdentityService.AuthenticateAsync("mixed-user", "Mixed!123", CancellationToken.None);
 
         Assert.Contains(RolesConstants.Admin.Code, session.RoleCodes);
-        Assert.Contains(Permissions.RootWriteIdentifier, session.PermissionIdentifiers); // from role grant
-        Assert.Contains(additionalPermission, session.PermissionIdentifiers); // direct user grant
+        // Permission identifiers are now in scope directive format: "allow;path"
+        Assert.Contains($"allow;{Permissions.RootWriteIdentifier}", session.PermissionIdentifiers); // from role grant
+        Assert.Contains($"allow;{additionalPermission}", session.PermissionIdentifiers); // direct user grant
     }
 
     [Fact]
@@ -173,8 +175,8 @@ public class IdentityServiceTests
             ScopeTemplates:
             [
                 ScopeTemplate.Allow(
-                    "api:portfolio:positions:read",
-                    ("portfolioId", "{portfolioId}"))
+                    "api:trading:orders:read",
+                    ("userId", "{userId}"))
             ]);
 
         await fixture.RoleService.CreateRoleAsync(descriptor, CancellationToken.None);
@@ -186,13 +188,14 @@ public class IdentityServiceTests
             [
                 new RoleAssignmentRequest(
                     "portfolio_reader",
-                    new Dictionary<string, string?> { ["portfolioId"] = "portfolio-123" })
+                    new Dictionary<string, string?> { ["userId"] = "user-123" })
             ]);
 
         await fixture.IdentityService.RegisterUserAsync(request, CancellationToken.None);
 
         var session = await fixture.IdentityService.AuthenticateAsync("scoped-user", "Scoped!123", CancellationToken.None);
-        Assert.Contains("api:portfolio:positions:read;portfolioId=portfolio-123", session.PermissionIdentifiers);
+        // Permission identifiers are now in scope directive format: "allow;path;params"
+        Assert.Contains("allow;api:trading:orders:read;userId=user-123", session.PermissionIdentifiers);
 
         var stored = await fixture.IdentityService.GetByUsernameAsync("scoped-user", CancellationToken.None);
         Assert.NotNull(stored);
@@ -200,7 +203,7 @@ public class IdentityServiceTests
         var portfolioRole = await fixture.RoleService.GetByCodeAsync("portfolio_reader", CancellationToken.None);
         Assert.NotNull(portfolioRole);
         var portfolioAssignment = Assert.Single(stored!.RoleAssignments, a => a.RoleId == portfolioRole!.Id);
-        Assert.Equal("portfolio-123", portfolioAssignment.ParameterValues["portfolioId"]);
+        Assert.Equal("user-123", portfolioAssignment.ParameterValues["userId"]);
 
         var userRole = await fixture.RoleService.GetByCodeAsync(RolesConstants.User.Code, CancellationToken.None);
         Assert.NotNull(userRole);
@@ -220,8 +223,8 @@ public class IdentityServiceTests
             ScopeTemplates:
             [
                 ScopeTemplate.Allow(
-                    "api:portfolio:positions:read",
-                    ("portfolioId", "{portfolioId}"))
+                    "api:trading:orders:read",
+                    ("userId", "{userId}"))
             ]);
 
         await fixture.RoleService.CreateRoleAsync(descriptor, CancellationToken.None);
@@ -295,6 +298,10 @@ public class IdentityServiceTests
     {
         var services = new ServiceCollection();
         services.AddLogging();
+        
+        // Add authentication services required by SignInManager
+        services.AddAuthentication();
+        
         services.AddIdentityServices();
 
         // Use shared memory database with EF Core

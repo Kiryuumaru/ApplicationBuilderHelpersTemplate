@@ -1,4 +1,4 @@
-﻿using Application.Logger.Abstractions;
+using Application.Logger.Abstractions;
 
 namespace Application.Logger.LogEventPropertyTypes;
 

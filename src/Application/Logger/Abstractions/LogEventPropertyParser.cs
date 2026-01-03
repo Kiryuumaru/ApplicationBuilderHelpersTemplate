@@ -1,4 +1,4 @@
-﻿namespace Application.Logger.Abstractions;
+namespace Application.Logger.Abstractions;
 
 internal interface ILogEventPropertyParser
 {

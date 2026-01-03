@@ -1,4 +1,4 @@
-﻿using Application.NativeCmd.Services;
+using Application.NativeCmd.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Application.NativeCmd.Extensions;

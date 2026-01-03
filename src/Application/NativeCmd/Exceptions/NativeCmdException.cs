@@ -1,4 +1,4 @@
-﻿namespace Application.NativeCmd.Exceptions;
+namespace Application.NativeCmd.Exceptions;
 
 public class NativeCmdException : Exception
 {

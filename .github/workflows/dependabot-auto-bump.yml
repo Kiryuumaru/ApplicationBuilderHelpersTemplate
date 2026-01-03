@@ -1,4 +1,4 @@
-﻿name: Dependabot Pull Request Bump
+name: Dependabot Pull Request Bump
 
 on:
   push:

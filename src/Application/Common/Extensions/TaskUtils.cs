@@ -1,4 +1,4 @@
-﻿using Application.Common.Features;
+using Application.Common.Features;
 using DisposableHelpers;
 
 namespace Application.Common.Extensions;
