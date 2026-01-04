@@ -113,7 +113,7 @@ public partial class AuthController
 
         // Get permissions for the user from role service
         // GetEffectivePermissionsAsync returns scope directive strings (e.g., "allow;_read;userId=xxx")
-        var permissions = await userRoleService.GetEffectivePermissionsAsync(userId, cancellationToken);
+        var permissions = await userAuthorizationService.GetEffectivePermissionsAsync(userId, cancellationToken);
         
         // Parse the scope directive strings - they're already in directive format
         var scopes = permissions.Select(ScopeDirective.Parse).ToList();

@@ -3,6 +3,7 @@ using Application.Identity.Interfaces.Infrastructure;
 using Application.Identity.Models;
 using Domain.Identity.Enums;
 using Domain.Identity.Models;
+using Domain.Identity.ValueObjects;
 using Infrastructure.EFCore.Identity.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,6 +24,7 @@ internal sealed class EFCoreUserRepository(IDbContextFactory<EFCoreDbContext> co
         if (user is not null)
         {
             await HydrateRoleAssignmentsAsync(context, user, cancellationToken);
+            await HydratePermissionGrantsAsync(context, user, cancellationToken);
         }
         return user;
     }
@@ -36,6 +38,7 @@ internal sealed class EFCoreUserRepository(IDbContextFactory<EFCoreDbContext> co
         if (user is not null)
         {
             await HydrateRoleAssignmentsAsync(context, user, cancellationToken);
+            await HydratePermissionGrantsAsync(context, user, cancellationToken);
         }
         return user;
     }
@@ -49,6 +52,7 @@ internal sealed class EFCoreUserRepository(IDbContextFactory<EFCoreDbContext> co
         if (user is not null)
         {
             await HydrateRoleAssignmentsAsync(context, user, cancellationToken);
+            await HydratePermissionGrantsAsync(context, user, cancellationToken);
         }
         return user;
     }
@@ -72,6 +76,7 @@ internal sealed class EFCoreUserRepository(IDbContextFactory<EFCoreDbContext> co
         if (user is not null)
         {
             await HydrateRoleAssignmentsAsync(context, user, cancellationToken);
+            await HydratePermissionGrantsAsync(context, user, cancellationToken);
         }
         return user;
     }
@@ -92,6 +97,9 @@ internal sealed class EFCoreUserRepository(IDbContextFactory<EFCoreDbContext> co
 
         // Sync role assignments
         await SyncRoleAssignmentsAsync(context, user, cancellationToken);
+
+        // Sync permission grants
+        await SyncPermissionGrantsAsync(context, user, cancellationToken);
 
         await context.SaveChangesAsync(cancellationToken);
     }
@@ -282,6 +290,24 @@ internal sealed class EFCoreUserRepository(IDbContextFactory<EFCoreDbContext> co
         }
     }
 
+    private static async Task HydratePermissionGrantsAsync(EFCoreDbContext context, User user, CancellationToken cancellationToken)
+    {
+        var grants = await context.Set<UserPermissionGrantEntity>()
+            .AsNoTracking()
+            .Where(g => g.UserId == user.Id)
+            .ToListAsync(cancellationToken);
+
+        foreach (var grant in grants)
+        {
+            var permissionGrant = UserPermissionGrant.Create(
+                grant.PermissionIdentifier,
+                grant.Description,
+                grant.GrantedBy,
+                grant.GrantedAt);
+            user.GrantPermission(permissionGrant);
+        }
+    }
+
     private static async Task SyncRoleAssignmentsAsync(EFCoreDbContext context, User user, CancellationToken cancellationToken)
     {
         // Get existing assignments from DB
@@ -325,6 +351,40 @@ internal sealed class EFCoreUserRepository(IDbContextFactory<EFCoreDbContext> co
 
         context.Set<UserRoleAssignmentEntity>().RemoveRange(toRemove);
         context.Set<UserRoleAssignmentEntity>().AddRange(toAdd);
+    }
+
+    private static async Task SyncPermissionGrantsAsync(EFCoreDbContext context, User user, CancellationToken cancellationToken)
+    {
+        // Get existing grants from DB
+        var existingGrants = await context.Set<UserPermissionGrantEntity>()
+            .Where(g => g.UserId == user.Id)
+            .ToListAsync(cancellationToken);
+
+        // Get current grants from domain model
+        var currentGrants = user.PermissionGrants;
+
+        // Find grants to remove
+        var toRemove = existingGrants
+            .Where(existing => !currentGrants.Any(current => 
+                string.Equals(current.Identifier, existing.PermissionIdentifier, StringComparison.Ordinal)))
+            .ToList();
+
+        // Find grants to add
+        var existingIdentifiers = existingGrants.Select(g => g.PermissionIdentifier).ToHashSet(StringComparer.Ordinal);
+        var toAdd = currentGrants
+            .Where(current => !existingIdentifiers.Contains(current.Identifier))
+            .Select(grant => new UserPermissionGrantEntity
+            {
+                UserId = user.Id,
+                PermissionIdentifier = grant.Identifier,
+                Description = grant.Description,
+                GrantedAt = grant.GrantedAt,
+                GrantedBy = grant.GrantedBy
+            })
+            .ToList();
+
+        context.Set<UserPermissionGrantEntity>().RemoveRange(toRemove);
+        context.Set<UserPermissionGrantEntity>().AddRange(toAdd);
     }
 
     private static IReadOnlyDictionary<string, string?>? DeserializeParameterValues(string? json)

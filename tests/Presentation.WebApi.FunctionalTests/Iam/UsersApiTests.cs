@@ -4,11 +4,11 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Presentation.WebApi.FunctionalTests.Fixtures;
 
-namespace Presentation.WebApi.FunctionalTests.Users;
+namespace Presentation.WebApi.FunctionalTests.Iam;
 
 /// <summary>
-/// Functional tests for User Management API endpoints.
-/// Tests admin operations on users including CRUD, roles, and permissions.
+/// Functional tests for IAM Users API endpoints.
+/// Tests admin operations on users including CRUD and permissions.
 /// </summary>
 [Collection(WebApiTestCollection.Name)]
 public class UsersApiTests
@@ -39,8 +39,8 @@ public class UsersApiTests
         var adminAuth = await RegisterAndGetTokenAsync(_adminUsername);
         Assert.NotNull(adminAuth);
 
-        _output.WriteLine("[STEP] GET /api/v1/users as admin...");
-        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/users");
+        _output.WriteLine("[STEP] GET /api/v1/iam/users as admin...");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/iam/users");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth!.AccessToken);
         var response = await _sharedHost.Host.HttpClient.SendAsync(request);
 
@@ -80,8 +80,8 @@ public class UsersApiTests
         var userAuth = await RegisterAndGetTokenAsync(_testUsername);
         Assert.NotNull(userAuth);
 
-        _output.WriteLine("[STEP] GET /api/v1/users as regular user...");
-        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/users");
+        _output.WriteLine("[STEP] GET /api/v1/iam/users as regular user...");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/iam/users");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userAuth!.AccessToken);
         var response = await _sharedHost.Host.HttpClient.SendAsync(request);
 
@@ -106,8 +106,8 @@ public class UsersApiTests
         Assert.NotNull(userAuth);
         var userId = userAuth!.User!.Id;
 
-        _output.WriteLine($"[STEP] GET /api/v1/users/{userId}...");
-        using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/users/{userId}");
+        _output.WriteLine($"[STEP] GET /api/v1/iam/users/{userId}...");
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/iam/users/{userId}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userAuth.AccessToken);
         var response = await _sharedHost.Host.HttpClient.SendAsync(request);
 
@@ -135,8 +135,8 @@ public class UsersApiTests
         Assert.NotNull(userAuth);
 
         var invalidId = Guid.NewGuid();
-        _output.WriteLine($"[STEP] GET /api/v1/users/{invalidId}...");
-        using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/users/{invalidId}");
+        _output.WriteLine($"[STEP] GET /api/v1/iam/users/{invalidId}...");
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/iam/users/{invalidId}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userAuth!.AccessToken);
         var response = await _sharedHost.Host.HttpClient.SendAsync(request);
 
@@ -166,8 +166,8 @@ public class UsersApiTests
 
         var updateRequest = new { Email = "updated@example.com" };
 
-        _output.WriteLine($"[STEP] PUT /api/v1/users/{userId}...");
-        using var request = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/users/{userId}");
+        _output.WriteLine($"[STEP] PUT /api/v1/iam/users/{userId}...");
+        using var request = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/iam/users/{userId}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userAuth.AccessToken);
         request.Content = JsonContent.Create(updateRequest);
         var response = await _sharedHost.Host.HttpClient.SendAsync(request);
@@ -202,8 +202,8 @@ public class UsersApiTests
 
         var updateRequest = new { Email = "hacker@example.com" };
 
-        _output.WriteLine($"[STEP] PUT /api/v1/users/{user2Id} as user1...");
-        using var request = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/users/{user2Id}");
+        _output.WriteLine($"[STEP] PUT /api/v1/iam/users/{user2Id} as user1...");
+        using var request = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/iam/users/{user2Id}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user1Auth!.AccessToken);
         request.Content = JsonContent.Create(updateRequest);
         var response = await _sharedHost.Host.HttpClient.SendAsync(request);
@@ -227,8 +227,8 @@ public class UsersApiTests
         Assert.NotNull(userAuth);
         var userId = userAuth!.User!.Id;
 
-        _output.WriteLine($"[STEP] DELETE /api/v1/users/{userId}...");
-        using var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/users/{userId}");
+        _output.WriteLine($"[STEP] DELETE /api/v1/iam/users/{userId}...");
+        using var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/iam/users/{userId}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userAuth.AccessToken);
         var response = await _sharedHost.Host.HttpClient.SendAsync(request);
 
@@ -237,56 +237,6 @@ public class UsersApiTests
         // Regular users can't delete (need _write), or they can't delete themselves
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         _output.WriteLine("[PASS] Cannot delete own account via this endpoint");
-    }
-
-    #endregion
-
-    #region Role Management Tests
-
-    [Fact]
-    public async Task AssignRole_AsRegularUser_Returns403()
-    {
-        _output.WriteLine("[TEST] AssignRole_AsRegularUser_Returns403");
-
-        var userAuth = await RegisterAndGetTokenAsync(_testUsername);
-        Assert.NotNull(userAuth);
-        var userId = userAuth!.User!.Id;
-
-        var roleRequest = new { RoleCode = "ADMIN" };
-
-        _output.WriteLine($"[STEP] POST /api/v1/users/{userId}/roles...");
-        using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/users/{userId}/roles");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userAuth.AccessToken);
-        request.Content = JsonContent.Create(roleRequest);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
-
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
-
-        // Regular users don't have _write permission
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-        _output.WriteLine("[PASS] Cannot assign roles without admin access");
-    }
-
-    [Fact]
-    public async Task RemoveRole_AsRegularUser_Returns403()
-    {
-        _output.WriteLine("[TEST] RemoveRole_AsRegularUser_Returns403");
-
-        var userAuth = await RegisterAndGetTokenAsync(_testUsername);
-        Assert.NotNull(userAuth);
-        var userId = userAuth!.User!.Id;
-        var roleId = Guid.Parse("00000000-0000-0000-0000-000000000002"); // User role
-
-        _output.WriteLine($"[STEP] DELETE /api/v1/users/{userId}/roles/{roleId}...");
-        using var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/users/{userId}/roles/{roleId}");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userAuth.AccessToken);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
-
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
-
-        // Regular users don't have _write permission
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-        _output.WriteLine("[PASS] Cannot remove roles without admin access");
     }
 
     #endregion
@@ -302,8 +252,8 @@ public class UsersApiTests
         Assert.NotNull(userAuth);
         var userId = userAuth!.User!.Id;
 
-        _output.WriteLine($"[STEP] GET /api/v1/users/{userId}/permissions...");
-        using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/users/{userId}/permissions");
+        _output.WriteLine($"[STEP] GET /api/v1/iam/users/{userId}/permissions...");
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/iam/users/{userId}/permissions");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userAuth.AccessToken);
         var response = await _sharedHost.Host.HttpClient.SendAsync(request);
 

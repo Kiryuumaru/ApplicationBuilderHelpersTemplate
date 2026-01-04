@@ -20,6 +20,7 @@ public class IdentityEntityConfiguration : IEFCoreEntityConfiguration
         ConfigurePasskeyChallenge(modelBuilder);  // For REST API passkeys
         ConfigurePasskeyCredential(modelBuilder);  // For REST API passkeys
         ConfigureUserRoleAssignment(modelBuilder);
+        ConfigureUserPermissionGrant(modelBuilder);
         ConfigureLoginSession(modelBuilder);
     }
 
@@ -202,6 +203,25 @@ public class IdentityEntityConfiguration : IEFCoreEntityConfiguration
 
         entity.HasIndex(ura => ura.UserId);
         entity.HasIndex(ura => ura.RoleId);
+    }
+
+    private static void ConfigureUserPermissionGrant(ModelBuilder modelBuilder)
+    {
+        var entity = modelBuilder.Entity<UserPermissionGrantEntity>();
+
+        entity.ToTable("UserPermissionGrants");
+
+        entity.HasKey(upg => new { upg.UserId, upg.PermissionIdentifier });
+
+        entity.Property(upg => upg.UserId)
+            .HasConversion(id => id.ToString(), str => Guid.Parse(str))
+            .IsRequired();
+        entity.Property(upg => upg.PermissionIdentifier).IsRequired().HasMaxLength(512);
+        entity.Property(upg => upg.Description).HasMaxLength(1000);
+        entity.Property(upg => upg.GrantedAt).IsRequired();
+        entity.Property(upg => upg.GrantedBy).HasMaxLength(256);
+
+        entity.HasIndex(upg => upg.UserId);
     }
 
     private static void ConfigureLoginSession(ModelBuilder modelBuilder)

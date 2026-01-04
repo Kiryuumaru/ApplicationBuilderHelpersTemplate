@@ -44,7 +44,7 @@ internal static class IdentityServiceCollectionExtensions
         services.AddScoped<IPasswordService, PasswordService>();
         services.AddScoped<ITwoFactorService, TwoFactorService>();
         services.AddScoped<IUserProfileService, UserProfileService>();
-        services.AddScoped<IUserRoleService, UserRoleService>();
+        services.AddScoped<IUserAuthorizationService, UserAuthorizationService>();
         services.AddScoped<ISessionService, SessionService>();
         
         services.AddScoped<IAnonymousUserCleanupService, AnonymousUserCleanupService>();

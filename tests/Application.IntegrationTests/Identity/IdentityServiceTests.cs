@@ -109,14 +109,15 @@ public class IdentityServiceTests
 
         var user = await fixture.UserRegistrationService.RegisterUserAsync(new UserRegistrationRequest("charlie", "pass"), CancellationToken.None);
 
-        await fixture.UserRoleService.AssignRoleAsync(
+        // Use Admin role which doesn't require parameters
+        await fixture.UserAuthorizationService.AssignRoleAsync(
             user.Id,
-            new RoleAssignmentRequest(RolesConstants.User.Code),
+            new RoleAssignmentRequest(RolesConstants.Admin.Code),
             CancellationToken.None);
 
         var session = await fixture.AuthenticationService.AuthenticateAsync("charlie", "pass", CancellationToken.None);
 
-        Assert.Contains(RolesConstants.User.Code, session.Roles);
+        Assert.Contains(RolesConstants.Admin.Code, session.Roles);
     }
 
     [Fact]
@@ -137,10 +138,11 @@ public class IdentityServiceTests
 
         Assert.Contains(RolesConstants.Admin.Code, session.Roles);
         
-        // Permissions are now fetched via userRoleService, not on session
-        var permissions = await fixture.UserRoleService.GetEffectivePermissionsAsync(session.UserId, CancellationToken.None);
-        Assert.Contains(Permissions.RootWriteIdentifier, permissions); // from role grant
-        Assert.Contains(additionalPermission, permissions); // direct user grant
+        // Permissions are now fetched via userAuthorizationService, not on session
+        // Permissions are returned as scope directives (e.g., "allow;_write")
+        var permissions = await fixture.UserAuthorizationService.GetEffectivePermissionsAsync(session.UserId, CancellationToken.None);
+        Assert.Contains($"allow;{Permissions.RootWriteIdentifier}", permissions); // from role grant
+        Assert.Contains($"allow;{additionalPermission}", permissions); // direct user grant
     }
 
     [Fact]
@@ -150,14 +152,15 @@ public class IdentityServiceTests
 
         var user = await fixture.UserRegistrationService.RegisterUserAsync(new UserRegistrationRequest("delta", "pass"), CancellationToken.None);
 
-        await fixture.UserRoleService.AssignRoleAsync(
+        // Use Admin role which doesn't require parameters
+        await fixture.UserAuthorizationService.AssignRoleAsync(
             user.Id,
-            new RoleAssignmentRequest(RolesConstants.User.Code),
+            new RoleAssignmentRequest(RolesConstants.Admin.Code),
             CancellationToken.None);
 
         var stored = await fixture.UserProfileService.GetByUsernameAsync("delta", CancellationToken.None);
         Assert.NotNull(stored);
-        Assert.Contains(RolesConstants.User.Code, stored!.Roles);
+        Assert.Contains(RolesConstants.Admin.Code, stored!.Roles);
     }
 
     [Fact]
@@ -193,12 +196,12 @@ public class IdentityServiceTests
 
         var session = await fixture.AuthenticationService.AuthenticateAsync("scoped-user", "Scoped!123", CancellationToken.None);
         
-        // The session now contains role codes, permissions are fetched separately
-        Assert.Contains("portfolio_reader", session.Roles);
+        // Role codes are normalized to uppercase
+        Assert.Contains("PORTFOLIO_READER", session.Roles);
 
         var stored = await fixture.UserProfileService.GetByUsernameAsync("scoped-user", CancellationToken.None);
         Assert.NotNull(stored);
-        Assert.Contains("portfolio_reader", stored!.Roles);
+        Assert.Contains("PORTFOLIO_READER", stored!.Roles);
         Assert.Contains(RolesConstants.User.Code, stored.Roles);
     }
 
@@ -207,24 +210,15 @@ public class IdentityServiceTests
     {
         var fixture = CreateFixture();
 
-        var descriptor = new RoleDescriptor(
-            Code: "portfolio_reader2",
-            Name: "Portfolio Reader 2",
-            Description: "Reads a single portfolio",
-            IsSystemRole: false,
-            ScopeTemplates:
-            [
-                ScopeTemplate.Allow(
-                    "api:trading:orders:read",
-                    ("userId", "{userId}"))
-            ]);
-
-        await fixture.RoleService.CreateRoleAsync(descriptor, CancellationToken.None);
+        // Create a user who doesn't yet have the User role assigned manually
         var user = await fixture.UserRegistrationService.RegisterUserAsync(new UserRegistrationRequest("epsilon", "pass"), CancellationToken.None);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.UserRoleService.AssignRoleAsync(
+        // Try to assign User role without providing the required roleUserId parameter
+        // (Note: registration already assigns User role with correct params, 
+        // but trying to assign it again without params should fail)
+        await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.UserAuthorizationService.AssignRoleAsync(
             user.Id,
-            new RoleAssignmentRequest("portfolio_reader2"),
+            new RoleAssignmentRequest(RolesConstants.User.Code), // Missing roleUserId parameter
             CancellationToken.None));
     }
 
@@ -346,17 +340,17 @@ public class IdentityServiceTests
         var userRegistrationService = provider.GetRequiredService<IUserRegistrationService>();
         var authenticationService = provider.GetRequiredService<IAuthenticationService>();
         var userProfileService = provider.GetRequiredService<IUserProfileService>();
-        var userRoleService = provider.GetRequiredService<IUserRoleService>();
+        var userAuthorizationService = provider.GetRequiredService<IUserAuthorizationService>();
         var roleService = provider.GetRequiredService<IRoleService>();
         
-        return new IdentityFixture(userRegistrationService, authenticationService, userProfileService, userRoleService, roleService, dbContext);
+        return new IdentityFixture(userRegistrationService, authenticationService, userProfileService, userAuthorizationService, roleService, dbContext);
     }
 
     private sealed record IdentityFixture(
         IUserRegistrationService UserRegistrationService,
         IAuthenticationService AuthenticationService,
         IUserProfileService UserProfileService,
-        IUserRoleService UserRoleService,
+        IUserAuthorizationService UserAuthorizationService,
         IRoleService RoleService,
         IDisposable Connection) : IDisposable
     {

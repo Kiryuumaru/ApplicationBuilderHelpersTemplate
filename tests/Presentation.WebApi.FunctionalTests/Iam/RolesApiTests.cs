@@ -1,0 +1,140 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
+using Presentation.WebApi.FunctionalTests.Fixtures;
+
+namespace Presentation.WebApi.FunctionalTests.Iam;
+
+/// <summary>
+/// Functional tests for IAM Roles API endpoints.
+/// Tests role assignment and removal operations.
+/// </summary>
+[Collection(WebApiTestCollection.Name)]
+public class RolesApiTests
+{
+    private readonly ITestOutputHelper _output;
+    private readonly SharedWebApiHost _sharedHost;
+    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
+
+    // Use unique usernames per test run to avoid conflicts
+    private readonly string _testUsername = $"testuser_{Guid.NewGuid():N}";
+    private const string TestPassword = "TestPassword123!";
+
+    public RolesApiTests(SharedWebApiHost sharedHost, ITestOutputHelper output)
+    {
+        _sharedHost = sharedHost;
+        _output = output;
+    }
+
+    #region Role Management Tests
+
+    [Fact]
+    public async Task AssignRole_AsRegularUser_Returns403()
+    {
+        _output.WriteLine("[TEST] AssignRole_AsRegularUser_Returns403");
+
+        var userAuth = await RegisterAndGetTokenAsync(_testUsername);
+        Assert.NotNull(userAuth);
+        var userId = userAuth!.User!.Id;
+
+        var roleRequest = new { UserId = userId, RoleCode = "ADMIN" };
+
+        _output.WriteLine("[STEP] POST /api/v1/iam/roles/assign...");
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/iam/roles/assign");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userAuth.AccessToken);
+        request.Content = JsonContent.Create(roleRequest);
+        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+
+        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+
+        // Regular users don't have iam:roles:assign permission
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        _output.WriteLine("[PASS] Cannot assign roles without admin access");
+    }
+
+    [Fact]
+    public async Task RemoveRole_AsRegularUser_Returns403()
+    {
+        _output.WriteLine("[TEST] RemoveRole_AsRegularUser_Returns403");
+
+        var userAuth = await RegisterAndGetTokenAsync(_testUsername);
+        Assert.NotNull(userAuth);
+        var userId = userAuth!.User!.Id;
+        var roleId = Guid.Parse("00000000-0000-0000-0000-000000000002"); // User role
+
+        var roleRequest = new { UserId = userId, RoleId = roleId };
+
+        _output.WriteLine("[STEP] POST /api/v1/iam/roles/remove...");
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/iam/roles/remove");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userAuth.AccessToken);
+        request.Content = JsonContent.Create(roleRequest);
+        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+
+        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+
+        // Regular users don't have iam:roles:remove permission
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        _output.WriteLine("[PASS] Cannot remove roles without admin access");
+    }
+
+    #endregion
+
+    #region Helper Methods
+
+    private async Task<AuthResponse?> RegisterAndGetTokenAsync(string? username = null)
+    {
+        username ??= $"user_{Guid.NewGuid():N}";
+
+        var registerRequest = new
+        {
+            Username = username,
+            Password = TestPassword,
+            ConfirmPassword = TestPassword,
+            Email = $"{username}@test.com"
+        };
+
+        var registerResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
+        
+        if (registerResponse.StatusCode == HttpStatusCode.Conflict)
+        {
+            // User already exists, just login
+            var loginReq = new { Username = username, Password = TestPassword };
+            registerResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginReq);
+        }
+
+        if (!registerResponse.IsSuccessStatusCode)
+        {
+            var error = await registerResponse.Content.ReadAsStringAsync();
+            _output.WriteLine($"[ERROR] Registration failed: {error}");
+            return null;
+        }
+
+        var content = await registerResponse.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<AuthResponse>(content, JsonOptions);
+    }
+
+    #endregion
+
+    #region Response Types
+
+    private sealed class AuthResponse
+    {
+        public string AccessToken { get; set; } = string.Empty;
+        public string RefreshToken { get; set; } = string.Empty;
+        public string TokenType { get; set; } = string.Empty;
+        public int ExpiresIn { get; set; }
+        public UserInfo? User { get; set; }
+    }
+
+    private sealed class UserInfo
+    {
+        public Guid Id { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string? Email { get; set; }
+        public IReadOnlyCollection<string>? Roles { get; set; }
+        public IReadOnlyCollection<string>? Permissions { get; set; }
+    }
+
+    #endregion
+}

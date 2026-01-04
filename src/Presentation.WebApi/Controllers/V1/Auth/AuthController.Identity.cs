@@ -159,7 +159,7 @@ public partial class AuthController
 
             // Get updated user info
             var updatedUser = await userProfileService.GetByIdAsync(userId, cancellationToken);
-            var permissions = await userRoleService.GetEffectivePermissionsAsync(userId, cancellationToken);
+            var permissions = await userAuthorizationService.GetEffectivePermissionsAsync(userId, cancellationToken);
 
             return Ok(new UserInfo
             {
@@ -234,7 +234,7 @@ public partial class AuthController
 
             // Get updated user info
             var updatedUser = await userProfileService.GetByIdAsync(userId, cancellationToken);
-            var permissions = await userRoleService.GetEffectivePermissionsAsync(userId, cancellationToken);
+            var permissions = await userAuthorizationService.GetEffectivePermissionsAsync(userId, cancellationToken);
 
             return Ok(new UserInfo
             {
@@ -307,7 +307,7 @@ public partial class AuthController
 
             // Get updated user info
             var updatedUser = await userProfileService.GetByIdAsync(userId, cancellationToken);
-            var permissions = await userRoleService.GetEffectivePermissionsAsync(userId, cancellationToken);
+            var permissions = await userAuthorizationService.GetEffectivePermissionsAsync(userId, cancellationToken);
 
             return Ok(new UserInfo
             {
@@ -482,7 +482,7 @@ public partial class AuthController
 
             // Get updated user info
             var updatedUser = await userProfileService.GetByIdAsync(userId, cancellationToken);
-            var permissions = await userRoleService.GetEffectivePermissionsAsync(userId, cancellationToken);
+            var permissions = await userAuthorizationService.GetEffectivePermissionsAsync(userId, cancellationToken);
 
             return Ok(new UserInfo
             {
@@ -556,7 +556,7 @@ public partial class AuthController
 
             // Get updated user info
             var updatedUser = await userProfileService.GetByIdAsync(userId, cancellationToken);
-            var permissions = await userRoleService.GetEffectivePermissionsAsync(userId, cancellationToken);
+            var permissions = await userAuthorizationService.GetEffectivePermissionsAsync(userId, cancellationToken);
 
             return Ok(new UserInfo
             {

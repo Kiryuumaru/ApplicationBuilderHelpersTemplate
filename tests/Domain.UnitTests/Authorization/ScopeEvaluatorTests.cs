@@ -19,7 +19,7 @@ public class ScopeEvaluatorTests
             ScopeDirective.Allow("_read")
         };
 
-        var result = ScopeEvaluator.HasPermission(scope, "api:users:read");
+        var result = ScopeEvaluator.HasPermission(scope, "api:iam:users:read");
 
         Assert.True(result);
     }
@@ -32,7 +32,7 @@ public class ScopeEvaluatorTests
             ScopeDirective.Allow("_read")
         };
 
-        var result = ScopeEvaluator.HasPermission(scope, "api:users:update");
+        var result = ScopeEvaluator.HasPermission(scope, "api:iam:users:update");
 
         Assert.False(result);
     }
@@ -42,10 +42,10 @@ public class ScopeEvaluatorTests
     {
         var scope = new[]
         {
-            ScopeDirective.Allow("api:users:_read")
+            ScopeDirective.Allow("api:iam:users:_read")
         };
 
-        var result = ScopeEvaluator.HasPermission(scope, "api:users:read");
+        var result = ScopeEvaluator.HasPermission(scope, "api:iam:users:read");
 
         Assert.True(result);
     }
@@ -55,7 +55,7 @@ public class ScopeEvaluatorTests
     {
         var scope = new[]
         {
-            ScopeDirective.Allow("api:users:_read")
+            ScopeDirective.Allow("api:iam:users:_read")
         };
 
         var result = ScopeEvaluator.HasPermission(scope, "api:portfolio:read");
@@ -68,11 +68,11 @@ public class ScopeEvaluatorTests
     {
         var scope = new[]
         {
-            ScopeDirective.Allow("api:users:_read", ("userId", "user-123"))
+            ScopeDirective.Allow("api:iam:users:_read", ("userId", "user-123"))
         };
         var requestParams = new Dictionary<string, string> { ["userId"] = "user-123" };
 
-        var result = ScopeEvaluator.HasPermission(scope, "api:users:read", requestParams);
+        var result = ScopeEvaluator.HasPermission(scope, "api:iam:users:read", requestParams);
 
         Assert.True(result);
     }
@@ -82,11 +82,11 @@ public class ScopeEvaluatorTests
     {
         var scope = new[]
         {
-            ScopeDirective.Allow("api:users:_read", ("userId", "user-123"))
+            ScopeDirective.Allow("api:iam:users:_read", ("userId", "user-123"))
         };
         var requestParams = new Dictionary<string, string> { ["userId"] = "other-user" };
 
-        var result = ScopeEvaluator.HasPermission(scope, "api:users:read", requestParams);
+        var result = ScopeEvaluator.HasPermission(scope, "api:iam:users:read", requestParams);
 
         Assert.False(result);
     }
@@ -96,11 +96,11 @@ public class ScopeEvaluatorTests
     {
         var scope = new[]
         {
-            ScopeDirective.Allow("api:users:_read", ("userId", "user-123"))
+            ScopeDirective.Allow("api:iam:users:_read", ("userId", "user-123"))
         };
 
         // Request has no parameters
-        var result = ScopeEvaluator.HasPermission(scope, "api:users:read", null);
+        var result = ScopeEvaluator.HasPermission(scope, "api:iam:users:read", null);
 
         Assert.False(result);
     }
@@ -111,11 +111,11 @@ public class ScopeEvaluatorTests
         // Broad scope - no userId restriction
         var scope = new[]
         {
-            ScopeDirective.Allow("api:users:_read")
+            ScopeDirective.Allow("api:iam:users:_read")
         };
         var requestParams = new Dictionary<string, string> { ["userId"] = "any-user" };
 
-        var result = ScopeEvaluator.HasPermission(scope, "api:users:read", requestParams);
+        var result = ScopeEvaluator.HasPermission(scope, "api:iam:users:read", requestParams);
 
         Assert.True(result);
     }
@@ -129,7 +129,7 @@ public class ScopeEvaluatorTests
             ScopeDirective.Deny("api:portfolio:read")
         };
 
-        var canReadUsers = ScopeEvaluator.HasPermission(scope, "api:users:read");
+        var canReadUsers = ScopeEvaluator.HasPermission(scope, "api:iam:users:read");
         var canReadPortfolio = ScopeEvaluator.HasPermission(scope, "api:portfolio:read");
 
         Assert.True(canReadUsers);
@@ -141,7 +141,7 @@ public class ScopeEvaluatorTests
     {
         var scope = Array.Empty<ScopeDirective>();
 
-        var result = ScopeEvaluator.HasPermission(scope, "api:users:read");
+        var result = ScopeEvaluator.HasPermission(scope, "api:iam:users:read");
 
         Assert.False(result);
     }
@@ -151,11 +151,11 @@ public class ScopeEvaluatorTests
     {
         var scope = new[]
         {
-            ScopeDirective.Deny("api:users:reset_password")
+            ScopeDirective.Deny("api:iam:users:reset_password")
         };
 
-        var canResetPassword = ScopeEvaluator.HasPermission(scope, "api:users:reset_password");
-        var canReadUsers = ScopeEvaluator.HasPermission(scope, "api:users:read");
+        var canResetPassword = ScopeEvaluator.HasPermission(scope, "api:iam:users:reset_password");
+        var canReadUsers = ScopeEvaluator.HasPermission(scope, "api:iam:users:read");
 
         Assert.False(canResetPassword);
         Assert.True(canReadUsers);
@@ -164,10 +164,10 @@ public class ScopeEvaluatorTests
     [Fact]
     public void DirectiveParsing_AllowFormat_ParsesCorrectly()
     {
-        var directive = ScopeDirective.Parse("allow;api:users:_read;userId=abc123");
+        var directive = ScopeDirective.Parse("allow;api:iam:users:_read;userId=abc123");
 
         Assert.Equal(ScopeDirectiveType.Allow, directive.Type);
-        Assert.Equal("api:users:_read", directive.PermissionPath);
+        Assert.Equal("api:iam:users:_read", directive.PermissionPath);
         Assert.Single(directive.Parameters);
         Assert.Equal("abc123", directive.Parameters["userId"]);
     }
@@ -175,10 +175,10 @@ public class ScopeEvaluatorTests
     [Fact]
     public void DirectiveParsing_DenyFormat_ParsesCorrectly()
     {
-        var directive = ScopeDirective.Parse("deny;api:users:reset_password");
+        var directive = ScopeDirective.Parse("deny;api:iam:users:reset_password");
 
         Assert.Equal(ScopeDirectiveType.Deny, directive.Type);
-        Assert.Equal("api:users:reset_password", directive.PermissionPath);
+        Assert.Equal("api:iam:users:reset_password", directive.PermissionPath);
         Assert.Empty(directive.Parameters);
     }
 
@@ -186,23 +186,23 @@ public class ScopeEvaluatorTests
     public void PermissionIds_GeneratedAllowDirective_ParsesCorrectly()
     {
         // Test the generated directive format
-        var directiveString = PermissionIds.Api.Users.Read.WithUserId("user-test").Allow();
+        var directiveString = PermissionIds.Api.Iam.Users.Read.WithUserId("user-test").Allow();
         var directive = ScopeDirective.Parse(directiveString);
 
         Assert.Equal(ScopeDirectiveType.Allow, directive.Type);
-        Assert.Equal("api:users:_read", directive.PermissionPath);
+        Assert.Equal("api:iam:users:_read", directive.PermissionPath);
         Assert.Equal("user-test", directive.Parameters["userId"]);
     }
 
     [Fact]
     public void Integration_ParsedDirective_WorksWithEvaluator()
     {
-        var directiveString = PermissionIds.Api.Users.Read.WithUserId("user-123").Allow();
+        var directiveString = PermissionIds.Api.Iam.Users.Read.WithUserId("user-123").Allow();
         var directive = ScopeDirective.Parse(directiveString);
         var scope = new[] { directive };
         var requestParams = new Dictionary<string, string> { ["userId"] = "user-123" };
 
-        var result = ScopeEvaluator.HasPermission(scope, "api:users:read", requestParams);
+        var result = ScopeEvaluator.HasPermission(scope, "api:iam:users:read", requestParams);
 
         Assert.True(result);
     }
@@ -212,8 +212,8 @@ public class ScopeEvaluatorTests
     {
         var rLeafs = ScopeEvaluator.GetRLeafPermissions();
 
-        Assert.Contains("api:users:read", rLeafs);
-        Assert.Contains("api:users:list", rLeafs);
+        Assert.Contains("api:iam:users:read", rLeafs);
+        Assert.Contains("api:iam:users:list", rLeafs);
         Assert.Contains("api:portfolio:accounts:list", rLeafs);
     }
 
@@ -222,9 +222,9 @@ public class ScopeEvaluatorTests
     {
         var wLeafs = ScopeEvaluator.GetWLeafPermissions();
 
-        Assert.Contains("api:users:update", wLeafs);
-        Assert.Contains("api:users:delete", wLeafs);
-        Assert.Contains("api:users:reset_password", wLeafs);
+        Assert.Contains("api:iam:users:update", wLeafs);
+        Assert.Contains("api:iam:users:delete", wLeafs);
+        Assert.Contains("api:iam:users:reset_password", wLeafs);
     }
 
     [Fact]
@@ -232,7 +232,7 @@ public class ScopeEvaluatorTests
     {
         // Verify that leaf permissions inherit parameters from ancestors
         var allPermissions = Permissions.GetAll();
-        var usersReadPermission = allPermissions.First(p => p.Path == "api:users:read");
+        var usersReadPermission = allPermissions.First(p => p.Path == "api:iam:users:read");
 
         var paramHierarchy = usersReadPermission.GetParameterHierarchy();
 
@@ -242,11 +242,11 @@ public class ScopeEvaluatorTests
     [Fact]
     public void PermissionParsing_ExtractsParametersCorrectly_SemicolonFormat()
     {
-        // Test that parsing NEW semicolon format api:users:read;userId=abc works correctly
-        var success = Permission.TryParseIdentifier("api:users:read;userId=abc", out var parsed);
+        // Test that parsing NEW semicolon format api:iam:users:read;userId=abc works correctly
+        var success = Permission.TryParseIdentifier("api:iam:users:read;userId=abc", out var parsed);
 
         Assert.True(success);
-        Assert.Equal("api:users:read", parsed.Canonical);
+        Assert.Equal("api:iam:users:read", parsed.Canonical);
         Assert.True(parsed.Parameters.ContainsKey("userId"));
         Assert.Equal("abc", parsed.Parameters["userId"]);
     }
@@ -266,13 +266,13 @@ public class ScopeEvaluatorTests
     public void PermissionParsing_StronglyTypedApi_ProducesSemicolonFormat()
     {
         // Test that the strongly-typed Permission API produces correct semicolon format
-        string permissionString = PermissionIds.Api.Users.ReadPermission.Permission.WithUserId("abc");
+        string permissionString = PermissionIds.Api.Iam.Users.ReadPermission.Permission.WithUserId("abc");
         
-        Assert.Equal("api:users:read;userId=abc", permissionString);
+        Assert.Equal("api:iam:users:read;userId=abc", permissionString);
         
         var success = Permission.TryParseIdentifier(permissionString, out var parsed);
         Assert.True(success);
-        Assert.Equal("api:users:read", parsed.Canonical);
+        Assert.Equal("api:iam:users:read", parsed.Canonical);
         Assert.Equal("abc", parsed.Parameters["userId"]);
     }
 
@@ -280,11 +280,12 @@ public class ScopeEvaluatorTests
     public void ScopeEvaluator_WithParametrizedRequest_MatchesParametrizedScope()
     {
         // Test that ScopeEvaluator correctly matches parametrized requests to parametrized scopes
-        var scopes = new[] { ScopeDirective.Allow("api:users:_read", new Dictionary<string, string> { { "userId", "abc" } }) };
+        var scopes = new[] { ScopeDirective.Allow("api:iam:users:_read", new Dictionary<string, string> { { "userId", "abc" } }) };
         var requestParams = new Dictionary<string, string> { { "userId", "abc" } };
 
-        var hasPermission = ScopeEvaluator.HasPermission(scopes, "api:users:read", requestParams);
+        var hasPermission = ScopeEvaluator.HasPermission(scopes, "api:iam:users:read", requestParams);
 
         Assert.True(hasPermission);
     }
 }
+

@@ -59,7 +59,7 @@ public partial class AuthController
                 result.Roles,
                 cancellationToken);
 
-            var permissions = await userRoleService.GetEffectivePermissionsAsync(result.UserId!.Value, cancellationToken);
+            var permissions = await userAuthorizationService.GetEffectivePermissionsAsync(result.UserId!.Value, cancellationToken);
 
             return Ok(new AuthResponse
             {
@@ -165,7 +165,7 @@ public partial class AuthController
                     anonymousUser.Roles,
                     cancellationToken);
 
-                var anonPermissions = await userRoleService.GetEffectivePermissionsAsync(anonymousUser.Id, cancellationToken);
+                var anonPermissions = await userAuthorizationService.GetEffectivePermissionsAsync(anonymousUser.Id, cancellationToken);
 
                 return CreatedAtAction(nameof(GetMe), new AuthResponse
                 {
@@ -227,7 +227,7 @@ public partial class AuthController
                 user.Roles,
                 cancellationToken);
 
-            var permissions = await userRoleService.GetEffectivePermissionsAsync(user.Id, cancellationToken);
+            var permissions = await userAuthorizationService.GetEffectivePermissionsAsync(user.Id, cancellationToken);
 
             return CreatedAtAction(nameof(GetMe), new AuthResponse
             {

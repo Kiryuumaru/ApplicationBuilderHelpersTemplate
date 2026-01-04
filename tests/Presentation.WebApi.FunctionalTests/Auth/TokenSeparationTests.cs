@@ -106,7 +106,7 @@ public class TokenSeparationTests
         Assert.NotNull(authResult);
 
         // Act: Try to use refresh token to access /users (has [RequiredPermission])
-        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/users");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/iam/users");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult!.RefreshToken);
 
         var response = await _sharedHost.Host.HttpClient.SendAsync(request);
@@ -297,7 +297,7 @@ public class TokenSeparationTests
         Assert.NotNull(newAuth);
 
         // Act: Try to use new refresh token to access /users
-        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/users");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/iam/users");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", newAuth!.RefreshToken);
 
         var response = await _sharedHost.Host.HttpClient.SendAsync(request);
@@ -353,3 +353,4 @@ public class TokenSeparationTests
 
     #endregion
 }
+

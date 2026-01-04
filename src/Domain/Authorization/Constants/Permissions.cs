@@ -184,20 +184,43 @@ public static class Permissions
                 )
             ),
 
-            // Users API - Admin operations for user management
+            // IAM API - Identity and Access Management
             Node(
-                "users",
-                "User management operations.",
-                "user management APIs",
-                new[] { "userId" },
-                RLeaf("list", "List all users in the system (admin only)."),
-                RLeaf("read", "Read a user's details."),
-                RLeaf("permissions", "Read a user's effective permissions."),
-                WLeaf("update", "Update a user's profile."),
-                WLeaf("delete", "Delete a user account (admin only)."),
-                WLeaf("assign_role", "Assign a role to a user (admin only)."),
-                WLeaf("remove_role", "Remove a role from a user (admin only)."),
-                WLeaf("reset_password", "Reset a user's password (admin only).")
+                "iam",
+                "Identity and Access Management operations.",
+                "IAM APIs",
+
+                // Users - Admin operations for user management
+                Node(
+                    "users",
+                    "User management operations.",
+                    "user management",
+                    new[] { "userId" },
+                    RLeaf("list", "List all users in the system (admin only)."),
+                    RLeaf("read", "Read a user's details."),
+                    RLeaf("permissions", "Read a user's effective permissions."),
+                    WLeaf("update", "Update a user's profile."),
+                    WLeaf("delete", "Delete a user account (admin only)."),
+                    WLeaf("reset_password", "Reset a user's password (admin only).")
+                ),
+
+                // Roles - Role assignment operations
+                Node(
+                    "roles",
+                    "Role assignment operations.",
+                    "role management",
+                    WLeaf("assign", "Assign a role to a user (admin only)."),
+                    WLeaf("remove", "Remove a role from a user (admin only).")
+                ),
+
+                // Permissions - Direct permission grant operations
+                Node(
+                    "permissions",
+                    "Direct permission grant operations.",
+                    "permission management",
+                    WLeaf("grant", "Grant a direct permission to a user (admin only)."),
+                    WLeaf("revoke", "Revoke a direct permission from a user (admin only).")
+                )
             ),
 
             // Portfolio API - Portfolio analytics and account management

@@ -98,7 +98,7 @@ public partial class AuthController
         }
 
         // Get fresh permissions by re-building effective permissions
-        var effectivePermissions = await userRoleService.GetEffectivePermissionsAsync(userId, cancellationToken);
+        var effectivePermissions = await userAuthorizationService.GetEffectivePermissionsAsync(userId, cancellationToken);
 
         // Generate new tokens - refresh token rotation (use current username from DB)
         var currentUsername = user.Username ?? userId.ToString();

@@ -9,20 +9,20 @@ using Presentation.WebApi.Attributes;
 using Presentation.WebApi.Models.Requests;
 using Presentation.WebApi.Models.Responses;
 
-namespace Presentation.WebApi.Controllers.V1;
+namespace Presentation.WebApi.Controllers.V1.Iam;
 
 /// <summary>
-/// Controller for user management operations (admin and self-service).
+/// Controller for user management operations within IAM (Identity and Access Management).
 /// </summary>
 [ApiController]
 [ApiVersion("1.0")]
-[Route("api/v{v:apiVersion}/users")]
+[Route("api/v{v:apiVersion}/iam/users")]
 [Produces("application/json")]
-[Tags("User Management")]
+[Tags("IAM - Users")]
 [Authorize]
 public class UsersController(
     IUserProfileService userProfileService,
-    IUserRoleService userRoleService,
+    IUserAuthorizationService userAuthorizationService,
     IUserRegistrationService userRegistrationService,
     IPasswordService passwordService) : ControllerBase
 {
@@ -32,7 +32,7 @@ public class UsersController(
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>List of all users.</returns>
     [HttpGet]
-    [RequiredPermission(PermissionIds.Api.Users.List.Identifier)]
+    [RequiredPermission(PermissionIds.Api.Iam.Users.List.Identifier)]
     [ProducesResponseType<UserListResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> ListUsers(CancellationToken cancellationToken)
@@ -55,11 +55,11 @@ public class UsersController(
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The user details.</returns>
     [HttpGet("{id:guid}")]
-    [RequiredPermission(PermissionIds.Api.Users.ReadPermission.Identifier)]
+    [RequiredPermission(PermissionIds.Api.Iam.Users.ReadPermission.Identifier)]
     [ProducesResponseType<UserResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetUser(
-        [PermissionParameter(PermissionIds.Api.Users.ReadPermission.UserIdParameter)] Guid id,
+        [PermissionParameter(PermissionIds.Api.Iam.Users.ReadPermission.UserIdParameter)] Guid id,
         CancellationToken cancellationToken)
     {
         var user = await userProfileService.GetByIdAsync(id, cancellationToken);
@@ -85,12 +85,12 @@ public class UsersController(
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated user.</returns>
     [HttpPut("{id:guid}")]
-    [RequiredPermission(PermissionIds.Api.Users.Update.Identifier)]
+    [RequiredPermission(PermissionIds.Api.Iam.Users.Update.Identifier)]
     [ProducesResponseType<UserResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdateUser(
-        [PermissionParameter(PermissionIds.Api.Users.Update.UserIdParameter)] Guid id,
+        [PermissionParameter(PermissionIds.Api.Iam.Users.Update.UserIdParameter)] Guid id,
         [FromBody] UpdateUserRequest request,
         CancellationToken cancellationToken)
     {
@@ -124,7 +124,7 @@ public class UsersController(
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>No content.</returns>
     [HttpDelete("{id:guid}")]
-    [RequiredPermission(PermissionIds.Api.Users.Delete.Identifier)]
+    [RequiredPermission(PermissionIds.Api.Iam.Users.Delete.Identifier)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
@@ -149,108 +149,22 @@ public class UsersController(
     }
 
     /// <summary>
-    /// Assigns a role to a user (admin only).
-    /// </summary>
-    /// <param name="id">The user ID.</param>
-    /// <param name="request">The role assignment request.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>No content.</returns>
-    [HttpPost("{id:guid}/roles")]
-    [RequiredPermission(PermissionIds.Api.Users.AssignRole.Identifier)]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> AssignRole(
-        Guid id,
-        [FromBody] AssignRoleRequest request,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            await userRoleService.AssignRoleAsync(id, new RoleAssignmentRequest(
-                request.RoleCode,
-                request.ParameterValues), cancellationToken);
-            return NoContent();
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "Not found",
-                Detail = ex.Message
-            });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Invalid operation",
-                Detail = ex.Message
-            });
-        }
-    }
-
-    /// <summary>
-    /// Removes a role from a user (admin only).
-    /// </summary>
-    /// <param name="id">The user ID.</param>
-    /// <param name="roleId">The role ID to remove.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>No content.</returns>
-    [HttpDelete("{id:guid}/roles/{roleId:guid}")]
-    [RequiredPermission(PermissionIds.Api.Users.RemoveRole.Identifier)]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> RemoveRole(
-        Guid id,
-        Guid roleId,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            await userRoleService.RemoveRoleAsync(id, roleId, cancellationToken);
-            return NoContent();
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "Not found",
-                Detail = ex.Message
-            });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Invalid operation",
-                Detail = ex.Message
-            });
-        }
-    }
-
-    /// <summary>
     /// Gets the effective permissions for a user.
     /// </summary>
     /// <param name="id">The user ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The effective permissions.</returns>
     [HttpGet("{id:guid}/permissions")]
-    [RequiredPermission(PermissionIds.Api.Users.Permissions.Identifier)]
+    [RequiredPermission(PermissionIds.Api.Iam.Users.Permissions.Identifier)]
     [ProducesResponseType<PermissionsResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetPermissions(
-        [PermissionParameter(PermissionIds.Api.Users.Permissions.UserIdParameter)] Guid id,
+        [PermissionParameter(PermissionIds.Api.Iam.Users.Permissions.UserIdParameter)] Guid id,
         CancellationToken cancellationToken)
     {
         try
         {
-            var permissions = await userRoleService.GetEffectivePermissionsAsync(id, cancellationToken);
+            var permissions = await userAuthorizationService.GetEffectivePermissionsAsync(id, cancellationToken);
 
             return Ok(new PermissionsResponse
             {
@@ -277,7 +191,7 @@ public class UsersController(
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>No content.</returns>
     [HttpPut("{id:guid}/password")]
-    [RequiredPermission(PermissionIds.Api.Users.ResetPassword.Identifier)]
+    [RequiredPermission(PermissionIds.Api.Iam.Users.ResetPassword.Identifier)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]

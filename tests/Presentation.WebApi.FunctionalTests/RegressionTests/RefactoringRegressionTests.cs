@@ -429,7 +429,7 @@ public class RefactoringRegressionTests
 
         // Act - Get user details
         Client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
-        var userResponse = await Client.GetAsync($"/api/v1/users/{userId}");
+        var userResponse = await Client.GetAsync($"/api/v1/iam/users/{userId}");
         Client.DefaultRequestHeaders.Authorization = null;
 
         // Assert
@@ -478,7 +478,7 @@ public class RefactoringRegressionTests
 
         // Act - Get user permissions
         Client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
-        var permResponse = await Client.GetAsync($"/api/v1/users/{userId}/permissions");
+        var permResponse = await Client.GetAsync($"/api/v1/iam/users/{userId}/permissions");
         Client.DefaultRequestHeaders.Authorization = null;
 
         // Assert
@@ -532,7 +532,7 @@ public class RefactoringRegressionTests
 
         // Act - Get user which includes roleIds
         Client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
-        var userResponse = await Client.GetAsync($"/api/v1/users/{userId}");
+        var userResponse = await Client.GetAsync($"/api/v1/iam/users/{userId}");
         Client.DefaultRequestHeaders.Authorization = null;
 
         // Assert
@@ -725,3 +725,4 @@ public class SessionInfo
     public string? DeviceName { get; set; }
     public DateTime CreatedAt { get; set; }
 }
+

@@ -39,7 +39,7 @@ public partial class AuthController
         }
 
         // Get permission identifiers from role service
-        var permissionIdentifiers = await userRoleService.GetEffectivePermissionsAsync(userId, cancellationToken);
+        var permissionIdentifiers = await userAuthorizationService.GetEffectivePermissionsAsync(userId, cancellationToken);
 
         return Ok(new UserInfo
         {

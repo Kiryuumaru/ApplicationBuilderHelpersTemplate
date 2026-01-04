@@ -31,7 +31,7 @@ public partial class AuthController(
     IPasswordService passwordService,
     ITwoFactorService twoFactorService,
     IUserProfileService userProfileService,
-    IUserRoleService userRoleService,
+    IUserAuthorizationService userAuthorizationService,
     ISessionService sessionService,
     IEmailService emailService,
     IPasskeyService passkeyService,

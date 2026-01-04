@@ -62,6 +62,33 @@ internal sealed class UserRegistrationService(
             }
 
             user.SetPasswordHash(_passwordHasher.HashPassword(user, request.Password));
+
+            // Process additional role assignments from the request
+            if (request.RoleAssignments is { Count: > 0 })
+            {
+                foreach (var roleAssignment in request.RoleAssignments)
+                {
+                    var role = await _roleRepository.GetByCodeAsync(roleAssignment.RoleCode, cancellationToken).ConfigureAwait(false)
+                        ?? throw new InvalidOperationException($"Role '{roleAssignment.RoleCode}' not found.");
+
+                    // Validate required parameters
+                    ValidateRoleParameters(role, roleAssignment.ParameterValues);
+
+                    user.AssignRole(role.Id, roleAssignment.ParameterValues);
+                }
+            }
+
+            // Process permission grants from the request
+            if (request.PermissionIdentifiers is { Count: > 0 })
+            {
+                foreach (var permissionIdentifier in request.PermissionIdentifiers)
+                {
+                    var grant = Domain.Identity.ValueObjects.UserPermissionGrant.Create(
+                        permissionIdentifier,
+                        description: "Granted during registration");
+                    user.GrantPermission(grant);
+                }
+            }
         }
 
         // Assign default User role with userId parameter
@@ -150,5 +177,33 @@ internal sealed class UserRegistrationService(
         var roles = await _roleRepository.GetByIdsAsync(roleIds, cancellationToken).ConfigureAwait(false);
 
         return roles.Select(r => r.Code).ToArray();
+    }
+
+    private static void ValidateRoleParameters(Domain.Authorization.Models.Role role, IReadOnlyDictionary<string, string?>? providedParameters)
+    {
+        // Collect all required parameters from the role's scope templates
+        var requiredParameters = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var scopeTemplate in role.ScopeTemplates)
+        {
+            foreach (var requiredParam in scopeTemplate.RequiredParameters)
+            {
+                requiredParameters.Add(requiredParam);
+            }
+        }
+
+        if (requiredParameters.Count == 0)
+        {
+            return; // No parameters required
+        }
+
+        // Check that all required parameters are provided
+        var providedKeys = providedParameters?.Keys ?? [];
+        var missingParameters = requiredParameters.Where(p => !providedKeys.Contains(p)).ToList();
+
+        if (missingParameters.Count > 0)
+        {
+            throw new InvalidOperationException(
+                $"Role '{role.Code}' requires parameters [{string.Join(", ", missingParameters)}] but they were not provided.");
+        }
     }
 }

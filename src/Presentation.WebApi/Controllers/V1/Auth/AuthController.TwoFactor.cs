@@ -201,7 +201,7 @@ public partial class AuthController
                 userResult.Roles,
                 cancellationToken);
 
-            var permissions = await userRoleService.GetEffectivePermissionsAsync(userResult.UserId!.Value, cancellationToken);
+            var permissions = await userAuthorizationService.GetEffectivePermissionsAsync(userResult.UserId!.Value, cancellationToken);
 
             return Ok(new AuthResponse
             {
