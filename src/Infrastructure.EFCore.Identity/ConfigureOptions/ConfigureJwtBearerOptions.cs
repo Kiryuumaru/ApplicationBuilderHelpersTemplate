@@ -1,17 +1,23 @@
-using Application.Authorization.Interfaces;
+using Application.Authorization.Interfaces.Infrastructure;
 using Application.Identity.Interfaces;
 using ApplicationBuilderHelpers.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Threading.Tasks;
 
-namespace Presentation.WebApi.ConfigureOptions;
+namespace Infrastructure.EFCore.Identity.ConfigureOptions;
 
-internal class ConfigureJwtBearerOptions(ILogger<ConfigureJwtBearerOptions> logger, IServiceProvider serviceProvider) : IConfigureNamedOptions<JwtBearerOptions>
+/// <summary>
+/// Configures JWT Bearer authentication options for the application.
+/// This lives in Infrastructure because it knows about JWT implementation details.
+/// </summary>
+public class ConfigureJwtBearerOptions(
+    ILogger<ConfigureJwtBearerOptions> logger,
+    IServiceProvider serviceProvider) : IConfigureNamedOptions<JwtBearerOptions>
 {
     private const string SessionIdClaimType = "sid";
+    private const string ServiceKey = "GOAT_CLOUD";
 
     public void Configure(string? name, JwtBearerOptions options)
     {
@@ -22,9 +28,12 @@ internal class ConfigureJwtBearerOptions(ILogger<ConfigureJwtBearerOptions> logg
     {
         using var scope = serviceProvider.CreateScope();
         var lifetimeService = scope.ServiceProvider.GetRequiredService<LifetimeService>();
-        var permissionService = scope.ServiceProvider.GetRequiredService<IPermissionService>();
+        var jwtTokenService = scope.ServiceProvider.GetRequiredKeyedService<IJwtTokenService>(ServiceKey);
 
-        options.TokenValidationParameters = permissionService.GetTokenValidationParametersAsync(lifetimeService.CreateCancellationToken()).Result;
+        options.TokenValidationParameters = jwtTokenService
+            .GetTokenValidationParameters(lifetimeService.CreateCancellationToken())
+            .GetAwaiter()
+            .GetResult();
 
         options.Events = new JwtBearerEvents
         {

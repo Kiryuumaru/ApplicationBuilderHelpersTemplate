@@ -159,11 +159,4 @@ public interface IPermissionService
         IEnumerable<string>? claimTypesToRemove = null,
         DateTimeOffset? expiration = null,
         CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Gets the token validation parameters for validating JWTs.
-    /// </summary>
-    /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
-    /// <returns>The token validation parameters configured for the application.</returns>
-    Task<Microsoft.IdentityModel.Tokens.TokenValidationParameters> GetTokenValidationParametersAsync(CancellationToken cancellationToken = default);
 }

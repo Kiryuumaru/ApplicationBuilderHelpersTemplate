@@ -24,7 +24,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
-using Presentation.WebApi.ConfigureOptions;
 using Presentation.WebApi.Models.SchemaFilters;
 using Scalar.AspNetCore;
 using System.Reflection;
@@ -91,8 +90,6 @@ internal class MainCommand : Build.BaseCommand<WebApplicationBuilder>
         services
             .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer();
-
-        services.ConfigureOptions<ConfigureJwtBearerOptions>();
 
         // Add Authorization
         services.AddAuthorization();

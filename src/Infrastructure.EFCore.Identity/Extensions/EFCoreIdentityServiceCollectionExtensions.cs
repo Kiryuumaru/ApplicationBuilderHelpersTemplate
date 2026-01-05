@@ -2,6 +2,7 @@ using Application.Authorization.Interfaces.Infrastructure;
 using Application.Identity.Interfaces.Infrastructure;
 using Domain.Authorization.Models;
 using Domain.Identity.Models;
+using Infrastructure.EFCore.Identity.ConfigureOptions;
 using Infrastructure.EFCore.Identity.Configurations;
 using Infrastructure.EFCore.Identity.Services;
 using Infrastructure.EFCore.Identity.Workers;
@@ -15,6 +16,8 @@ public static class EFCoreIdentityServiceCollectionExtensions
 {
     public static IServiceCollection AddEFCoreIdentity(this IServiceCollection services)
     {
+        // Configure JWT Bearer authentication options
+        services.ConfigureOptions<ConfigureJwtBearerOptions>();
         // Register entity configuration for modular DbContext composition
         services.AddSingleton<IEFCoreEntityConfiguration, IdentityEntityConfiguration>();
 

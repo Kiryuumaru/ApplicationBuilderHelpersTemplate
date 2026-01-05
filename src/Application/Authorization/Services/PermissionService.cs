@@ -502,13 +502,6 @@ internal sealed class PermissionService(
             cancellationToken: cancellationToken);
     }
 
-    /// <inheritdoc />
-    public async Task<TokenValidationParameters> GetTokenValidationParametersAsync(CancellationToken cancellationToken = default)
-    {
-        var jwtTokenService = await _jwtTokenServiceFactory(cancellationToken);
-        return await jwtTokenService.GetTokenValidationParameters(cancellationToken);
-    }
-
     private static Claim CloneClaim(Claim source)
     {
         var clone = new Claim(source.Type, source.Value, source.ValueType, source.Issuer, source.OriginalIssuer);
