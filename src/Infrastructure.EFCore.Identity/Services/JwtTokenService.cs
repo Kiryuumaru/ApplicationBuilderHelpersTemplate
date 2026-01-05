@@ -1,5 +1,5 @@
-using Application.Authorization.Interfaces.Infrastructure;
 using Application.Authorization.Models;
+using Infrastructure.EFCore.Identity.Interfaces;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Globalization;
@@ -9,7 +9,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-namespace Application.Authorization.Services;
+namespace Infrastructure.EFCore.Identity.Services;
 
 internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguration>>> jwtConfigurationFactory) : IJwtTokenService
 {

@@ -1,13 +1,14 @@
 using Application.Authorization.Models;
 using System.Security.Claims;
 
-namespace Application.Authorization.Interfaces;
+namespace Application.Authorization.Interfaces.Infrastructure;
 
 /// <summary>
-/// Consumer-level service for token generation and validation operations.
-/// Implemented by Application layer.
+/// Internal provider for token generation and validation operations.
+/// Abstracts JWT implementation details from the Application layer.
+/// Implemented by Infrastructure layer.
 /// </summary>
-public interface ITokenService
+internal interface ITokenProvider
 {
     /// <summary>
     /// Generates an access token for a user with the specified roles and scope.

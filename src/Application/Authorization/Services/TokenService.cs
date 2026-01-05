@@ -6,75 +6,83 @@ using System.Security.Claims;
 namespace Application.Authorization.Services;
 
 /// <summary>
-/// Implementation of ITokenService that wraps the internal IJwtTokenService.
+/// Application layer implementation of ITokenService.
+/// Delegates to ITokenProvider from Infrastructure layer.
 /// </summary>
 internal sealed class TokenService(
-    Func<CancellationToken, Task<IJwtTokenService>> jwtTokenServiceFactory) : ITokenService
+    ITokenProvider tokenProvider) : ITokenService
 {
-    private readonly Func<CancellationToken, Task<IJwtTokenService>> _jwtTokenServiceFactory = jwtTokenServiceFactory ?? throw new ArgumentNullException(nameof(jwtTokenServiceFactory));
+    private readonly ITokenProvider _tokenProvider = tokenProvider ?? throw new ArgumentNullException(nameof(tokenProvider));
 
-    public async Task<string> GenerateAccessTokenAsync(
+    public Task<string> GenerateAccessTokenAsync(
         Guid userId,
         string? username,
         IReadOnlyCollection<string> roleCodes,
         IEnumerable<Claim>? additionalClaims = null,
         CancellationToken cancellationToken = default)
     {
-        var jwtService = await _jwtTokenServiceFactory(cancellationToken).ConfigureAwait(false);
-
-        return await jwtService.GenerateToken(
-            userId: userId.ToString(),
-            username: username ?? string.Empty,
-            scopes: roleCodes,
-            additionalClaims: additionalClaims,
-            cancellationToken: cancellationToken).ConfigureAwait(false);
+        return _tokenProvider.GenerateAccessTokenAsync(userId, username, roleCodes, additionalClaims, cancellationToken);
     }
 
-    public async Task<string> GenerateRefreshTokenAsync(
+    public Task<string> GenerateRefreshTokenAsync(
         Guid sessionId,
         CancellationToken cancellationToken = default)
     {
-        // Generate a secure refresh token
-        // For now, we just encode the session ID - in production, use a more secure approach
-        var bytes = new byte[32];
-        using var rng = System.Security.Cryptography.RandomNumberGenerator.Create();
-        rng.GetBytes(bytes);
-
-        var token = Convert.ToBase64String(bytes);
-        return await Task.FromResult($"{sessionId}:{token}").ConfigureAwait(false);
+        return _tokenProvider.GenerateRefreshTokenAsync(sessionId, cancellationToken);
     }
 
-    public async Task<TokenValidationResult> ValidateTokenAsync(
+    public Task<TokenValidationResult> ValidateTokenAsync(
         string token,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(token))
-        {
-            return TokenValidationResult.Failed("Token is required.");
-        }
+        return _tokenProvider.ValidateTokenAsync(token, cancellationToken);
+    }
 
-        var jwtService = await _jwtTokenServiceFactory(cancellationToken).ConfigureAwait(false);
-        var principal = await jwtService.ValidateToken(token, cancellationToken).ConfigureAwait(false);
+    public Task<string> GenerateTokenWithScopesAsync(
+        string userId,
+        string? username,
+        IEnumerable<string> scopes,
+        IEnumerable<Claim>? additionalClaims = null,
+        DateTimeOffset? expiration = null,
+        CancellationToken cancellationToken = default)
+    {
+        return _tokenProvider.GenerateTokenWithScopesAsync(userId, username, scopes, additionalClaims, expiration, cancellationToken);
+    }
 
-        if (principal is null)
-        {
-            return TokenValidationResult.Failed("Token validation failed.");
-        }
+    public Task<string> GenerateApiKeyTokenAsync(
+        string apiKeyName,
+        IEnumerable<string>? scopes = null,
+        IEnumerable<Claim>? additionalClaims = null,
+        DateTimeOffset? expiration = null,
+        CancellationToken cancellationToken = default)
+    {
+        return _tokenProvider.GenerateApiKeyTokenAsync(apiKeyName, scopes, additionalClaims, expiration, cancellationToken);
+    }
 
-        // Extract claims
-        var userIdClaim = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (!Guid.TryParse(userIdClaim, out var userId))
-        {
-            return TokenValidationResult.Failed("Invalid user ID in token.");
-        }
+    public Task<ClaimsPrincipal?> ValidateTokenPrincipalAsync(
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        return _tokenProvider.ValidateTokenPrincipalAsync(token, cancellationToken);
+    }
 
-        var sessionIdClaim = principal.FindFirst("session_id")?.Value;
-        Guid? sessionId = Guid.TryParse(sessionIdClaim, out var sid) ? sid : null;
+    public Task<TokenInfo?> DecodeTokenAsync(
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        return _tokenProvider.DecodeTokenAsync(token, cancellationToken);
+    }
 
-        var roles = principal.FindAll(ClaimTypes.Role)
-            .Select(c => c.Value)
-            .ToArray();
-
-        return TokenValidationResult.Success(userId, sessionId, roles);
+    public Task<string> MutateTokenAsync(
+        string token,
+        IEnumerable<string>? scopesToAdd = null,
+        IEnumerable<string>? scopesToRemove = null,
+        IEnumerable<Claim>? claimsToAdd = null,
+        IEnumerable<Claim>? claimsToRemove = null,
+        IEnumerable<string>? claimTypesToRemove = null,
+        DateTimeOffset? expiration = null,
+        CancellationToken cancellationToken = default)
+    {
+        return _tokenProvider.MutateTokenAsync(token, scopesToAdd, scopesToRemove, claimsToAdd, claimsToRemove, claimTypesToRemove, expiration, cancellationToken);
     }
 }

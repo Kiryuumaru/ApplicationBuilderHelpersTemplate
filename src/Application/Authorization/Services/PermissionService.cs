@@ -9,7 +9,6 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using Domain.Authorization.Constants;
 using Application.Authorization.Interfaces;
-using Application.Authorization.Interfaces.Infrastructure;
 using Application.Authorization.Models;
 using Domain.Authorization.Enums;
 using Domain.Authorization.Models;
@@ -19,7 +18,7 @@ using Domain.Authorization.ValueObjects;
 namespace Application.Authorization.Services;
 
 internal sealed class PermissionService(
-    Func<CancellationToken, Task<IJwtTokenService>> jwtTokenServiceFactory) : IPermissionService
+    ITokenService tokenService) : IPermissionService
 {
     private const string ScopeClaimType = "scope";
     private const string RbacVersionClaimType = "rbac_version";
@@ -33,7 +32,7 @@ internal sealed class PermissionService(
         new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(0, StringComparer.Ordinal));
     private static readonly HashSet<string> EmptyParameterNameSet = new(StringComparer.Ordinal);
 
-    private readonly Func<CancellationToken, Task<IJwtTokenService>> _jwtTokenServiceFactory = jwtTokenServiceFactory ?? throw new ArgumentNullException(nameof(jwtTokenServiceFactory));
+    private readonly ITokenService _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
 
     static PermissionService()
     {
@@ -70,11 +69,9 @@ internal sealed class PermissionService(
         ArgumentException.ThrowIfNullOrEmpty(userId);
 
         var normalizedPermissions = NormalizeAndValidate(permissionIdentifiers, allowEmpty: true);
-
-        var jwtTokenService = await _jwtTokenServiceFactory(cancellationToken);
         var additionalClaimSet = additionalClaims?.ToArray();
 
-        return await jwtTokenService.GenerateToken(
+        return await _tokenService.GenerateTokenWithScopesAsync(
             userId: userId,
             username: username ?? string.Empty,
             scopes: normalizedPermissions,
@@ -93,11 +90,9 @@ internal sealed class PermissionService(
         ArgumentException.ThrowIfNullOrEmpty(apiKeyName);
 
         var normalizedPermissions = NormalizeAndValidate(permissionIdentifiers, allowEmpty: true);
-
-        var jwtTokenService = await _jwtTokenServiceFactory(cancellationToken);
         var additionalClaimSet = additionalClaims?.ToArray();
 
-        return await jwtTokenService.GenerateApiKeyToken(
+        return await _tokenService.GenerateApiKeyTokenAsync(
             apiKeyName: apiKeyName,
             scopes: normalizedPermissions,
             additionalClaims: additionalClaimSet,
@@ -121,10 +116,9 @@ internal sealed class PermissionService(
             .Select(static d => d.ToString())
             .ToArray() ?? Array.Empty<string>();
 
-        var jwtTokenService = await _jwtTokenServiceFactory(cancellationToken);
         var additionalClaimSet = additionalClaims?.ToArray();
 
-        return await jwtTokenService.GenerateToken(
+        return await _tokenService.GenerateTokenWithScopesAsync(
             userId: userId,
             username: username ?? string.Empty,
             scopes: scopes,
@@ -353,14 +347,12 @@ internal sealed class PermissionService(
 
     public async Task<ClaimsPrincipal?> ValidateTokenAsync(string token, CancellationToken cancellationToken = default)
     {
-        var jwtTokenService = await _jwtTokenServiceFactory(cancellationToken);
-        return await jwtTokenService.ValidateToken(token, cancellationToken);
+        return await _tokenService.ValidateTokenPrincipalAsync(token, cancellationToken);
     }
 
     public async Task<TokenInfo?> DecodeTokenAsync(string token, CancellationToken cancellationToken = default)
     {
-        var jwtTokenService = await _jwtTokenServiceFactory(cancellationToken);
-        return await jwtTokenService.DecodeToken(token, cancellationToken);
+        return await _tokenService.DecodeTokenAsync(token, cancellationToken);
     }
 
     public async Task<string> MutateTokenAsync(
@@ -375,8 +367,7 @@ internal sealed class PermissionService(
     {
         ArgumentException.ThrowIfNullOrEmpty(token);
 
-        var jwtTokenService = await _jwtTokenServiceFactory(cancellationToken);
-        var principal = await jwtTokenService.ValidateToken(token, cancellationToken) ?? throw new SecurityTokenException("Token validation failed.");
+        var principal = await _tokenService.ValidateTokenPrincipalAsync(token, cancellationToken) ?? throw new SecurityTokenException("Token validation failed.");
         var existingPermissions = ExtractPermissionClaims(principal);
 
         var additions = new List<Claim>();
@@ -491,7 +482,7 @@ internal sealed class PermissionService(
         var scopeAdditionsList = scopeAdditions.Count == 0 ? null : scopeAdditions;
         var scopeRemovalsList = scopeRemovals.Count == 0 ? null : scopeRemovals;
 
-        return await jwtTokenService.MutateToken(
+        return await _tokenService.MutateTokenAsync(
             token: token,
             scopesToAdd: scopeAdditionsList,
             scopesToRemove: scopeRemovalsList,

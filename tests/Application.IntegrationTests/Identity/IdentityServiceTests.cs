@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Application.Abstractions.Application;
-using Application.Authorization.Extensions;
 using Application.Authorization.Models;
 using Application.Identity.Extensions;
 using Application.Identity.Interfaces;
@@ -284,8 +283,8 @@ public class IdentityServiceTests
         // Register stub IApplicationConstants for tests
         services.AddSingleton<IApplicationConstants>(new TestApplicationConstants());
         
-        // Add JWT authentication with a test configuration
-        services.AddJwtAuthentication("GOAT_CLOUD", (sp, ct) =>
+        // Add JWT token services with a test configuration
+        services.AddJwtTokenServices("GOAT_CLOUD", (sp, ct) =>
         {
             return Task.FromResult(new JwtConfiguration
             {

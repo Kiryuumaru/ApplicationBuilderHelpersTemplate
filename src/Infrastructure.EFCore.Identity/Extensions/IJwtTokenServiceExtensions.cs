@@ -1,11 +1,11 @@
-using Application.Authorization.Interfaces.Infrastructure;
+using Infrastructure.EFCore.Identity.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Application.Authorization.Extensions;
+namespace Infrastructure.EFCore.Identity.Extensions;
 
 internal static class IJwtTokenServiceExtensions
 {

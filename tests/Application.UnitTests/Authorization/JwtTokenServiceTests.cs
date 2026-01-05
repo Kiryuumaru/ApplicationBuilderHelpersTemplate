@@ -1,5 +1,5 @@
 using Application.Authorization.Models;
-using Application.Authorization.Services;
+using Infrastructure.EFCore.Identity.Services;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;

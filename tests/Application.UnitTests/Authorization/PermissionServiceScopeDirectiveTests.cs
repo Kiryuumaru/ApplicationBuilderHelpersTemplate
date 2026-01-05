@@ -3,6 +3,8 @@ using Application.Authorization.Interfaces.Infrastructure;
 using Application.Authorization.Models;
 using Application.Authorization.Services;
 using Domain.Authorization.Constants;
+using Infrastructure.EFCore.Identity.Interfaces;
+using Infrastructure.EFCore.Identity.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
@@ -617,8 +619,9 @@ public class PermissionServiceScopeDirectiveTests
         var lazyJwtFactory = new Lazy<Func<CancellationToken, Task<JwtConfiguration>>>(() => _ => Task.FromResult(jwtConfig));
         var jwtTokenService = new JwtTokenService(lazyJwtFactory);
 
-        Func<CancellationToken, Task<IJwtTokenService>> jwtServiceFactory = _ => Task.FromResult<IJwtTokenService>(jwtTokenService);
-        return new PermissionService(jwtServiceFactory);
+        var tokenProvider = new TokenProvider(ct => Task.FromResult<IJwtTokenService>(jwtTokenService));
+        var tokenService = new TokenService(tokenProvider);
+        return new PermissionService(tokenService);
     }
 
     /// <summary>

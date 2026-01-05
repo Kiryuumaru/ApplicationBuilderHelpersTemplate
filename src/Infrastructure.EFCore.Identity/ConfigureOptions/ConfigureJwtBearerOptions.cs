@@ -1,4 +1,4 @@
-using Application.Authorization.Interfaces.Infrastructure;
+using Infrastructure.EFCore.Identity.Interfaces;
 using Application.Identity.Interfaces;
 using ApplicationBuilderHelpers.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
