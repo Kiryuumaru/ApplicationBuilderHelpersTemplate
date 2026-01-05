@@ -14,7 +14,7 @@ public class EFCoreIdentityInfrastructure : ApplicationDependency
         services.AddEFCoreIdentity();
         
         // Register JWT token services with production credentials
-        services.AddJwtTokenServices("GOAT_CLOUD", async (sp, ct) =>
+        services.AddJwtTokenServices(async (sp, ct) =>
         {
             using var scope = sp.CreateScope();
             var cloudAuthenticationServices = scope.ServiceProvider.GetRequiredService<CredentialsService>();

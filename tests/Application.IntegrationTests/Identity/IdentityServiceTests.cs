@@ -284,7 +284,7 @@ public class IdentityServiceTests
         services.AddSingleton<IApplicationConstants>(new TestApplicationConstants());
         
         // Add JWT token services with a test configuration
-        services.AddJwtTokenServices("GOAT_CLOUD", (sp, ct) =>
+        services.AddJwtTokenServices((sp, ct) =>
         {
             return Task.FromResult(new JwtConfiguration
             {

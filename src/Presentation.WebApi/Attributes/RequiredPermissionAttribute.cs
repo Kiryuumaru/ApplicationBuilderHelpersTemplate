@@ -54,8 +54,7 @@ public sealed partial class RequiredPermissionAttribute : Attribute, IAsyncActio
 
         var services = context.HttpContext.RequestServices;
         var logger = services.GetService<ILogger<RequiredPermissionAttribute>>();
-        var permissionService = services.GetService<IPermissionService>()
-            ?? services.GetKeyedService<IPermissionService>("GOAT_CLOUD");
+        var permissionService = services.GetService<IPermissionService>();
 
         if (permissionService is null)
         {

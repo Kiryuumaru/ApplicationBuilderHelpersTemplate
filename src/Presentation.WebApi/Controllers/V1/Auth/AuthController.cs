@@ -36,7 +36,7 @@ public partial class AuthController(
     IEmailService emailService,
     IPasskeyService passkeyService,
     IOAuthService oauthService,
-    [FromKeyedServices("GOAT_CLOUD")] IPermissionService permissionService) : ControllerBase
+    IPermissionService permissionService) : ControllerBase
 {
     private const string SessionIdClaimType = "sid";
 

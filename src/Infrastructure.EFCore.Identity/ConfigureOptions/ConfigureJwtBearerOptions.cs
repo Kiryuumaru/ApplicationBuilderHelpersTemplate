@@ -17,7 +17,6 @@ public class ConfigureJwtBearerOptions(
     IServiceProvider serviceProvider) : IConfigureNamedOptions<JwtBearerOptions>
 {
     private const string SessionIdClaimType = "sid";
-    private const string ServiceKey = "GOAT_CLOUD";
 
     public void Configure(string? name, JwtBearerOptions options)
     {
@@ -28,7 +27,7 @@ public class ConfigureJwtBearerOptions(
     {
         using var scope = serviceProvider.CreateScope();
         var lifetimeService = scope.ServiceProvider.GetRequiredService<LifetimeService>();
-        var jwtTokenService = scope.ServiceProvider.GetRequiredKeyedService<IJwtTokenService>(ServiceKey);
+        var jwtTokenService = scope.ServiceProvider.GetRequiredService<IJwtTokenService>();
 
         options.TokenValidationParameters = jwtTokenService
             .GetTokenValidationParameters(lifetimeService.CreateCancellationToken())
