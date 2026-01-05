@@ -14,6 +14,8 @@ internal interface IRoleRepository
 
     Task<IReadOnlyCollection<Role>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken);
 
+    Task<IReadOnlyCollection<Role>> GetByCodesAsync(IEnumerable<string> codes, CancellationToken cancellationToken);
+
     Task<IReadOnlyCollection<Role>> ListAsync(CancellationToken cancellationToken);
 
     Task SaveAsync(Role role, CancellationToken cancellationToken);

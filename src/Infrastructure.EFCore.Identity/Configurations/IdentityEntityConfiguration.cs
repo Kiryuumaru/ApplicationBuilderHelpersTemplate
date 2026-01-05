@@ -66,7 +66,7 @@ public class IdentityEntityConfiguration : IEFCoreEntityConfiguration
 
     private static void ConfigureRole(ModelBuilder modelBuilder)
     {
-        var entity = modelBuilder.Entity<Role>();
+        var entity = modelBuilder.Entity<RoleEntity>();
 
         entity.ToTable("Roles");
 
@@ -77,18 +77,18 @@ public class IdentityEntityConfiguration : IEFCoreEntityConfiguration
             .IsRequired();
 
         entity.Property(r => r.RevId)
-            .HasConversion(id => id.ToString(), str => Guid.Parse(str));
+            .HasConversion(
+                id => id.HasValue ? id.Value.ToString() : null,
+                str => string.IsNullOrEmpty(str) ? null : Guid.Parse(str));
 
         entity.Property(r => r.Code).IsRequired().HasMaxLength(100);
         entity.Property(r => r.Name).IsRequired().HasMaxLength(256);
         entity.Property(r => r.NormalizedName).IsRequired().HasMaxLength(256);
         entity.Property(r => r.Description).HasMaxLength(1000);
+        entity.Property(r => r.ScopeTemplatesJson).HasColumnName("ScopeTemplatesJson");
 
         entity.HasIndex(r => r.Code).IsUnique();
         entity.HasIndex(r => r.NormalizedName).IsUnique();
-        
-        // Ignore ScopeTemplates - roles are defined in code, not persisted
-        entity.Ignore(r => r.ScopeTemplates);
     }
 
     private static void ConfigureUserLogin(ModelBuilder modelBuilder)

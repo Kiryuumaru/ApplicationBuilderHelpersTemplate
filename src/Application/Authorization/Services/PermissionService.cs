@@ -6,21 +6,26 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using System.IdentityModel.Tokens.Jwt;
+using System.Text.Json;
 using Microsoft.IdentityModel.Tokens;
 using Domain.Authorization.Constants;
 using Application.Authorization.Interfaces;
+using Application.Authorization.Interfaces.Infrastructure;
 using Application.Authorization.Models;
 using Domain.Authorization.Enums;
 using Domain.Authorization.Models;
 using Domain.Authorization.Services;
 using Domain.Authorization.ValueObjects;
+using Domain.Shared.Serialization;
 
 namespace Application.Authorization.Services;
 
 internal sealed class PermissionService(
-    ITokenService tokenService) : IPermissionService
+    ITokenService tokenService,
+    IRoleRepository roleRepository) : IPermissionService
 {
     private const string ScopeClaimType = "scope";
+    private const string RoleParametersClaimType = "role_params";
     private const string RbacVersionClaimType = "rbac_version";
     private const string CurrentRbacVersion = "2";
 
@@ -33,6 +38,7 @@ internal sealed class PermissionService(
     private static readonly HashSet<string> EmptyParameterNameSet = new(StringComparer.Ordinal);
 
     private readonly ITokenService _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
+    private readonly IRoleRepository _roleRepository = roleRepository ?? throw new ArgumentNullException(nameof(roleRepository));
 
     static PermissionService()
     {
@@ -200,7 +206,7 @@ internal sealed class PermissionService(
             : [.. resolved]);
     }
 
-    public bool HasPermission(ClaimsPrincipal principal, string permissionIdentifier)
+    public async Task<bool> HasPermissionAsync(ClaimsPrincipal principal, string permissionIdentifier, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(principal);
 
@@ -234,12 +240,12 @@ internal sealed class PermissionService(
             return true;
         }
 
-        // Version 2+: Use new directive-based scope evaluation
-        var scope = ExtractScopeDirectives(principal);
+        // Version 2+: Resolve roles at runtime and evaluate
+        var scope = await ResolveScopeDirectivesAsync(principal, cancellationToken).ConfigureAwait(false);
         return ScopeEvaluator.HasPermission(scope, parsed.Canonical, parsed.Parameters);
     }
 
-    public bool HasAnyPermission(ClaimsPrincipal principal, IEnumerable<string> permissionIdentifiers)
+    public async Task<bool> HasAnyPermissionAsync(ClaimsPrincipal principal, IEnumerable<string> permissionIdentifiers, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(principal);
 
@@ -256,7 +262,7 @@ internal sealed class PermissionService(
             return permissionIdentifiers.Any(id => !string.IsNullOrWhiteSpace(id));
         }
 
-        var scope = ExtractScopeDirectives(principal);
+        var scope = await ResolveScopeDirectivesAsync(principal, cancellationToken).ConfigureAwait(false);
 
         foreach (var identifier in permissionIdentifiers)
         {
@@ -290,7 +296,7 @@ internal sealed class PermissionService(
         return false;
     }
 
-    public bool HasAllPermissions(ClaimsPrincipal principal, IEnumerable<string> permissionIdentifiers)
+    public async Task<bool> HasAllPermissionsAsync(ClaimsPrincipal principal, IEnumerable<string> permissionIdentifiers, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(principal);
 
@@ -317,7 +323,7 @@ internal sealed class PermissionService(
             return true;
         }
 
-        var scope = ExtractScopeDirectives(principal);
+        var scope = await ResolveScopeDirectivesAsync(principal, cancellationToken).ConfigureAwait(false);
 
         foreach (var identifier in identifiers)
         {
@@ -645,6 +651,130 @@ internal sealed class PermissionService(
         }
 
         return directives;
+    }
+
+    /// <summary>
+    /// Resolves scope directives by extracting role codes from the principal and looking up
+    /// the current role definitions from the database. This allows role permission changes
+    /// to take effect immediately without requiring token regeneration.
+    /// </summary>
+    private async Task<List<ScopeDirective>> ResolveScopeDirectivesAsync(ClaimsPrincipal principal, CancellationToken cancellationToken)
+    {
+        var directives = new List<ScopeDirective>();
+
+        // First, extract any direct scope claims (for backward compatibility)
+        directives.AddRange(ExtractScopeDirectives(principal));
+
+        // Extract role codes from the principal
+        var roleCodes = principal.Claims
+            .Where(c => string.Equals(c.Type, ClaimTypes.Role, StringComparison.Ordinal))
+            .Select(c => c.Value)
+            .Where(v => !string.IsNullOrWhiteSpace(v))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (roleCodes.Count == 0)
+        {
+            return directives;
+        }
+
+        // Look up current role definitions from the database
+        var roles = await _roleRepository.GetByCodesAsync(roleCodes, cancellationToken).ConfigureAwait(false);
+        var roleIndex = roles.ToDictionary(r => r.Code, StringComparer.OrdinalIgnoreCase);
+
+        // Extract role parameter values from claims
+        var roleParameters = ExtractRoleParameters(principal);
+
+        // Expand scope templates for each role
+        foreach (var roleCode in roleCodes)
+        {
+            if (!roleIndex.TryGetValue(roleCode, out var role))
+            {
+                continue;
+            }
+
+            // Get parameter values for this role assignment (if any)
+            var parameterValues = roleParameters.TryGetValue(roleCode, out var pv)
+                ? pv
+                : new Dictionary<string, string?>(StringComparer.Ordinal);
+
+            // Try to expand the role's scope templates with parameter values
+            // If the role requires parameters that aren't provided, we'll expand
+            // only the templates that don't require those parameters
+            try
+            {
+                var roleDirectives = role.ExpandScope(parameterValues);
+                directives.AddRange(roleDirectives);
+            }
+            catch (Domain.Shared.Exceptions.DomainException)
+            {
+                // Role requires parameters that weren't provided in the token
+                // Try to expand individual templates that don't require missing parameters
+                foreach (var template in role.ScopeTemplates)
+                {
+                    // Check if all required parameters are available
+                    var missingParams = template.RequiredParameters
+                        .Where(p => !parameterValues.ContainsKey(p) || parameterValues[p] is null)
+                        .ToList();
+
+                    if (missingParams.Count == 0)
+                    {
+                        // All parameters available, expand this template
+                        try
+                        {
+                            var directive = template.Expand(parameterValues);
+                            directives.Add(directive);
+                        }
+                        catch
+                        {
+                            // Skip templates that fail to expand
+                        }
+                    }
+                    // else: Skip templates with missing parameters
+                }
+            }
+        }
+
+        return directives;
+    }
+
+    /// <summary>
+    /// Extracts role parameter values from claims.
+    /// Claims are in format: role_params:{roleCode} = JSON serialized parameter dictionary
+    /// </summary>
+    private static Dictionary<string, IReadOnlyDictionary<string, string?>> ExtractRoleParameters(ClaimsPrincipal principal)
+    {
+        var result = new Dictionary<string, IReadOnlyDictionary<string, string?>>(StringComparer.OrdinalIgnoreCase);
+        var prefix = $"{RoleParametersClaimType}:";
+
+        foreach (var claim in principal.Claims)
+        {
+            if (!claim.Type.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var roleCode = claim.Type[prefix.Length..];
+            if (string.IsNullOrWhiteSpace(roleCode) || string.IsNullOrWhiteSpace(claim.Value))
+            {
+                continue;
+            }
+
+            try
+            {
+                var parameters = JsonSerializer.Deserialize(claim.Value, DomainJsonContext.Default.DictionaryStringString);
+                if (parameters is not null)
+                {
+                    result[roleCode] = parameters;
+                }
+            }
+            catch (JsonException)
+            {
+                // Invalid JSON, skip this claim
+            }
+        }
+
+        return result;
     }
 
     /// <summary>

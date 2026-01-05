@@ -1,3 +1,4 @@
+using Application.Authorization.Interfaces;
 using Application.Identity.Interfaces;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
@@ -18,6 +19,7 @@ public partial class IamController(
     IUserProfileService userProfileService,
     IUserAuthorizationService userAuthorizationService,
     IUserRegistrationService userRegistrationService,
-    IPasswordService passwordService) : ControllerBase
+    IPasswordService passwordService,
+    IRoleService roleService) : ControllerBase
 {
 }

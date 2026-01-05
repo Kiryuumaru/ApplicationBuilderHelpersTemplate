@@ -5,6 +5,9 @@ using Application.Identity.Interfaces.Infrastructure;
 using Application.Identity.Models;
 using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
+using Domain.Shared.Serialization;
+using System.Security.Claims;
+using System.Text.Json;
 
 namespace Application.Identity.Services;
 
@@ -16,13 +19,19 @@ internal sealed class AuthenticationService(
     ISessionRepository sessionRepository,
     IRoleRepository roleRepository,
     IPasswordVerifier passwordVerifier,
-    ITokenService tokenService) : IAuthenticationService
+    ITokenService tokenService,
+    IUserRoleResolver userRoleResolver) : IAuthenticationService
 {
+    private const string RoleParametersClaimType = "role_params";
+    private const string RbacVersionClaimType = "rbac_version";
+    private const string CurrentRbacVersion = "2";
+
     private readonly IUserRepository _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
     private readonly ISessionRepository _sessionRepository = sessionRepository ?? throw new ArgumentNullException(nameof(sessionRepository));
     private readonly IRoleRepository _roleRepository = roleRepository ?? throw new ArgumentNullException(nameof(roleRepository));
     private readonly IPasswordVerifier _passwordVerifier = passwordVerifier ?? throw new ArgumentNullException(nameof(passwordVerifier));
     private readonly ITokenService _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
+    private readonly IUserRoleResolver _userRoleResolver = userRoleResolver ?? throw new ArgumentNullException(nameof(userRoleResolver));
 
     public async Task<CredentialValidationResult> ValidateCredentialsAsync(string username, string password, CancellationToken cancellationToken)
     {
@@ -130,7 +139,9 @@ internal sealed class AuthenticationService(
 
     private async Task<UserSessionDto> CreateSessionForUserInternalAsync(User user, CancellationToken cancellationToken)
     {
-        var roleCodes = await ResolveRoleCodesAsync(user, cancellationToken).ConfigureAwait(false);
+        // Resolve roles with their parameter values
+        var roleResolutions = await _userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
+        var roleCodes = roleResolutions.Select(r => r.Role.Code).ToArray();
 
         // Create login session
         var now = DateTimeOffset.UtcNow;
@@ -144,12 +155,18 @@ internal sealed class AuthenticationService(
         var loginSession = LoginSession.Create(user.Id, refreshTokenHash, refreshTokenExpiry);
         await _sessionRepository.CreateAsync(loginSession, cancellationToken).ConfigureAwait(false);
 
-        // Generate tokens
+        // Build additional claims for role parameters and RBAC version
+        var additionalClaims = BuildRoleParameterClaims(roleResolutions);
+        additionalClaims.Add(new Claim(RbacVersionClaimType, CurrentRbacVersion));
+
+        // Generate access token with role codes and parameter claims
+        // Permission resolution happens at request time using the role codes
         var accessToken = await _tokenService.GenerateAccessTokenAsync(
             user.Id,
             user.UserName,
             roleCodes,
-            cancellationToken: cancellationToken).ConfigureAwait(false);
+            additionalClaims,
+            cancellationToken).ConfigureAwait(false);
 
         var refreshToken = await _tokenService.GenerateRefreshTokenAsync(
             loginSession.Id,
@@ -167,6 +184,29 @@ internal sealed class AuthenticationService(
             ExpiresAt = accessTokenExpiry,
             Roles = roleCodes
         };
+    }
+
+    /// <summary>
+    /// Builds claims containing role parameter values for each role assignment.
+    /// Format: role_params:{roleCode} = JSON serialized parameter dictionary
+    /// </summary>
+    private static List<Claim> BuildRoleParameterClaims(IReadOnlyCollection<UserRoleResolution> roleResolutions)
+    {
+        var claims = new List<Claim>();
+
+        foreach (var resolution in roleResolutions)
+        {
+            if (resolution.ParameterValues is null || resolution.ParameterValues.Count == 0)
+            {
+                continue;
+            }
+
+            var claimType = $"{RoleParametersClaimType}:{resolution.Role.Code}";
+            var claimValue = JsonSerializer.Serialize(resolution.ParameterValues, DomainJsonContext.Default.IReadOnlyDictionaryStringString);
+            claims.Add(new Claim(claimType, claimValue));
+        }
+
+        return claims;
     }
 
     private static string ComputeHash(string input)

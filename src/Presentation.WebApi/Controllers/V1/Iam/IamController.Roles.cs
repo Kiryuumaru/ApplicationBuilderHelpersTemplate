@@ -1,4 +1,7 @@
+using Application.Authorization.Models;
 using Domain.Authorization.Constants;
+using Domain.Authorization.Enums;
+using Domain.Authorization.ValueObjects;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
 using Presentation.WebApi.Models.Requests;
@@ -10,24 +13,187 @@ namespace Presentation.WebApi.Controllers.V1.Iam;
 public partial class IamController
 {
     /// <summary>
-    /// Lists all available roles that can be assigned to users.
+    /// Lists all available roles (static and custom).
     /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>List of available roles.</returns>
     [HttpGet("roles")]
+    [RequiredPermission(PermissionIds.Api.Iam.Roles.List.Identifier)]
     [ProducesResponseType<RoleListResponse>(StatusCodes.Status200OK)]
-    public IActionResult ListRoles()
+    public async Task<IActionResult> ListRoles(CancellationToken cancellationToken)
     {
-        var roles = Roles.All.Select(definition => new RoleInfoResponse
-        {
-            Id = definition.Id,
-            Code = definition.Code,
-            Name = definition.Name,
-            Description = definition.Description,
-            IsSystemRole = definition.IsSystemRole,
-            Parameters = definition.TemplateParameters
-        }).ToList();
+        var allRoles = await roleService.ListAsync(cancellationToken);
+
+        var roles = allRoles.Select(role => MapRoleToResponse(role)).ToList();
 
         return Ok(new RoleListResponse { Roles = roles });
+    }
+
+    /// <summary>
+    /// Gets a specific role by ID.
+    /// </summary>
+    /// <param name="roleId">The role ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The role details.</returns>
+    [HttpGet("roles/{roleId:guid}")]
+    [RequiredPermission(PermissionIds.Api.Iam.Roles.Read.Identifier)]
+    [ProducesResponseType<RoleInfoResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetRole(Guid roleId, CancellationToken cancellationToken)
+    {
+        var role = await roleService.GetByIdAsync(roleId, cancellationToken);
+        if (role is null)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Status = StatusCodes.Status404NotFound,
+                Title = "Not found",
+                Detail = $"Role with ID '{roleId}' not found."
+            });
+        }
+
+        return Ok(MapRoleToResponse(role));
+    }
+
+    /// <summary>
+    /// Creates a new custom role.
+    /// </summary>
+    /// <param name="request">The role creation request.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The created role.</returns>
+    [HttpPost("roles")]
+    [RequiredPermission(PermissionIds.Api.Iam.Roles.Create.Identifier)]
+    [ProducesResponseType<RoleInfoResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> CreateRole(
+        [FromBody] CreateRoleRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var scopeTemplates = ParseScopeTemplates(request.ScopeTemplates);
+
+            var descriptor = new RoleDescriptor(
+                Code: request.Code,
+                Name: request.Name,
+                Description: request.Description,
+                IsSystemRole: false,
+                ScopeTemplates: scopeTemplates);
+
+            var role = await roleService.CreateRoleAsync(descriptor, cancellationToken);
+
+            return CreatedAtAction(
+                nameof(GetRole),
+                new { roleId = role.Id },
+                MapRoleToResponse(role));
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("already exists") || ex.Message.Contains("reserved"))
+        {
+            return Conflict(new ProblemDetails
+            {
+                Status = StatusCodes.Status409Conflict,
+                Title = "Conflict",
+                Detail = ex.Message
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Invalid operation",
+                Detail = ex.Message
+            });
+        }
+    }
+
+    /// <summary>
+    /// Updates an existing custom role.
+    /// </summary>
+    /// <param name="roleId">The role ID.</param>
+    /// <param name="request">The role update request.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The updated role.</returns>
+    [HttpPut("roles/{roleId:guid}")]
+    [RequiredPermission(PermissionIds.Api.Iam.Roles.Update.Identifier)]
+    [ProducesResponseType<RoleInfoResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UpdateRole(
+        Guid roleId,
+        [FromBody] UpdateRoleRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var role = await roleService.UpdateMetadataAsync(roleId, request.Name, request.Description, cancellationToken);
+
+            if (request.ScopeTemplates is not null)
+            {
+                var scopeTemplates = ParseScopeTemplates(request.ScopeTemplates);
+                role = await roleService.ReplaceScopeTemplatesAsync(roleId, scopeTemplates, cancellationToken);
+            }
+
+            return Ok(MapRoleToResponse(role));
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("not found"))
+        {
+            return NotFound(new ProblemDetails
+            {
+                Status = StatusCodes.Status404NotFound,
+                Title = "Not found",
+                Detail = ex.Message
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Invalid operation",
+                Detail = ex.Message
+            });
+        }
+    }
+
+    /// <summary>
+    /// Deletes a custom role.
+    /// </summary>
+    /// <param name="roleId">The role ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>No content.</returns>
+    [HttpDelete("roles/{roleId:guid}")]
+    [RequiredPermission(PermissionIds.Api.Iam.Roles.Delete.Identifier)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> DeleteRole(Guid roleId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var deleted = await roleService.DeleteRoleAsync(roleId, cancellationToken);
+            if (!deleted)
+            {
+                return NotFound(new ProblemDetails
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Title = "Not found",
+                    Detail = $"Role with ID '{roleId}' not found."
+                });
+            }
+
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Invalid operation",
+                Detail = ex.Message
+            });
+        }
     }
 
     /// <summary>
@@ -112,4 +278,66 @@ public partial class IamController
             });
         }
     }
+
+    #region Role Helper Methods
+
+    private static RoleInfoResponse MapRoleToResponse(Domain.Authorization.Models.Role role)
+    {
+        // Extract template parameters from scope templates
+        var parameters = role.ScopeTemplates
+            .SelectMany(st => st.RequiredParameters)
+            .Distinct()
+            .ToList();
+
+        return new RoleInfoResponse
+        {
+            Id = role.Id,
+            Code = role.Code,
+            Name = role.Name,
+            Description = role.Description,
+            IsSystemRole = role.IsSystemRole,
+            Parameters = parameters,
+            ScopeTemplates = role.ScopeTemplates.Select(st => new ScopeTemplateResponse
+            {
+                Type = st.Type.ToString().ToLowerInvariant(),
+                PermissionPath = st.PermissionPath,
+                Parameters = st.ParameterTemplates.Count > 0
+                    ? st.ParameterTemplates.ToDictionary(p => p.Key, p => p.ValueTemplate)
+                    : null
+            }).ToList()
+        };
+    }
+
+    private static IReadOnlyCollection<ScopeTemplate> ParseScopeTemplates(IReadOnlyList<ScopeTemplateRequest>? templates)
+    {
+        if (templates is null || templates.Count == 0)
+        {
+            return [];
+        }
+
+        var scopeTemplates = new List<ScopeTemplate>();
+        foreach (var template in templates)
+        {
+            var type = template.Type.ToLowerInvariant() switch
+            {
+                "allow" => ScopeDirectiveType.Allow,
+                "deny" => ScopeDirectiveType.Deny,
+                _ => throw new InvalidOperationException($"Invalid scope template type: '{template.Type}'. Must be 'allow' or 'deny'.")
+            };
+
+            var parameters = template.Parameters?
+                .Select(kvp => (kvp.Key, kvp.Value))
+                .ToArray() ?? [];
+
+            var scopeTemplate = type == ScopeDirectiveType.Allow
+                ? ScopeTemplate.Allow(template.PermissionPath, parameters)
+                : ScopeTemplate.Deny(template.PermissionPath, parameters);
+
+            scopeTemplates.Add(scopeTemplate);
+        }
+
+        return scopeTemplates;
+    }
+
+    #endregion
 }

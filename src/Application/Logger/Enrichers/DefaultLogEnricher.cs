@@ -1,6 +1,6 @@
 using Application.Configuration.Extensions;
-using Application.Logger.Abstractions;
 using Application.Logger.Extensions;
+using Application.Logger.Interfaces;
 using Application.Logger.LogEventPropertyTypes;
 using Microsoft.Extensions.Configuration;
 using Serilog.Core;

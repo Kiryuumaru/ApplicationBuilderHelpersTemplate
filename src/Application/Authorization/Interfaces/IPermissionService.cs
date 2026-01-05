@@ -99,28 +99,34 @@ public interface IPermissionService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Determines whether the specified principal holds the provided permission claim.
+    /// Determines whether the specified principal holds the provided permission.
+    /// Resolves role permissions at runtime from the database.
     /// </summary>
     /// <param name="principal">The principal to evaluate.</param>
     /// <param name="permissionIdentifier">The permission identifier to check.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns><c>true</c> when the principal has the permission; otherwise <c>false</c>.</returns>
-    bool HasPermission(ClaimsPrincipal principal, string permissionIdentifier);
+    Task<bool> HasPermissionAsync(ClaimsPrincipal principal, string permissionIdentifier, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Determines whether the principal holds any of the supplied permissions.
+    /// Resolves role permissions at runtime from the database.
     /// </summary>
     /// <param name="principal">The principal to evaluate.</param>
     /// <param name="permissionIdentifiers">The permission identifiers to check.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns><c>true</c> when any permission is present; otherwise <c>false</c>.</returns>
-    bool HasAnyPermission(ClaimsPrincipal principal, IEnumerable<string> permissionIdentifiers);
+    Task<bool> HasAnyPermissionAsync(ClaimsPrincipal principal, IEnumerable<string> permissionIdentifiers, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Determines whether the principal holds all of the supplied permissions.
+    /// Resolves role permissions at runtime from the database.
     /// </summary>
     /// <param name="principal">The principal to evaluate.</param>
     /// <param name="permissionIdentifiers">The permission identifiers to check.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns><c>true</c> when all permissions are present; otherwise <c>false</c>.</returns>
-    bool HasAllPermissions(ClaimsPrincipal principal, IEnumerable<string> permissionIdentifiers);
+    Task<bool> HasAllPermissionsAsync(ClaimsPrincipal principal, IEnumerable<string> permissionIdentifiers, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Validates a JWT token using the configured <see cref="IJwtTokenService"/> pipeline.

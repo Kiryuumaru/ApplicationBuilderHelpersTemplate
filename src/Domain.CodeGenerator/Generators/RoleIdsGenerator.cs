@@ -71,7 +71,7 @@ sealed class RoleIdsGenerator : ICodeGenerationTask
         builder.AppendLine("{");
     }
 
-    private static void WriteAllCodes(StringBuilder builder, IReadOnlyCollection<Roles.RoleDefinition> roles)
+    private static void WriteAllCodes(StringBuilder builder, IReadOnlyCollection<RoleDefinition> roles)
     {
         builder.AppendLine("    /// <summary>All known role codes.</summary>");
         builder.AppendLine("    public static IReadOnlyCollection<string> AllCodes { get; } = new string[]");
@@ -85,7 +85,7 @@ sealed class RoleIdsGenerator : ICodeGenerationTask
         builder.AppendLine();
     }
 
-    private static void WriteRole(StringBuilder builder, Roles.RoleDefinition role)
+    private static void WriteRole(StringBuilder builder, RoleDefinition role)
     {
         var className = ToIdentifier(role.Code);
         builder.AppendLine($"    /// <summary>Identifiers and parameters for the '{EscapeForXml(role.Name)}' role.</summary>");

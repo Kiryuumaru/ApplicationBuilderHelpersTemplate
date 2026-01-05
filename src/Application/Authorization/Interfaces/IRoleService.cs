@@ -8,6 +8,8 @@ public interface IRoleService
 {
     Task<Role> CreateRoleAsync(RoleDescriptor descriptor, CancellationToken cancellationToken);
 
+    Task<bool> DeleteRoleAsync(Guid roleId, CancellationToken cancellationToken);
+
     Task<Role?> GetByCodeAsync(string code, CancellationToken cancellationToken);
 
     Task<Role?> GetByIdAsync(Guid id, CancellationToken cancellationToken);

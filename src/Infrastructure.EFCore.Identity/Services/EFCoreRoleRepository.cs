@@ -1,5 +1,8 @@
+using System.Text.Json;
 using Application.Authorization.Interfaces.Infrastructure;
 using Domain.Authorization.Models;
+using Domain.Authorization.ValueObjects;
+using Infrastructure.EFCore.Identity.Models;
 using Microsoft.EntityFrameworkCore;
 using RolesConstants = Domain.Authorization.Constants.Roles;
 
@@ -11,6 +14,12 @@ namespace Infrastructure.EFCore.Identity.Services;
 /// </summary>
 internal sealed class EFCoreRoleRepository(IDbContextFactory<EFCoreDbContext> contextFactory) : IRoleRepository
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = false
+    };
+
     public async Task<Role?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         // Check static roles first
@@ -20,7 +29,8 @@ internal sealed class EFCoreRoleRepository(IDbContextFactory<EFCoreDbContext> co
         }
 
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-        return await context.Set<Role>().FindAsync([id], cancellationToken);
+        var entity = await context.Set<RoleEntity>().FindAsync([id], cancellationToken);
+        return entity is null ? null : ToDomain(entity);
     }
 
     public async Task<Role?> GetByCodeAsync(string code, CancellationToken cancellationToken)
@@ -33,8 +43,9 @@ internal sealed class EFCoreRoleRepository(IDbContextFactory<EFCoreDbContext> co
 
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         var normalizedCode = code.Trim().ToUpperInvariant();
-        return await context.Set<Role>()
+        var entity = await context.Set<RoleEntity>()
             .FirstOrDefaultAsync(r => r.Code == normalizedCode, cancellationToken);
+        return entity is null ? null : ToDomain(entity);
     }
 
     public async Task<IReadOnlyCollection<Role>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken)
@@ -65,13 +76,59 @@ internal sealed class EFCoreRoleRepository(IDbContextFactory<EFCoreDbContext> co
         if (remainingIds.Count > 0)
         {
             await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-            var dbRoles = await context.Set<Role>()
+            var dbEntities = await context.Set<RoleEntity>()
                 .Where(r => remainingIds.Contains(r.Id))
                 .ToListAsync(cancellationToken);
             
-            foreach (var role in dbRoles)
+            foreach (var entity in dbEntities)
             {
-                result[role.Id] = role;
+                result[entity.Id] = ToDomain(entity);
+            }
+        }
+
+        return [.. result.Values];
+    }
+
+    public async Task<IReadOnlyCollection<Role>> GetByCodesAsync(IEnumerable<string> codes, CancellationToken cancellationToken)
+    {
+        var codeList = codes
+            .Where(c => !string.IsNullOrWhiteSpace(c))
+            .Select(c => c.Trim().ToUpperInvariant())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        
+        if (codeList.Length == 0)
+        {
+            return [];
+        }
+
+        var result = new Dictionary<string, Role>(StringComparer.OrdinalIgnoreCase);
+        var remainingCodes = new List<string>();
+
+        // Check static roles first
+        foreach (var code in codeList)
+        {
+            if (RolesConstants.TryGetByCode(code, out var staticRole))
+            {
+                result[code] = staticRole;
+            }
+            else
+            {
+                remainingCodes.Add(code);
+            }
+        }
+
+        // Query database for non-static roles
+        if (remainingCodes.Count > 0)
+        {
+            await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+            var dbEntities = await context.Set<RoleEntity>()
+                .Where(r => remainingCodes.Contains(r.Code))
+                .ToListAsync(cancellationToken);
+            
+            foreach (var entity in dbEntities)
+            {
+                result[entity.Code] = ToDomain(entity);
             }
         }
 
@@ -90,12 +147,12 @@ internal sealed class EFCoreRoleRepository(IDbContextFactory<EFCoreDbContext> co
 
         // Add database roles (excluding duplicates of static roles)
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-        var dbRoles = await context.Set<Role>().ToListAsync(cancellationToken);
-        foreach (var role in dbRoles)
+        var dbEntities = await context.Set<RoleEntity>().ToListAsync(cancellationToken);
+        foreach (var entity in dbEntities)
         {
-            if (!RolesConstants.IsStaticRole(role.Id))
+            if (!RolesConstants.IsStaticRole(entity.Id))
             {
-                result[role.Id] = role;
+                result[entity.Id] = ToDomain(entity);
             }
         }
 
@@ -112,14 +169,15 @@ internal sealed class EFCoreRoleRepository(IDbContextFactory<EFCoreDbContext> co
 
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         
-        var existing = await context.Set<Role>().FindAsync([role.Id], cancellationToken);
+        var entity = ToEntity(role);
+        var existing = await context.Set<RoleEntity>().FindAsync([role.Id], cancellationToken);
         if (existing is null)
         {
-            context.Set<Role>().Add(role);
+            context.Set<RoleEntity>().Add(entity);
         }
         else
         {
-            context.Entry(existing).CurrentValues.SetValues(role);
+            context.Entry(existing).CurrentValues.SetValues(entity);
         }
         
         await context.SaveChangesAsync(cancellationToken);
@@ -135,14 +193,59 @@ internal sealed class EFCoreRoleRepository(IDbContextFactory<EFCoreDbContext> co
 
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         
-        var role = await context.Set<Role>().FindAsync([id], cancellationToken);
-        if (role is null)
+        var entity = await context.Set<RoleEntity>().FindAsync([id], cancellationToken);
+        if (entity is null)
         {
             return false;
         }
 
-        context.Set<Role>().Remove(role);
+        context.Set<RoleEntity>().Remove(entity);
         await context.SaveChangesAsync(cancellationToken);
         return true;
+    }
+
+    private static Role ToDomain(RoleEntity entity)
+    {
+        IEnumerable<Domain.Authorization.ValueObjects.ScopeTemplate>? scopeTemplates = null;
+        
+        if (!string.IsNullOrWhiteSpace(entity.ScopeTemplatesJson))
+        {
+            var dtos = JsonSerializer.Deserialize<List<ScopeTemplateDto>>(entity.ScopeTemplatesJson, JsonOptions);
+            if (dtos is not null)
+            {
+                scopeTemplates = dtos.Select(d => d.ToDomain());
+            }
+        }
+
+        return Role.Hydrate(
+            entity.Id,
+            entity.RevId,
+            entity.Code,
+            entity.Name,
+            entity.Description,
+            isSystemRole: false, // Database roles are never system roles
+            scopeTemplates);
+    }
+
+    private static RoleEntity ToEntity(Role role)
+    {
+        string? scopeTemplatesJson = null;
+        
+        if (role.ScopeTemplates.Count > 0)
+        {
+            var dtos = role.ScopeTemplates.Select(ScopeTemplateDto.FromDomain).ToList();
+            scopeTemplatesJson = JsonSerializer.Serialize(dtos, JsonOptions);
+        }
+
+        return new RoleEntity
+        {
+            Id = role.Id,
+            RevId = role.RevId,
+            Code = role.Code,
+            Name = role.Name,
+            NormalizedName = role.NormalizedName,
+            Description = role.Description,
+            ScopeTemplatesJson = scopeTemplatesJson
+        };
     }
 }

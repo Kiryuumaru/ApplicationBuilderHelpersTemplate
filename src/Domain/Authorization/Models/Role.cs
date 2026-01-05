@@ -44,6 +44,19 @@ public sealed class Role : AggregateRoot
         return role;
     }
 
+    /// <summary>
+    /// Factory method for hydrating a Role from persistence with scope templates. AOT-compatible.
+    /// </summary>
+    public static Role Hydrate(Guid id, Guid? revId, string code, string name, string? description, bool isSystemRole, IEnumerable<ScopeTemplate>? scopeTemplates)
+    {
+        var role = Hydrate(id, revId, code, name, description, isSystemRole);
+        if (scopeTemplates is not null)
+        {
+            role._scopeTemplates.AddRange(scopeTemplates);
+        }
+        return role;
+    }
+
     public void SetName(string name)
     {
         Name = NormalizeName(name);

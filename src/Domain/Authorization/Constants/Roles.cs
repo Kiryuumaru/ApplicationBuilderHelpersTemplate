@@ -79,36 +79,4 @@ public static class Roles
     }
 
     public static bool IsStaticRole(Guid id) => DefinitionsById.ContainsKey(id);
-
-    public sealed record RoleDefinition(
-        Guid Id,
-        string Code,
-        string Name,
-        string? Description,
-        bool IsSystemRole,
-        IReadOnlyList<ScopeTemplate> ScopeTemplates,
-        IReadOnlyList<string>? TemplateParametersOverride = null)
-    {
-        public IReadOnlyList<string> TemplateParameters { get; init; } = TemplateParametersOverride ?? Array.Empty<string>();
-
-        public Role Instantiate()
-        {
-            var role = Models.Role.Hydrate(Id, revId: null, Code, Name, Description, IsSystemRole);
-            role.ReplaceScopeTemplates(ScopeTemplates);
-            return role;
-        }
-
-        /// <summary>
-        /// Expands all scope templates into scope directives using the provided parameter values.
-        /// </summary>
-        public IReadOnlyCollection<ScopeDirective> ExpandScope(IReadOnlyDictionary<string, string?> parameterValues)
-        {
-            ArgumentNullException.ThrowIfNull(parameterValues);
-
-            return [.. ScopeTemplates
-                .Select(template => template.Expand(parameterValues))
-                .Distinct()
-                .OrderBy(static directive => directive.ToString(), StringComparer.Ordinal)];
-        }
-    }
 }

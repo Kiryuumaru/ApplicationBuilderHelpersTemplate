@@ -2,6 +2,7 @@ using Application.Authorization.Interfaces;
 using Application.Authorization.Interfaces.Infrastructure;
 using Application.Authorization.Models;
 using Application.Authorization.Services;
+using Application.UnitTests.Authorization.Fakes;
 using System.Linq;
 using System.Security.Claims;
 
@@ -39,12 +40,12 @@ public class PermissionServiceTests
     }
 
     [Fact]
-    public void HasPermission_GrantsRootReadWhenLegacyToken()
+    public async Task HasPermission_GrantsRootReadWhenLegacyToken()
     {
         var service = CreateService(new RecordingTokenService());
         var principal = new ClaimsPrincipal(new ClaimsIdentity());
 
-        var result = service.HasPermission(principal, OrderCancelPermission);
+        var result = await service.HasPermissionAsync(principal, OrderCancelPermission, CancellationToken.None);
 
         Assert.True(result);
     }
@@ -70,7 +71,7 @@ public class PermissionServiceTests
     }
 
     [Fact]
-    public void HasPermission_AllowsUserScopedRootGrant()
+    public async Task HasPermission_AllowsUserScopedRootGrant()
     {
         var service = CreateService(new RecordingTokenService());
         // New directive format: allow;permission_path;param=value
@@ -87,13 +88,13 @@ public class PermissionServiceTests
         // Non-scoped request without userId - DENIED because scope requires userId
         var nonScoped = "api:favorites:read";
 
-        Assert.True(service.HasPermission(principal, permitted));
-        Assert.False(service.HasPermission(principal, otherUser));
-        Assert.False(service.HasPermission(principal, nonScoped)); // Scope requires userId, request has none
+        Assert.True(await service.HasPermissionAsync(principal, permitted, CancellationToken.None));
+        Assert.False(await service.HasPermissionAsync(principal, otherUser, CancellationToken.None));
+        Assert.False(await service.HasPermissionAsync(principal, nonScoped, CancellationToken.None)); // Scope requires userId, request has none
     }
 
     [Fact]
-    public void HasPermission_DeniesWhenParameterMissingOnRequest()
+    public async Task HasPermission_DeniesWhenParameterMissingOnRequest()
     {
         var service = CreateService(new RecordingTokenService());
         // Scope requires userId parameter
@@ -103,11 +104,11 @@ public class PermissionServiceTests
 
         // The scope says "allow api:_read only for userId=user-123"
         // A request without userId doesn't satisfy this - so it's DENIED
-        Assert.False(service.HasPermission(principal, permissionWithoutParameter));
+        Assert.False(await service.HasPermissionAsync(principal, permissionWithoutParameter, CancellationToken.None));
     }
 
     [Fact]
-    public void HasPermission_DeniesAccessToOtherUser()
+    public async Task HasPermission_DeniesAccessToOtherUser()
     {
         var service = CreateService(new RecordingTokenService());
         // Scope requires userId=user-123
@@ -116,11 +117,11 @@ public class PermissionServiceTests
         // Attempt with userId=user-456 (different user)
         var attempt = "api:portfolio:accounts:list;userId=user-456";
 
-        Assert.False(service.HasPermission(principal, attempt));
+        Assert.False(await service.HasPermissionAsync(principal, attempt, CancellationToken.None));
     }
 
     [Fact]
-    public void HasAnyPermission_DeniesWhenOnlyOtherUserSpecified()
+    public async Task HasAnyPermission_DeniesWhenOnlyOtherUserSpecified()
     {
         var service = CreateService(new RecordingTokenService());
         // Scope only allows user-123
@@ -130,35 +131,35 @@ public class PermissionServiceTests
         var otherUser = "api:portfolio:accounts:list;userId=user-456";
         var otherUserPositions = "api:trading:orders:read;userId=user-456";
 
-        Assert.False(service.HasAnyPermission(principal, [otherUser, otherUserPositions]));
+        Assert.False(await service.HasAnyPermissionAsync(principal, [otherUser, otherUserPositions], CancellationToken.None));
     }
 
     [Fact]
-    public void HasPermission_WriteScopeAllowsWriteOperations()
+    public async Task HasPermission_WriteScopeAllowsWriteOperations()
     {
         var service = CreateService(new RecordingTokenService());
         // Use new directive format with _write scope
         var principal = BuildPrincipalWithScopes("allow;api:_write;userId=user-123");
 
-        var result = service.HasPermission(principal, AccountUpdatePermission);
+        var result = await service.HasPermissionAsync(principal, AccountUpdatePermission, CancellationToken.None);
 
         Assert.True(result);
     }
 
     [Fact]
-    public void HasPermission_ReadScopeDoesNotAllowWriteOperations()
+    public async Task HasPermission_ReadScopeDoesNotAllowWriteOperations()
     {
         var service = CreateService(new RecordingTokenService());
         // Only read scope, no write
         var principal = BuildPrincipalWithScopes("allow;api:_read;userId=user-123");
 
-        var result = service.HasPermission(principal, AccountUpdatePermission);
+        var result = await service.HasPermissionAsync(principal, AccountUpdatePermission, CancellationToken.None);
 
         Assert.False(result);
     }
 
     [Fact]
-    public void HasAllPermissions_ReturnsFalseWhenAnyMissing()
+    public async Task HasAllPermissions_ReturnsFalseWhenAnyMissing()
     {
         var service = CreateService(new RecordingTokenService());
         // Only allows AccountUpdatePermission path, not position close
@@ -169,7 +170,7 @@ public class PermissionServiceTests
         ]);
         var principal = new ClaimsPrincipal(identity);
 
-        var result = service.HasAllPermissions(principal, [AccountUpdatePermission, OrderCancelPermission]);
+        var result = await service.HasAllPermissionsAsync(principal, [AccountUpdatePermission, OrderCancelPermission], CancellationToken.None);
 
         Assert.False(result);
     }
@@ -238,7 +239,7 @@ public class PermissionServiceTests
     }
 
     private static PermissionService CreateService(RecordingTokenService tokenService)
-        => new(tokenService);
+        => new(tokenService, new InMemoryRoleRepository());
 
     private sealed class RecordingTokenService : ITokenService
     {

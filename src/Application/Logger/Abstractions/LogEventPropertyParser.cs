@@ -1,11 +1,6 @@
+using Application.Logger.Interfaces;
+
 namespace Application.Logger.Abstractions;
-
-internal interface ILogEventPropertyParser
-{
-    string TypeIdentifier { get; }
-
-    object? Parse(string? dataStr);
-}
 
 internal abstract class LogEventPropertyParser<T> : ILogEventPropertyParser
 {

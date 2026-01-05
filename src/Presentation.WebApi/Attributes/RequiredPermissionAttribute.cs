@@ -90,7 +90,7 @@ public sealed partial class RequiredPermissionAttribute : Attribute, IAsyncActio
             return;
         }
 
-        if (!permissionService.HasPermission(user, requiredIdentifier))
+        if (!await permissionService.HasPermissionAsync(user, requiredIdentifier, context.HttpContext.RequestAborted))
         {
             logger?.LogWarning(
                 "Permission requirement failed for {ActionName}. User lacks permission {Permission}.",

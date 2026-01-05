@@ -36,6 +36,29 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
         return role;
     }
 
+    public async Task<bool> DeleteRoleAsync(Guid roleId, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (RolesConstants.IsStaticRole(roleId))
+        {
+            throw new InvalidOperationException("Cannot delete a static role.");
+        }
+
+        var role = await _repository.GetByIdAsync(roleId, cancellationToken).ConfigureAwait(false);
+        if (role is null)
+        {
+            return false;
+        }
+
+        if (role.IsSystemRole)
+        {
+            throw new InvalidOperationException("Cannot delete a system role.");
+        }
+
+        return await _repository.DeleteAsync(roleId, cancellationToken).ConfigureAwait(false);
+    }
+
     public Task<Role?> GetByCodeAsync(string code, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();

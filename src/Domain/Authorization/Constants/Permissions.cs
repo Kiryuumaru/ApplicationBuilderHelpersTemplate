@@ -204,11 +204,16 @@ public static class Permissions
                     WLeaf("reset_password", "Reset a user's password (admin only).")
                 ),
 
-                // Roles - Role assignment operations
+                // Roles - Role management and assignment operations
                 Node(
                     "roles",
-                    "Role assignment operations.",
+                    "Role management and assignment operations.",
                     "role management",
+                    RLeaf("list", "List all roles in the system (admin only)."),
+                    RLeaf("read", "Read a role's details (admin only)."),
+                    WLeaf("create", "Create a new custom role (admin only)."),
+                    WLeaf("update", "Update a custom role (admin only)."),
+                    WLeaf("delete", "Delete a custom role (admin only)."),
                     WLeaf("assign", "Assign a role to a user (admin only)."),
                     WLeaf("remove", "Remove a role from a user (admin only).")
                 ),

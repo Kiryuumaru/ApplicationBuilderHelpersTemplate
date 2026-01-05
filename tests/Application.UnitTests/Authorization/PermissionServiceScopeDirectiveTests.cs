@@ -2,6 +2,7 @@ using Application.Authorization.Interfaces;
 using Application.Authorization.Interfaces.Infrastructure;
 using Application.Authorization.Models;
 using Application.Authorization.Services;
+using Application.UnitTests.Authorization.Fakes;
 using Domain.Authorization.Constants;
 using Infrastructure.Identity.Interfaces;
 using Infrastructure.Identity.Services;
@@ -117,7 +118,7 @@ public class PermissionServiceScopeDirectiveTests
     }
 
     [Fact]
-    public void DiagnosticTest_PermissionServiceWithScopeDirective()
+    public async Task DiagnosticTest_PermissionServiceWithScopeDirective()
     {
         // Create principal with rbac_version=2 and a scope directive
         var (service, principal) = CreateServiceWithPrincipal(
@@ -135,16 +136,16 @@ public class PermissionServiceScopeDirectiveTests
         Assert.Equal("allow;api:iam:users:_read;userId=user-test", scopeClaims[0]);
 
         // Test without userId parameter first - this should NOT pass if scope has userId
-        var canReadUsersWithoutUserId = service.HasPermission(principal, "api:iam:users:read");
+        var canReadUsersWithoutUserId = await service.HasPermissionAsync(principal, "api:iam:users:read", CancellationToken.None);
         Assert.False(canReadUsersWithoutUserId, "Should deny without userId when scope has userId parameter");
 
         // Now test WITH userId parameter - using strongly-typed Permission API
-        var canReadUsersWithUserId = service.HasPermission(principal, PermissionIds.Api.Iam.Users.ReadPermission.Permission.WithUserId("user-test"));
+        var canReadUsersWithUserId = await service.HasPermissionAsync(principal, PermissionIds.Api.Iam.Users.ReadPermission.Permission.WithUserId("user-test"), CancellationToken.None);
         Assert.True(canReadUsersWithUserId, "Should allow with matching userId parameter");
     }
 
     [Fact]
-    public void DiagnosticTest_PermissionServiceWithBroadScope()
+    public async Task DiagnosticTest_PermissionServiceWithBroadScope()
     {
         // Create principal with rbac_version=2 and a BROAD scope (no userId parameter)
         var (service, principal) = CreateServiceWithPrincipal(
@@ -153,15 +154,15 @@ public class PermissionServiceScopeDirectiveTests
         );
 
         // This should grant access to any api:iam:users:read request
-        var canReadUsers = service.HasPermission(principal, "api:iam:users:read");
+        var canReadUsers = await service.HasPermissionAsync(principal, "api:iam:users:read", CancellationToken.None);
         Assert.True(canReadUsers, "Broad scope should grant access without parameters");
 
-        var canReadUsersWithUserId = service.HasPermission(principal, PermissionIds.Api.Iam.Users.ReadPermission.Permission.WithUserId("any-user"));
+        var canReadUsersWithUserId = await service.HasPermissionAsync(principal, PermissionIds.Api.Iam.Users.ReadPermission.Permission.WithUserId("any-user"), CancellationToken.None);
         Assert.True(canReadUsersWithUserId, "Broad scope should grant access even with userId in request");
     }
 
     [Fact]
-    public void HasPermission_UserWithOwnScope_CanAccessOwnData()
+    public async Task HasPermission_UserWithOwnScope_CanAccessOwnData()
     {
         var (service, principal) = CreateServiceWithPrincipal(
             "user-abc",
@@ -170,13 +171,13 @@ public class PermissionServiceScopeDirectiveTests
 
         // Check permission for api:iam:users:read with matching userId
         // Using strongly-typed Permission API for type safety
-        var hasPermission = service.HasPermission(principal, PermissionIds.Api.Iam.Users.ReadPermission.Permission.WithUserId("user-abc"));
+        var hasPermission = await service.HasPermissionAsync(principal, PermissionIds.Api.Iam.Users.ReadPermission.Permission.WithUserId("user-abc"), CancellationToken.None);
 
         Assert.True(hasPermission);
     }
 
     [Fact]
-    public void HasPermission_UserWithDeny_CannotAccessDeniedResource()
+    public async Task HasPermission_UserWithDeny_CannotAccessDeniedResource()
     {
         var (service, principal) = CreateServiceWithPrincipal(
             "user-xyz",
@@ -184,15 +185,15 @@ public class PermissionServiceScopeDirectiveTests
             PermissionIds.Api.Iam.Users.Update.Deny()   // But deny updates
         );
 
-        var canRead = service.HasPermission(principal, "api:iam:users:read");
-        var canUpdate = service.HasPermission(principal, "api:iam:users:update");
+        var canRead = await service.HasPermissionAsync(principal, "api:iam:users:read", CancellationToken.None);
+        var canUpdate = await service.HasPermissionAsync(principal, "api:iam:users:update", CancellationToken.None);
 
         Assert.True(canRead);
         Assert.False(canUpdate);
     }
 
     [Fact]
-    public void HasPermission_ScopeGrantsLeafPermissions()
+    public async Task HasPermission_ScopeGrantsLeafPermissions()
     {
         var (service, principal) = CreateServiceWithPrincipal(
             "user-test",
@@ -201,30 +202,30 @@ public class PermissionServiceScopeDirectiveTests
 
         // The _read scope should grant the "read" leaf permission under users
         // Using strongly-typed Permission API
-        var hasReadLeaf = service.HasPermission(principal, PermissionIds.Api.Iam.Users.ReadPermission.Permission.WithUserId("user-test"));
+        var hasReadLeaf = await service.HasPermissionAsync(principal, PermissionIds.Api.Iam.Users.ReadPermission.Permission.WithUserId("user-test"), CancellationToken.None);
 
         Assert.True(hasReadLeaf);
     }
 
     [Fact]
-    public void HasAnyPermission_WithMultipleScopes_MatchesAny()
+    public async Task HasAnyPermission_WithMultipleScopes_MatchesAny()
     {
         var (service, principal) = CreateServiceWithPrincipal(
             "user-1",
             PermissionIds.Api.Iam.Users.Read.WithUserId("user-1").Allow()
         );
 
-        var hasAny = service.HasAnyPermission(principal, new string[]
+        var hasAny = await service.HasAnyPermissionAsync(principal, new string[]
         {
             PermissionIds.Api.Portfolio.Accounts.List.Permission.WithUserId("user-1"), // Not granted
             PermissionIds.Api.Iam.Users.ReadPermission.Permission.WithUserId("user-1")  // Granted
-        });
+        }, CancellationToken.None);
 
         Assert.True(hasAny);
     }
 
     [Fact]
-    public void HasAllPermissions_RequiresAllMatches()
+    public async Task HasAllPermissions_RequiresAllMatches()
     {
         var (service, principal) = CreateServiceWithPrincipal(
             "user-2",
@@ -232,17 +233,17 @@ public class PermissionServiceScopeDirectiveTests
             PermissionIds.Api.Iam.Users.Write.WithUserId("user-2").Allow()
         );
 
-        var hasAll = service.HasAllPermissions(principal, new string[]
+        var hasAll = await service.HasAllPermissionsAsync(principal, new string[]
         {
             PermissionIds.Api.Iam.Users.ReadPermission.Permission.WithUserId("user-2"),
             PermissionIds.Api.Iam.Users.Update.Permission.WithUserId("user-2")
-        });
+        }, CancellationToken.None);
 
         Assert.True(hasAll);
     }
 
     [Fact]
-    public void HasAllPermissions_FailsWhenOneIsMissing()
+    public async Task HasAllPermissions_FailsWhenOneIsMissing()
     {
         var (service, principal) = CreateServiceWithPrincipal(
             "user-3",
@@ -250,11 +251,11 @@ public class PermissionServiceScopeDirectiveTests
             // Write scope not granted
         );
 
-        var hasAll = service.HasAllPermissions(principal, new string[]
+        var hasAll = await service.HasAllPermissionsAsync(principal, new string[]
         {
             PermissionIds.Api.Iam.Users.ReadPermission.Permission.WithUserId("user-3"),
             PermissionIds.Api.Iam.Users.Update.Permission.WithUserId("user-3") // Not granted
-        });
+        }, CancellationToken.None);
 
         Assert.False(hasAll);
     }
@@ -264,7 +265,7 @@ public class PermissionServiceScopeDirectiveTests
     #region Fine-Grained Access Tests
 
     [Fact]
-    public void MultiAccountAccess_OnlyAllowsSpecificUsers()
+    public async Task MultiAccountAccess_OnlyAllowsSpecificUsers()
     {
         var (service, principal) = CreateServiceWithPrincipal(
             "admin-user",
@@ -273,9 +274,9 @@ public class PermissionServiceScopeDirectiveTests
         );
 
         // Using strongly-typed Permission API with userId only
-        var canAccessUser1 = service.HasPermission(principal, PermissionIds.Api.Portfolio.Accounts.ReadPermission.Permission.WithUserId("user-1"));
-        var canAccessUser2 = service.HasPermission(principal, PermissionIds.Api.Portfolio.Accounts.ReadPermission.Permission.WithUserId("user-2"));
-        var canAccessUser3 = service.HasPermission(principal, PermissionIds.Api.Portfolio.Accounts.ReadPermission.Permission.WithUserId("user-3"));
+        var canAccessUser1 = await service.HasPermissionAsync(principal, PermissionIds.Api.Portfolio.Accounts.ReadPermission.Permission.WithUserId("user-1"), CancellationToken.None);
+        var canAccessUser2 = await service.HasPermissionAsync(principal, PermissionIds.Api.Portfolio.Accounts.ReadPermission.Permission.WithUserId("user-2"), CancellationToken.None);
+        var canAccessUser3 = await service.HasPermissionAsync(principal, PermissionIds.Api.Portfolio.Accounts.ReadPermission.Permission.WithUserId("user-3"), CancellationToken.None);
 
         Assert.True(canAccessUser1);
         Assert.True(canAccessUser2);
@@ -283,16 +284,16 @@ public class PermissionServiceScopeDirectiveTests
     }
 
     [Fact]
-    public void ServiceAccount_HasNoUserIdScope_AccessesAll()
+    public async Task ServiceAccount_HasNoUserIdScope_AccessesAll()
     {
         var (service, principal) = CreateServiceWithPrincipal(
             "service-acct",
             PermissionIds.Api.Iam.Users.Read.Allow() // No userId parameter = access all users
         );
 
-        var canAccessUser1 = service.HasPermission(principal, PermissionIds.Api.Iam.Users.ReadPermission.Permission.WithUserId("any-user-1"));
-        var canAccessUser2 = service.HasPermission(principal, PermissionIds.Api.Iam.Users.ReadPermission.Permission.WithUserId("any-user-2"));
-        var canAccessNoUser = service.HasPermission(principal, PermissionIds.Api.Iam.Users.ReadPermission.Permission);
+        var canAccessUser1 = await service.HasPermissionAsync(principal, PermissionIds.Api.Iam.Users.ReadPermission.Permission.WithUserId("any-user-1"), CancellationToken.None);
+        var canAccessUser2 = await service.HasPermissionAsync(principal, PermissionIds.Api.Iam.Users.ReadPermission.Permission.WithUserId("any-user-2"), CancellationToken.None);
+        var canAccessNoUser = await service.HasPermissionAsync(principal, PermissionIds.Api.Iam.Users.ReadPermission.Permission, CancellationToken.None);
 
         Assert.True(canAccessUser1);
         Assert.True(canAccessUser2);
@@ -300,7 +301,7 @@ public class PermissionServiceScopeDirectiveTests
     }
 
     [Fact]
-    public void RootReadScope_GrantsAllReadLeafPermissions()
+    public async Task RootReadScope_GrantsAllReadLeafPermissions()
     {
         var (service, principal) = CreateServiceWithPrincipal(
             "admin-read",
@@ -308,21 +309,21 @@ public class PermissionServiceScopeDirectiveTests
         );
 
         // Should grant access to any read permission
-        var canReadUsers = service.HasPermission(principal, "api:iam:users:read");
-        var canReadAccounts = service.HasPermission(principal, "api:portfolio:accounts:list");
-        var canReadFavorites = service.HasPermission(principal, "api:favorites:read");
+        var canReadUsers = await service.HasPermissionAsync(principal, "api:iam:users:read", CancellationToken.None);
+        var canReadAccounts = await service.HasPermissionAsync(principal, "api:portfolio:accounts:list", CancellationToken.None);
+        var canReadFavorites = await service.HasPermissionAsync(principal, "api:favorites:read", CancellationToken.None);
 
         Assert.True(canReadUsers);
         Assert.True(canReadAccounts);
         Assert.True(canReadFavorites);
 
         // But NOT write permissions
-        var canUpdateUsers = service.HasPermission(principal, "api:iam:users:update");
+        var canUpdateUsers = await service.HasPermissionAsync(principal, "api:iam:users:update", CancellationToken.None);
         Assert.False(canUpdateUsers);
     }
 
     [Fact]
-    public void NestedResourceAccess_RequiresMatchingParameters()
+    public async Task NestedResourceAccess_RequiresMatchingParameters()
     {
         var (service, principal) = CreateServiceWithPrincipal(
             "user-nested",
@@ -330,15 +331,15 @@ public class PermissionServiceScopeDirectiveTests
         );
 
         // Request with userId parameter - should match
-        var withUserId = service.HasPermission(principal, PermissionIds.Api.Portfolio.Accounts.ReadPermission.Permission.WithUserId("user-nested"));
+        var withUserId = await service.HasPermissionAsync(principal, PermissionIds.Api.Portfolio.Accounts.ReadPermission.Permission.WithUserId("user-nested"), CancellationToken.None);
         Assert.True(withUserId);
 
         // Request with different userId - should not match
-        var differentUserId = service.HasPermission(principal, PermissionIds.Api.Portfolio.Accounts.ReadPermission.Permission.WithUserId("other-user"));
+        var differentUserId = await service.HasPermissionAsync(principal, PermissionIds.Api.Portfolio.Accounts.ReadPermission.Permission.WithUserId("other-user"), CancellationToken.None);
         Assert.False(differentUserId);
 
         // Request with no params - scope has params, so should not match
-        var noParams = service.HasPermission(principal, PermissionIds.Api.Portfolio.Accounts.ReadPermission.Permission);
+        var noParams = await service.HasPermissionAsync(principal, PermissionIds.Api.Portfolio.Accounts.ReadPermission.Permission, CancellationToken.None);
         Assert.False(noParams);
     }
 
@@ -347,20 +348,20 @@ public class PermissionServiceScopeDirectiveTests
     #region Empty and Boundary Condition Tests
 
     [Fact]
-    public void EmptyScope_DeniesAllPermissions()
+    public async Task EmptyScope_DeniesAllPermissions()
     {
         var (service, principal) = CreateServiceWithPrincipal(
             "user-empty"
             // No scopes granted
         );
 
-        var hasAnyPermission = service.HasPermission(principal, "api:user:profile:read");
+        var hasAnyPermission = await service.HasPermissionAsync(principal, "api:user:profile:read", CancellationToken.None);
 
         Assert.False(hasAnyPermission);
     }
 
     [Fact]
-    public void SingleDenyOnly_AllowsEverythingExceptDenied()
+    public async Task SingleDenyOnly_AllowsEverythingExceptDenied()
     {
         var (service, principal) = CreateServiceWithPrincipal(
             "user-deny-only",
@@ -368,15 +369,15 @@ public class PermissionServiceScopeDirectiveTests
         );
 
         // With only deny directives and no allow directives, everything except denied should be allowed
-        var canResetPassword = service.HasPermission(principal, "api:iam:users:reset_password");
-        var canReadUsers = service.HasPermission(principal, "api:iam:users:read");
+        var canResetPassword = await service.HasPermissionAsync(principal, "api:iam:users:reset_password", CancellationToken.None);
+        var canReadUsers = await service.HasPermissionAsync(principal, "api:iam:users:read", CancellationToken.None);
 
         Assert.False(canResetPassword); // Explicitly denied
         Assert.True(canReadUsers);     // Not denied, so allowed
     }
 
     [Fact]
-    public void ConflictingAllowAndDeny_DenyWins()
+    public async Task ConflictingAllowAndDeny_DenyWins()
     {
         var (service, principal) = CreateServiceWithPrincipal(
             "user-conflict",
@@ -384,13 +385,13 @@ public class PermissionServiceScopeDirectiveTests
             PermissionIds.Api.Iam.Users.Read.Deny()    // Also deny user reads
         );
 
-        var canRead = service.HasPermission(principal, "api:iam:users:read");
+        var canRead = await service.HasPermissionAsync(principal, "api:iam:users:read", CancellationToken.None);
 
         Assert.False(canRead); // Deny should take precedence
     }
 
     [Fact]
-    public void GlobalAllowThenSpecificDeny_DenyBlocksSpecific()
+    public async Task GlobalAllowThenSpecificDeny_DenyBlocksSpecific()
     {
         var (service, principal) = CreateServiceWithPrincipal(
             "user-global-deny",
@@ -398,8 +399,8 @@ public class PermissionServiceScopeDirectiveTests
             PermissionIds.Api.Portfolio.Read.Deny()       // But deny portfolio read
         );
 
-        var canReadUsers = service.HasPermission(principal, "api:iam:users:read");
-        var canReadPortfolio = service.HasPermission(principal, "api:portfolio:read");
+        var canReadUsers = await service.HasPermissionAsync(principal, "api:iam:users:read", CancellationToken.None);
+        var canReadPortfolio = await service.HasPermissionAsync(principal, "api:portfolio:read", CancellationToken.None);
 
         Assert.True(canReadUsers);   // Allowed by global _read
         Assert.False(canReadPortfolio); // Explicitly denied
@@ -410,7 +411,7 @@ public class PermissionServiceScopeDirectiveTests
     #region Privilege Escalation Tests
 
     [Fact]
-    public void PrivilegeEscalation_UserCannotAccessOtherUsersData()
+    public async Task PrivilegeEscalation_UserCannotAccessOtherUsersData()
     {
         var (service, principal) = CreateServiceWithPrincipal(
             "user-own",
@@ -418,15 +419,15 @@ public class PermissionServiceScopeDirectiveTests
         );
 
         // Using strongly-typed Permission API
-        var canAccessOwn = service.HasPermission(principal, PermissionIds.Api.Iam.Users.ReadPermission.Permission.WithUserId("user-own"));
-        var canAccessOther = service.HasPermission(principal, PermissionIds.Api.Iam.Users.ReadPermission.Permission.WithUserId("other-user"));
+        var canAccessOwn = await service.HasPermissionAsync(principal, PermissionIds.Api.Iam.Users.ReadPermission.Permission.WithUserId("user-own"), CancellationToken.None);
+        var canAccessOther = await service.HasPermissionAsync(principal, PermissionIds.Api.Iam.Users.ReadPermission.Permission.WithUserId("other-user"), CancellationToken.None);
 
         Assert.True(canAccessOwn);
         Assert.False(canAccessOther); // Cannot access another user's data
     }
 
     [Fact]
-    public void PathTraversal_CannotEscapeHierarchy()
+    public async Task PathTraversal_CannotEscapeHierarchy()
     {
         var (service, principal) = CreateServiceWithPrincipal(
             "user-path",
@@ -435,13 +436,13 @@ public class PermissionServiceScopeDirectiveTests
 
         // Having users:_read should not grant access to sibling portfolio
         // Using strongly-typed Permission API
-        var canReadPortfolio = service.HasPermission(principal, PermissionIds.Api.Portfolio.ReadPermission.Permission.WithUserId("user-path"));
+        var canReadPortfolio = await service.HasPermissionAsync(principal, PermissionIds.Api.Portfolio.ReadPermission.Permission.WithUserId("user-path"), CancellationToken.None);
 
         Assert.False(canReadPortfolio);
     }
 
     [Fact]
-    public void NestedScopeHierarchy_ChildDoesNotGrantParent()
+    public async Task NestedScopeHierarchy_ChildDoesNotGrantParent()
     {
         var (service, principal) = CreateServiceWithPrincipal(
             "user-child",
@@ -450,7 +451,7 @@ public class PermissionServiceScopeDirectiveTests
 
         // Child scope does not grant parent access
         // Using strongly-typed Permission API - _read scope doesn't have Permission since it's not a leaf
-        var hasApiRead = service.HasPermission(principal, "api:_read;userId=user-child");
+        var hasApiRead = await service.HasPermissionAsync(principal, "api:_read;userId=user-child", CancellationToken.None);
 
         Assert.False(hasApiRead); // Child doesn't grant parent
     }
@@ -460,7 +461,7 @@ public class PermissionServiceScopeDirectiveTests
     #region RBAC Version Backward Compatibility Tests
 
     [Fact]
-    public void LegacyTokenWithoutRbacVersion_GrantsAdminAccess()
+    public async Task LegacyTokenWithoutRbacVersion_GrantsAdminAccess()
     {
         // Create a principal without rbac_version claim (legacy token)
         var claims = new[]
@@ -475,13 +476,13 @@ public class PermissionServiceScopeDirectiveTests
         var service = CreatePermissionService();
 
         // Legacy tokens (no rbac_version) should get full admin access
-        var hasPermission = service.HasPermission(principal, "api:iam:users:read");
+        var hasPermission = await service.HasPermissionAsync(principal, "api:iam:users:read", CancellationToken.None);
 
         Assert.True(hasPermission);
     }
 
     [Fact]
-    public void LegacyTokenWithRbacVersion1_GrantsAdminAccess()
+    public async Task LegacyTokenWithRbacVersion1_GrantsAdminAccess()
     {
         var claims = new[]
         {
@@ -496,13 +497,13 @@ public class PermissionServiceScopeDirectiveTests
         var service = CreatePermissionService();
 
         // rbac_version="1" tokens should get full admin access
-        var hasPermission = service.HasPermission(principal, "api:iam:users:read");
+        var hasPermission = await service.HasPermissionAsync(principal, "api:iam:users:read", CancellationToken.None);
 
         Assert.True(hasPermission);
     }
 
     [Fact]
-    public void NewTokenWithRbacVersion2_RequiresExplicitScopes()
+    public async Task NewTokenWithRbacVersion2_RequiresExplicitScopes()
     {
         var claims = new[]
         {
@@ -518,8 +519,8 @@ public class PermissionServiceScopeDirectiveTests
 
         // With rbac_version="2", only explicit scopes are granted
         // Using strongly-typed Permission API
-        var hasGranted = service.HasPermission(principal, PermissionIds.Api.Iam.Users.ReadPermission.Permission.WithUserId("v2-user"));
-        var hasNotGranted = service.HasPermission(principal, PermissionIds.Api.Portfolio.Accounts.List.Permission.WithUserId("v2-user"));
+        var hasGranted = await service.HasPermissionAsync(principal, PermissionIds.Api.Iam.Users.ReadPermission.Permission.WithUserId("v2-user"), CancellationToken.None);
+        var hasNotGranted = await service.HasPermissionAsync(principal, PermissionIds.Api.Portfolio.Accounts.List.Permission.WithUserId("v2-user"), CancellationToken.None);
 
         Assert.True(hasGranted);
         Assert.False(hasNotGranted);
@@ -530,35 +531,35 @@ public class PermissionServiceScopeDirectiveTests
     #region Input Validation Tests
 
     [Fact]
-    public void HasPermission_NullPrincipal_ThrowsArgumentNullException()
+    public async Task HasPermission_NullPrincipal_ThrowsArgumentNullException()
     {
         var service = CreatePermissionService();
 
-        Assert.Throws<ArgumentNullException>(() => service.HasPermission(null!, "api:user:profile:read"));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => service.HasPermissionAsync(null!, "api:user:profile:read", CancellationToken.None));
     }
 
     [Fact]
-    public void HasPermission_EmptyPermissionPath_ReturnsFalse()
+    public async Task HasPermission_EmptyPermissionPath_ReturnsFalse()
     {
         var (service, principal) = CreateServiceWithPrincipal(
             "user-test",
             PermissionIds.Read.Allow()
         );
 
-        var result = service.HasPermission(principal, "");
+        var result = await service.HasPermissionAsync(principal, "", CancellationToken.None);
 
         Assert.False(result);
     }
 
     [Fact]
-    public void HasPermission_WhitespacePermissionPath_ReturnsFalse()
+    public async Task HasPermission_WhitespacePermissionPath_ReturnsFalse()
     {
         var (service, principal) = CreateServiceWithPrincipal(
             "user-test",
             PermissionIds.Read.Allow()
         );
 
-        var result = service.HasPermission(principal, "   ");
+        var result = await service.HasPermissionAsync(principal, "   ", CancellationToken.None);
 
         Assert.False(result);
     }
@@ -621,7 +622,7 @@ public class PermissionServiceScopeDirectiveTests
 
         var tokenProvider = new TokenProvider(jwtTokenService);
         var tokenService = new TokenService(tokenProvider);
-        return new PermissionService(tokenService);
+        return new PermissionService(tokenService, new InMemoryRoleRepository());
     }
 
     /// <summary>

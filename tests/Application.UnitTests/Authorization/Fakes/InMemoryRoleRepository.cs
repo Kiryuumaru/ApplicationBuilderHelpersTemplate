@@ -93,6 +93,23 @@ internal sealed class InMemoryRoleRepository : IRoleRepository
         return Task.FromResult<IReadOnlyCollection<Role>>(list);
     }
 
+    public Task<IReadOnlyCollection<Role>> GetByCodesAsync(IEnumerable<string> codes, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(codes);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var list = new List<Role>();
+        foreach (var code in codes.Where(c => !string.IsNullOrWhiteSpace(c)).Select(c => c.Trim()).Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            if (_codeIndex.TryGetValue(code, out var roleId) && _roles.TryGetValue(roleId, out var role))
+            {
+                list.Add(role);
+            }
+        }
+
+        return Task.FromResult<IReadOnlyCollection<Role>>(list);
+    }
+
     private Role? FindById(Guid id)
         => _roles.TryGetValue(id, out var role) ? role : null;
 }

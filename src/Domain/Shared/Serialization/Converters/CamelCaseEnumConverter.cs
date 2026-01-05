@@ -1,6 +1,5 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Domain.Authorization.Enums;
 
 namespace Domain.Shared.Serialization.Converters;
 
@@ -40,8 +39,4 @@ internal abstract class CamelCaseEnumConverter<TEnum> : JsonConverter<TEnum>
         var camelName = char.ToLowerInvariant(name[0]) + name[1..];
         writer.WriteStringValue(camelName);
     }
-}
-
-internal sealed class PermissionAccessCategoryJsonConverter : CamelCaseEnumConverter<PermissionAccessCategory>
-{
 }

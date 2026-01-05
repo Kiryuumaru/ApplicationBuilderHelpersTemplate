@@ -50,7 +50,7 @@ public partial class AuthController
         // Refresh tokens are granted ONLY api:auth:refresh;userId={userId}
         // Access tokens have deny;api:auth:refresh so they will fail this check
         var refreshPermission = PermissionIds.Api.Auth.Refresh.Permission.WithUserId(userId.ToString());
-        if (!permissionService.HasPermission(principal, refreshPermission))
+        if (!await permissionService.HasPermissionAsync(principal, refreshPermission, cancellationToken))
         {
             return Unauthorized(new ProblemDetails
             {
