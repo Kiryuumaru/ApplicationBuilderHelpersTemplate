@@ -1,3 +1,5 @@
+using Domain.Authorization.Enums;
+
 namespace Infrastructure.EFCore.Identity.Models;
 
 /// <summary>
@@ -9,6 +11,11 @@ public class UserPermissionGrantEntity
     /// The user ID this permission grant belongs to.
     /// </summary>
     public required Guid UserId { get; set; }
+
+    /// <summary>
+    /// The type of grant (Allow or Deny).
+    /// </summary>
+    public required ScopeDirectiveType Type { get; set; }
 
     /// <summary>
     /// The permission identifier (e.g., "api:users:read").

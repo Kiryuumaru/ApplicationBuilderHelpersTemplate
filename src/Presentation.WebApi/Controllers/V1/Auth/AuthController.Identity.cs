@@ -157,19 +157,12 @@ public partial class AuthController
                 request.Email,
                 cancellationToken);
 
-            // Get updated user info
-            var updatedUser = await userProfileService.GetByIdAsync(userId, cancellationToken);
-            var permissions = await userAuthorizationService.GetEffectivePermissionsAsync(userId, cancellationToken);
+            // Get updated user info with inline role format
+            var linkPwdUserInfo = await CreateUserInfoAsync(
+                userId,
+                cancellationToken);
 
-            return Ok(new UserInfo
-            {
-                Id = userId,
-                Username = updatedUser!.Username,
-                Email = updatedUser.Email,
-                Roles = updatedUser.Roles.ToArray(),
-                Permissions = permissions.ToArray(),
-                IsAnonymous = false
-            });
+            return Ok(linkPwdUserInfo);
         }
         catch (PasswordValidationException ex)
         {
@@ -232,19 +225,12 @@ public partial class AuthController
         {
             await userProfileService.LinkEmailAsync(userId, request.Email, cancellationToken);
 
-            // Get updated user info
-            var updatedUser = await userProfileService.GetByIdAsync(userId, cancellationToken);
-            var permissions = await userAuthorizationService.GetEffectivePermissionsAsync(userId, cancellationToken);
+            // Get updated user info with inline role format
+            var linkEmailUserInfo = await CreateUserInfoAsync(
+                userId,
+                cancellationToken);
 
-            return Ok(new UserInfo
-            {
-                Id = userId,
-                Username = updatedUser!.Username,
-                Email = updatedUser.Email,
-                Roles = updatedUser.Roles.ToArray(),
-                Permissions = permissions.ToArray(),
-                IsAnonymous = updatedUser.IsAnonymous
-            });
+            return Ok(linkEmailUserInfo);
         }
         catch (DuplicateEntityException ex)
         {
@@ -305,19 +291,12 @@ public partial class AuthController
                 await userRegistrationService.UpgradeAnonymousWithPasskeyAsync(userId, cancellationToken);
             }
 
-            // Get updated user info
-            var updatedUser = await userProfileService.GetByIdAsync(userId, cancellationToken);
-            var permissions = await userAuthorizationService.GetEffectivePermissionsAsync(userId, cancellationToken);
+            // Get updated user info with inline role format
+            var linkPasskeyUserInfo = await CreateUserInfoAsync(
+                userId,
+                cancellationToken);
 
-            return Ok(new UserInfo
-            {
-                Id = userId,
-                Username = updatedUser!.Username,
-                Email = updatedUser.Email,
-                Roles = updatedUser.Roles.ToArray(),
-                Permissions = permissions.ToArray(),
-                IsAnonymous = updatedUser.IsAnonymous
-            });
+            return Ok(linkPasskeyUserInfo);
         }
         catch (Domain.Shared.Exceptions.ValidationException ex)
         {
@@ -480,19 +459,12 @@ public partial class AuthController
         {
             await userProfileService.ChangeUsernameAsync(userId, request.Username, cancellationToken);
 
-            // Get updated user info
-            var updatedUser = await userProfileService.GetByIdAsync(userId, cancellationToken);
-            var permissions = await userAuthorizationService.GetEffectivePermissionsAsync(userId, cancellationToken);
+            // Get updated user info with inline role format
+            var changeUsernameUserInfo = await CreateUserInfoAsync(
+                userId,
+                cancellationToken);
 
-            return Ok(new UserInfo
-            {
-                Id = userId,
-                Username = updatedUser!.Username,
-                Email = updatedUser.Email,
-                Roles = updatedUser.Roles.ToArray(),
-                Permissions = permissions.ToArray(),
-                IsAnonymous = updatedUser.IsAnonymous
-            });
+            return Ok(changeUsernameUserInfo);
         }
         catch (DuplicateEntityException ex)
         {
@@ -554,19 +526,12 @@ public partial class AuthController
         {
             await userProfileService.ChangeEmailAsync(userId, request.Email, cancellationToken);
 
-            // Get updated user info
-            var updatedUser = await userProfileService.GetByIdAsync(userId, cancellationToken);
-            var permissions = await userAuthorizationService.GetEffectivePermissionsAsync(userId, cancellationToken);
+            // Get updated user info with inline role format
+            var changeEmailUserInfo = await CreateUserInfoAsync(
+                userId,
+                cancellationToken);
 
-            return Ok(new UserInfo
-            {
-                Id = userId,
-                Username = updatedUser!.Username,
-                Email = updatedUser.Email,
-                Roles = updatedUser.Roles.ToArray(),
-                Permissions = permissions.ToArray(),
-                IsAnonymous = updatedUser.IsAnonymous
-            });
+            return Ok(changeEmailUserInfo);
         }
         catch (DuplicateEntityException ex)
         {

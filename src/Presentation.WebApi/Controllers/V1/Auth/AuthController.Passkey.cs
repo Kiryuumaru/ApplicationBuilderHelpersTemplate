@@ -161,27 +161,21 @@ public partial class AuthController
             var result = await passkeyService.VerifyLoginAsync(request.ChallengeId, request.AssertionResponseJson, cancellationToken);
 
             var userSession = result.Session;
-            var (accessToken, refreshToken, sessionId) = await CreateSessionAndTokensAsync(
+            var (accessToken, refreshToken, sessionId, passkeyExpiresIn) = await CreateSessionAndTokensAsync(
                 userSession.UserId,
                 userSession.Username,
-                userSession.Roles,
                 cancellationToken);
 
-            var permissions = await userAuthorizationService.GetEffectivePermissionsAsync(userSession.UserId, cancellationToken);
+            var passkeyUserInfo = await CreateUserInfoAsync(
+                userSession.UserId,
+                cancellationToken);
 
             return Ok(new AuthResponse
             {
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
-                ExpiresIn = AccessTokenExpirationMinutes * 60,
-                User = new UserInfo
-                {
-                    Id = userSession.UserId,
-                    Username = userSession.Username,
-                    Email = null, // Session doesn't include email currently
-                    Roles = userSession.Roles.ToArray(),
-                    Permissions = permissions.ToArray()
-                }
+                ExpiresIn = passkeyExpiresIn,
+                User = passkeyUserInfo
             });
         }
         catch (Domain.Shared.Exceptions.ValidationException ex)

@@ -158,7 +158,6 @@ public partial class AuthController
         UserDto? userDto = existingByEmail;
         Guid userId;
         string? username;
-        IReadOnlyCollection<string> roles;
 
         if (existingByEmail is not null)
         {
@@ -166,7 +165,6 @@ public partial class AuthController
             var userResult = await authenticationService.GetUserForSessionAsync(existingByEmail.Id, cancellationToken);
             userId = userResult.UserId!.Value;
             username = userResult.Username;
-            roles = userResult.Roles;
         }
         else
         {
@@ -188,31 +186,24 @@ public partial class AuthController
             userDto = await userRegistrationService.RegisterExternalAsync(registrationRequest, cancellationToken);
             userId = userDto.Id;
             username = userDto.Username;
-            roles = userDto.Roles;
         }
 
         // Create session and tokens (single session creation)
-        var (accessToken, refreshToken, sessionId) = await CreateSessionAndTokensAsync(
+        var (accessToken, refreshToken, sessionId, oauthExpiresIn) = await CreateSessionAndTokensAsync(
             userId,
             username,
-            roles,
             cancellationToken);
 
-        var permissions = await userAuthorizationService.GetEffectivePermissionsAsync(userId, cancellationToken);
+        var oauthUserInfo = await CreateUserInfoAsync(
+            userId,
+            cancellationToken);
 
         var response = new AuthResponse
         {
             AccessToken = accessToken,
             RefreshToken = refreshToken,
-            ExpiresIn = AccessTokenExpirationMinutes * 60,
-            User = new UserInfo
-            {
-                Id = userId,
-                Username = username,
-                Email = userDto?.Email,
-                Roles = roles.ToArray(),
-                Permissions = permissions.ToArray()
-            }
+            ExpiresIn = oauthExpiresIn,
+            User = oauthUserInfo
         };
 
         return isNewUser ? CreatedAtAction(nameof(GetMe), response) : Ok(response);

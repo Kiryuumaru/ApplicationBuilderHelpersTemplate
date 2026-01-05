@@ -26,6 +26,11 @@ public sealed record CredentialValidationResult
     public string? Username { get; init; }
 
     /// <summary>
+    /// The email if credentials are valid.
+    /// </summary>
+    public string? Email { get; init; }
+
+    /// <summary>
     /// Whether the user is anonymous.
     /// </summary>
     public bool IsAnonymous { get; init; }
@@ -40,12 +45,13 @@ public sealed record CredentialValidationResult
     /// </summary>
     public string? ErrorMessage { get; init; }
 
-    public static CredentialValidationResult Success(Guid userId, string? username, IReadOnlyCollection<string> roles, bool isAnonymous = false) => new()
+    public static CredentialValidationResult Success(Guid userId, string? username, string? email, IReadOnlyCollection<string> roles, bool isAnonymous = false) => new()
     {
         Succeeded = true,
         RequiresTwoFactor = false,
         UserId = userId,
         Username = username,
+        Email = email,
         Roles = roles,
         IsAnonymous = isAnonymous
     };

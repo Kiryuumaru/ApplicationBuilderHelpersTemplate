@@ -339,10 +339,10 @@ public sealed class User : AggregateRoot
     {
         var directives = new List<ScopeDirective>();
 
-        // Add direct permission grants as allow directives
-        foreach (var permission in GetPermissionIdentifiers())
+        // Add direct permission grants as scope directives (respecting Allow/Deny type)
+        foreach (var grant in _permissionGrants)
         {
-            directives.Add(ScopeDirective.Allow(permission));
+            directives.Add(grant.ToScopeDirective());
         }
 
         // Add directives from roles

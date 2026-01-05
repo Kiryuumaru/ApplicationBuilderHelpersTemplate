@@ -142,7 +142,7 @@ Permission checking already resolves roles at runtime:
 
 #### Domain Layer
 
-- [ ] `Domain/Authorization/Models/Role.cs` (MODIFY)
+- [x] `Domain/Authorization/Models/Role.cs` (MODIFY)
   - Add `ParsedRoleClaim` record struct (similar to `Permission.ParsedIdentifier`)
   - Add `static ParseRoleClaim(string claim)` - parse `USER;roleUserId=abc123`
   - Add `static TryParseRoleClaim(string claim, out ParsedRoleClaim parsed)`
@@ -152,29 +152,37 @@ Permission checking already resolves roles at runtime:
 
 #### Application Layer
 
-- [ ] `Application/Identity/Services/AuthenticationService.cs`
-  - Remove `RoleParametersClaimType` constant
-  - Update `CreateSessionForUserInternalAsync` to format roles inline
-  - Remove `BuildRoleParameterClaims` method
-  - Change role claims from `CODE` to `CODE;param1=val1;param2=val2`
+- [x] `Application/Identity/Interfaces/IUserAuthorizationService.cs` (MODIFY)
+  - Add `GetFormattedRoleClaimsAsync` - returns inline role claims with parameters
+  - Add `GetDirectPermissionScopesAsync` - returns only direct grants, not role-derived scopes
 
-- [ ] `Application/Authorization/Services/PermissionService.cs`
-  - Remove `RoleParametersClaimType` constant
-  - Update `ResolveScopeDirectivesAsync` to parse inline role format
-  - Replace `ExtractRoleParameters` to parse from role claim values
-  - Update role code extraction to strip parameters before DB lookup
+- [x] `Application/Identity/Services/UserAuthorizationService.cs` (MODIFY)
+  - Implement `GetFormattedRoleClaimsAsync` using `Role.FormatRoleClaim()`
+  - Implement `GetDirectPermissionScopesAsync` returning only `PermissionGrants`
+
+- [x] `Application/Authorization/Services/PermissionService.cs` (MODIFY)
+  - Update `ResolveScopeDirectivesAsync` to support both `ClaimTypes.Role` and `"role"` claim types
+  - Parse inline role format using `Role.TryParseRoleClaim()`
+
+#### Presentation Layer
+
+- [x] `Presentation.WebApi/Controllers/V1/Auth/AuthController.Helpers.cs` (MODIFY)
+  - Update `GenerateAccessTokenForSessionAsync` to use inline role format
+  - Use `GetFormattedRoleClaimsAsync` for role claims with parameters
+  - Use `GetDirectPermissionScopesAsync` for scopes (NOT role-derived)
+  - Use short `"role"` claim type instead of verbose `ClaimTypes.Role`
 
 ### Implementation Steps
 
-1. Add `ParsedRoleClaim`, `ParseRoleClaim`, `TryParseRoleClaim`, and `FormatRoleClaim` to `Role.cs` in Domain layer
-2. Update `AuthenticationService.CreateSessionForUserInternalAsync`:
-   - Format role claims with inline parameters using `Role.FormatRoleClaim()`
-   - Remove separate `role_params:` claims
-3. Update `PermissionService.ResolveScopeDirectivesAsync`:
-   - Parse role claims to extract code + parameters
-   - Use `Role.TryParseRoleClaim()` for parsing
-4. Remove `ExtractRoleParameters` method (replaced by inline parsing)
-5. Build and run all tests
+1. ✅ Add `ParsedRoleClaim`, `ParseRoleClaim`, `TryParseRoleClaim`, and `FormatRoleClaim` to `Role.cs` in Domain layer
+2. ✅ Add `GetFormattedRoleClaimsAsync` and `GetDirectPermissionScopesAsync` to `IUserAuthorizationService`
+3. ✅ Update `AuthController.Helpers.cs`:
+   - Use formatted role claims with inline parameters
+   - Only add direct permission grants to scopes (not role-derived)
+4. ✅ Update `PermissionService.ResolveScopeDirectivesAsync`:
+   - Support both short and verbose role claim types
+   - Parse inline role format using `Role.TryParseRoleClaim()`
+5. ✅ Build and run all tests (497 tests pass)
 
 ### Benefits
 
@@ -305,4 +313,4 @@ Permission checking already resolves roles at runtime:
 | Cleanup (deleted old interfaces) | ✅ Complete |
 | ASP.NET Identity Abstraction | 🔄 Partial (PasswordService still uses UserManager) |
 | Domain Enrichment | ⏳ Future/Optional |
-| **Inline Role Parameters** | 📋 Planned |
+| **Inline Role Parameters** | ✅ Complete (core implementation) |

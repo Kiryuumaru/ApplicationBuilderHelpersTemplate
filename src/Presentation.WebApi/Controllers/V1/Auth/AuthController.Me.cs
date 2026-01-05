@@ -36,17 +36,10 @@ public partial class AuthController
             });
         }
 
-        // Get permission identifiers from role service
-        var permissionIdentifiers = await userAuthorizationService.GetEffectivePermissionsAsync(userId, cancellationToken);
+        var meUserInfo = await CreateUserInfoAsync(
+            userId,
+            cancellationToken);
 
-        return Ok(new UserInfo
-        {
-            Id = userId,
-            Username = user.Username,
-            Email = user.Email,
-            Roles = user.Roles.ToArray(),
-            Permissions = permissionIdentifiers.ToArray(),
-            IsAnonymous = user.IsAnonymous
-        });
+        return Ok(meUserInfo);
     }
 }

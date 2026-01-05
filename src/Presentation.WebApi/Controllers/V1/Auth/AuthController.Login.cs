@@ -55,27 +55,21 @@ public partial class AuthController
             }
 
             // Create session and get effective permissions
-            var (accessToken, refreshToken, sessionId) = await CreateSessionAndTokensAsync(
+            var (accessToken, refreshToken, sessionId, expiresIn) = await CreateSessionAndTokensAsync(
                 result.UserId!.Value,
                 result.Username,
-                result.Roles,
                 cancellationToken);
 
-            var permissions = await userAuthorizationService.GetEffectivePermissionsAsync(result.UserId!.Value, cancellationToken);
+            var userInfo = await CreateUserInfoAsync(
+                result.UserId!.Value,
+                cancellationToken);
 
             return Ok(new AuthResponse
             {
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
-                ExpiresIn = AccessTokenExpirationMinutes * 60,
-                User = new UserInfo
-                {
-                    Id = result.UserId!.Value,
-                    Username = result.Username,
-                    Email = null, // Session doesn't include email currently
-                    Roles = result.Roles.ToArray(),
-                    Permissions = permissions.ToArray()
-                }
+                ExpiresIn = expiresIn,
+                User = userInfo
             });
         }
         catch (Domain.Identity.Exceptions.AuthenticationException)
@@ -161,28 +155,21 @@ public partial class AuthController
             {
                 var anonymousUser = await userRegistrationService.RegisterUserAsync(null, cancellationToken);
 
-                var (accessToken, refreshToken, _) = await CreateSessionAndTokensAsync(
+                var (accessToken, refreshToken, _, expiresInAnon) = await CreateSessionAndTokensAsync(
                     anonymousUser.Id,
                     anonymousUser.Username,
-                    anonymousUser.Roles,
                     cancellationToken);
 
-                var anonPermissions = await userAuthorizationService.GetEffectivePermissionsAsync(anonymousUser.Id, cancellationToken);
+                var anonUserInfo = await CreateUserInfoAsync(
+                    anonymousUser.Id,
+                    cancellationToken);
 
                 return CreatedAtAction(nameof(GetMe), new AuthResponse
                 {
                     AccessToken = accessToken,
                     RefreshToken = refreshToken,
-                    ExpiresIn = AccessTokenExpirationMinutes * 60,
-                    User = new UserInfo
-                    {
-                        Id = anonymousUser.Id,
-                        Username = anonymousUser.Username,
-                        Email = null,
-                        Roles = anonymousUser.Roles.ToArray(),
-                        Permissions = anonPermissions.ToArray(),
-                        IsAnonymous = true
-                    }
+                    ExpiresIn = expiresInAnon,
+                    User = anonUserInfo
                 });
             }
 
@@ -223,28 +210,21 @@ public partial class AuthController
             var user = await userRegistrationService.RegisterUserAsync(registrationRequest, cancellationToken);
 
             // Create session for the newly registered user (no double session)
-            var (newAccessToken, newRefreshToken, sessionId) = await CreateSessionAndTokensAsync(
+            var (newAccessToken, newRefreshToken, sessionId, newExpiresIn) = await CreateSessionAndTokensAsync(
                 user.Id,
                 user.Username,
-                user.Roles,
                 cancellationToken);
 
-            var permissions = await userAuthorizationService.GetEffectivePermissionsAsync(user.Id, cancellationToken);
+            var newUserInfo = await CreateUserInfoAsync(
+                user.Id,
+                cancellationToken);
 
             return CreatedAtAction(nameof(GetMe), new AuthResponse
             {
                 AccessToken = newAccessToken,
                 RefreshToken = newRefreshToken,
-                ExpiresIn = AccessTokenExpirationMinutes * 60,
-                User = new UserInfo
-                {
-                    Id = user.Id,
-                    Username = user.Username,
-                    Email = request.Email,
-                    Roles = user.Roles.ToArray(),
-                    Permissions = permissions.ToArray(),
-                    IsAnonymous = false
-                }
+                ExpiresIn = newExpiresIn,
+                User = newUserInfo
             });
         }
         catch (DuplicateEntityException ex)

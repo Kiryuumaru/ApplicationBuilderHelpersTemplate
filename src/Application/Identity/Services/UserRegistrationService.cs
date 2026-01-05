@@ -85,7 +85,7 @@ internal sealed class UserRegistrationService(
             {
                 foreach (var permissionIdentifier in request.PermissionIdentifiers)
                 {
-                    var grant = Domain.Identity.ValueObjects.UserPermissionGrant.Create(
+                    var grant = Domain.Identity.ValueObjects.UserPermissionGrant.Allow(
                         permissionIdentifier,
                         description: "Granted during registration");
                     user.GrantPermission(grant);

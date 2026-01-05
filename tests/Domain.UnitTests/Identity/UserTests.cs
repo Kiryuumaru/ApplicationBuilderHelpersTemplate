@@ -16,7 +16,7 @@ public class UserTests
     public void GrantPermission_NormalizesIdentifier()
     {
         var user = CreateUser();
-        var grant = UserPermissionGrant.Create(" api : portfolio : accounts : list ");
+        var grant = UserPermissionGrant.Allow(" api : portfolio : accounts : list ");
 
         user.GrantPermission(grant);
 
@@ -30,7 +30,7 @@ public class UserTests
     {
         var user = CreateUser();
         user.Activate();
-        user.GrantPermission(UserPermissionGrant.Create("api:portfolio:accounts:list"));
+        user.GrantPermission(UserPermissionGrant.Allow("api:portfolio:accounts:list"));
         
         // Set password hash
         var prop = typeof(User).GetProperty(nameof(User.PasswordHash));
@@ -74,7 +74,7 @@ public class UserTests
     public void BuildEffectivePermissions_IncludesRoleGrants()
     {
         var user = CreateUser();
-        user.GrantPermission(UserPermissionGrant.Create("api:portfolio:accounts:list"));
+        user.GrantPermission(UserPermissionGrant.Allow("api:portfolio:accounts:list"));
 
         var role = Role.Create("admin", "Administrator");
         role.AddScopeTemplate(ScopeTemplate.Allow("api:trading:orders:cancel"));

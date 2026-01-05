@@ -664,8 +664,10 @@ internal sealed class PermissionService(
         directives.AddRange(ExtractScopeDirectives(principal));
 
         // Parse role claims with inline parameters (format: "ROLE_CODE;param1=value1;param2=value2")
+        // Support both short "role" claim type and verbose ClaimTypes.Role for compatibility
         var parsedRoles = principal.Claims
-            .Where(c => string.Equals(c.Type, ClaimTypes.Role, StringComparison.Ordinal))
+            .Where(c => string.Equals(c.Type, ClaimTypes.Role, StringComparison.Ordinal) ||
+                        string.Equals(c.Type, "role", StringComparison.Ordinal))
             .Select(c => c.Value)
             .Where(v => !string.IsNullOrWhiteSpace(v))
             .Select(v => Role.TryParseRoleClaim(v, out var parsed) ? (Role.ParsedRoleClaim?)parsed : null)

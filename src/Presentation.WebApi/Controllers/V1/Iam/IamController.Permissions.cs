@@ -63,6 +63,7 @@ public partial class IamController
             await userAuthorizationService.GrantPermissionAsync(
                 request.UserId,
                 request.PermissionIdentifier,
+                request.IsAllow,
                 request.Description,
                 grantedBy,
                 cancellationToken);

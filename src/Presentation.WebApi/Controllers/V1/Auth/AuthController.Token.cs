@@ -73,6 +73,7 @@ public partial class AuthController
         }
 
         // Validate the session exists and is not revoked
+        // Hash the token for comparison with stored hash
         var tokenHash = HashToken(request.RefreshToken);
         var loginSession = await sessionService.ValidateSessionAsync(sessionId, tokenHash, cancellationToken);
         if (loginSession is null)
@@ -85,45 +86,27 @@ public partial class AuthController
             });
         }
 
-        // Fetch fresh user info by userId (not username, since username can change)
-        var user = await userProfileService.GetByIdAsync(userId, cancellationToken);
-        if (user is null)
-        {
-            return Unauthorized(new ProblemDetails
-            {
-                Status = StatusCodes.Status401Unauthorized,
-                Title = "User not found",
-                Detail = "The user associated with this token no longer exists."
-            });
-        }
+        // Rotate tokens via service - generates new tokens and updates session atomically
+        var result = await userTokenService.RotateTokensAsync(sessionId, cancellationToken);
 
-        // Get fresh permissions by re-building effective permissions
-        var effectivePermissions = await userAuthorizationService.GetEffectivePermissionsAsync(userId, cancellationToken);
-
-        // Generate new tokens - refresh token rotation (use current username from DB)
-        var currentUsername = user.Username ?? userId.ToString();
-        var newRefreshToken = await GenerateRefreshTokenAsync(userId, currentUsername, sessionId, cancellationToken);
-        var newTokenHash = HashToken(newRefreshToken);
-        var newExpiresAt = DateTimeOffset.UtcNow.AddDays(RefreshTokenExpirationDays);
-        
-        // Rotate the refresh token in the session
-        await sessionService.UpdateRefreshTokenAsync(sessionId, newTokenHash, newExpiresAt, cancellationToken);
-
-        var accessToken = await GenerateAccessTokenForUserAsync(userId, currentUsername, effectivePermissions.ToList(), sessionId, cancellationToken);
+        var refreshUserInfo = await CreateUserInfoAsync(userId, cancellationToken);
 
         return Ok(new AuthResponse
         {
-            AccessToken = accessToken,
-            RefreshToken = newRefreshToken,
-            ExpiresIn = AccessTokenExpirationMinutes * 60,
-            User = new UserInfo
-            {
-                Id = userId,
-                Username = currentUsername,
-                Email = user.Email,
-                Roles = user.Roles.ToArray(),
-                Permissions = effectivePermissions.ToArray()
-            }
+            AccessToken = result.AccessToken,
+            RefreshToken = result.RefreshToken,
+            ExpiresIn = result.ExpiresInSeconds,
+            User = refreshUserInfo
         });
+    }
+
+    /// <summary>
+    /// Hashes a token for secure storage comparison.
+    /// </summary>
+    private static string HashToken(string token)
+    {
+        var bytes = System.Text.Encoding.UTF8.GetBytes(token);
+        var hash = System.Security.Cryptography.SHA256.HashData(bytes);
+        return Convert.ToBase64String(hash);
     }
 }

@@ -13,7 +13,6 @@ using Presentation.WebApi.Models.Requests;
 using Presentation.WebApi.Models.Responses;
 using System.Security.Authentication;
 using System.Security.Claims;
-using System.Security.Cryptography;
 
 namespace Presentation.WebApi.Controllers.V1;
 
@@ -36,10 +35,8 @@ public partial class AuthController(
     IEmailService emailService,
     IPasskeyService passkeyService,
     IOAuthService oauthService,
-    IPermissionService permissionService) : ControllerBase
+    IPermissionService permissionService,
+    IUserTokenService userTokenService) : ControllerBase
 {
     private const string SessionIdClaimType = "sid";
-
-    private const int AccessTokenExpirationMinutes = 60;
-    private const int RefreshTokenExpirationDays = 7;
 }

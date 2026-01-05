@@ -58,7 +58,7 @@ internal sealed class AuthenticationService(
         }
 
         var roleCodes = await ResolveRoleCodesAsync(user, cancellationToken).ConfigureAwait(false);
-        return CredentialValidationResult.Success(user.Id, user.UserName, roleCodes, user.IsAnonymous);
+        return CredentialValidationResult.Success(user.Id, user.UserName, user.Email, roleCodes, user.IsAnonymous);
     }
 
     public async Task<CredentialValidationResult> GetUserForSessionAsync(Guid userId, CancellationToken cancellationToken)
@@ -70,7 +70,7 @@ internal sealed class AuthenticationService(
         }
 
         var roleCodes = await ResolveRoleCodesAsync(user, cancellationToken).ConfigureAwait(false);
-        return CredentialValidationResult.Success(user.Id, user.UserName, roleCodes, user.IsAnonymous);
+        return CredentialValidationResult.Success(user.Id, user.UserName, user.Email, roleCodes, user.IsAnonymous);
     }
 
     public async Task<UserSessionDto> AuthenticateAsync(string username, string password, CancellationToken cancellationToken)

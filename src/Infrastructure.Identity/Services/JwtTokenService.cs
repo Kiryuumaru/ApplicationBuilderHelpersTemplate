@@ -32,8 +32,9 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
 
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, userId),
-            new(ClaimTypes.Name, username),
+            // Use short claim type names to avoid verbose MS XML schemas in token
+            new("nameid", userId),
+            new("name", username),
             new(JwtRegisteredClaimNames.Sub, userId),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
@@ -528,8 +529,11 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
 
     private static bool IsReservedIdentityClaimType(string claimType)
     {
+        // Check both short and verbose forms of identity claim types
         return string.Equals(claimType, ClaimTypes.NameIdentifier, StringComparison.Ordinal)
+            || string.Equals(claimType, "nameid", StringComparison.Ordinal)
             || string.Equals(claimType, ClaimTypes.Name, StringComparison.Ordinal)
+            || string.Equals(claimType, "name", StringComparison.Ordinal)
             || string.Equals(claimType, JwtRegisteredClaimNames.Sub, StringComparison.Ordinal)
             || string.Equals(claimType, JwtRegisteredClaimNames.Jti, StringComparison.Ordinal)
             || string.Equals(claimType, JwtRegisteredClaimNames.Iat, StringComparison.Ordinal);

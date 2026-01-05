@@ -16,7 +16,7 @@ public class JwtTokenServiceTests
 		var additionalClaims = new[]
 		{
 			new Claim("tenant", "alpha"),
-			new Claim(ClaimTypes.NameIdentifier, "ignored")
+			new Claim("nameid", "ignored") // Using short claim type since we changed from verbose ClaimTypes.NameIdentifier
 		};
 
 		var token = await service.GenerateToken(
@@ -32,7 +32,8 @@ public class JwtTokenServiceTests
 		Assert.Equal(["api.read", "api.write"], scopeValues);
 		Assert.Contains(jwt.Claims, claim => claim.Type == "tenant" && claim.Value == "alpha");
 
-		var nameIdentifierClaims = jwt.Claims.Where(static claim => claim.Type == ClaimTypes.NameIdentifier).ToArray();
+		// JWT tokens now use short claim types ("nameid" instead of verbose MS schema)
+		var nameIdentifierClaims = jwt.Claims.Where(static claim => claim.Type == "nameid").ToArray();
 		Assert.Single(nameIdentifierClaims);
 		Assert.Equal("user-1", nameIdentifierClaims[0].Value);
 		Assert.Contains(jwt.Claims, claim => claim.Type == "rbac_version" && claim.Value == "2");

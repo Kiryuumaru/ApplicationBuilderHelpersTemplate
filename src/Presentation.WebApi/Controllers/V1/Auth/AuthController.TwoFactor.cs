@@ -194,27 +194,21 @@ public partial class AuthController
                 });
             }
 
-            var (accessToken, refreshToken, sessionId) = await CreateSessionAndTokensAsync(
+            var (accessToken, refreshToken, sessionId, twoFactorExpiresIn) = await CreateSessionAndTokensAsync(
                 userResult.UserId!.Value,
                 userResult.Username,
-                userResult.Roles,
                 cancellationToken);
 
-            var permissions = await userAuthorizationService.GetEffectivePermissionsAsync(userResult.UserId!.Value, cancellationToken);
+            var twoFactorUserInfo = await CreateUserInfoAsync(
+                userResult.UserId!.Value,
+                cancellationToken);
 
             return Ok(new AuthResponse
             {
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
-                ExpiresIn = AccessTokenExpirationMinutes * 60,
-                User = new UserInfo
-                {
-                    Id = userResult.UserId!.Value,
-                    Username = userResult.Username,
-                    Email = null, // Session doesn't include email currently
-                    Roles = userResult.Roles.ToArray(),
-                    Permissions = permissions.ToArray()
-                }
+                ExpiresIn = twoFactorExpiresIn,
+                User = twoFactorUserInfo
             });
         }
         catch (EntityNotFoundException)

@@ -55,13 +55,15 @@ internal class TokenProvider(IJwtTokenService jwtTokenService) : ITokenProvider
             return TokenValidationResult.Failed("Token validation failed");
         }
         
-        var userIdClaim = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+        // Support both short ("nameid") and verbose (ClaimTypes.NameIdentifier) claim types
+        var userIdClaim = principal.FindFirstValue("nameid") ?? principal.FindFirstValue(ClaimTypes.NameIdentifier);
         var userId = userIdClaim is not null && Guid.TryParse(userIdClaim, out var parsedUserId) ? parsedUserId : Guid.Empty;
         
         var sessionIdClaim = principal.FindFirstValue("session_id");
         var sessionId = sessionIdClaim is not null && Guid.TryParse(sessionIdClaim, out var parsedSessionId) ? parsedSessionId : (Guid?)null;
         
-        var roles = principal.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
+        // Support both short ("role") and verbose (ClaimTypes.Role) claim types
+        var roles = principal.FindAll("role").Concat(principal.FindAll(ClaimTypes.Role)).Select(c => c.Value).Distinct().ToList();
         
         return TokenValidationResult.Success(userId, sessionId, roles);
     }

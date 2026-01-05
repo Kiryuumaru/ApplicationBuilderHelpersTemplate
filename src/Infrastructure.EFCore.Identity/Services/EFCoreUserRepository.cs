@@ -328,11 +328,17 @@ internal sealed class EFCoreUserRepository(IDbContextFactory<EFCoreDbContext> co
 
         foreach (var grant in grants)
         {
-            var permissionGrant = UserPermissionGrant.Create(
-                grant.PermissionIdentifier,
-                grant.Description,
-                grant.GrantedBy,
-                grant.GrantedAt);
+            var permissionGrant = grant.Type == Domain.Authorization.Enums.ScopeDirectiveType.Allow
+                ? UserPermissionGrant.Allow(
+                    grant.PermissionIdentifier,
+                    grant.Description,
+                    grant.GrantedBy,
+                    grant.GrantedAt)
+                : UserPermissionGrant.Deny(
+                    grant.PermissionIdentifier,
+                    grant.Description,
+                    grant.GrantedBy,
+                    grant.GrantedAt);
             user.GrantPermission(permissionGrant);
         }
     }
@@ -392,20 +398,24 @@ internal sealed class EFCoreUserRepository(IDbContextFactory<EFCoreDbContext> co
         // Get current grants from domain model
         var currentGrants = user.PermissionGrants;
 
-        // Find grants to remove
+        // Find grants to remove (identifier AND type must match to be considered same grant)
         var toRemove = existingGrants
             .Where(existing => !currentGrants.Any(current => 
-                string.Equals(current.Identifier, existing.PermissionIdentifier, StringComparison.Ordinal)))
+                string.Equals(current.Identifier, existing.PermissionIdentifier, StringComparison.Ordinal) &&
+                current.Type == existing.Type))
             .ToList();
 
         // Find grants to add
-        var existingIdentifiers = existingGrants.Select(g => g.PermissionIdentifier).ToHashSet(StringComparer.Ordinal);
+        var existingKeys = existingGrants
+            .Select(g => (g.PermissionIdentifier, g.Type))
+            .ToHashSet();
         var toAdd = currentGrants
-            .Where(current => !existingIdentifiers.Contains(current.Identifier))
+            .Where(current => !existingKeys.Contains((current.Identifier, current.Type)))
             .Select(grant => new UserPermissionGrantEntity
             {
                 UserId = user.Id,
                 PermissionIdentifier = grant.Identifier,
+                Type = grant.Type,
                 Description = grant.Description,
                 GrantedAt = grant.GrantedAt,
                 GrantedBy = grant.GrantedBy

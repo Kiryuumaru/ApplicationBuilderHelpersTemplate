@@ -4,6 +4,7 @@ using Application.Identity.Interfaces;
 using Application.Identity.Interfaces.Infrastructure;
 using Application.Identity.Models;
 using Domain.Authorization.Models;
+using Domain.Authorization.ValueObjects;
 using Domain.Identity.Models;
 using Domain.Identity.ValueObjects;
 using Domain.Shared.Exceptions;
@@ -77,14 +78,16 @@ internal sealed class UserAuthorizationService(
         return [.. permissions.OrderBy(p => p, StringComparer.Ordinal)];
     }
 
-    public async Task GrantPermissionAsync(Guid userId, string permissionIdentifier, string? description, string? grantedBy, CancellationToken cancellationToken)
+    public async Task GrantPermissionAsync(Guid userId, string permissionIdentifier, bool isAllow, string? description, string? grantedBy, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrEmpty(permissionIdentifier);
 
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
-        var grant = UserPermissionGrant.Create(permissionIdentifier, description, grantedBy);
+        var grant = isAllow
+            ? UserPermissionGrant.Allow(permissionIdentifier, description, grantedBy)
+            : UserPermissionGrant.Deny(permissionIdentifier, description, grantedBy);
         user.GrantPermission(grant);
         await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
     }
@@ -103,6 +106,81 @@ internal sealed class UserAuthorizationService(
         }
 
         return revoked;
+    }
+
+    public async Task<IReadOnlyCollection<string>> GetFormattedRoleClaimsAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
+            ?? throw new EntityNotFoundException("User", userId.ToString());
+
+        var roleResolutions = await _userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
+
+        // Format roles with inline parameters: "USER;roleUserId=abc123"
+        return roleResolutions
+            .Select(r => Role.FormatRoleClaim(r.Role.Code, r.ParameterValues))
+            .OrderBy(r => r, StringComparer.Ordinal)
+            .ToArray();
+    }
+
+    public async Task<IReadOnlyCollection<string>> GetDirectPermissionScopesAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
+            ?? throw new EntityNotFoundException("User", userId.ToString());
+
+        // Return direct permission grants as scope directives (preserving Allow/Deny type)
+        // Role-derived scopes are NOT included - they are resolved at runtime
+        return user.PermissionGrants
+            .Select(g => g.ToScopeDirective().ToString())
+            .OrderBy(s => s, StringComparer.Ordinal)
+            .ToArray();
+    }
+
+    public async Task<UserAuthorizationData> GetAuthorizationDataAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        // Single database call to get the user
+        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
+            ?? throw new EntityNotFoundException("User", userId.ToString());
+
+        // Single call to resolve roles
+        var roleResolutions = await _userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
+
+        // Build formatted role claims (e.g., "USER;roleUserId=abc123")
+        var formattedRoles = roleResolutions
+            .Select(r => Role.FormatRoleClaim(r.Role.Code, r.ParameterValues))
+            .OrderBy(r => r, StringComparer.Ordinal)
+            .ToArray();
+
+        // Build direct permission scopes (preserving Allow/Deny type)
+        var directScopes = user.PermissionGrants
+            .Select(g => g.ToScopeDirective().ToString())
+            .OrderBy(s => s, StringComparer.Ordinal)
+            .ToArray();
+
+        // Build effective permissions (for display)
+        var effectivePermissions = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var grant in user.PermissionGrants)
+        {
+            effectivePermissions.Add(grant.ToScopeDirective().ToString());
+        }
+        foreach (var resolution in roleResolutions)
+        {
+            var scope = resolution.Role.ExpandScope(resolution.ParameterValues);
+            foreach (var directive in scope)
+            {
+                effectivePermissions.Add(directive.ToString());
+            }
+        }
+
+        return new UserAuthorizationData
+        {
+            UserId = user.Id,
+            Username = user.UserName,
+            Email = user.Email,
+            IsAnonymous = user.IsAnonymous,
+            FormattedRoles = formattedRoles,
+            DirectPermissionScopes = directScopes,
+            EffectivePermissions = [.. effectivePermissions.OrderBy(p => p, StringComparer.Ordinal)]
+        };
     }
 
     private static void ValidateRoleParameters(Domain.Authorization.Models.Role role, IReadOnlyDictionary<string, string?>? providedParameters)

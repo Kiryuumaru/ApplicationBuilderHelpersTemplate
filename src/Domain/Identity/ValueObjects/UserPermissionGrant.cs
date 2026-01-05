@@ -1,4 +1,6 @@
+using Domain.Authorization.Enums;
 using Domain.Authorization.Models;
+using Domain.Authorization.ValueObjects;
 using Domain.Shared.Exceptions;
 using Domain.Shared.Models;
 
@@ -6,26 +8,51 @@ namespace Domain.Identity.ValueObjects;
 
 public sealed class UserPermissionGrant : ValueObject
 {
+    /// <summary>
+    /// Gets the type of this grant (Allow or Deny).
+    /// </summary>
+    public ScopeDirectiveType Type { get; }
+
+    /// <summary>
+    /// Gets the permission path identifier.
+    /// </summary>
     public string Identifier { get; }
+
     public string? Description { get; }
     public DateTimeOffset GrantedAt { get; }
     public string? GrantedBy { get; }
 
-    private UserPermissionGrant(string identifier, string? description, DateTimeOffset grantedAt, string? grantedBy)
+    private UserPermissionGrant(ScopeDirectiveType type, string identifier, string? description, DateTimeOffset grantedAt, string? grantedBy)
     {
+        Type = type;
         Identifier = Normalize(identifier);
         Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
         GrantedAt = grantedAt;
         GrantedBy = string.IsNullOrWhiteSpace(grantedBy) ? null : grantedBy.Trim();
     }
 
-    public static UserPermissionGrant Create(string identifier, string? description = null, string? grantedBy = null, DateTimeOffset? grantedAt = null)
+    /// <summary>
+    /// Creates an allow grant for the specified permission identifier.
+    /// </summary>
+    public static UserPermissionGrant Allow(string identifier, string? description = null, string? grantedBy = null, DateTimeOffset? grantedAt = null)
     {
         var timestamp = grantedAt ?? DateTimeOffset.UtcNow;
-        return new UserPermissionGrant(identifier, description, timestamp, grantedBy);
+        return new UserPermissionGrant(ScopeDirectiveType.Allow, identifier, description, timestamp, grantedBy);
     }
 
-    public static UserPermissionGrant FromPermission(Permission permission, IReadOnlyDictionary<string, string?>? parameters = null, string? description = null, string? grantedBy = null, DateTimeOffset? grantedAt = null)
+    /// <summary>
+    /// Creates a deny grant for the specified permission identifier.
+    /// </summary>
+    public static UserPermissionGrant Deny(string identifier, string? description = null, string? grantedBy = null, DateTimeOffset? grantedAt = null)
+    {
+        var timestamp = grantedAt ?? DateTimeOffset.UtcNow;
+        return new UserPermissionGrant(ScopeDirectiveType.Deny, identifier, description, timestamp, grantedBy);
+    }
+
+    /// <summary>
+    /// Creates a grant from a permission with the specified type.
+    /// </summary>
+    public static UserPermissionGrant FromPermission(ScopeDirectiveType type, Permission permission, IReadOnlyDictionary<string, string?>? parameters = null, string? description = null, string? grantedBy = null, DateTimeOffset? grantedAt = null)
     {
         if (permission is null)
         {
@@ -33,11 +60,23 @@ public sealed class UserPermissionGrant : ValueObject
         }
 
         var identifier = permission.BuildPath(parameters);
-        return Create(identifier, description ?? permission.Description, grantedBy, grantedAt);
+        var timestamp = grantedAt ?? DateTimeOffset.UtcNow;
+        return new UserPermissionGrant(type, identifier, description ?? permission.Description, timestamp, grantedBy);
+    }
+
+    /// <summary>
+    /// Converts this grant to a ScopeDirective.
+    /// </summary>
+    public ScopeDirective ToScopeDirective()
+    {
+        return Type == ScopeDirectiveType.Allow
+            ? ScopeDirective.Allow(Identifier)
+            : ScopeDirective.Deny(Identifier);
     }
 
     protected override IEnumerable<object> GetEqualityComponents()
     {
+        yield return Type;
         yield return Identifier;
     }
 
