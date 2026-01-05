@@ -176,22 +176,8 @@ Reset password using a reset token.
 
 ---
 
-## Test Coverage (15 tests)
+## Test Coverage
 
-| Test | Description |
-|------|-------------|
-| `Login_WithValidCredentials_ReturnsTokens` | Successful login |
-| `Login_WithInvalidCredentials_Returns401` | Invalid credentials |
-| `Login_WithNonExistentUser_Returns401` | User not found |
-| `Register_WithValidData_CreatesUser` | Successful registration |
-| `Register_WithDuplicateEmail_Returns409` | Duplicate email |
-| `Register_WithInvalidEmail_Returns400` | Invalid email format |
-| `Refresh_WithValidToken_ReturnsNewTokens` | Token refresh |
-| `Refresh_WithExpiredToken_Returns401` | Expired token |
-| `Refresh_WithAccessToken_Returns401` | Wrong token type |
-| `Logout_InvalidatesSession` | Successful logout |
-| `GetMe_ReturnsCurrentUser` | Get user info |
-| `GetMe_WithoutAuth_Returns401` | Auth required |
-| `ForgotPassword_SendsEmail` | Password reset request |
-| `ResetPassword_WithValidToken_ResetsPassword` | Password reset |
-| `ResetPassword_WithInvalidToken_Returns400` | Invalid token |
+See [features/authentication.md](../features/authentication.md#test-coverage) for comprehensive test coverage details.
+
+**Summary:** 308 authentication tests covering login, registration, tokens, passwords, passkeys, 2FA, sessions, OAuth, and security.

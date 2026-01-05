@@ -298,3 +298,49 @@ public async Task<IActionResult> GetMe(
 | Call `/auth/me` | `_read;userId={roleUserId}` + `[FromJwt]` | ✅ Works (userId from JWT) |
 | Call `/auth/logout` | `_write;userId={roleUserId}` + `[FromJwt]` | ✅ Works (userId from JWT) |
 | Admin access anything | `_read` (no params) | ✅ Works |
+
+## Inline Role Parameters in JWT
+
+Role claims use an inline parameter format where role codes and parameters are combined in a single string:
+
+### Format
+
+```
+{CODE};{param1}={value1};{param2}={value2}
+```
+
+### Example Token Claims
+
+```json
+{
+  "role": [
+    "USER;roleUserId=550e8400-e29b-41d4-a716-446655440000",
+    "MODERATOR;orgId=org123"
+  ],
+  "scope": [
+    "allow;api:custom:endpoint"
+  ]
+}
+```
+
+### Key Characteristics
+
+1. **Role parameters are inline** - No separate `role_params:` claims
+2. **Scopes contain only direct grants** - Role-derived scopes are NOT in the token
+3. **Runtime resolution** - Role definitions are fetched from database and expanded at permission check time
+4. **Immediate effect** - Changes to role definitions take effect without re-login
+
+### Resolution Flow
+
+1. Extract role claims from JWT (e.g., `USER;roleUserId=abc123`)
+2. Parse each claim using `Role.TryParseRoleClaim()` → code + parameters
+3. Fetch role definitions from database by code
+4. Expand `ScopeTemplate` placeholders with parameter values
+5. Combine with direct `scope` claims from token
+6. Evaluate permission against all expanded directives
+
+### Benefits
+
+- **Smaller tokens** - Role scopes not duplicated in token
+- **Dynamic permissions** - Role changes apply immediately
+- **Cleaner token structure** - Single format for role claims

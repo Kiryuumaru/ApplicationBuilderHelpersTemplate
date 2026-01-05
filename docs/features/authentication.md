@@ -4,7 +4,90 @@
 
 ## Overview
 
-JWT-based authentication for the REST API. Supports login, registration, token refresh, password management, two-factor authentication (2FA), passkeys (WebAuthn), and session management.
+JWT-based authentication for the REST API. Supports login, registration, token refresh, password management, two-factor authentication (2FA), passkeys (WebAuthn), session management, and anonymous (guest) authentication.
+
+## Anonymous Authentication (Guest Mode)
+
+Zero-friction onboarding allowing users to start playing immediately without signup. Users can later upgrade their anonymous account by linking credentials (password, OAuth, passkey).
+
+### User Flow
+
+```
+User visits → POST /auth/register (empty body) → Anonymous account created
+                                                        ↓
+                                    User interacts with the application
+                                                        ↓
+                               Prompt: "Save progress?" → POST /auth/link/password
+                                                        ↓
+                                        Same userId, all data preserved
+```
+
+### Anonymous User Creation
+
+The `POST /api/v1/auth/register` endpoint supports anonymous registration with an empty body:
+
+**Anonymous Registration:**
+```json
+POST /api/v1/auth/register
+{}
+```
+
+**Response (201 Created):**
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1...",
+  "refreshToken": "eyJhbGciOiJIUzI1...",
+  "tokenType": "Bearer",
+  "expiresIn": 3600,
+  "user": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "username": null,
+    "email": null,
+    "isAnonymous": true,
+    "roles": ["user"],
+    "permissions": ["users._read", "users._write", ...]
+  }
+}
+```
+
+### Registration Behavior Matrix
+
+| Provided | Result |
+|----------|--------|
+| Nothing | Anonymous account (`isAnonymous: true`, `username: null`) |
+| Email only | Anonymous with email linked |
+| Username + Password | Full account (`isAnonymous: false`) |
+| All fields | Full account with email |
+
+### Domain Model
+
+Anonymous users are represented using the standard `User` entity:
+
+| Property | Anonymous User | Regular User |
+|----------|---------------|--------------|
+| `Id` | Generated UUID | Generated UUID |
+| `UserName` | `null` | Required (unique) |
+| `NormalizedUserName` | `null` | Required (unique, uppercase) |
+| `Email` | Optional | Optional |
+| `PasswordHash` | `null` | Required |
+| `IsAnonymous` | `true` | `false` |
+| `LinkedAt` | `null` | Set when upgraded from anonymous |
+
+### Key Design Decisions
+
+1. **Nullable UserName:** Anonymous users have no username. The `UserName` and `NormalizedUserName` properties are nullable (`string?`) to properly represent this state.
+
+2. **IsAnonymous Flag:** Boolean flag indicating account type. Once `false`, cannot be reverted.
+
+3. **LinkedAt Timestamp:** Records when an anonymous account was upgraded to a full account.
+
+4. **No Merging:** Anonymous accounts cannot be merged with existing accounts. If a user tries to link credentials already associated with another account, the operation is rejected with 409 Conflict.
+
+### Background Cleanup
+
+The `AnonymousUserCleanupWorker` background service automatically deletes abandoned anonymous accounts:
+- **Criteria:** 30+ days inactive AND no trades
+- **Frequency:** Runs daily
 
 ## URL Structure for Admin Access
 
@@ -85,6 +168,27 @@ Most authenticated endpoints that operate on user-specific data include `{userId
 ## Token Structure
 
 Authentication uses a permission-based token separation model where access tokens and refresh tokens have distinct permission scopes, enforced by the permission system (not just token type claims).
+
+### Token Generation Architecture
+
+Token generation is handled by `IUserTokenService` in the Application layer, ensuring clean separation from presentation concerns:
+
+```csharp
+public interface IUserTokenService
+{
+    Task<UserTokenResult> CreateSessionWithTokensAsync(
+        string userId, string? username, Guid? correlationId,
+        string deviceType, string deviceId, string deviceModel);
+    
+    Task<UserTokenResult> RotateTokensAsync(Guid sessionId, Guid? correlationId);
+}
+```
+
+The `UserTokenResult` includes:
+- `AccessToken` - JWT with user permissions
+- `RefreshToken` - JWT with limited refresh scope
+- `SessionId` - Unique session identifier
+- `ExpiresInSeconds` - Token expiration time
 
 ### Access Token
 - **Expiration:** 60 minutes
@@ -667,7 +771,7 @@ Tests are organized into modular test files for maintainability:
 | NewRefreshToken_AfterRefresh_CanBeUsedAsRefreshToken | New refresh tokens maintain allow;api:auth:refresh |
 | NewRefreshToken_AfterRefresh_StillCannotAccessProtectedEndpoints | New refresh tokens still lack other permissions |
 
-**Total: 184 authentication tests**
+**Total: 308 authentication tests** (includes [Theory] tests with multiple data sets)
 
 ## Password Requirements
 

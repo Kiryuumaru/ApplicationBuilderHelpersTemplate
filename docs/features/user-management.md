@@ -128,17 +128,13 @@ auth.sessions._write              # Manage sessions
 
 ## Test Coverage
 
-| Test | Status |
-|------|--------|
-| ListUsers_AsAdmin_ReturnsAllUsers | ✅ |
-| ListUsers_AsRegularUser_Returns403 | ✅ |
-| GetUser_WithValidId_ReturnsUser | ✅ |
-| GetUser_WithInvalidId_Returns404 | ✅ |
-| UpdateUser_AsSelf_UpdatesOwnProfile | ✅ |
-| UpdateUser_AsOtherUser_Returns403 | ✅ |
-| DeleteUser_AsSelf_Returns403 | ✅ |
-| AssignRole_AsRegularUser_Returns403 | ✅ |
-| RemoveRole_AsRegularUser_Returns403 | ✅ |
-| GetPermissions_ReturnsExpandedPermissions | ✅ |
+Tests are located in `tests/Presentation.WebApi.FunctionalTests/Iam/`:
 
-**Total: 10 tests**
+- **UsersApiTests.cs** - User CRUD operations
+- **RolesApiTests.cs** - Role management
+- **PermissionsApiTests.cs** - Permission queries
+- **PermissionAllowDenyTests.cs** - Allow/Deny permission grants
+- **CustomRoleManagementTests.cs** - Custom role creation and management
+- **IamSecurityTests.cs** - Security boundary tests
+
+**Total: 55 IAM tests**

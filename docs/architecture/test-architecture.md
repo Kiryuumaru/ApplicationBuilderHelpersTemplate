@@ -137,8 +137,8 @@ dotnet test tests/Presentation.WebApi.FunctionalTests
 
 | Project | Tests |
 |---------|-------|
-| Domain.UnitTests | 376 |
-| Application.UnitTests | 92 |
-| Application.IntegrationTests | 37 |
-| Presentation.WebApi.FunctionalTests | 134 |
-| **Total** | **639** |
+| Domain.UnitTests | 46 |
+| Application.UnitTests | 67 |
+| Application.IntegrationTests | 20 |
+| Presentation.WebApi.FunctionalTests | 378 |
+| **Total** | **511** |
