@@ -9,8 +9,6 @@ namespace Presentation.WebApi.Controllers.V1;
 
 public partial class AuthController
 {
-    #region Me Endpoint
-
     /// <summary>
     /// Gets the current user's information.
     /// </summary>
@@ -51,6 +49,4 @@ public partial class AuthController
             IsAnonymous = user.IsAnonymous
         });
     }
-
-    #endregion
 }

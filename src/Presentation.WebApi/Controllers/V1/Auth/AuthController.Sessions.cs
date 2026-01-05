@@ -9,8 +9,6 @@ namespace Presentation.WebApi.Controllers.V1;
 
 public partial class AuthController
 {
-    #region Session Management Endpoints
-
     /// <summary>
     /// Lists all active sessions for the user.
     /// </summary>
@@ -99,6 +97,4 @@ public partial class AuthController
         var revokedCount = await sessionService.RevokeAllForUserAsync(userId, cancellationToken);
         return Ok(new SessionRevokeAllResponse { RevokedCount = revokedCount });
     }
-
-    #endregion
 }

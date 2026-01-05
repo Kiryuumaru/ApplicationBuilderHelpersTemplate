@@ -1,9 +1,6 @@
-using Application.Identity.Interfaces;
 using Application.Identity.Models;
-using Asp.Versioning;
 using Domain.Authorization.Constants;
 using Domain.Identity.Models;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
 using Presentation.WebApi.Models.Requests;
@@ -11,27 +8,14 @@ using Presentation.WebApi.Models.Responses;
 
 namespace Presentation.WebApi.Controllers.V1.Iam;
 
-/// <summary>
-/// Controller for user management operations within IAM (Identity and Access Management).
-/// </summary>
-[ApiController]
-[ApiVersion("1.0")]
-[Route("api/v{v:apiVersion}/iam/users")]
-[Produces("application/json")]
-[Tags("IAM - Users")]
-[Authorize]
-public class UsersController(
-    IUserProfileService userProfileService,
-    IUserAuthorizationService userAuthorizationService,
-    IUserRegistrationService userRegistrationService,
-    IPasswordService passwordService) : ControllerBase
+public partial class IamController
 {
     /// <summary>
     /// Lists all users (admin only).
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>List of all users.</returns>
-    [HttpGet]
+    [HttpGet("users")]
     [RequiredPermission(PermissionIds.Api.Iam.Users.List.Identifier)]
     [ProducesResponseType<UserListResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
@@ -54,7 +38,7 @@ public class UsersController(
     /// <param name="id">The user ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The user details.</returns>
-    [HttpGet("{id:guid}")]
+    [HttpGet("users/{id:guid}")]
     [RequiredPermission(PermissionIds.Api.Iam.Users.ReadPermission.Identifier)]
     [ProducesResponseType<UserResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
@@ -84,7 +68,7 @@ public class UsersController(
     /// <param name="request">The update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated user.</returns>
-    [HttpPut("{id:guid}")]
+    [HttpPut("users/{id:guid}")]
     [RequiredPermission(PermissionIds.Api.Iam.Users.Update.Identifier)]
     [ProducesResponseType<UserResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
@@ -123,7 +107,7 @@ public class UsersController(
     /// <param name="id">The user ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>No content.</returns>
-    [HttpDelete("{id:guid}")]
+    [HttpDelete("users/{id:guid}")]
     [RequiredPermission(PermissionIds.Api.Iam.Users.Delete.Identifier)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
@@ -154,7 +138,7 @@ public class UsersController(
     /// <param name="id">The user ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The effective permissions.</returns>
-    [HttpGet("{id:guid}/permissions")]
+    [HttpGet("users/{id:guid}/permissions")]
     [RequiredPermission(PermissionIds.Api.Iam.Users.Permissions.Identifier)]
     [ProducesResponseType<PermissionsResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
@@ -190,7 +174,7 @@ public class UsersController(
     /// <param name="request">The password reset request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>No content.</returns>
-    [HttpPut("{id:guid}/password")]
+    [HttpPut("users/{id:guid}/password")]
     [RequiredPermission(PermissionIds.Api.Iam.Users.ResetPassword.Identifier)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]

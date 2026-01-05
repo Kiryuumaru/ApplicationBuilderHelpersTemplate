@@ -11,8 +11,6 @@ namespace Presentation.WebApi.Controllers.V1;
 
 public partial class AuthController
 {
-    #region Passkey (WebAuthn) Endpoints
-
     /// <summary>
     /// Gets the options needed to create a new passkey for the user.
     /// </summary>
@@ -298,6 +296,4 @@ public partial class AuthController
             });
         }
     }
-
-    #endregion
 }

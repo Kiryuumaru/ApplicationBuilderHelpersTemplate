@@ -1,49 +1,33 @@
-using Application.Identity.Interfaces;
-using Asp.Versioning;
 using Domain.Authorization.Constants;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
 using Presentation.WebApi.Models.Requests;
+using AppRoleAssignment = Application.Identity.Models.RoleAssignmentRequest;
 
 namespace Presentation.WebApi.Controllers.V1.Iam;
 
-/// <summary>
-/// Controller for permission management operations within IAM (Identity and Access Management).
-/// </summary>
-[ApiController]
-[ApiVersion("1.0")]
-[Route("api/v{v:apiVersion}/iam/permissions")]
-[Produces("application/json")]
-[Tags("IAM - Permissions")]
-[Authorize]
-public class PermissionsController(
-    IUserAuthorizationService userAuthorizationService) : ControllerBase
+public partial class IamController
 {
     /// <summary>
-    /// Grants a direct permission to a user (admin only).
+    /// Assigns a role to a user (admin only).
     /// </summary>
-    /// <param name="request">The permission grant request containing user ID and permission identifier.</param>
+    /// <param name="request">The role assignment request containing user ID and role code.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>No content.</returns>
-    [HttpPost("grant")]
-    [RequiredPermission(PermissionIds.Api.Iam.Permissions.Grant.Identifier)]
+    [HttpPost("roles/assign")]
+    [RequiredPermission(PermissionIds.Api.Iam.Roles.Assign.Identifier)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> GrantPermission(
-        [FromBody] PermissionGrantRequest request,
+    public async Task<IActionResult> AssignRole(
+        [FromBody] RoleAssignmentRequest request,
         CancellationToken cancellationToken)
     {
         try
         {
-            // Use the current user's username as the granter
-            var grantedBy = User.Identity?.Name;
-            await userAuthorizationService.GrantPermissionAsync(
+            await userAuthorizationService.AssignRoleAsync(
                 request.UserId,
-                request.PermissionIdentifier,
-                request.Description,
-                grantedBy,
+                new AppRoleAssignment(request.RoleCode, request.ParameterValues),
                 cancellationToken);
             return NoContent();
         }
@@ -68,37 +52,23 @@ public class PermissionsController(
     }
 
     /// <summary>
-    /// Revokes a direct permission from a user (admin only).
+    /// Removes a role from a user (admin only).
     /// </summary>
-    /// <param name="request">The permission revocation request containing user ID and permission identifier.</param>
+    /// <param name="request">The role removal request containing user ID and role ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>No content.</returns>
-    [HttpPost("revoke")]
-    [RequiredPermission(PermissionIds.Api.Iam.Permissions.Revoke.Identifier)]
+    [HttpPost("roles/remove")]
+    [RequiredPermission(PermissionIds.Api.Iam.Roles.Remove.Identifier)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> RevokePermission(
-        [FromBody] PermissionRevocationRequest request,
+    public async Task<IActionResult> RemoveRole(
+        [FromBody] RoleRemovalRequest request,
         CancellationToken cancellationToken)
     {
         try
         {
-            var revoked = await userAuthorizationService.RevokePermissionAsync(
-                request.UserId,
-                request.PermissionIdentifier,
-                cancellationToken);
-
-            if (!revoked)
-            {
-                return NotFound(new ProblemDetails
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    Title = "Permission not found",
-                    Detail = $"User does not have direct permission '{request.PermissionIdentifier}'."
-                });
-            }
-
+            await userAuthorizationService.RemoveRoleAsync(request.UserId, request.RoleId, cancellationToken);
             return NoContent();
         }
         catch (KeyNotFoundException ex)

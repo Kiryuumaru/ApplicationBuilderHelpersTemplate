@@ -11,8 +11,6 @@ namespace Presentation.WebApi.Controllers.V1;
 
 public partial class AuthController
 {
-    #region Identity Management
-
     /// <summary>
     /// Gets the user's linked identities.
     /// </summary>
@@ -648,6 +646,4 @@ public partial class AuthController
             });
         }
     }
-
-    #endregion
 }

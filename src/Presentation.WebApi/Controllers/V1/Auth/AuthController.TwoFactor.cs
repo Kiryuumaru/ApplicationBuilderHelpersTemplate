@@ -11,8 +11,6 @@ namespace Presentation.WebApi.Controllers.V1;
 
 public partial class AuthController
 {
-    #region Two-Factor Authentication
-
     /// <summary>
     /// Gets the 2FA setup information for the user.
     /// </summary>
@@ -275,6 +273,4 @@ public partial class AuthController
             });
         }
     }
-
-    #endregion
 }

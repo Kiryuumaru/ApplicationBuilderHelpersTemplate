@@ -13,8 +13,6 @@ namespace Presentation.WebApi.Controllers.V1;
 
 public partial class AuthController
 {
-    #region OAuth External Login
-
     /// <summary>
     /// Gets available OAuth providers.
     /// </summary>
@@ -270,6 +268,4 @@ public partial class AuthController
         var suffix = Guid.NewGuid().ToString("N")[..6];
         return $"{baseUsername}_{suffix}";
     }
-
-    #endregion
 }
