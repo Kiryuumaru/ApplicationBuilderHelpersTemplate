@@ -1,3 +1,4 @@
+using Application.Identity.Interfaces;
 using Infrastructure.Identity.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,6 +11,8 @@ namespace Infrastructure.Identity.ConfigureOptions;
 /// </summary>
 internal class ConfigureJwtBearerOptions(IServiceProvider serviceProvider) : IConfigureNamedOptions<JwtBearerOptions>
 {
+    private const string SessionIdClaimType = "sid";
+
     public void Configure(JwtBearerOptions options)
     {
         Configure(JwtBearerDefaults.AuthenticationScheme, options);
@@ -41,7 +44,43 @@ internal class ConfigureJwtBearerOptions(IServiceProvider serviceProvider) : ICo
             }
         };
 
-        options.TokenValidationParameters = serviceProvider
+        // Add session validation on token validated
+        var originalOnTokenValidated = options.Events.OnTokenValidated;
+        options.Events.OnTokenValidated = async context =>
+        {
+            if (originalOnTokenValidated is not null)
+            {
+                await originalOnTokenValidated(context);
+            }
+
+            // Skip if authentication already failed
+            if (context.Result?.Failure is not null)
+            {
+                return;
+            }
+
+            // Extract session ID from claims
+            var sessionIdClaim = context.Principal?.FindFirst(SessionIdClaimType);
+            if (sessionIdClaim is null || !Guid.TryParse(sessionIdClaim.Value, out var sessionId))
+            {
+                // No session ID claim - this shouldn't happen for valid tokens, but allow for backward compatibility
+                return;
+            }
+
+            // Validate session is still active
+            using var scope = context.HttpContext.RequestServices.CreateScope();
+            var sessionService = scope.ServiceProvider.GetRequiredService<ISessionService>();
+            var session = await sessionService.GetByIdAsync(sessionId, context.HttpContext.RequestAborted);
+
+            if (session is null || !session.IsValid)
+            {
+                context.Fail("Session has been revoked or is no longer valid.");
+            }
+        };
+
+        // Create a scope to resolve scoped services (e.g., CredentialsService used by the JWT config factory)
+        using var scope = serviceProvider.CreateScope();
+        options.TokenValidationParameters = scope.ServiceProvider
             .GetRequiredService<IJwtTokenService>()
             .GetTokenValidationParameters(CancellationToken.None)
             .GetAwaiter()
