@@ -1,6 +1,8 @@
 using Application.Identity.Models;
 using Domain.Authorization.Constants;
+using Domain.Identity.Exceptions;
 using Domain.Identity.Models;
+using Domain.Shared.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
 using Presentation.WebApi.Models.Requests;
@@ -90,7 +92,7 @@ public partial class IamController
             var user = await userProfileService.GetByIdAsync(id, cancellationToken);
             return Ok(MapToResponse(user!));
         }
-        catch (KeyNotFoundException)
+        catch (EntityNotFoundException)
         {
             return NotFound(new ProblemDetails
             {
@@ -121,7 +123,7 @@ public partial class IamController
             await userRegistrationService.DeleteUserAsync(id, cancellationToken);
             return NoContent();
         }
-        catch (KeyNotFoundException)
+        catch (EntityNotFoundException)
         {
             return NotFound(new ProblemDetails
             {
@@ -156,7 +158,7 @@ public partial class IamController
                 Permissions = permissions
             });
         }
-        catch (KeyNotFoundException)
+        catch (EntityNotFoundException)
         {
             return NotFound(new ProblemDetails
             {
@@ -189,7 +191,7 @@ public partial class IamController
             await passwordService.ResetPasswordAsync(id, request.NewPassword, cancellationToken);
             return NoContent();
         }
-        catch (KeyNotFoundException)
+        catch (EntityNotFoundException)
         {
             return NotFound(new ProblemDetails
             {
@@ -198,7 +200,7 @@ public partial class IamController
                 Detail = $"No user found with ID '{id}'."
             });
         }
-        catch (InvalidOperationException ex)
+        catch (PasswordValidationException ex)
         {
             return BadRequest(new ProblemDetails
             {

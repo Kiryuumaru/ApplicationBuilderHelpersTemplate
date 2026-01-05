@@ -6,6 +6,7 @@ using Application.Identity.Models;
 using Domain.Authorization.Models;
 using Domain.Identity.Models;
 using Domain.Identity.ValueObjects;
+using Domain.Shared.Exceptions;
 
 namespace Application.Identity.Services;
 
@@ -26,10 +27,10 @@ internal sealed class UserAuthorizationService(
         ArgumentNullException.ThrowIfNull(assignment);
 
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+            ?? throw new EntityNotFoundException("User", userId.ToString());
 
         var role = await _roleRepository.GetByCodeAsync(assignment.RoleCode, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"Role with code '{assignment.RoleCode}' not found.");
+            ?? throw new EntityNotFoundException("Role", assignment.RoleCode);
 
         // Validate required parameters
         ValidateRoleParameters(role, assignment.ParameterValues);
@@ -41,7 +42,7 @@ internal sealed class UserAuthorizationService(
     public async Task RemoveRoleAsync(Guid userId, Guid roleId, CancellationToken cancellationToken)
     {
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+            ?? throw new EntityNotFoundException("User", userId.ToString());
 
         user.RemoveRole(roleId);
         await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
@@ -50,7 +51,7 @@ internal sealed class UserAuthorizationService(
     public async Task<IReadOnlyCollection<string>> GetEffectivePermissionsAsync(Guid userId, CancellationToken cancellationToken)
     {
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+            ?? throw new EntityNotFoundException("User", userId.ToString());
 
         var roleResolutions = await _userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
 
@@ -81,7 +82,7 @@ internal sealed class UserAuthorizationService(
         ArgumentException.ThrowIfNullOrEmpty(permissionIdentifier);
 
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+            ?? throw new EntityNotFoundException("User", userId.ToString());
 
         var grant = UserPermissionGrant.Create(permissionIdentifier, description, grantedBy);
         user.GrantPermission(grant);
@@ -93,7 +94,7 @@ internal sealed class UserAuthorizationService(
         ArgumentException.ThrowIfNullOrEmpty(permissionIdentifier);
 
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+            ?? throw new EntityNotFoundException("User", userId.ToString());
 
         var revoked = user.RevokePermission(permissionIdentifier);
         if (revoked)
@@ -127,7 +128,8 @@ internal sealed class UserAuthorizationService(
 
         if (missingParameters.Count > 0)
         {
-            throw new InvalidOperationException(
+            throw new ValidationException(
+                "parameterValues",
                 $"Role '{role.Code}' requires parameters [{string.Join(", ", missingParameters)}] but they were not provided.");
         }
     }

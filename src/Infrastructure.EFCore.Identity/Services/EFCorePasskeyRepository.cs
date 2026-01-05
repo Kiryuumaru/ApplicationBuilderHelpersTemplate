@@ -1,6 +1,7 @@
 using Application.Identity.Interfaces.Infrastructure;
 using Domain.Identity.Enums;
 using Domain.Identity.Models;
+using Domain.Shared.Exceptions;
 using Infrastructure.EFCore.Identity.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -82,7 +83,7 @@ internal sealed class EFCorePasskeyRepository(IDbContextFactory<EFCoreDbContext>
     {
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         var entity = await context.Set<PasskeyCredentialEntity>().FindAsync([credential.Id], cancellationToken)
-            ?? throw new InvalidOperationException($"Passkey credential {credential.Id} not found");
+            ?? throw new EntityNotFoundException(nameof(PasskeyCredential), credential.Id.ToString());
 
         entity.Name = credential.Name;
         entity.SignCount = credential.SignCount;

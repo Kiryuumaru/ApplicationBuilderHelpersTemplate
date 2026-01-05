@@ -1,7 +1,9 @@
 using Application.Identity.Interfaces;
 using Application.Identity.Interfaces.Infrastructure;
+using Domain.Identity.Exceptions;
 using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
+using Domain.Shared.Exceptions;
 using Microsoft.AspNetCore.Identity;
 
 namespace Application.Identity.Services;
@@ -23,11 +25,11 @@ internal sealed class PasswordService(
     public async Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken cancellationToken)
     {
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+            ?? throw new EntityNotFoundException("User", userId.ToString());
 
         if (string.IsNullOrEmpty(user.PasswordHash))
         {
-            throw new InvalidOperationException("User does not have a password set.");
+            throw new ValidationException("Password", "User does not have a password set.");
         }
 
         if (!_passwordVerifier.Verify(user.PasswordHash, currentPassword))
@@ -43,7 +45,7 @@ internal sealed class PasswordService(
             if (!result.Succeeded)
             {
                 var errors = string.Join("; ", result.Errors.Select(e => e.Description));
-                throw new InvalidOperationException($"Invalid password: {errors}");
+                throw new PasswordValidationException($"Invalid password: {errors}");
             }
         }
 
@@ -54,7 +56,7 @@ internal sealed class PasswordService(
     public async Task ResetPasswordAsync(Guid userId, string newPassword, CancellationToken cancellationToken)
     {
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+            ?? throw new EntityNotFoundException("User", userId.ToString());
 
         // Validate new password strength
         foreach (var validator in _userManager.PasswordValidators)
@@ -63,7 +65,7 @@ internal sealed class PasswordService(
             if (!result.Succeeded)
             {
                 var errors = string.Join("; ", result.Errors.Select(e => e.Description));
-                throw new InvalidOperationException($"Invalid password: {errors}");
+                throw new PasswordValidationException($"Invalid password: {errors}");
             }
         }
 
@@ -74,19 +76,19 @@ internal sealed class PasswordService(
     public async Task LinkPasswordAsync(Guid userId, string username, string password, string? email, CancellationToken cancellationToken)
     {
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+            ?? throw new EntityNotFoundException("User", userId.ToString());
 
         // SECURITY: Prevent overwriting existing password
         if (!string.IsNullOrEmpty(user.PasswordHash))
         {
-            throw new InvalidOperationException("User already has a password linked. Use change password instead.");
+            throw new ValidationException("Password", "User already has a password linked. Use change password instead.");
         }
 
         // Check if username is already taken
         var existingUser = await _userRepository.FindByUsernameAsync(username, cancellationToken).ConfigureAwait(false);
         if (existingUser is not null && existingUser.Id != userId)
         {
-            throw new InvalidOperationException($"Username '{username}' is already taken.");
+            throw new DuplicateEntityException("Username", username);
         }
 
         // Check if email is already taken
@@ -95,7 +97,7 @@ internal sealed class PasswordService(
             var existingByEmail = await _userRepository.FindByEmailAsync(email, cancellationToken).ConfigureAwait(false);
             if (existingByEmail is not null && existingByEmail.Id != userId)
             {
-                throw new InvalidOperationException($"Email '{email}' is already registered.");
+                throw new DuplicateEntityException("Email", email);
             }
         }
 
@@ -106,7 +108,7 @@ internal sealed class PasswordService(
             if (!result.Succeeded)
             {
                 var errors = string.Join("; ", result.Errors.Select(e => e.Description));
-                throw new InvalidOperationException($"Invalid password: {errors}");
+                throw new PasswordValidationException($"Invalid password: {errors}");
             }
         }
 

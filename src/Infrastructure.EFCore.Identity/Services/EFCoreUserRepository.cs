@@ -4,6 +4,7 @@ using Application.Identity.Models;
 using Domain.Identity.Enums;
 using Domain.Identity.Models;
 using Domain.Identity.ValueObjects;
+using Domain.Shared.Exceptions;
 using Infrastructure.EFCore.Identity.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -101,7 +102,35 @@ internal sealed class EFCoreUserRepository(IDbContextFactory<EFCoreDbContext> co
         // Sync permission grants
         await SyncPermissionGrantsAsync(context, user, cancellationToken);
 
-        await context.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+        {
+            // Determine which field caused the violation
+            var message = ex.InnerException?.Message ?? ex.Message;
+            if (message.Contains("NormalizedUserName", StringComparison.OrdinalIgnoreCase) ||
+                message.Contains("UserName", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new DuplicateEntityException("Username", user.UserName ?? "unknown");
+            }
+            if (message.Contains("NormalizedEmail", StringComparison.OrdinalIgnoreCase) ||
+                message.Contains("Email", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new DuplicateEntityException("Email", user.Email ?? "unknown");
+            }
+            // Generic duplicate entity error
+            throw new DuplicateEntityException("User", user.Id.ToString());
+        }
+    }
+
+    private static bool IsUniqueConstraintViolation(DbUpdateException ex)
+    {
+        var message = ex.InnerException?.Message ?? ex.Message;
+        return message.Contains("UNIQUE constraint failed", StringComparison.OrdinalIgnoreCase) ||
+               message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||
+               message.Contains("unique constraint", StringComparison.OrdinalIgnoreCase);
     }
 
     public async Task DeleteAsync(Guid userId, CancellationToken cancellationToken)

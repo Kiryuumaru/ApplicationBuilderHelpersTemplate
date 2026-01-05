@@ -17,9 +17,9 @@ using Domain.Identity.ValueObjects;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System.Security.Authentication;
 using Xunit;
 using RolesConstants = Domain.Authorization.Constants.Roles;
+using AuthenticationException = Domain.Identity.Exceptions.AuthenticationException;
 using Infrastructure.EFCore.Extensions;
 using Infrastructure.EFCore.Identity.Extensions;
 using Infrastructure.Identity.Extensions;
@@ -51,11 +51,11 @@ public class IdentityServiceTests
         var stored = await fixture.UserProfileService.GetByUsernameAsync("alice", CancellationToken.None);
         Assert.NotNull(stored);
         
-        // Check user has the User role assigned
-        Assert.Contains(RolesConstants.User.Code, stored!.Roles);
+        // Check user has the User role assigned (roles now include inline parameters like "USER;roleUserId=...")
+        Assert.Contains(stored!.Roles, r => r.StartsWith(RolesConstants.User.Code, StringComparison.OrdinalIgnoreCase));
 
         var session = await fixture.AuthenticationService.AuthenticateAsync("alice", "Password!23", CancellationToken.None);
-        Assert.Contains(RolesConstants.User.Code, session.Roles);
+        Assert.Contains(session.Roles, r => r.StartsWith(RolesConstants.User.Code, StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -68,11 +68,11 @@ public class IdentityServiceTests
         var stored = await fixture.UserProfileService.GetByUsernameAsync("solo", CancellationToken.None);
         Assert.NotNull(stored);
         
-        // User should have the User role assigned
-        Assert.Contains(RolesConstants.User.Code, stored!.Roles);
+        // User should have the User role assigned (roles now include inline parameters like "USER;roleUserId=...")
+        Assert.Contains(stored!.Roles, r => r.StartsWith(RolesConstants.User.Code, StringComparison.OrdinalIgnoreCase));
 
         var session = await fixture.AuthenticationService.AuthenticateAsync("solo", "pa55word", CancellationToken.None);
-        Assert.Contains(RolesConstants.User.Code, session.Roles);
+        Assert.Contains(session.Roles, r => r.StartsWith(RolesConstants.User.Code, StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -99,7 +99,7 @@ public class IdentityServiceTests
 
         await fixture.UserRegistrationService.RegisterUserAsync(new UserRegistrationRequest("bob", "correct-horse"), CancellationToken.None);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.AuthenticationService.AuthenticateAsync("bob", "wrong", CancellationToken.None));
+        await Assert.ThrowsAsync<AuthenticationException>(() => fixture.AuthenticationService.AuthenticateAsync("bob", "wrong", CancellationToken.None));
     }
 
     [Fact]
@@ -196,13 +196,13 @@ public class IdentityServiceTests
 
         var session = await fixture.AuthenticationService.AuthenticateAsync("scoped-user", "Scoped!123", CancellationToken.None);
         
-        // Role codes are normalized to uppercase
-        Assert.Contains("PORTFOLIO_READER", session.Roles);
+        // Role codes are normalized to uppercase and include inline parameters like "PORTFOLIO_READER;userId=user-123"
+        Assert.Contains(session.Roles, r => r.StartsWith("PORTFOLIO_READER", StringComparison.OrdinalIgnoreCase));
 
         var stored = await fixture.UserProfileService.GetByUsernameAsync("scoped-user", CancellationToken.None);
         Assert.NotNull(stored);
-        Assert.Contains("PORTFOLIO_READER", stored!.Roles);
-        Assert.Contains(RolesConstants.User.Code, stored.Roles);
+        Assert.Contains(stored!.Roles, r => r.StartsWith("PORTFOLIO_READER", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(stored.Roles, r => r.StartsWith(RolesConstants.User.Code, StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -216,7 +216,7 @@ public class IdentityServiceTests
         // Try to assign User role without providing the required roleUserId parameter
         // (Note: registration already assigns User role with correct params, 
         // but trying to assign it again without params should fail)
-        await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.UserAuthorizationService.AssignRoleAsync(
+        await Assert.ThrowsAsync<Domain.Shared.Exceptions.ValidationException>(() => fixture.UserAuthorizationService.AssignRoleAsync(
             user.Id,
             new RoleAssignmentRequest(RolesConstants.User.Code), // Missing roleUserId parameter
             CancellationToken.None));
@@ -260,7 +260,7 @@ public class IdentityServiceTests
 
         await fixture.UserRegistrationService.RegisterExternalAsync(request, CancellationToken.None);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.UserRegistrationService.RegisterExternalAsync(request, CancellationToken.None));
+        await Assert.ThrowsAsync<Domain.Shared.Exceptions.DuplicateEntityException>(() => fixture.UserRegistrationService.RegisterExternalAsync(request, CancellationToken.None));
     }
 
     [Fact]
@@ -326,12 +326,8 @@ public class IdentityServiceTests
         var dbContext = dbContextFactory.CreateDbContext();
         dbContext.Database.EnsureCreated();
         
-        // Seed the built-in roles
-        foreach (var role in RolesConstants.AllRoles)
-        {
-            dbContext.Set<Role>().Add(role);
-        }
-        dbContext.SaveChanges();
+        // Note: Built-in roles (Admin, User) are served from static constants in Domain.Authorization.Constants.Roles
+        // and do not need to be seeded in the database. The EFCoreRoleRepository checks static roles first.
         
         // Signal that database is initialized (uses internal method via InternalsVisibleTo)
         var initState = provider.GetRequiredService<Infrastructure.EFCore.Services.EFCoreDatabaseInitializationState>();

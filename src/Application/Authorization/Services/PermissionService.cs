@@ -6,9 +6,9 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using System.IdentityModel.Tokens.Jwt;
-using System.Text.Json;
 using Microsoft.IdentityModel.Tokens;
 using Domain.Authorization.Constants;
+using Domain.Shared.Exceptions;
 using Application.Authorization.Interfaces;
 using Application.Authorization.Interfaces.Infrastructure;
 using Application.Authorization.Models;
@@ -16,7 +16,6 @@ using Domain.Authorization.Enums;
 using Domain.Authorization.Models;
 using Domain.Authorization.Services;
 using Domain.Authorization.ValueObjects;
-using Domain.Shared.Serialization;
 
 namespace Application.Authorization.Services;
 
@@ -25,7 +24,6 @@ internal sealed class PermissionService(
     IRoleRepository roleRepository) : IPermissionService
 {
     private const string ScopeClaimType = "scope";
-    private const string RoleParametersClaimType = "role_params";
     private const string RbacVersionClaimType = "rbac_version";
     private const string CurrentRbacVersion = "2";
 
@@ -394,7 +392,7 @@ internal sealed class PermissionService(
                 var trimmed = type.Trim();
                 if (IsReservedIdentityClaimType(trimmed) || string.Equals(trimmed, ScopeClaimType, StringComparison.Ordinal))
                 {
-                    throw new InvalidOperationException($"Claim type '{trimmed}' cannot be removed via mutation.");
+                    throw new ValidationException($"Claim type '{trimmed}' cannot be removed via mutation.");
                 }
 
                 removalTypes.Add(trimmed);
@@ -412,12 +410,12 @@ internal sealed class PermissionService(
 
                 if (IsReservedIdentityClaimType(claim.Type))
                 {
-                    throw new InvalidOperationException($"Claim type '{claim.Type}' cannot be removed via mutation.");
+                    throw new ValidationException($"Claim type '{claim.Type}' cannot be removed via mutation.");
                 }
 
                 if (string.Equals(claim.Type, ScopeClaimType, StringComparison.Ordinal))
                 {
-                    throw new InvalidOperationException("Scope claims must be removed via permissionsToRemove.");
+                    throw new ValidationException("Scope claims must be removed via permissionsToRemove.");
                 }
 
                 removals.Add(CloneClaim(claim));
@@ -462,12 +460,12 @@ internal sealed class PermissionService(
 
                 if (IsReservedIdentityClaimType(claim.Type))
                 {
-                    throw new InvalidOperationException($"Claim type '{claim.Type}' cannot be added via mutation.");
+                    throw new ValidationException($"Claim type '{claim.Type}' cannot be added via mutation.");
                 }
 
                 if (string.Equals(claim.Type, ScopeClaimType, StringComparison.Ordinal))
                 {
-                    throw new InvalidOperationException("Scope claims must be added via permissionsToAdd.");
+                    throw new ValidationException("Scope claims must be added via permissionsToAdd.");
                 }
 
                 var alreadyQueued = additions.Any(existing =>
@@ -665,38 +663,41 @@ internal sealed class PermissionService(
         // First, extract any direct scope claims (for backward compatibility)
         directives.AddRange(ExtractScopeDirectives(principal));
 
-        // Extract role codes from the principal
-        var roleCodes = principal.Claims
+        // Parse role claims with inline parameters (format: "ROLE_CODE;param1=value1;param2=value2")
+        var parsedRoles = principal.Claims
             .Where(c => string.Equals(c.Type, ClaimTypes.Role, StringComparison.Ordinal))
             .Select(c => c.Value)
             .Where(v => !string.IsNullOrWhiteSpace(v))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Select(v => Role.TryParseRoleClaim(v, out var parsed) ? (Role.ParsedRoleClaim?)parsed : null)
+            .Where(p => p.HasValue)
+            .Select(p => p!.Value)
             .ToList();
 
-        if (roleCodes.Count == 0)
+        if (parsedRoles.Count == 0)
         {
             return directives;
         }
+
+        // Get unique role codes to look up
+        var roleCodes = parsedRoles.Select(p => p.Code).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 
         // Look up current role definitions from the database
         var roles = await _roleRepository.GetByCodesAsync(roleCodes, cancellationToken).ConfigureAwait(false);
         var roleIndex = roles.ToDictionary(r => r.Code, StringComparer.OrdinalIgnoreCase);
 
-        // Extract role parameter values from claims
-        var roleParameters = ExtractRoleParameters(principal);
-
-        // Expand scope templates for each role
-        foreach (var roleCode in roleCodes)
+        // Expand scope templates for each parsed role claim
+        foreach (var parsedRole in parsedRoles)
         {
-            if (!roleIndex.TryGetValue(roleCode, out var role))
+            if (!roleIndex.TryGetValue(parsedRole.Code, out var role))
             {
                 continue;
             }
 
-            // Get parameter values for this role assignment (if any)
-            var parameterValues = roleParameters.TryGetValue(roleCode, out var pv)
-                ? pv
-                : new Dictionary<string, string?>(StringComparer.Ordinal);
+            // Convert parsed parameters to string? dictionary for expansion
+            var parameterValues = parsedRole.Parameters.ToDictionary(
+                kvp => kvp.Key,
+                kvp => (string?)kvp.Value,
+                StringComparer.Ordinal);
 
             // Try to expand the role's scope templates with parameter values
             // If the role requires parameters that aren't provided, we'll expand
@@ -736,45 +737,6 @@ internal sealed class PermissionService(
         }
 
         return directives;
-    }
-
-    /// <summary>
-    /// Extracts role parameter values from claims.
-    /// Claims are in format: role_params:{roleCode} = JSON serialized parameter dictionary
-    /// </summary>
-    private static Dictionary<string, IReadOnlyDictionary<string, string?>> ExtractRoleParameters(ClaimsPrincipal principal)
-    {
-        var result = new Dictionary<string, IReadOnlyDictionary<string, string?>>(StringComparer.OrdinalIgnoreCase);
-        var prefix = $"{RoleParametersClaimType}:";
-
-        foreach (var claim in principal.Claims)
-        {
-            if (!claim.Type.StartsWith(prefix, StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            var roleCode = claim.Type[prefix.Length..];
-            if (string.IsNullOrWhiteSpace(roleCode) || string.IsNullOrWhiteSpace(claim.Value))
-            {
-                continue;
-            }
-
-            try
-            {
-                var parameters = JsonSerializer.Deserialize(claim.Value, DomainJsonContext.Default.DictionaryStringString);
-                if (parameters is not null)
-                {
-                    result[roleCode] = parameters;
-                }
-            }
-            catch (JsonException)
-            {
-                // Invalid JSON, skip this claim
-            }
-        }
-
-        return result;
     }
 
     /// <summary>

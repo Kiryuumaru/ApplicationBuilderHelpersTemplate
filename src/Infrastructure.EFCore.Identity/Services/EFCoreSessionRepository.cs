@@ -1,5 +1,6 @@
 using Application.Identity.Interfaces.Infrastructure;
 using Domain.Identity.Models;
+using Domain.Shared.Exceptions;
 using Infrastructure.EFCore.Identity.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -47,7 +48,7 @@ internal sealed class EFCoreSessionRepository(IDbContextFactory<EFCoreDbContext>
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         
         var entity = await context.Set<LoginSessionEntity>().FindAsync([session.Id], cancellationToken)
-            ?? throw new InvalidOperationException($"Session with ID {session.Id} not found.");
+            ?? throw new EntityNotFoundException(nameof(LoginSession), session.Id.ToString());
 
         entity.RefreshTokenHash = session.RefreshTokenHash;
         entity.LastUsedAt = session.LastUsedAt;

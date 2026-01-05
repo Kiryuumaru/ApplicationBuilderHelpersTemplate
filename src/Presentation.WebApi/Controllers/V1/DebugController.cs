@@ -4,6 +4,8 @@ using Application.Identity.Interfaces;
 using Application.Identity.Models;
 using Asp.Versioning;
 using Domain.Authorization.Constants;
+using Domain.Identity.Exceptions;
+using Domain.Shared.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Models.Requests;
@@ -89,7 +91,16 @@ public class DebugController(
 
             return Created(string.Empty, new { UserId = user.Id });
         }
-        catch (InvalidOperationException ex)
+        catch (DuplicateEntityException ex)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Registration failed",
+                Detail = ex.Message
+            });
+        }
+        catch (PasswordValidationException ex)
         {
             return BadRequest(new ProblemDetails
             {

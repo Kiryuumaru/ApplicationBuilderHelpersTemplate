@@ -1,6 +1,7 @@
 using Application.Identity.Interfaces;
 using Application.Identity.Models;
 using Domain.Identity.Enums;
+using Domain.Identity.Exceptions;
 using System.Security.Cryptography;
 
 namespace Application.Identity.Services;
@@ -71,7 +72,7 @@ public sealed class MockOAuthService : IOAuthService
     {
         if (!_providers.TryGetValue(provider, out var config) || !config.IsEnabled)
         {
-            throw new InvalidOperationException($"OAuth provider '{provider}' is not enabled.");
+            throw new OAuthProviderException($"OAuth provider '{provider}' is not enabled.", provider.ToString());
         }
 
         // Generate a secure state parameter

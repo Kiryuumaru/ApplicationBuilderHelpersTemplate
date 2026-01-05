@@ -4,8 +4,10 @@ using System.Linq;
 using Application.Authorization.Interfaces;
 using Application.Authorization.Interfaces.Infrastructure;
 using Application.Authorization.Models;
+using Domain.Authorization.Exceptions;
 using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;
+using Domain.Shared.Exceptions;
 using RolesConstants = Domain.Authorization.Constants.Roles;
 
 namespace Application.Authorization.Services;
@@ -22,12 +24,12 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
         var existing = await _repository.GetByCodeAsync(descriptor.Code, cancellationToken).ConfigureAwait(false);
         if (existing is not null)
         {
-            throw new InvalidOperationException($"Role with code '{descriptor.Code}' already exists.");
+            throw new DuplicateEntityException("Role", descriptor.Code);
         }
 
         if (RolesConstants.TryGetByCode(descriptor.Code, out _))
         {
-            throw new InvalidOperationException($"Role code '{descriptor.Code}' is reserved for system roles.");
+            throw new ReservedNameException(descriptor.Code, "roles");
         }
 
         var role = Role.Create(descriptor.Code, descriptor.Name, descriptor.Description, descriptor.IsSystemRole);
@@ -42,7 +44,7 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
 
         if (RolesConstants.IsStaticRole(roleId))
         {
-            throw new InvalidOperationException("Cannot delete a static role.");
+            throw new SystemRoleException("Cannot delete a static role.", roleId);
         }
 
         var role = await _repository.GetByIdAsync(roleId, cancellationToken).ConfigureAwait(false);
@@ -53,7 +55,7 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
 
         if (role.IsSystemRole)
         {
-            throw new InvalidOperationException("Cannot delete a system role.");
+            throw new SystemRoleException("Cannot delete a system role.", roleId);
         }
 
         return await _repository.DeleteAsync(roleId, cancellationToken).ConfigureAwait(false);
@@ -116,13 +118,13 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
 
         if (RolesConstants.IsStaticRole(roleId))
         {
-            throw new InvalidOperationException("Cannot modify scope templates of a static role.");
+            throw new SystemRoleException("Cannot modify scope templates of a static role.", roleId);
         }
 
-        var role = await _repository.GetByIdAsync(roleId, cancellationToken).ConfigureAwait(false) ?? throw new InvalidOperationException($"Role with ID '{roleId}' not found.");
+        var role = await _repository.GetByIdAsync(roleId, cancellationToken).ConfigureAwait(false) ?? throw new EntityNotFoundException("Role", roleId.ToString());
         if (role.IsSystemRole)
         {
-            throw new InvalidOperationException("Cannot modify scope templates of a system role.");
+            throw new SystemRoleException("Cannot modify scope templates of a system role.", roleId);
         }
 
         role.ReplaceScopeTemplates(scopeTemplates);
@@ -136,13 +138,13 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
 
         if (RolesConstants.IsStaticRole(roleId))
         {
-            throw new InvalidOperationException("Cannot modify metadata of a static role.");
+            throw new SystemRoleException("Cannot modify metadata of a static role.", roleId);
         }
 
-        var role = await _repository.GetByIdAsync(roleId, cancellationToken).ConfigureAwait(false) ?? throw new InvalidOperationException($"Role with ID '{roleId}' not found.");
+        var role = await _repository.GetByIdAsync(roleId, cancellationToken).ConfigureAwait(false) ?? throw new EntityNotFoundException("Role", roleId.ToString());
         if (role.IsSystemRole)
         {
-            throw new InvalidOperationException("Cannot modify metadata of a system role.");
+            throw new SystemRoleException("Cannot modify metadata of a system role.", roleId);
         }
 
         role.UpdateMetadata(name, description);

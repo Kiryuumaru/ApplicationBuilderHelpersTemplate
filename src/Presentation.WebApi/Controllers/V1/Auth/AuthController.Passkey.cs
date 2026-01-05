@@ -1,4 +1,7 @@
 using Domain.Authorization.Constants;
+using Domain.Identity.Exceptions;
+using Domain.Shared.Exceptions;
+using Fido2NetLib;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
@@ -6,6 +9,7 @@ using Presentation.WebApi.Models.Requests;
 using Presentation.WebApi.Models.Responses;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Authentication;
+using System.Text.Json;
 
 namespace Presentation.WebApi.Controllers.V1;
 
@@ -69,12 +73,42 @@ public partial class AuthController
 
             return StatusCode(StatusCodes.Status201Created, new PasskeyRegistrationResponse(result.CredentialId, result.CredentialName));
         }
-        catch (InvalidOperationException ex)
+        catch (Domain.Shared.Exceptions.ValidationException ex)
         {
             return BadRequest(new ProblemDetails
             {
                 Status = StatusCodes.Status400BadRequest,
                 Title = "Invalid passkey registration",
+                Detail = ex.Message
+            });
+        }
+        catch (PasskeyException ex)
+        {
+            // PasskeyException for challenge validation errors
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Passkey registration error",
+                Detail = ex.Message
+            });
+        }
+        catch (JsonException ex)
+        {
+            // Infrastructure.Passkeys throws JsonException for invalid attestation JSON
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Invalid attestation response",
+                Detail = ex.Message
+            });
+        }
+        catch (Fido2VerificationException ex)
+        {
+            // Fido2NetLib throws Fido2VerificationException for invalid attestation data
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Passkey verification failed",
                 Detail = ex.Message
             });
         }
@@ -150,7 +184,7 @@ public partial class AuthController
                 }
             });
         }
-        catch (InvalidOperationException ex)
+        catch (Domain.Shared.Exceptions.ValidationException ex)
         {
             return BadRequest(new ProblemDetails
             {
@@ -159,13 +193,43 @@ public partial class AuthController
                 Detail = ex.Message
             });
         }
-        catch (AuthenticationException)
+        catch (System.Security.Authentication.AuthenticationException)
         {
             return Unauthorized(new ProblemDetails
             {
                 Status = StatusCodes.Status401Unauthorized,
                 Title = "Authentication failed",
                 Detail = "Passkey authentication failed."
+            });
+        }
+        catch (PasskeyException ex)
+        {
+            // PasskeyException for challenge validation errors
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Passkey authentication error",
+                Detail = ex.Message
+            });
+        }
+        catch (JsonException ex)
+        {
+            // Infrastructure.Passkeys throws JsonException for invalid assertion JSON
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Invalid assertion response",
+                Detail = ex.Message
+            });
+        }
+        catch (Fido2VerificationException ex)
+        {
+            // Fido2NetLib throws Fido2VerificationException for invalid assertion data
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Passkey verification failed",
+                Detail = ex.Message
             });
         }
     }
@@ -222,7 +286,7 @@ public partial class AuthController
             await passkeyService.RenamePasskeyAsync(userId, credentialId, request.Name, cancellationToken);
             return NoContent();
         }
-        catch (InvalidOperationException)
+        catch (EntityNotFoundException)
         {
             return NotFound(new ProblemDetails
             {
@@ -286,7 +350,7 @@ public partial class AuthController
             await passkeyService.RevokePasskeyAsync(userId, credentialId, cancellationToken);
             return NoContent();
         }
-        catch (InvalidOperationException)
+        catch (EntityNotFoundException)
         {
             return NotFound(new ProblemDetails
             {

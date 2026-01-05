@@ -3,11 +3,12 @@ using Application.Authorization.Interfaces.Infrastructure;
 using Application.Identity.Interfaces;
 using Application.Identity.Interfaces.Infrastructure;
 using Application.Identity.Models;
+using Domain.Authorization.Models;
+using Domain.Identity.Exceptions;
 using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
-using Domain.Shared.Serialization;
+using Domain.Shared.Exceptions;
 using System.Security.Claims;
-using System.Text.Json;
 
 namespace Application.Identity.Services;
 
@@ -22,7 +23,6 @@ internal sealed class AuthenticationService(
     ITokenService tokenService,
     IUserRoleResolver userRoleResolver) : IAuthenticationService
 {
-    private const string RoleParametersClaimType = "role_params";
     private const string RbacVersionClaimType = "rbac_version";
     private const string CurrentRbacVersion = "2";
 
@@ -79,15 +79,15 @@ internal sealed class AuthenticationService(
 
         if (!result.Succeeded)
         {
-            throw new InvalidOperationException(result.ErrorMessage ?? "Authentication failed.");
+            throw new AuthenticationException(result.ErrorMessage ?? "Authentication failed.");
         }
 
         if (result.RequiresTwoFactor)
         {
-            throw new InvalidOperationException("Two-factor authentication is required.");
+            throw new TwoFactorRequiredException(result.UserId!.Value);
         }
 
-        return result.Session ?? throw new InvalidOperationException("Session was not created.");
+        return result.Session ?? throw new EntityNotFoundException("Session", "create");
     }
 
     public async Task<AuthenticationResultDto> AuthenticateWithResultAsync(string username, string password, CancellationToken cancellationToken)
@@ -121,7 +121,7 @@ internal sealed class AuthenticationService(
     public async Task<UserSessionDto> CreateSessionForUserAsync(Guid userId, CancellationToken cancellationToken)
     {
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+            ?? throw new EntityNotFoundException("User", userId.ToString());
 
         return await CreateSessionForUserInternalAsync(user, cancellationToken).ConfigureAwait(false);
     }
@@ -129,7 +129,7 @@ internal sealed class AuthenticationService(
     public async Task<UserSessionDto> Complete2faAuthenticationAsync(Guid userId, string code, CancellationToken cancellationToken)
     {
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+            ?? throw new EntityNotFoundException("User", userId.ToString());
 
         // TODO: Verify 2FA code using ITwoFactorService
         // For now, we just create the session (actual 2FA verification happens via ITwoFactorService)
@@ -141,7 +141,11 @@ internal sealed class AuthenticationService(
     {
         // Resolve roles with their parameter values
         var roleResolutions = await _userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
-        var roleCodes = roleResolutions.Select(r => r.Role.Code).ToArray();
+        
+        // Format role claims with inline parameters (e.g., "USER;roleUserId=abc123")
+        var roleClaims = roleResolutions
+            .Select(r => Role.FormatRoleClaim(r.Role.Code, r.ParameterValues))
+            .ToArray();
 
         // Create login session
         var now = DateTimeOffset.UtcNow;
@@ -155,16 +159,18 @@ internal sealed class AuthenticationService(
         var loginSession = LoginSession.Create(user.Id, refreshTokenHash, refreshTokenExpiry);
         await _sessionRepository.CreateAsync(loginSession, cancellationToken).ConfigureAwait(false);
 
-        // Build additional claims for role parameters and RBAC version
-        var additionalClaims = BuildRoleParameterClaims(roleResolutions);
-        additionalClaims.Add(new Claim(RbacVersionClaimType, CurrentRbacVersion));
+        // Build additional claims with RBAC version
+        var additionalClaims = new List<Claim>
+        {
+            new(RbacVersionClaimType, CurrentRbacVersion)
+        };
 
-        // Generate access token with role codes and parameter claims
+        // Generate access token with inline role claims (including parameters)
         // Permission resolution happens at request time using the role codes
         var accessToken = await _tokenService.GenerateAccessTokenAsync(
             user.Id,
             user.UserName,
-            roleCodes,
+            roleClaims,
             additionalClaims,
             cancellationToken).ConfigureAwait(false);
 
@@ -182,31 +188,8 @@ internal sealed class AuthenticationService(
             RefreshToken = refreshToken,
             IssuedAt = now,
             ExpiresAt = accessTokenExpiry,
-            Roles = roleCodes
+            Roles = roleClaims
         };
-    }
-
-    /// <summary>
-    /// Builds claims containing role parameter values for each role assignment.
-    /// Format: role_params:{roleCode} = JSON serialized parameter dictionary
-    /// </summary>
-    private static List<Claim> BuildRoleParameterClaims(IReadOnlyCollection<UserRoleResolution> roleResolutions)
-    {
-        var claims = new List<Claim>();
-
-        foreach (var resolution in roleResolutions)
-        {
-            if (resolution.ParameterValues is null || resolution.ParameterValues.Count == 0)
-            {
-                continue;
-            }
-
-            var claimType = $"{RoleParametersClaimType}:{resolution.Role.Code}";
-            var claimValue = JsonSerializer.Serialize(resolution.ParameterValues, DomainJsonContext.Default.IReadOnlyDictionaryStringString);
-            claims.Add(new Claim(claimType, claimValue));
-        }
-
-        return claims;
     }
 
     private static string ComputeHash(string input)

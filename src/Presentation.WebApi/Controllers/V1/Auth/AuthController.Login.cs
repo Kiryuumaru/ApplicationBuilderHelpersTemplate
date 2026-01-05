@@ -1,5 +1,7 @@
 using Application.Identity.Models;
 using Domain.Authorization.Constants;
+using Domain.Identity.Exceptions;
+using Domain.Shared.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
@@ -76,7 +78,7 @@ public partial class AuthController
                 }
             });
         }
-        catch (AuthenticationException)
+        catch (Domain.Identity.Exceptions.AuthenticationException)
         {
             return Unauthorized(new ProblemDetails
             {
@@ -245,7 +247,7 @@ public partial class AuthController
                 }
             });
         }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("already exists", StringComparison.OrdinalIgnoreCase))
+        catch (DuplicateEntityException ex)
         {
             return Conflict(new ProblemDetails
             {
@@ -254,7 +256,7 @@ public partial class AuthController
                 Detail = ex.Message
             });
         }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("password", StringComparison.OrdinalIgnoreCase))
+        catch (PasswordValidationException ex)
         {
             return BadRequest(new ProblemDetails
             {

@@ -1,5 +1,7 @@
 using Application.Identity.Interfaces;
 using Domain.Authorization.Constants;
+using Domain.Identity.Exceptions;
+using Domain.Shared.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
@@ -46,7 +48,7 @@ public partial class AuthController
                 Detail = "The current password is incorrect."
             });
         }
-        catch (InvalidOperationException ex)
+        catch (PasswordValidationException ex)
         {
             return BadRequest(new ProblemDetails
             {

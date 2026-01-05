@@ -1,7 +1,9 @@
 using Application.Authorization.Models;
 using Domain.Authorization.Constants;
 using Domain.Authorization.Enums;
+using Domain.Authorization.Exceptions;
 using Domain.Authorization.ValueObjects;
+using Domain.Shared.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
 using Presentation.WebApi.Models.Requests;
@@ -88,7 +90,7 @@ public partial class IamController
                 new { roleId = role.Id },
                 MapRoleToResponse(role));
         }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("already exists") || ex.Message.Contains("reserved"))
+        catch (DuplicateEntityException ex)
         {
             return Conflict(new ProblemDetails
             {
@@ -97,12 +99,30 @@ public partial class IamController
                 Detail = ex.Message
             });
         }
-        catch (InvalidOperationException ex)
+        catch (ReservedNameException ex)
+        {
+            return Conflict(new ProblemDetails
+            {
+                Status = StatusCodes.Status409Conflict,
+                Title = "Conflict",
+                Detail = ex.Message
+            });
+        }
+        catch (SystemRoleException ex)
         {
             return BadRequest(new ProblemDetails
             {
                 Status = StatusCodes.Status400BadRequest,
                 Title = "Invalid operation",
+                Detail = ex.Message
+            });
+        }
+        catch (Domain.Shared.Exceptions.ValidationException ex)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Validation error",
                 Detail = ex.Message
             });
         }
@@ -137,7 +157,7 @@ public partial class IamController
 
             return Ok(MapRoleToResponse(role));
         }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("not found"))
+        catch (EntityNotFoundException ex)
         {
             return NotFound(new ProblemDetails
             {
@@ -146,12 +166,21 @@ public partial class IamController
                 Detail = ex.Message
             });
         }
-        catch (InvalidOperationException ex)
+        catch (SystemRoleException ex)
         {
             return BadRequest(new ProblemDetails
             {
                 Status = StatusCodes.Status400BadRequest,
                 Title = "Invalid operation",
+                Detail = ex.Message
+            });
+        }
+        catch (Domain.Shared.Exceptions.ValidationException ex)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Validation error",
                 Detail = ex.Message
             });
         }
@@ -185,7 +214,7 @@ public partial class IamController
 
             return NoContent();
         }
-        catch (InvalidOperationException ex)
+        catch (SystemRoleException ex)
         {
             return BadRequest(new ProblemDetails
             {
@@ -219,7 +248,7 @@ public partial class IamController
                 cancellationToken);
             return NoContent();
         }
-        catch (KeyNotFoundException ex)
+        catch (EntityNotFoundException ex)
         {
             return NotFound(new ProblemDetails
             {
@@ -228,7 +257,7 @@ public partial class IamController
                 Detail = ex.Message
             });
         }
-        catch (InvalidOperationException ex)
+        catch (ValidationException ex)
         {
             return BadRequest(new ProblemDetails
             {
@@ -259,21 +288,12 @@ public partial class IamController
             await userAuthorizationService.RemoveRoleAsync(request.UserId, request.RoleId, cancellationToken);
             return NoContent();
         }
-        catch (KeyNotFoundException ex)
+        catch (EntityNotFoundException ex)
         {
             return NotFound(new ProblemDetails
             {
                 Status = StatusCodes.Status404NotFound,
                 Title = "Not found",
-                Detail = ex.Message
-            });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Invalid operation",
                 Detail = ex.Message
             });
         }
@@ -322,7 +342,7 @@ public partial class IamController
             {
                 "allow" => ScopeDirectiveType.Allow,
                 "deny" => ScopeDirectiveType.Deny,
-                _ => throw new InvalidOperationException($"Invalid scope template type: '{template.Type}'. Must be 'allow' or 'deny'.")
+                _ => throw new Domain.Shared.Exceptions.ValidationException($"Invalid scope template type: '{template.Type}'. Must be 'allow' or 'deny'.")
             };
 
             var parameters = template.Parameters?

@@ -1,7 +1,9 @@
 using Application.Identity.Interfaces;
 using Application.Identity.Interfaces.Infrastructure;
 using Application.Identity.Models;
+using Domain.Identity.Exceptions;
 using Domain.Identity.Models;
+using Domain.Shared.Exceptions;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Cryptography;
 using System.Text;
@@ -21,7 +23,7 @@ internal sealed class TwoFactorService(
     public async Task<TwoFactorSetupInfo> Setup2faAsync(Guid userId, CancellationToken cancellationToken)
     {
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+            ?? throw new EntityNotFoundException("User", userId.ToString());
 
         // Generate authenticator key
         var key = GenerateAuthenticatorKey();
@@ -42,17 +44,17 @@ internal sealed class TwoFactorService(
     public async Task<IReadOnlyCollection<string>> Enable2faAsync(Guid userId, string verificationCode, CancellationToken cancellationToken)
     {
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+            ?? throw new EntityNotFoundException("User", userId.ToString());
 
         if (string.IsNullOrEmpty(user.AuthenticatorKey))
         {
-            throw new InvalidOperationException("2FA has not been set up for this user.");
+            throw new TwoFactorException("2FA has not been set up for this user.");
         }
 
         // Verify the code
         if (!VerifyTotpCode(user.AuthenticatorKey, verificationCode))
         {
-            throw new InvalidOperationException("Invalid verification code.");
+            throw new TwoFactorException("Invalid verification code.");
         }
 
         // Enable 2FA and generate recovery codes
@@ -68,11 +70,11 @@ internal sealed class TwoFactorService(
     public async Task Disable2faAsync(Guid userId, CancellationToken cancellationToken)
     {
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+            ?? throw new EntityNotFoundException("User", userId.ToString());
 
         if (!user.TwoFactorEnabled)
         {
-            throw new InvalidOperationException("Two-factor authentication is not enabled for this user.");
+            throw new TwoFactorException("Two-factor authentication is not enabled for this user.");
         }
 
         user.SetTwoFactorEnabled(false);
@@ -85,7 +87,7 @@ internal sealed class TwoFactorService(
     public async Task<bool> Verify2faCodeAsync(Guid userId, string code, CancellationToken cancellationToken)
     {
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+            ?? throw new EntityNotFoundException("User", userId.ToString());
 
         if (!user.TwoFactorEnabled || string.IsNullOrEmpty(user.AuthenticatorKey))
         {
@@ -117,11 +119,11 @@ internal sealed class TwoFactorService(
     public async Task<IReadOnlyCollection<string>> GenerateRecoveryCodesAsync(Guid userId, CancellationToken cancellationToken)
     {
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+            ?? throw new EntityNotFoundException("User", userId.ToString());
 
         if (!user.TwoFactorEnabled)
         {
-            throw new InvalidOperationException("Two-factor authentication is not enabled for this user.");
+            throw new TwoFactorException("Two-factor authentication is not enabled for this user.");
         }
 
         var recoveryCodes = GenerateRecoveryCodes();
@@ -135,7 +137,7 @@ internal sealed class TwoFactorService(
     public async Task<int> GetRecoveryCodeCountAsync(Guid userId, CancellationToken cancellationToken)
     {
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+            ?? throw new EntityNotFoundException("User", userId.ToString());
 
         if (string.IsNullOrEmpty(user.RecoveryCodes))
         {

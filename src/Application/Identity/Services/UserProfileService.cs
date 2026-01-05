@@ -3,6 +3,7 @@ using Application.Identity.Interfaces;
 using Application.Identity.Interfaces.Infrastructure;
 using Application.Identity.Models;
 using Domain.Identity.Models;
+using Domain.Shared.Exceptions;
 
 namespace Application.Identity.Services;
 
@@ -68,7 +69,7 @@ internal sealed class UserProfileService(
         ArgumentNullException.ThrowIfNull(request);
 
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+            ?? throw new EntityNotFoundException("User", userId.ToString());
 
         // Apply updates
         if (request.Email is not null)
@@ -93,13 +94,13 @@ internal sealed class UserProfileService(
     public async Task ChangeUsernameAsync(Guid userId, string newUsername, CancellationToken cancellationToken)
     {
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+            ?? throw new EntityNotFoundException("User", userId.ToString());
 
         // Check if username is already taken
         var existing = await _userRepository.FindByUsernameAsync(newUsername, cancellationToken).ConfigureAwait(false);
         if (existing is not null && existing.Id != userId)
         {
-            throw new InvalidOperationException($"Username '{newUsername}' is already taken.");
+            throw new DuplicateEntityException("Username", newUsername);
         }
 
         user.SetUserName(newUsername);
@@ -110,13 +111,13 @@ internal sealed class UserProfileService(
     public async Task ChangeEmailAsync(Guid userId, string newEmail, CancellationToken cancellationToken)
     {
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+            ?? throw new EntityNotFoundException("User", userId.ToString());
 
         // Check if email is already taken
         var existing = await _userRepository.FindByEmailAsync(newEmail, cancellationToken).ConfigureAwait(false);
         if (existing is not null && existing.Id != userId)
         {
-            throw new InvalidOperationException($"Email '{newEmail}' is already registered.");
+            throw new DuplicateEntityException("Email", newEmail);
         }
 
         user.SetEmail(newEmail);
@@ -126,13 +127,13 @@ internal sealed class UserProfileService(
     public async Task LinkEmailAsync(Guid userId, string email, CancellationToken cancellationToken)
     {
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+            ?? throw new EntityNotFoundException("User", userId.ToString());
 
         // Check if email is already taken
         var existing = await _userRepository.FindByEmailAsync(email, cancellationToken).ConfigureAwait(false);
         if (existing is not null && existing.Id != userId)
         {
-            throw new InvalidOperationException($"Email '{email}' is already registered.");
+            throw new DuplicateEntityException("Email", email);
         }
 
         user.SetEmail(email);
@@ -142,7 +143,7 @@ internal sealed class UserProfileService(
     public async Task UnlinkEmailAsync(Guid userId, CancellationToken cancellationToken)
     {
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+            ?? throw new EntityNotFoundException("User", userId.ToString());
 
         user.SetEmail(null);
         await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
@@ -151,7 +152,7 @@ internal sealed class UserProfileService(
     public async Task UnlinkExternalLoginAsync(Guid userId, Domain.Identity.Enums.ExternalLoginProvider provider, CancellationToken cancellationToken)
     {
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+            ?? throw new EntityNotFoundException("User", userId.ToString());
 
         await _userRepository.RemoveLoginAsync(userId, provider, cancellationToken).ConfigureAwait(false);
     }

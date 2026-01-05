@@ -239,7 +239,7 @@ public sealed class User : AggregateRoot
     {
         if (!IsAnonymous)
         {
-            throw new InvalidOperationException("User is not anonymous");
+            throw new ValidationException("User is not anonymous");
         }
 
         if (string.IsNullOrWhiteSpace(userName))
@@ -262,7 +262,7 @@ public sealed class User : AggregateRoot
     {
         if (!IsAnonymous)
         {
-            throw new InvalidOperationException("User is not anonymous");
+            throw new ValidationException("User is not anonymous");
         }
 
         IsAnonymous = false;

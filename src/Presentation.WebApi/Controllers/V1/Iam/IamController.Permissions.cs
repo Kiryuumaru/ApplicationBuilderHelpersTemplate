@@ -1,5 +1,6 @@
 using Domain.Authorization.Constants;
 using Domain.Authorization.Models;
+using Domain.Shared.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
 using Presentation.WebApi.Models.Requests;
@@ -67,21 +68,12 @@ public partial class IamController
                 cancellationToken);
             return NoContent();
         }
-        catch (KeyNotFoundException ex)
+        catch (EntityNotFoundException ex)
         {
             return NotFound(new ProblemDetails
             {
                 Status = StatusCodes.Status404NotFound,
                 Title = "Not found",
-                Detail = ex.Message
-            });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Invalid operation",
                 Detail = ex.Message
             });
         }
@@ -121,21 +113,12 @@ public partial class IamController
 
             return NoContent();
         }
-        catch (KeyNotFoundException ex)
+        catch (EntityNotFoundException ex)
         {
             return NotFound(new ProblemDetails
             {
                 Status = StatusCodes.Status404NotFound,
                 Title = "Not found",
-                Detail = ex.Message
-            });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Invalid operation",
                 Detail = ex.Message
             });
         }

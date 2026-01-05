@@ -2,7 +2,9 @@ using Application.Identity.Interfaces;
 using Application.Identity.Interfaces.Infrastructure;
 using Application.Identity.Models;
 using Domain.Identity.Enums;
+using Domain.Identity.Exceptions;
 using Domain.Identity.Models;
+using Domain.Shared.Exceptions;
 using Fido2NetLib;
 using Fido2NetLib.Objects;
 using System.Text.Json;
@@ -39,7 +41,7 @@ internal class PasskeyService : IPasskeyService
         CancellationToken cancellationToken)
     {
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken)
-            ?? throw new InvalidOperationException($"User {userId} not found");
+            ?? throw new EntityNotFoundException("User", userId.ToString());
 
         // Get existing credentials to exclude
         var existingCredentials = await _passkeyRepository.GetCredentialsByUserIdAsync(userId, cancellationToken);
@@ -86,19 +88,19 @@ internal class PasskeyService : IPasskeyService
     {
         // Get the stored challenge
         var challenge = await _passkeyRepository.GetChallengeByIdAsync(challengeId, cancellationToken)
-            ?? throw new InvalidOperationException("Challenge not found or expired");
+            ?? throw new PasskeyException("Challenge not found or expired", challengeId: challengeId);
 
         if (challenge.Type != PasskeyChallengeType.Registration)
-            throw new InvalidOperationException("Invalid challenge type");
+            throw new PasskeyException("Invalid challenge type", challengeId: challengeId);
 
         if (challenge.IsExpired())
         {
             await _passkeyRepository.DeleteChallengeAsync(challengeId, cancellationToken);
-            throw new InvalidOperationException("Challenge has expired");
+            throw new PasskeyException("Challenge has expired", challengeId: challengeId);
         }
 
         if (!challenge.UserId.HasValue)
-            throw new InvalidOperationException("Registration challenge must have a user ID");
+            throw new PasskeyException("Registration challenge must have a user ID", challengeId: challengeId);
 
         // Parse the original options
         var options = CredentialCreateOptions.FromJson(challenge.OptionsJson);
@@ -106,7 +108,7 @@ internal class PasskeyService : IPasskeyService
         // Parse the attestation response
         var attestationResponse = JsonSerializer.Deserialize<AuthenticatorAttestationRawResponse>(
             attestationResponseJson, _jsonOptions)
-            ?? throw new InvalidOperationException("Invalid attestation response");
+            ?? throw new ValidationException("Invalid attestation response");
 
         // Verify the attestation
         var result = await _fido2.MakeNewCredentialAsync(new MakeNewCredentialParams
@@ -122,7 +124,7 @@ internal class PasskeyService : IPasskeyService
         }, cancellationToken);
 
         if (result == null)
-            throw new InvalidOperationException("Registration verification failed");
+            throw new PasskeyException("Registration verification failed", challengeId: challengeId);
 
         // Get the credential name
         _pendingCredentialNames.TryGetValue(challengeId, out var credentialName);
@@ -194,15 +196,15 @@ internal class PasskeyService : IPasskeyService
     {
         // Get the stored challenge
         var challenge = await _passkeyRepository.GetChallengeByIdAsync(challengeId, cancellationToken)
-            ?? throw new InvalidOperationException("Challenge not found or expired");
+            ?? throw new PasskeyException("Challenge not found or expired", challengeId: challengeId);
 
         if (challenge.Type != PasskeyChallengeType.Authentication)
-            throw new InvalidOperationException("Invalid challenge type");
+            throw new PasskeyException("Invalid challenge type", challengeId: challengeId);
 
         if (challenge.IsExpired())
         {
             await _passkeyRepository.DeleteChallengeAsync(challengeId, cancellationToken);
-            throw new InvalidOperationException("Challenge has expired");
+            throw new PasskeyException("Challenge has expired", challengeId: challengeId);
         }
 
         // Parse the original options
@@ -211,11 +213,15 @@ internal class PasskeyService : IPasskeyService
         // Parse the assertion response
         var assertionResponse = JsonSerializer.Deserialize<AuthenticatorAssertionRawResponse>(
             assertionResponseJson, _jsonOptions)
-            ?? throw new InvalidOperationException("Invalid assertion response");
+            ?? throw new ValidationException("Invalid assertion response");
+
+        // Validate RawId is present
+        if (assertionResponse.RawId == null || assertionResponse.RawId.Length == 0)
+            throw new ValidationException("Assertion response missing credential ID");
 
         // Find the credential
         var credential = await _passkeyRepository.GetCredentialByCredentialIdAsync(assertionResponse.RawId, cancellationToken)
-            ?? throw new InvalidOperationException("Credential not found");
+            ?? throw new EntityNotFoundException("Credential", Convert.ToBase64String(assertionResponse.RawId));
 
         // Verify the assertion
         var result = await _fido2.MakeAssertionAsync(new MakeAssertionParams
@@ -247,7 +253,7 @@ internal class PasskeyService : IPasskeyService
 
         // Get the user
         var user = await _userRepository.FindByIdAsync(credential.UserId, cancellationToken)
-            ?? throw new InvalidOperationException($"User {credential.UserId} not found");
+            ?? throw new EntityNotFoundException("User", credential.UserId.ToString());
 
         // Create a session using the user's method
         var domainSession = user.CreateSession(TimeSpan.FromHours(24)); // Default 24 hour session
@@ -287,7 +293,7 @@ internal class PasskeyService : IPasskeyService
         CancellationToken cancellationToken)
     {
         var credential = await _passkeyRepository.GetCredentialByIdAsync(credentialId, cancellationToken)
-            ?? throw new InvalidOperationException("Passkey not found");
+            ?? throw new EntityNotFoundException("Passkey", credentialId.ToString());
 
         if (credential.UserId != userId)
             throw new UnauthorizedAccessException("You can only rename your own passkeys");
@@ -302,7 +308,7 @@ internal class PasskeyService : IPasskeyService
         CancellationToken cancellationToken)
     {
         var credential = await _passkeyRepository.GetCredentialByIdAsync(credentialId, cancellationToken)
-            ?? throw new InvalidOperationException("Passkey not found");
+            ?? throw new EntityNotFoundException("Passkey", credentialId.ToString());
 
         if (credential.UserId != userId)
             throw new UnauthorizedAccessException("You can only revoke your own passkeys");

@@ -1,5 +1,7 @@
 using Domain.Authorization.Constants;
 using Domain.Identity.Enums;
+using Domain.Identity.Exceptions;
+using Domain.Shared.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
@@ -169,7 +171,7 @@ public partial class AuthController
                 IsAnonymous = false
             });
         }
-        catch (InvalidOperationException ex)
+        catch (PasswordValidationException ex)
         {
             return BadRequest(new ProblemDetails
             {
@@ -244,7 +246,7 @@ public partial class AuthController
                 IsAnonymous = updatedUser.IsAnonymous
             });
         }
-        catch (InvalidOperationException ex)
+        catch (DuplicateEntityException ex)
         {
             return BadRequest(new ProblemDetails
             {
@@ -317,7 +319,7 @@ public partial class AuthController
                 IsAnonymous = updatedUser.IsAnonymous
             });
         }
-        catch (InvalidOperationException ex)
+        catch (Domain.Shared.Exceptions.ValidationException ex)
         {
             return BadRequest(new ProblemDetails
             {
@@ -404,7 +406,7 @@ public partial class AuthController
             await userProfileService.UnlinkExternalLoginAsync(userId, providerEnum, cancellationToken);
             return NoContent();
         }
-        catch (InvalidOperationException ex)
+        catch (EntityNotFoundException ex)
         {
             return BadRequest(new ProblemDetails
             {
@@ -492,7 +494,7 @@ public partial class AuthController
                 IsAnonymous = updatedUser.IsAnonymous
             });
         }
-        catch (InvalidOperationException ex)
+        catch (DuplicateEntityException ex)
         {
             return BadRequest(new ProblemDetails
             {
@@ -566,7 +568,7 @@ public partial class AuthController
                 IsAnonymous = updatedUser.IsAnonymous
             });
         }
-        catch (InvalidOperationException ex)
+        catch (DuplicateEntityException ex)
         {
             return BadRequest(new ProblemDetails
             {
@@ -636,7 +638,7 @@ public partial class AuthController
             await userProfileService.UnlinkEmailAsync(userId, cancellationToken);
             return NoContent();
         }
-        catch (InvalidOperationException ex)
+        catch (EntityNotFoundException ex)
         {
             return BadRequest(new ProblemDetails
             {

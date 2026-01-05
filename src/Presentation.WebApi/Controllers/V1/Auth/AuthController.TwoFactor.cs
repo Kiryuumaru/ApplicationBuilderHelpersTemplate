@@ -1,11 +1,13 @@
 using Domain.Authorization.Constants;
+using Domain.Identity.Exceptions;
+using Domain.Shared.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
 using Presentation.WebApi.Models.Requests;
 using Presentation.WebApi.Models.Responses;
 using System.ComponentModel.DataAnnotations;
-using System.Security.Authentication;
+using AuthenticationException = Domain.Identity.Exceptions.AuthenticationException;
 
 namespace Presentation.WebApi.Controllers.V1;
 
@@ -66,7 +68,7 @@ public partial class AuthController
                 RecoveryCodes = recoveryCodes
             });
         }
-        catch (InvalidOperationException ex)
+        catch (TwoFactorException ex)
         {
             return BadRequest(new ProblemDetails
             {
@@ -119,11 +121,10 @@ public partial class AuthController
 
         try
         {
-            // Authenticate to verify password (may throw InvalidOperationException for bad password or 2FA required)
+            // Authenticate to verify password (may throw AuthenticationException for bad password or 2FA required)
             await authenticationService.AuthenticateAsync(user.Username, request.Password, cancellationToken);
         }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("Authentication failed", StringComparison.OrdinalIgnoreCase) ||
-                                                    ex.Message.Contains("Invalid username or password", StringComparison.OrdinalIgnoreCase))
+        catch (AuthenticationException)
         {
             return Unauthorized(new ProblemDetails
             {
@@ -132,9 +133,9 @@ public partial class AuthController
                 Detail = "The password is incorrect."
             });
         }
-        catch (InvalidOperationException)
+        catch (TwoFactorRequiredException)
         {
-            // Other InvalidOperationException (e.g., 2FA required) - proceed, user is authenticated
+            // 2FA required exception means the password was correct - proceed
         }
 
         try
@@ -142,7 +143,7 @@ public partial class AuthController
             await twoFactorService.Disable2faAsync(userId, cancellationToken);
             return NoContent();
         }
-        catch (InvalidOperationException ex)
+        catch (TwoFactorException ex)
         {
             return BadRequest(new ProblemDetails
             {
@@ -216,22 +217,13 @@ public partial class AuthController
                 }
             });
         }
-        catch (KeyNotFoundException)
+        catch (EntityNotFoundException)
         {
             return Unauthorized(new ProblemDetails
             {
                 Status = StatusCodes.Status401Unauthorized,
                 Title = "Invalid request",
                 Detail = "The user ID is invalid or the 2FA session has expired."
-            });
-        }
-        catch (InvalidOperationException)
-        {
-            return Unauthorized(new ProblemDetails
-            {
-                Status = StatusCodes.Status401Unauthorized,
-                Title = "Invalid code",
-                Detail = "The 2FA code is invalid or has expired."
             });
         }
     }
@@ -263,7 +255,7 @@ public partial class AuthController
             var recoveryCodes = await twoFactorService.GenerateRecoveryCodesAsync(userId, cancellationToken);
             return Ok(new RecoveryCodesResponse(recoveryCodes));
         }
-        catch (InvalidOperationException ex)
+        catch (TwoFactorException ex)
         {
             return BadRequest(new ProblemDetails
             {

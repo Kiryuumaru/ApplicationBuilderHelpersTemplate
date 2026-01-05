@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Application.Authorization.Interfaces.Infrastructure;
+using Domain.Authorization.Exceptions;
 using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;
 using Infrastructure.EFCore.Identity.Models;
@@ -164,7 +165,7 @@ internal sealed class EFCoreRoleRepository(IDbContextFactory<EFCoreDbContext> co
         // Static roles cannot be saved - they are defined in code
         if (RolesConstants.IsStaticRole(role.Id))
         {
-            throw new InvalidOperationException($"Cannot save static role '{role.Code}'. Static roles are defined in code.");
+            throw new SystemRoleException($"Cannot save static role '{role.Code}'. Static roles are defined in code.", role.Code);
         }
 
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
@@ -188,7 +189,7 @@ internal sealed class EFCoreRoleRepository(IDbContextFactory<EFCoreDbContext> co
         // Static roles cannot be deleted
         if (RolesConstants.IsStaticRole(id))
         {
-            throw new InvalidOperationException($"Cannot delete static role. Static roles are defined in code.");
+            throw new SystemRoleException($"Cannot delete static role. Static roles are defined in code.");
         }
 
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);

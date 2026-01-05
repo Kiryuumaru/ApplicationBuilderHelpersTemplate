@@ -807,9 +807,9 @@ public class CustomRoleManagementTests
 
         _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
-        // The service returns BadRequest for validation errors (role not found)
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        _output.WriteLine("[PASS] Assigning non-existent role returns 400");
+        // The service correctly returns NotFound when the role doesn't exist
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        _output.WriteLine("[PASS] Assigning non-existent role returns 404");
     }
 
     [Fact]
@@ -834,9 +834,9 @@ public class CustomRoleManagementTests
 
         _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
-        // The service returns BadRequest for validation errors (user not found)
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        _output.WriteLine("[PASS] Assigning role to non-existent user returns 400");
+        // The service correctly returns NotFound when the user doesn't exist
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        _output.WriteLine("[PASS] Assigning role to non-existent user returns 404");
     }
 
     [Fact]

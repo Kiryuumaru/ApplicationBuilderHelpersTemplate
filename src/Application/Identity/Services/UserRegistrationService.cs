@@ -2,7 +2,9 @@ using Application.Authorization.Interfaces.Infrastructure;
 using Application.Identity.Interfaces;
 using Application.Identity.Interfaces.Infrastructure;
 using Application.Identity.Models;
+using Domain.Identity.Exceptions;
 using Domain.Identity.Models;
+using Domain.Shared.Exceptions;
 using Microsoft.AspNetCore.Identity;
 
 namespace Application.Identity.Services;
@@ -36,7 +38,7 @@ internal sealed class UserRegistrationService(
             var existingByUsername = await _userRepository.FindByUsernameAsync(request.Username, cancellationToken).ConfigureAwait(false);
             if (existingByUsername is not null)
             {
-                throw new InvalidOperationException($"Username '{request.Username}' is already taken.");
+                throw new DuplicateEntityException("Username", request.Username);
             }
 
             if (!string.IsNullOrEmpty(request.Email))
@@ -44,7 +46,7 @@ internal sealed class UserRegistrationService(
                 var existingByEmail = await _userRepository.FindByEmailAsync(request.Email, cancellationToken).ConfigureAwait(false);
                 if (existingByEmail is not null)
                 {
-                    throw new InvalidOperationException($"Email '{request.Email}' is already registered.");
+                    throw new DuplicateEntityException("Email", request.Email);
                 }
             }
 
@@ -57,7 +59,7 @@ internal sealed class UserRegistrationService(
                 if (!passwordValidationResult.Succeeded)
                 {
                     var errors = string.Join("; ", passwordValidationResult.Errors.Select(e => e.Description));
-                    throw new InvalidOperationException($"Invalid password: {errors}");
+                    throw new PasswordValidationException($"Invalid password: {errors}");
                 }
             }
 
@@ -69,7 +71,7 @@ internal sealed class UserRegistrationService(
                 foreach (var roleAssignment in request.RoleAssignments)
                 {
                     var role = await _roleRepository.GetByCodeAsync(roleAssignment.RoleCode, cancellationToken).ConfigureAwait(false)
-                        ?? throw new InvalidOperationException($"Role '{roleAssignment.RoleCode}' not found.");
+                        ?? throw new EntityNotFoundException("Role", roleAssignment.RoleCode);
 
                     // Validate required parameters
                     ValidateRoleParameters(role, roleAssignment.ParameterValues);
@@ -111,7 +113,7 @@ internal sealed class UserRegistrationService(
         var existingUserId = await _userRepository.FindUserByLoginAsync(request.Provider, request.ProviderSubject, cancellationToken).ConfigureAwait(false);
         if (existingUserId.HasValue)
         {
-            throw new InvalidOperationException($"External login already linked to another account.");
+            throw new DuplicateEntityException("ExternalLogin", $"{request.Provider}:{request.ProviderSubject}");
         }
 
         var user = User.RegisterExternal(
@@ -146,11 +148,11 @@ internal sealed class UserRegistrationService(
     public async Task UpgradeAnonymousWithPasskeyAsync(Guid userId, CancellationToken cancellationToken)
     {
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+            ?? throw new EntityNotFoundException("User", userId.ToString());
 
         if (!user.IsAnonymous)
         {
-            throw new InvalidOperationException("User is not anonymous and cannot be upgraded.");
+            throw new ValidationException("userId", "User is not anonymous and cannot be upgraded.");
         }
 
         // For passkey upgrade, we don't need a username - just mark as non-anonymous
@@ -161,7 +163,7 @@ internal sealed class UserRegistrationService(
     public async Task DeleteUserAsync(Guid userId, CancellationToken cancellationToken)
     {
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException($"User with ID {userId} not found.");
+            ?? throw new EntityNotFoundException("User", userId.ToString());
 
         await _userRepository.DeleteAsync(userId, cancellationToken).ConfigureAwait(false);
     }
@@ -202,7 +204,7 @@ internal sealed class UserRegistrationService(
 
         if (missingParameters.Count > 0)
         {
-            throw new InvalidOperationException(
+            throw new ValidationException(
                 $"Role '{role.Code}' requires parameters [{string.Join(", ", missingParameters)}] but they were not provided.");
         }
     }

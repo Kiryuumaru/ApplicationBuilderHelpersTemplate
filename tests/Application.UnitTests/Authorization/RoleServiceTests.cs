@@ -3,6 +3,7 @@ using Application.Authorization.Services;
 using Application.UnitTests.Authorization.Fakes;
 using Domain.Authorization.Constants;
 using Domain.Authorization.ValueObjects;
+using Domain.Shared.Exceptions;
 using RolesConstants = Domain.Authorization.Constants.Roles;
 
 namespace Application.UnitTests.Authorization;
@@ -34,7 +35,7 @@ public class RoleServiceTests
             IsSystemRole: false,
             ScopeTemplates: [ScopeTemplate.Allow(Permissions.RootReadIdentifier)]);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => service.CreateRoleAsync(descriptor, CancellationToken.None));
+        await Assert.ThrowsAsync<ReservedNameException>(() => service.CreateRoleAsync(descriptor, CancellationToken.None));
     }
 
     [Fact]
@@ -55,7 +56,7 @@ public class RoleServiceTests
 
         await service.CreateRoleAsync(descriptor, CancellationToken.None);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => service.CreateRoleAsync(descriptor, CancellationToken.None));
+        await Assert.ThrowsAsync<DuplicateEntityException>(() => service.CreateRoleAsync(descriptor, CancellationToken.None));
     }
 
     [Fact]

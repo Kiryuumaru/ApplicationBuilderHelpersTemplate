@@ -1,4 +1,5 @@
 using Application.Authorization.Models;
+using Domain.Shared.Exceptions;
 using Infrastructure.Identity.Interfaces;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -301,7 +302,7 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
         var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier) ?? principal.FindFirstValue(JwtRegisteredClaimNames.Sub);
         if (string.IsNullOrWhiteSpace(userId))
         {
-            throw new InvalidOperationException("Token does not contain a subject identifier claim.");
+            throw new ValidationException("Token does not contain a subject identifier claim.");
         }
 
         var username = principal.FindFirstValue(ClaimTypes.Name) ?? principal.Identity?.Name ?? userId;
@@ -364,7 +365,7 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
                 var trimmed = type.Trim();
                 if (IsReservedIdentityClaimType(trimmed) || string.Equals(trimmed, ScopeClaimType, StringComparison.Ordinal))
                 {
-                    throw new InvalidOperationException($"Claim type '{trimmed}' cannot be removed.");
+                    throw new ValidationException($"Claim type '{trimmed}' cannot be removed.");
                 }
 
                 mutableClaims.RemoveAll(claim => string.Equals(claim.Type, trimmed, StringComparison.Ordinal));
@@ -382,12 +383,12 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
 
                 if (IsReservedIdentityClaimType(claim.Type))
                 {
-                    throw new InvalidOperationException($"Claim type '{claim.Type}' cannot be removed.");
+                    throw new ValidationException($"Claim type '{claim.Type}' cannot be removed.");
                 }
 
                 if (string.Equals(claim.Type, ScopeClaimType, StringComparison.Ordinal))
                 {
-                    throw new InvalidOperationException("Scope claims must be removed via scopesToRemove.");
+                    throw new ValidationException("Scope claims must be removed via scopesToRemove.");
                 }
 
                 mutableClaims.RemoveAll(existing =>
@@ -412,12 +413,12 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
 
                 if (IsReservedIdentityClaimType(claim.Type))
                 {
-                    throw new InvalidOperationException($"Claim type '{claim.Type}' cannot be added.");
+                    throw new ValidationException($"Claim type '{claim.Type}' cannot be added.");
                 }
 
                 if (string.Equals(claim.Type, ScopeClaimType, StringComparison.Ordinal))
                 {
-                    throw new InvalidOperationException("Scope claims must be added via scopesToAdd.");
+                    throw new ValidationException("Scope claims must be added via scopesToAdd.");
                 }
 
                 var alreadyPresent = mutableClaims.Any(existing =>
