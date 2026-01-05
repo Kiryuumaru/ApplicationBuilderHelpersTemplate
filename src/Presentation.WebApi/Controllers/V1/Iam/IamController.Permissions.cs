@@ -1,12 +1,45 @@
 using Domain.Authorization.Constants;
+using Domain.Authorization.Models;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
 using Presentation.WebApi.Models.Requests;
+using Presentation.WebApi.Models.Responses;
 
 namespace Presentation.WebApi.Controllers.V1.Iam;
 
 public partial class IamController
 {
+    /// <summary>
+    /// Lists all available permissions in the system.
+    /// </summary>
+    /// <returns>The permission tree.</returns>
+    [HttpGet("permissions")]
+    [ProducesResponseType<PermissionListResponse>(StatusCodes.Status200OK)]
+    public IActionResult ListPermissions()
+    {
+        var permissions = Permissions.PermissionTreeRoots
+            .Select(MapPermissionToResponse)
+            .ToList();
+
+        return Ok(new PermissionListResponse { Permissions = permissions });
+    }
+
+    private static PermissionInfoResponse MapPermissionToResponse(Permission permission)
+    {
+        return new PermissionInfoResponse
+        {
+            Path = permission.Path,
+            Identifier = permission.Identifier,
+            Description = permission.Description,
+            Parameters = permission.Parameters,
+            IsRead = permission.IsRead,
+            IsWrite = permission.IsWrite,
+            Children = permission.HasChildren
+                ? permission.Permissions.Select(MapPermissionToResponse).ToList()
+                : null
+        };
+    }
+
     /// <summary>
     /// Grants a direct permission to a user (admin only).
     /// </summary>

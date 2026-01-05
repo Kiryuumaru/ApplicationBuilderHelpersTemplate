@@ -2,12 +2,34 @@ using Domain.Authorization.Constants;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
 using Presentation.WebApi.Models.Requests;
+using Presentation.WebApi.Models.Responses;
 using AppRoleAssignment = Application.Identity.Models.RoleAssignmentRequest;
 
 namespace Presentation.WebApi.Controllers.V1.Iam;
 
 public partial class IamController
 {
+    /// <summary>
+    /// Lists all available roles that can be assigned to users.
+    /// </summary>
+    /// <returns>List of available roles.</returns>
+    [HttpGet("roles")]
+    [ProducesResponseType<RoleListResponse>(StatusCodes.Status200OK)]
+    public IActionResult ListRoles()
+    {
+        var roles = Roles.All.Select(definition => new RoleInfoResponse
+        {
+            Id = definition.Id,
+            Code = definition.Code,
+            Name = definition.Name,
+            Description = definition.Description,
+            IsSystemRole = definition.IsSystemRole,
+            Parameters = definition.TemplateParameters
+        }).ToList();
+
+        return Ok(new RoleListResponse { Roles = roles });
+    }
+
     /// <summary>
     /// Assigns a role to a user (admin only).
     /// </summary>
