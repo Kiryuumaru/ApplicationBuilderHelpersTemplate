@@ -1,15 +1,14 @@
 using Application.Authorization.Models;
-using Infrastructure.EFCore.Identity.Interfaces;
+using Infrastructure.Identity.Interfaces;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Globalization;
-using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-namespace Infrastructure.EFCore.Identity.Services;
+namespace Infrastructure.Identity.Services;
 
 internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguration>>> jwtConfigurationFactory) : IJwtTokenService
 {
@@ -599,11 +598,11 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
 
         switch (claim.ValueType)
         {
-                case ClaimValueTypes.Integer64:
-                case ClaimValueTypes.Integer32:
-                case ClaimValueTypes.Integer:
-                case ClaimValueTypes.UInteger64:
-                case ClaimValueTypes.UInteger32:
+            case ClaimValueTypes.Integer64:
+            case ClaimValueTypes.Integer32:
+            case ClaimValueTypes.Integer:
+            case ClaimValueTypes.UInteger64:
+            case ClaimValueTypes.UInteger32:
                 if (long.TryParse(claim.Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var longValue))
                 {
                     node = JsonValue.Create(longValue);
@@ -698,7 +697,7 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
             default:
                 result = default;
                 return false;
-            }
+        }
     }
 
     private static DateTime? NormalizeExpiration(DateTime value)

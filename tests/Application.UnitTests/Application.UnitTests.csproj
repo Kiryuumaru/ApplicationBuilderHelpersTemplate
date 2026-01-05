@@ -25,6 +25,7 @@
 		<ProjectReference Include="..\..\src\Application\Application.csproj" />
 		<ProjectReference Include="..\..\src\Domain\Domain.csproj" />
 		<ProjectReference Include="..\..\src\Infrastructure.EFCore.Identity\Infrastructure.EFCore.Identity.csproj" />
+		<ProjectReference Include="..\..\src\Infrastructure.Identity\Infrastructure.Identity.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

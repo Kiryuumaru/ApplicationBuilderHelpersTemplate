@@ -2,7 +2,7 @@ using Application.Authorization.Models;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 
-namespace Infrastructure.EFCore.Identity.Interfaces;
+namespace Infrastructure.Identity.Interfaces;
 
 /// <summary>
 /// Internal interface for JWT token operations.

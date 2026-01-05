@@ -1,4 +1,3 @@
-using Application.Authorization.Services;
 using ApplicationBuilderHelpers;
 using Infrastructure.EFCore.Identity.Extensions;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,14 +11,5 @@ public class EFCoreIdentityInfrastructure : ApplicationDependency
         base.AddServices(applicationBuilder, services);
 
         services.AddEFCoreIdentity();
-        
-        // Register JWT token services with production credentials
-        services.AddJwtTokenServices(async (sp, ct) =>
-        {
-            using var scope = sp.CreateScope();
-            var cloudAuthenticationServices = scope.ServiceProvider.GetRequiredService<CredentialsService>();
-            var cloudCreds = await cloudAuthenticationServices.GetCredentials(ct);
-            return cloudCreds.JwtConfiguration;
-        });
     }
 }

@@ -22,6 +22,7 @@ using Xunit;
 using RolesConstants = Domain.Authorization.Constants.Roles;
 using Infrastructure.EFCore.Extensions;
 using Infrastructure.EFCore.Identity.Extensions;
+using Infrastructure.Identity.Extensions;
 using Infrastructure.EFCore.Sqlite.Extensions;
 using Application.Authorization.Interfaces;
 

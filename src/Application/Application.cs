@@ -60,7 +60,6 @@ public class Application : ApplicationDependency
         services.AddNativeCmdServices();
         services.AddLocalStoreServices();
         services.AddIdentityServices();
-        services.AddAuthenticationServices();
     }
 
     public override void AddMiddlewares(ApplicationHost applicationHost, IHost host)

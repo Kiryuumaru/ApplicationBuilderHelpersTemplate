@@ -18,6 +18,7 @@ internal static class IdentityServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddRoleServices();
+        services.AddAuthenticationServices();
 
         services.AddIdentityCore<User>()
             .AddRoles<Role>()

@@ -1,11 +1,7 @@
-using Infrastructure.EFCore.Identity.Interfaces;
-using System;
-using System.Collections.Generic;
+using Infrastructure.Identity.Interfaces;
 using System.Security.Claims;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace Infrastructure.EFCore.Identity.Extensions;
+namespace Infrastructure.Identity.Extensions;
 
 internal static class IJwtTokenServiceExtensions
 {
