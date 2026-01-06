@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
-using System.Security.Claims;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Application.Authorization.Interfaces;
 using Domain.Authorization.Constants;
 using Domain.Authorization.Models;
+using Domain.Shared.Constants;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
@@ -201,14 +201,8 @@ public sealed partial class RequiredPermissionAttribute : Attribute, IAsyncActio
         switch (placeholderName.ToLowerInvariant())
         {
             case "userid":
-                // Resolve userId from JWT claims
-                var userId = context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                          ?? context.HttpContext.User.FindFirst("sub")?.Value;
+                var userId = context.HttpContext.User.FindFirst("sub")?.Value;
                 return userId;
-                
-            // Add more special placeholders here as needed
-            // case "tenantid":
-            //     return context.HttpContext.User.FindFirst("tenant_id")?.Value;
         }
         
         // Try to resolve from action arguments (for non-special placeholders)
@@ -237,7 +231,7 @@ public sealed partial class RequiredPermissionAttribute : Attribute, IAsyncActio
         var relevantParameters = new HashSet<string>(permission.GetParameterHierarchy(), StringComparer.Ordinal);
         if (relevantParameters.Count == 0 && !isRootScopePermission)
         {
-            return ReadOnlyEmpty;
+            return EmptyCollections.StringNullableStringDictionary;
         }
 
         var resolvedValues = new Dictionary<string, string?>(StringComparer.Ordinal);
@@ -283,7 +277,7 @@ public sealed partial class RequiredPermissionAttribute : Attribute, IAsyncActio
 
         if (resolvedValues.Count == 0)
         {
-            return ReadOnlyEmpty;
+            return EmptyCollections.StringNullableStringDictionary;
         }
 
         return resolvedValues;
@@ -301,8 +295,6 @@ public sealed partial class RequiredPermissionAttribute : Attribute, IAsyncActio
 
         return lookup;
     }
-
-    private static readonly IReadOnlyDictionary<string, string?> ReadOnlyEmpty = new Dictionary<string, string?>(0, StringComparer.Ordinal);
 
     private static ObjectResult CreateProblemResult(
         ActionContext context,

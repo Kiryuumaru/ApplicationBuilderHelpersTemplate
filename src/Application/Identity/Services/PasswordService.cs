@@ -140,9 +140,8 @@ internal sealed class PasswordService(
             return null;
         }
 
-        // Generate a simple reset token (in production, use a more secure mechanism)
-        var token = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
-        // TODO: Store the token with expiration for later verification
+        // Generate reset token using ASP.NET Identity's built-in token provider
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user).ConfigureAwait(false);
         return token;
     }
 
@@ -154,11 +153,8 @@ internal sealed class PasswordService(
             return false;
         }
 
-        // TODO: Verify the token
-        // For now, just reset the password
-        user.SetPasswordHash(_passwordHasher.HashPassword(user, newPassword));
-        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
-
-        return true;
+        // Verify and reset password using ASP.NET Identity's built-in token verification
+        var result = await _userManager.ResetPasswordAsync(user, token, newPassword).ConfigureAwait(false);
+        return result.Succeeded;
     }
 }

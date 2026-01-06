@@ -80,7 +80,8 @@ public class DebugController(
                 new UserRegistrationRequest(
                     request.Username,
                     request.Password,
-                    request.Email),
+                    ConfirmPassword: null,
+                    Email: request.Email),
                 cancellationToken);
 
             // Assign ADMIN role

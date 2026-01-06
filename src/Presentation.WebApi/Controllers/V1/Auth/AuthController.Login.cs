@@ -8,7 +8,7 @@ using Presentation.WebApi.Attributes;
 using Presentation.WebApi.Models.Requests;
 using Presentation.WebApi.Models.Responses;
 using System.Security.Authentication;
-using System.Security.Claims;
+using JwtClaimTypes = Domain.Identity.Constants.ClaimTypes;
 
 namespace Presentation.WebApi.Controllers.V1;
 
@@ -115,28 +115,15 @@ public partial class AuthController
             // Default to empty request for anonymous registration
             request ??= new RegisterRequest();
 
-            // Validate password confirmation if password is provided
-            if (!string.IsNullOrWhiteSpace(request.Password))
+            // Validate username is required when providing password
+            if (!string.IsNullOrWhiteSpace(request.Password) && string.IsNullOrWhiteSpace(request.Username))
             {
-                if (string.IsNullOrWhiteSpace(request.Username))
+                return BadRequest(new ProblemDetails
                 {
-                    return BadRequest(new ProblemDetails
-                    {
-                        Status = StatusCodes.Status400BadRequest,
-                        Title = "Username required",
-                        Detail = "Username is required when providing a password."
-                    });
-                }
-
-                if (request.Password != request.ConfirmPassword)
-                {
-                    return BadRequest(new ProblemDetails
-                    {
-                        Status = StatusCodes.Status400BadRequest,
-                        Title = "Passwords do not match",
-                        Detail = "Password and ConfirmPassword must match."
-                    });
-                }
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = "Username required",
+                    Detail = "Username is required when providing a password."
+                });
             }
 
             // Validate username is provided if email is provided
@@ -173,37 +160,11 @@ public partial class AuthController
                 });
             }
 
-            // Full registration with username/password
-            // Check if username already exists
-            var existingUser = await userProfileService.GetByUsernameAsync(request.Username!, cancellationToken);
-            if (existingUser is not null)
-            {
-                return Conflict(new ProblemDetails
-                {
-                    Status = StatusCodes.Status409Conflict,
-                    Title = "Username already exists",
-                    Detail = $"The username '{request.Username}' is already taken."
-                });
-            }
-
-            // Check if email already exists (if provided)
-            if (!string.IsNullOrWhiteSpace(request.Email))
-            {
-                var existingByEmail = await userProfileService.GetByEmailAsync(request.Email, cancellationToken);
-                if (existingByEmail is not null)
-                {
-                    return Conflict(new ProblemDetails
-                    {
-                        Status = StatusCodes.Status409Conflict,
-                        Title = "Email already exists",
-                        Detail = $"The email '{request.Email}' is already registered."
-                    });
-                }
-            }
-
+            // Full registration with username/password - service handles validation
             var registrationRequest = new UserRegistrationRequest(
                 request.Username!,
                 request.Password!,
+                request.ConfirmPassword,
                 request.Email,
                 AutoActivate: true);
 
@@ -265,7 +226,7 @@ public partial class AuthController
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Logout(
-        [FromJwt(ClaimTypes.NameIdentifier), PermissionParameter(PermissionIds.Api.Auth.Logout.UserIdParameter)] Guid userId,
+        [FromJwt(JwtClaimTypes.Subject), PermissionParameter(PermissionIds.Api.Auth.Logout.UserIdParameter)] Guid userId,
         CancellationToken cancellationToken)
     {
         var sessionId = GetCurrentSessionId();

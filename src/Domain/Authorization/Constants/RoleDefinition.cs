@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Domain.Authorization.Extensions;
 using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;
 
@@ -29,11 +30,6 @@ public sealed record RoleDefinition(
     /// </summary>
     public IReadOnlyCollection<ScopeDirective> ExpandScope(IReadOnlyDictionary<string, string?> parameterValues)
     {
-        ArgumentNullException.ThrowIfNull(parameterValues);
-
-        return [.. ScopeTemplates
-            .Select(template => template.Expand(parameterValues))
-            .Distinct()
-            .OrderBy(static directive => directive.ToString(), StringComparer.Ordinal)];
+        return ScopeTemplates.ExpandToDirectives(parameterValues);
     }
 }

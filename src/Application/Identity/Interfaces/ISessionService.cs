@@ -33,6 +33,16 @@ public interface ISessionService
     Task<bool> RevokeAsync(Guid sessionId, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Revokes a session that belongs to a specific user.
+    /// Returns false if the session doesn't exist or doesn't belong to the user.
+    /// </summary>
+    /// <param name="userId">The user ID who owns the session.</param>
+    /// <param name="sessionId">The session ID to revoke.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>True if the session was found, belonged to the user, and was revoked; false otherwise.</returns>
+    Task<bool> RevokeForUserAsync(Guid userId, Guid sessionId, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Revokes all sessions for a user.
     /// </summary>
     /// <param name="userId">The user ID.</param>
@@ -67,6 +77,15 @@ public interface ISessionService
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The session DTO if valid, null otherwise.</returns>
     Task<SessionDto?> ValidateSessionAsync(Guid sessionId, string? refreshTokenHash, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Validates a session using the raw refresh token (hashing is done internally).
+    /// </summary>
+    /// <param name="sessionId">The session ID.</param>
+    /// <param name="refreshToken">The raw refresh token (will be hashed internally).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The session DTO if valid, null otherwise.</returns>
+    Task<SessionDto?> ValidateSessionWithTokenAsync(Guid sessionId, string refreshToken, CancellationToken cancellationToken);
 
     /// <summary>
     /// Updates the refresh token hash for a session (token rotation).

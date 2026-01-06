@@ -458,48 +458,45 @@ public class PermissionServiceScopeDirectiveTests
 
     #endregion
 
-    #region RBAC Version Backward Compatibility Tests
+    #region RBAC Version Tests
 
     [Fact]
-    public async Task LegacyTokenWithoutRbacVersion_GrantsAdminAccess()
+    public async Task LegacyTokenWithoutRbacVersion_IsRejected()
     {
-        // Create a principal without rbac_version claim (legacy token)
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, "legacy-user"),
             new Claim("name", "legacy@example.com"),
-            new Claim("scope", "api:iam:users:_read") // Old format
+            new Claim("scope", "api:iam:users:_read")
         };
         var identity = new ClaimsIdentity(claims, "Test");
         var principal = new ClaimsPrincipal(identity);
 
         var service = CreatePermissionService();
 
-        // Legacy tokens (no rbac_version) should get full admin access
         var hasPermission = await service.HasPermissionAsync(principal, "api:iam:users:read", CancellationToken.None);
 
-        Assert.True(hasPermission);
+        Assert.False(hasPermission);
     }
 
     [Fact]
-    public async Task LegacyTokenWithRbacVersion1_GrantsAdminAccess()
+    public async Task LegacyTokenWithRbacVersion1_IsRejected()
     {
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, "v1-user"),
             new Claim("name", "v1@example.com"),
             new Claim("rbac_version", "1"),
-            new Claim("scope", "api:iam:users:_read") // Old format
+            new Claim("scope", "api:iam:users:_read")
         };
         var identity = new ClaimsIdentity(claims, "Test");
         var principal = new ClaimsPrincipal(identity);
 
         var service = CreatePermissionService();
 
-        // rbac_version="1" tokens should get full admin access
         var hasPermission = await service.HasPermissionAsync(principal, "api:iam:users:read", CancellationToken.None);
 
-        Assert.True(hasPermission);
+        Assert.False(hasPermission);
     }
 
     [Fact]

@@ -1,4 +1,5 @@
 using Application.Authorization.Models;
+using Domain.Authorization.Constants;
 using Domain.Shared.Exceptions;
 using Infrastructure.Identity.Interfaces;
 using Microsoft.IdentityModel.Tokens;
@@ -8,14 +9,13 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using MsClaimTypes = System.Security.Claims.ClaimTypes;
 
 namespace Infrastructure.Identity.Services;
 
 internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguration>>> jwtConfigurationFactory) : IJwtTokenService
 {
-    private const string RbacVersionClaimType = "rbac_version";
     private const string ScopeClaimType = "scope";
-    private const string CurrentRbacVersion = "2";
 
     public async Task<string> GenerateToken(
         string userId,
@@ -91,9 +91,9 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
             }
         }
 
-        if (!claims.Any(claim => string.Equals(claim.Type, RbacVersionClaimType, StringComparison.Ordinal)))
+        if (!claims.Any(claim => string.Equals(claim.Type, RbacConstants.VersionClaimType, StringComparison.Ordinal)))
         {
-            claims.Add(new Claim(RbacVersionClaimType, CurrentRbacVersion));
+            claims.Add(new Claim(RbacConstants.VersionClaimType, RbacConstants.CurrentVersion));
         }
 
         var now = DateTime.UtcNow;
@@ -139,7 +139,7 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
     {
         var claims = new List<Claim>
         {
-            new(ClaimTypes.Name, apiKeyName),
+            new(MsClaimTypes.Name, apiKeyName),
             new("api_key", "true"),
             new(JwtRegisteredClaimNames.Sub, apiKeyName),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
@@ -201,7 +201,7 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
     {
         try
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
+            var tokenHandler = new JwtSecurityTokenHandler { MapInboundClaims = false };
 
             var validationParameters = await GetTokenValidationParameters(cancellationToken);
 
@@ -300,13 +300,13 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
             throw new SecurityTokenException("Token validation failed.", ex);
         }
 
-        var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier) ?? principal.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        var userId = principal.FindFirstValue(MsClaimTypes.NameIdentifier) ?? principal.FindFirstValue(JwtRegisteredClaimNames.Sub);
         if (string.IsNullOrWhiteSpace(userId))
         {
             throw new ValidationException("Token does not contain a subject identifier claim.");
         }
 
-        var username = principal.FindFirstValue(ClaimTypes.Name) ?? principal.Identity?.Name ?? userId;
+        var username = principal.FindFirstValue(MsClaimTypes.Name) ?? principal.Identity?.Name ?? userId;
 
         var mutableClaims = principal.Claims
             .Where(static claim => !IsReservedIdentityClaimType(claim.Type)
@@ -530,9 +530,9 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
     private static bool IsReservedIdentityClaimType(string claimType)
     {
         // Check both short and verbose forms of identity claim types
-        return string.Equals(claimType, ClaimTypes.NameIdentifier, StringComparison.Ordinal)
+        return string.Equals(claimType, MsClaimTypes.NameIdentifier, StringComparison.Ordinal)
             || string.Equals(claimType, "nameid", StringComparison.Ordinal)
-            || string.Equals(claimType, ClaimTypes.Name, StringComparison.Ordinal)
+            || string.Equals(claimType, MsClaimTypes.Name, StringComparison.Ordinal)
             || string.Equals(claimType, "name", StringComparison.Ordinal)
             || string.Equals(claimType, JwtRegisteredClaimNames.Sub, StringComparison.Ordinal)
             || string.Equals(claimType, JwtRegisteredClaimNames.Jti, StringComparison.Ordinal)

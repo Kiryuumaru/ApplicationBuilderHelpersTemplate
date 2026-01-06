@@ -193,6 +193,7 @@ internal sealed class EFCorePasskeyRepository(IDbContextFactory<EFCoreDbContext>
             UserId = challenge.UserId,
             Type = (int)challenge.Type,
             OptionsJson = challenge.OptionsJson,
+            CredentialName = challenge.CredentialName,
             CreatedAt = challenge.CreatedAt,
             ExpiresAt = challenge.ExpiresAt
         };
@@ -206,6 +207,7 @@ internal sealed class EFCorePasskeyRepository(IDbContextFactory<EFCoreDbContext>
             entity.UserId,
             (PasskeyChallengeType)entity.Type,
             entity.OptionsJson,
+            entity.CredentialName,
             entity.CreatedAt,
             entity.ExpiresAt);
     }

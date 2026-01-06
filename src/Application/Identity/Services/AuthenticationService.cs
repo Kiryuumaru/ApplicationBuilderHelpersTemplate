@@ -3,7 +3,9 @@ using Application.Authorization.Interfaces.Infrastructure;
 using Application.Identity.Interfaces;
 using Application.Identity.Interfaces.Infrastructure;
 using Application.Identity.Models;
+using Domain.Authorization.Constants;
 using Domain.Authorization.Models;
+using Domain.Identity.Constants;
 using Domain.Identity.Exceptions;
 using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
@@ -14,24 +16,21 @@ namespace Application.Identity.Services;
 
 /// <summary>
 /// Implementation of IAuthenticationService using repositories directly.
+/// Delegates token generation to IUserTokenService.
 /// </summary>
 internal sealed class AuthenticationService(
     IUserRepository userRepository,
-    ISessionRepository sessionRepository,
-    IRoleRepository roleRepository,
     IPasswordVerifier passwordVerifier,
-    ITokenService tokenService,
-    IUserRoleResolver userRoleResolver) : IAuthenticationService
+    IUserRoleResolver userRoleResolver,
+    ITwoFactorService twoFactorService,
+    IUserTokenService userTokenService) : IAuthenticationService
 {
-    private const string RbacVersionClaimType = "rbac_version";
-    private const string CurrentRbacVersion = "2";
 
     private readonly IUserRepository _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
-    private readonly ISessionRepository _sessionRepository = sessionRepository ?? throw new ArgumentNullException(nameof(sessionRepository));
-    private readonly IRoleRepository _roleRepository = roleRepository ?? throw new ArgumentNullException(nameof(roleRepository));
     private readonly IPasswordVerifier _passwordVerifier = passwordVerifier ?? throw new ArgumentNullException(nameof(passwordVerifier));
-    private readonly ITokenService _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
     private readonly IUserRoleResolver _userRoleResolver = userRoleResolver ?? throw new ArgumentNullException(nameof(userRoleResolver));
+    private readonly ITwoFactorService _twoFactorService = twoFactorService ?? throw new ArgumentNullException(nameof(twoFactorService));
+    private readonly IUserTokenService _userTokenService = userTokenService ?? throw new ArgumentNullException(nameof(userTokenService));
 
     public async Task<CredentialValidationResult> ValidateCredentialsAsync(string username, string password, CancellationToken cancellationToken)
     {
@@ -57,7 +56,7 @@ internal sealed class AuthenticationService(
             return CredentialValidationResult.TwoFactorRequired(user.Id);
         }
 
-        var roleCodes = await ResolveRoleCodesAsync(user, cancellationToken).ConfigureAwait(false);
+        var roleCodes = await _userRoleResolver.ResolveRoleCodesAsync(user, cancellationToken).ConfigureAwait(false);
         return CredentialValidationResult.Success(user.Id, user.UserName, user.Email, roleCodes, user.IsAnonymous);
     }
 
@@ -69,7 +68,7 @@ internal sealed class AuthenticationService(
             return CredentialValidationResult.Failed($"User with ID {userId} not found.");
         }
 
-        var roleCodes = await ResolveRoleCodesAsync(user, cancellationToken).ConfigureAwait(false);
+        var roleCodes = await _userRoleResolver.ResolveRoleCodesAsync(user, cancellationToken).ConfigureAwait(false);
         return CredentialValidationResult.Success(user.Id, user.UserName, user.Email, roleCodes, user.IsAnonymous);
     }
 
@@ -131,83 +130,38 @@ internal sealed class AuthenticationService(
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
-        // TODO: Verify 2FA code using ITwoFactorService
-        // For now, we just create the session (actual 2FA verification happens via ITwoFactorService)
+        // SECURITY: Verify 2FA code before creating session
+        var isValid = await _twoFactorService.Verify2faCodeAsync(userId, code, cancellationToken).ConfigureAwait(false);
+        if (!isValid)
+        {
+            throw new AuthenticationException("Invalid 2FA code.");
+        }
 
         return await CreateSessionForUserInternalAsync(user, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<UserSessionDto> CreateSessionForUserInternalAsync(User user, CancellationToken cancellationToken)
     {
-        // Resolve roles with their parameter values
-        var roleResolutions = await _userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
-        
-        // Format role claims with inline parameters (e.g., "USER;roleUserId=abc123")
-        var roleClaims = roleResolutions
-            .Select(r => Role.FormatRoleClaim(r.Role.Code, r.ParameterValues))
-            .ToArray();
-
-        // Create login session
-        var now = DateTimeOffset.UtcNow;
-        var refreshTokenExpiry = now.AddDays(7);
-        var accessTokenExpiry = now.AddHours(1);
-
-        // Generate a refresh token hash for the session
-        var refreshTokenValue = Guid.NewGuid().ToString("N");
-        var refreshTokenHash = ComputeHash(refreshTokenValue);
-
-        var loginSession = LoginSession.Create(user.Id, refreshTokenHash, refreshTokenExpiry);
-        await _sessionRepository.CreateAsync(loginSession, cancellationToken).ConfigureAwait(false);
-
-        // Build additional claims with RBAC version
-        var additionalClaims = new List<Claim>
-        {
-            new(RbacVersionClaimType, CurrentRbacVersion)
-        };
-
-        // Generate access token with inline role claims (including parameters)
-        // Permission resolution happens at request time using the role codes
-        var accessToken = await _tokenService.GenerateAccessTokenAsync(
+        // Delegate all token generation to IUserTokenService
+        var tokenResult = await _userTokenService.CreateSessionWithTokensAsync(
             user.Id,
-            user.UserName,
-            roleClaims,
-            additionalClaims,
+            deviceInfo: null, // Device info not available in this flow
             cancellationToken).ConfigureAwait(false);
 
-        var refreshToken = await _tokenService.GenerateRefreshTokenAsync(
-            loginSession.Id,
-            cancellationToken).ConfigureAwait(false);
+        // Get formatted role claims for the session DTO
+        var roleClaims = await _userRoleResolver.ResolveFormattedRoleClaimsAsync(user, cancellationToken).ConfigureAwait(false);
 
         return new UserSessionDto
         {
-            SessionId = loginSession.Id,
+            SessionId = tokenResult.SessionId,
             UserId = user.Id,
             Username = user.UserName,
             IsAnonymous = user.IsAnonymous,
-            AccessToken = accessToken,
-            RefreshToken = refreshToken,
-            IssuedAt = now,
-            ExpiresAt = accessTokenExpiry,
+            AccessToken = tokenResult.AccessToken,
+            RefreshToken = tokenResult.RefreshToken,
+            IssuedAt = DateTimeOffset.UtcNow,
+            ExpiresAt = DateTimeOffset.UtcNow.AddSeconds(tokenResult.ExpiresInSeconds),
             Roles = roleClaims
         };
-    }
-
-    private static string ComputeHash(string input)
-    {
-        var bytes = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(input));
-        return Convert.ToBase64String(bytes);
-    }
-
-    private async Task<IReadOnlyCollection<string>> ResolveRoleCodesAsync(User user, CancellationToken cancellationToken)
-    {
-        if (user.RoleAssignments.Count == 0)
-        {
-            return [];
-        }
-
-        var roleIds = user.RoleAssignments.Select(ra => ra.RoleId).Distinct();
-        var roles = await _roleRepository.GetByIdsAsync(roleIds, cancellationToken).ConfigureAwait(false);
-
-        return roles.Select(r => r.Code).ToArray();
     }
 }

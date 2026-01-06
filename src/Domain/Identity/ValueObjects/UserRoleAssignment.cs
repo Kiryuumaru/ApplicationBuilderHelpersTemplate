@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using Domain.Shared.Constants;
 using Domain.Shared.Exceptions;
 using Domain.Shared.Models;
 
@@ -9,9 +10,6 @@ namespace Domain.Identity.ValueObjects;
 
 public sealed class UserRoleAssignment : ValueObject
 {
-    private static readonly IReadOnlyDictionary<string, string?> EmptyParameters =
-        new ReadOnlyDictionary<string, string?>(new Dictionary<string, string?>(StringComparer.Ordinal));
-
     public Guid RoleId { get; }
     public IReadOnlyDictionary<string, string?> ParameterValues { get; }
 
@@ -38,7 +36,7 @@ public sealed class UserRoleAssignment : ValueObject
     {
         if (parameterValues is null || parameterValues.Count == 0)
         {
-            return EmptyParameters;
+            return EmptyCollections.StringNullableStringDictionary;
         }
 
         var normalized = new Dictionary<string, string?>(StringComparer.Ordinal);
@@ -59,7 +57,7 @@ public sealed class UserRoleAssignment : ValueObject
         }
 
         return normalized.Count == 0
-            ? EmptyParameters
+            ? EmptyCollections.StringNullableStringDictionary
             : new ReadOnlyDictionary<string, string?>(normalized);
     }
 }

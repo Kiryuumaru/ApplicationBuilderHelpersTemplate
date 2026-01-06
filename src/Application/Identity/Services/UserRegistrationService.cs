@@ -1,4 +1,6 @@
+using Application.Authorization.Interfaces;
 using Application.Authorization.Interfaces.Infrastructure;
+using Application.Authorization.Services;
 using Application.Identity.Interfaces;
 using Application.Identity.Interfaces.Infrastructure;
 using Application.Identity.Models;
@@ -15,11 +17,13 @@ namespace Application.Identity.Services;
 internal sealed class UserRegistrationService(
     IUserRepository userRepository,
     IRoleRepository roleRepository,
+    IUserRoleResolver userRoleResolver,
     IPasswordHasher<User> passwordHasher,
     UserManager<User> userManager) : IUserRegistrationService
 {
     private readonly IUserRepository _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
     private readonly IRoleRepository _roleRepository = roleRepository ?? throw new ArgumentNullException(nameof(roleRepository));
+    private readonly IUserRoleResolver _userRoleResolver = userRoleResolver ?? throw new ArgumentNullException(nameof(userRoleResolver));
     private readonly IPasswordHasher<User> _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
     private readonly UserManager<User> _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
 
@@ -34,6 +38,12 @@ internal sealed class UserRegistrationService(
         }
         else
         {
+            // Validate password confirmation
+            if (!request.PasswordsMatch())
+            {
+                throw new PasswordValidationException("Password and confirm password do not match.");
+            }
+
             // Validate uniqueness
             var existingByUsername = await _userRepository.FindByUsernameAsync(request.Username, cancellationToken).ConfigureAwait(false);
             if (existingByUsername is not null)
@@ -74,7 +84,7 @@ internal sealed class UserRegistrationService(
                         ?? throw new EntityNotFoundException("Role", roleAssignment.RoleCode);
 
                     // Validate required parameters
-                    ValidateRoleParameters(role, roleAssignment.ParameterValues);
+                    RoleValidationHelper.ValidateRoleParameters(role, roleAssignment.ParameterValues);
 
                     user.AssignRole(role.Id, roleAssignment.ParameterValues);
                 }
@@ -100,7 +110,7 @@ internal sealed class UserRegistrationService(
         await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
 
         var externalLogins = await _userRepository.GetLoginsAsync(user.Id, cancellationToken).ConfigureAwait(false);
-        var roleCodes = await ResolveRoleCodesAsync(user, cancellationToken).ConfigureAwait(false);
+        var roleCodes = await _userRoleResolver.ResolveRoleCodesAsync(user, cancellationToken).ConfigureAwait(false);
 
         return user.ToDto(user.RoleIds, roleCodes, externalLogins);
     }
@@ -140,7 +150,7 @@ internal sealed class UserRegistrationService(
             cancellationToken).ConfigureAwait(false);
 
         var externalLogins = await _userRepository.GetLoginsAsync(user.Id, cancellationToken).ConfigureAwait(false);
-        var roleCodes = await ResolveRoleCodesAsync(user, cancellationToken).ConfigureAwait(false);
+        var roleCodes = await _userRoleResolver.ResolveRoleCodesAsync(user, cancellationToken).ConfigureAwait(false);
 
         return user.ToDto(user.RoleIds, roleCodes, externalLogins);
     }
@@ -166,46 +176,5 @@ internal sealed class UserRegistrationService(
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
         await _userRepository.DeleteAsync(userId, cancellationToken).ConfigureAwait(false);
-    }
-
-    private async Task<IReadOnlyCollection<string>> ResolveRoleCodesAsync(User user, CancellationToken cancellationToken)
-    {
-        if (user.RoleAssignments.Count == 0)
-        {
-            return [];
-        }
-
-        var roleIds = user.RoleAssignments.Select(ra => ra.RoleId).Distinct();
-        var roles = await _roleRepository.GetByIdsAsync(roleIds, cancellationToken).ConfigureAwait(false);
-
-        return roles.Select(r => r.Code).ToArray();
-    }
-
-    private static void ValidateRoleParameters(Domain.Authorization.Models.Role role, IReadOnlyDictionary<string, string?>? providedParameters)
-    {
-        // Collect all required parameters from the role's scope templates
-        var requiredParameters = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var scopeTemplate in role.ScopeTemplates)
-        {
-            foreach (var requiredParam in scopeTemplate.RequiredParameters)
-            {
-                requiredParameters.Add(requiredParam);
-            }
-        }
-
-        if (requiredParameters.Count == 0)
-        {
-            return; // No parameters required
-        }
-
-        // Check that all required parameters are provided
-        var providedKeys = providedParameters?.Keys ?? [];
-        var missingParameters = requiredParameters.Where(p => !providedKeys.Contains(p)).ToList();
-
-        if (missingParameters.Count > 0)
-        {
-            throw new ValidationException(
-                $"Role '{role.Code}' requires parameters [{string.Join(", ", missingParameters)}] but they were not provided.");
-        }
     }
 }

@@ -1,5 +1,6 @@
 using Application.Authorization.Interfaces;
 using Application.Authorization.Interfaces.Infrastructure;
+using Application.Authorization.Services;
 using Application.Identity.Interfaces;
 using Application.Identity.Interfaces.Infrastructure;
 using Application.Identity.Models;
@@ -34,7 +35,7 @@ internal sealed class UserAuthorizationService(
             ?? throw new EntityNotFoundException("Role", assignment.RoleCode);
 
         // Validate required parameters
-        ValidateRoleParameters(role, assignment.ParameterValues);
+        RoleValidationHelper.ValidateRoleParameters(role, assignment.ParameterValues);
 
         user.AssignRole(role.Id, assignment.ParameterValues);
         await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
@@ -113,13 +114,7 @@ internal sealed class UserAuthorizationService(
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
-        var roleResolutions = await _userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
-
-        // Format roles with inline parameters: "USER;roleUserId=abc123"
-        return roleResolutions
-            .Select(r => Role.FormatRoleClaim(r.Role.Code, r.ParameterValues))
-            .OrderBy(r => r, StringComparer.Ordinal)
-            .ToArray();
+        return await _userRoleResolver.ResolveFormattedRoleClaimsAsync(user, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<IReadOnlyCollection<string>> GetDirectPermissionScopesAsync(Guid userId, CancellationToken cancellationToken)
@@ -181,34 +176,5 @@ internal sealed class UserAuthorizationService(
             DirectPermissionScopes = directScopes,
             EffectivePermissions = [.. effectivePermissions.OrderBy(p => p, StringComparer.Ordinal)]
         };
-    }
-
-    private static void ValidateRoleParameters(Domain.Authorization.Models.Role role, IReadOnlyDictionary<string, string?>? providedParameters)
-    {
-        // Collect all required parameters from the role's scope templates
-        var requiredParameters = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var scopeTemplate in role.ScopeTemplates)
-        {
-            foreach (var requiredParam in scopeTemplate.RequiredParameters)
-            {
-                requiredParameters.Add(requiredParam);
-            }
-        }
-
-        if (requiredParameters.Count == 0)
-        {
-            return; // No parameters required
-        }
-
-        // Check that all required parameters are provided
-        var providedKeys = providedParameters?.Keys ?? [];
-        var missingParameters = requiredParameters.Where(p => !providedKeys.Contains(p)).ToList();
-
-        if (missingParameters.Count > 0)
-        {
-            throw new ValidationException(
-                "parameterValues",
-                $"Role '{role.Code}' requires parameters [{string.Join(", ", missingParameters)}] but they were not provided.");
-        }
     }
 }

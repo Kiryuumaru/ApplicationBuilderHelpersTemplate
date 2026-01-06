@@ -84,14 +84,14 @@ public static class CliHelpers
             osCli = Cli.Wrap("cmd")
                 .WithArguments(["/c", $"call \"{scriptPath}\""], false);
         }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
         {
             osCli = Cli.Wrap("/bin/bash")
                 .WithArguments(["-c", $"\"chmod +x '{scriptPath}' && '{scriptPath}'\""], false);
         }
         else
         {
-            throw new NotImplementedException();
+            throw new PlatformNotSupportedException($"Unsupported operating system: {RuntimeInformation.OSDescription}");
         }
 
         if (workingDirectory != null)

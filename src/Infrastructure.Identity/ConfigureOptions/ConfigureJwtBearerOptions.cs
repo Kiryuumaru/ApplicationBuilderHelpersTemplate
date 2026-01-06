@@ -1,8 +1,10 @@
 using Application.Identity.Interfaces;
+using Domain.Identity.Constants;
 using Infrastructure.Identity.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using JwtClaimTypes = Domain.Identity.Constants.ClaimTypes;
 
 namespace Infrastructure.Identity.ConfigureOptions;
 
@@ -11,8 +13,6 @@ namespace Infrastructure.Identity.ConfigureOptions;
 /// </summary>
 internal class ConfigureJwtBearerOptions(IServiceProvider serviceProvider) : IConfigureNamedOptions<JwtBearerOptions>
 {
-    private const string SessionIdClaimType = "sid";
-
     public void Configure(JwtBearerOptions options)
     {
         Configure(JwtBearerDefaults.AuthenticationScheme, options);
@@ -60,10 +60,10 @@ internal class ConfigureJwtBearerOptions(IServiceProvider serviceProvider) : ICo
             }
 
             // Extract session ID from claims
-            var sessionIdClaim = context.Principal?.FindFirst(SessionIdClaimType);
+            var sessionIdClaim = context.Principal?.FindFirst(JwtClaimTypes.SessionId);
             if (sessionIdClaim is null || !Guid.TryParse(sessionIdClaim.Value, out var sessionId))
             {
-                // No session ID claim - this shouldn't happen for valid tokens, but allow for backward compatibility
+                context.Fail("Token is missing required session identifier.");
                 return;
             }
 
@@ -85,5 +85,8 @@ internal class ConfigureJwtBearerOptions(IServiceProvider serviceProvider) : ICo
             .GetTokenValidationParameters(CancellationToken.None)
             .GetAwaiter()
             .GetResult();
+
+        // Disable claim type mapping - keep JWT claim types as-is ("sub" stays "sub", not mapped to ClaimTypes.NameIdentifier)
+        options.MapInboundClaims = false;
     }
 }

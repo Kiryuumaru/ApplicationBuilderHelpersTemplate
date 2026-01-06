@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using Domain.Authorization.Extensions;
 using Domain.Authorization.ValueObjects;
+using Domain.Shared.Constants;
 using Domain.Shared.Exceptions;
 using Domain.Shared.Models;
 
@@ -10,9 +12,6 @@ namespace Domain.Authorization.Models;
 
 public sealed class Role : AggregateRoot
 {
-    private static readonly IReadOnlyDictionary<string, string> EmptyParameters =
-        new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(0, StringComparer.Ordinal));
-
     private readonly List<ScopeTemplate> _scopeTemplates = new();
 
     public string Code { get; private set; }
@@ -94,12 +93,7 @@ public sealed class Role : AggregateRoot
     /// </summary>
     public IReadOnlyCollection<ScopeDirective> ExpandScope(IReadOnlyDictionary<string, string?> parameterValues)
     {
-        ArgumentNullException.ThrowIfNull(parameterValues);
-
-        return [.. _scopeTemplates
-            .Select(template => template.Expand(parameterValues))
-            .Distinct()
-            .OrderBy(static directive => directive.ToString(), StringComparer.Ordinal)];
+        return _scopeTemplates.ExpandToDirectives(parameterValues);
     }
 
     /// <summary>
@@ -214,7 +208,7 @@ public sealed class Role : AggregateRoot
         {
             // No parameters - just the code
             var code = NormalizeCode(trimmed);
-            return new ParsedRoleClaim(claim, code, EmptyParameters);
+            return new ParsedRoleClaim(claim, code, EmptyCollections.StringStringDictionary);
         }
 
         if (semicolonIndex == 0)
@@ -236,7 +230,7 @@ public sealed class Role : AggregateRoot
         if (paramPart.Length == 0)
         {
             // Trailing semicolon with no params - treat as no params
-            return new ParsedRoleClaim(claim, normalizedCode, EmptyParameters);
+            return new ParsedRoleClaim(claim, normalizedCode, EmptyCollections.StringStringDictionary);
         }
 
         var parameters = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -270,7 +264,7 @@ public sealed class Role : AggregateRoot
         return new ParsedRoleClaim(
             claim,
             normalizedCode,
-            parameters.Count == 0 ? EmptyParameters : new ReadOnlyDictionary<string, string>(parameters));
+            parameters.Count == 0 ? EmptyCollections.StringStringDictionary : new ReadOnlyDictionary<string, string>(parameters));
     }
 
     /// <summary>
@@ -288,7 +282,7 @@ public sealed class Role : AggregateRoot
         }
         catch
         {
-            parsed = new ParsedRoleClaim(string.Empty, string.Empty, EmptyParameters);
+            parsed = new ParsedRoleClaim(string.Empty, string.Empty, EmptyCollections.StringStringDictionary);
             return false;
         }
     }

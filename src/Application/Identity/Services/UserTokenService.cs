@@ -1,10 +1,11 @@
 using System.Security.Claims;
-using System.Security.Cryptography;
 using Application.Authorization.Interfaces;
 using Application.Identity.Interfaces;
 using Application.Identity.Models;
 using Domain.Authorization.Constants;
 using Domain.Authorization.ValueObjects;
+using Domain.Identity.Constants;
+using JwtClaimTypes = Domain.Identity.Constants.ClaimTypes;
 
 namespace Application.Identity.Services;
 
@@ -17,9 +18,6 @@ public sealed class UserTokenService(
     ISessionService sessionService,
     IPermissionService permissionService) : IUserTokenService
 {
-    private const string SessionIdClaimType = "sid";
-    private static readonly TimeSpan AccessTokenExpiration = TimeSpan.FromMinutes(60);
-    private static readonly TimeSpan RefreshTokenExpiration = TimeSpan.FromDays(7);
 
     /// <inheritdoc />
     public async Task<UserTokenResult> CreateSessionWithTokensAsync(
@@ -35,13 +33,13 @@ public sealed class UserTokenService(
 
         // Generate refresh token and hash
         var refreshToken = await GenerateRefreshTokenAsync(userId, authData.Username, sessionId, cancellationToken);
-        var tokenHash = HashToken(refreshToken);
+        var tokenHash = Common.Services.TokenHasher.Hash(refreshToken);
 
         // Create session
         await sessionService.CreateSessionAsync(
             userId,
             tokenHash,
-            DateTimeOffset.UtcNow.Add(RefreshTokenExpiration),
+            DateTimeOffset.UtcNow.Add(TokenExpirations.RefreshToken),
             deviceInfo?.DeviceName,
             deviceInfo?.UserAgent,
             deviceInfo?.IpAddress,
@@ -51,7 +49,7 @@ public sealed class UserTokenService(
         // Generate access token
         var accessToken = await GenerateAccessTokenAsync(authData, sessionId, cancellationToken);
 
-        return new UserTokenResult(accessToken, refreshToken, sessionId, (int)AccessTokenExpiration.TotalSeconds);
+        return new UserTokenResult(accessToken, refreshToken, sessionId, (int)TokenExpirations.AccessToken.TotalSeconds);
     }
 
     /// <inheritdoc />
@@ -68,19 +66,19 @@ public sealed class UserTokenService(
 
         // Generate new refresh token and hash
         var refreshToken = await GenerateRefreshTokenAsync(session.UserId, authData.Username, sessionId, cancellationToken);
-        var tokenHash = HashToken(refreshToken);
+        var tokenHash = Common.Services.TokenHasher.Hash(refreshToken);
 
         // Update session with new token hash
         await sessionService.UpdateRefreshTokenAsync(
             sessionId,
             tokenHash,
-            DateTimeOffset.UtcNow.Add(RefreshTokenExpiration),
+            DateTimeOffset.UtcNow.Add(TokenExpirations.RefreshToken),
             cancellationToken);
 
         // Generate new access token
         var accessToken = await GenerateAccessTokenAsync(authData, sessionId, cancellationToken);
 
-        return new UserTokenResult(accessToken, refreshToken, sessionId, (int)AccessTokenExpiration.TotalSeconds);
+        return new UserTokenResult(accessToken, refreshToken, sessionId, (int)TokenExpirations.AccessToken.TotalSeconds);
     }
 
     /// <summary>
@@ -95,7 +93,7 @@ public sealed class UserTokenService(
     {
         var additionalClaims = new List<Claim>
         {
-            new(SessionIdClaimType, sessionId.ToString())
+            new(JwtClaimTypes.SessionId, sessionId.ToString())
         };
 
         // Add role claims using short claim type name (not verbose MS schema)
@@ -113,7 +111,7 @@ public sealed class UserTokenService(
             authData.Username ?? string.Empty,
             scopes,
             additionalClaims,
-            DateTimeOffset.UtcNow.Add(AccessTokenExpiration),
+            DateTimeOffset.UtcNow.Add(TokenExpirations.AccessToken),
             cancellationToken);
     }
 
@@ -129,7 +127,7 @@ public sealed class UserTokenService(
     {
         var refreshClaims = new List<Claim>
         {
-            new(SessionIdClaimType, sessionId.ToString())
+            new(JwtClaimTypes.SessionId, sessionId.ToString())
         };
 
         // Refresh token only has permission to refresh - nothing else
@@ -143,17 +141,54 @@ public sealed class UserTokenService(
             username ?? string.Empty,
             refreshScopes,
             additionalClaims: refreshClaims,
-            DateTimeOffset.UtcNow.Add(RefreshTokenExpiration),
+            DateTimeOffset.UtcNow.Add(TokenExpirations.RefreshToken),
             cancellationToken);
     }
 
-    /// <summary>
-    /// Hashes a token for secure storage.
-    /// </summary>
-    private static string HashToken(string token)
+    /// <inheritdoc />
+    public async Task<TokenRefreshResult> RefreshTokensAsync(
+        string refreshToken,
+        CancellationToken cancellationToken)
     {
-        var bytes = System.Text.Encoding.UTF8.GetBytes(token);
-        var hash = SHA256.HashData(bytes);
-        return Convert.ToBase64String(hash);
+        // Validate token and get principal
+        var principal = await permissionService.ValidateTokenAsync(refreshToken, cancellationToken);
+        if (principal is null)
+        {
+            return TokenRefreshResult.Failure("invalid_token", "The refresh token is invalid or has expired.");
+        }
+
+        // Extract user ID
+        var userIdClaim = principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)
+            ?? principal.FindFirst("sub");
+        if (userIdClaim is null || !Guid.TryParse(userIdClaim.Value, out var userId))
+        {
+            return TokenRefreshResult.Failure("invalid_token", "The refresh token does not contain valid user information.");
+        }
+
+        // Verify this is a refresh token (has refresh permission)
+        var refreshPermission = PermissionIds.Api.Auth.Refresh.Permission.WithUserId(userId.ToString());
+        if (!await permissionService.HasPermissionAsync(principal, refreshPermission, cancellationToken))
+        {
+            return TokenRefreshResult.Failure("invalid_token_type", "The provided token does not have refresh permission.");
+        }
+
+        // Extract session ID
+        var sessionIdClaim = principal.FindFirst(JwtClaimTypes.SessionId);
+        if (sessionIdClaim is null || !Guid.TryParse(sessionIdClaim.Value, out var sessionId))
+        {
+            return TokenRefreshResult.Failure("invalid_token", "The refresh token does not contain a valid session.");
+        }
+
+        // Validate session exists and token matches
+        var loginSession = await sessionService.ValidateSessionWithTokenAsync(sessionId, refreshToken, cancellationToken);
+        if (loginSession is null)
+        {
+            return TokenRefreshResult.Failure("session_revoked", "This session has been revoked or has expired.");
+        }
+
+        // Rotate tokens
+        var tokens = await RotateTokensAsync(sessionId, cancellationToken);
+
+        return TokenRefreshResult.Success(userId, tokens);
     }
 }

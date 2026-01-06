@@ -8,14 +8,26 @@ using Domain.Identity.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 
 namespace Application.Identity.Extensions;
 
 internal static class IdentityServiceCollectionExtensions
 {
-    public static IServiceCollection AddIdentityServices(this IServiceCollection services)
+    public static IServiceCollection AddIdentityServices(this IServiceCollection services, Action<FrontendUrlOptions>? configureFrontendUrl = null)
     {
         ArgumentNullException.ThrowIfNull(services);
+
+        // Configure FrontendUrlOptions
+        if (configureFrontendUrl is not null)
+        {
+            services.Configure(configureFrontendUrl);
+        }
+        else
+        {
+            // Default configuration - applications should override via configuration
+            services.Configure<FrontendUrlOptions>(options => { });
+        }
 
         services.AddRoleServices();
         services.AddAuthenticationServices();
@@ -48,6 +60,8 @@ internal static class IdentityServiceCollectionExtensions
         services.AddScoped<IUserAuthorizationService, UserAuthorizationService>();
         services.AddScoped<ISessionService, SessionService>();
         services.AddScoped<IUserTokenService, UserTokenService>();
+        services.AddScoped<IFrontendUrlBuilder, FrontendUrlBuilder>();
+        services.AddScoped<IAuthMethodGuardService, AuthMethodGuardService>();
         
         services.AddScoped<IAnonymousUserCleanupService, AnonymousUserCleanupService>();
 

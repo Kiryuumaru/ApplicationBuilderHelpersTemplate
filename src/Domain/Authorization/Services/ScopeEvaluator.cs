@@ -13,48 +13,15 @@ namespace Domain.Authorization.Services;
 /// </summary>
 public static class ScopeEvaluator
 {
-    private static readonly IReadOnlyDictionary<string, Permission> PermissionLookup;
-    private static readonly HashSet<string> RLeafPermissions;
-    private static readonly HashSet<string> WLeafPermissions;
-
-    static ScopeEvaluator()
-    {
-        var allPermissions = Permissions.GetAll();
-        var lookup = new Dictionary<string, Permission>(allPermissions.Count, StringComparer.Ordinal);
-        var rLeafs = new HashSet<string>(StringComparer.Ordinal);
-        var wLeafs = new HashSet<string>(StringComparer.Ordinal);
-
-        foreach (var permission in allPermissions)
-        {
-            lookup[permission.Path] = permission;
-
-            if (!permission.HasChildren)
-            {
-                if (permission.AccessCategory == PermissionAccessCategory.Read)
-                {
-                    rLeafs.Add(permission.Path);
-                }
-                else if (permission.AccessCategory == PermissionAccessCategory.Write)
-                {
-                    wLeafs.Add(permission.Path);
-                }
-            }
-        }
-
-        PermissionLookup = lookup;
-        RLeafPermissions = rLeafs;
-        WLeafPermissions = wLeafs;
-    }
-
     /// <summary>
     /// Gets all Read-leaf permission paths.
     /// </summary>
-    public static IReadOnlyCollection<string> GetRLeafPermissions() => RLeafPermissions;
+    public static IReadOnlyCollection<string> GetRLeafPermissions() => PermissionCache.ReadLeafPaths;
 
     /// <summary>
     /// Gets all Write-leaf permission paths.
     /// </summary>
-    public static IReadOnlyCollection<string> GetWLeafPermissions() => WLeafPermissions;
+    public static IReadOnlyCollection<string> GetWLeafPermissions() => PermissionCache.WriteLeafPaths;
 
     /// <summary>
     /// Determines whether the given scope grants access to the requested permission.
@@ -270,14 +237,14 @@ public static class ScopeEvaluator
         if (string.Equals(directivePath, "_read", StringComparison.Ordinal))
         {
             return requestedPath.EndsWith(":_read", StringComparison.Ordinal) ||
-                   RLeafPermissions.Contains(requestedPath);
+                   PermissionCache.ReadLeafPaths.Contains(requestedPath);
         }
 
         // 3. Root _write: If directive is "_write", matches any path ending in ":_write" OR any WLeaf permission
         if (string.Equals(directivePath, "_write", StringComparison.Ordinal))
         {
             return requestedPath.EndsWith(":_write", StringComparison.Ordinal) ||
-                   WLeafPermissions.Contains(requestedPath);
+                   PermissionCache.WriteLeafPaths.Contains(requestedPath);
         }
 
         // 4. Hierarchical: requested path starts with directive path + ":"
@@ -295,7 +262,7 @@ public static class ScopeEvaluator
             // Check if requested path is under this parent and is an RLeaf
             if (requestedPath.StartsWith(parentPath + ":", StringComparison.Ordinal))
             {
-                return RLeafPermissions.Contains(requestedPath);
+                return PermissionCache.ReadLeafPaths.Contains(requestedPath);
             }
 
             // Also match any nested :_read scopes
@@ -314,7 +281,7 @@ public static class ScopeEvaluator
             // Check if requested path is under this parent and is a WLeaf
             if (requestedPath.StartsWith(parentPath + ":", StringComparison.Ordinal))
             {
-                return WLeafPermissions.Contains(requestedPath);
+                return PermissionCache.WriteLeafPaths.Contains(requestedPath);
             }
 
             // Also match any nested :_write scopes

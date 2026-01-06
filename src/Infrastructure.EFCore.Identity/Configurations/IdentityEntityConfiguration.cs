@@ -148,6 +148,7 @@ public class IdentityEntityConfiguration : IEFCoreEntityConfiguration
             .HasConversion(id => id.HasValue ? id.Value.ToString() : null, str => str != null ? Guid.Parse(str) : null);
         entity.Property(c => c.Type).IsRequired();
         entity.Property(c => c.OptionsJson).IsRequired();
+        entity.Property(c => c.CredentialName).HasMaxLength(256);  // Optional, for registration
         entity.Property(c => c.CreatedAt).IsRequired();
         entity.Property(c => c.ExpiresAt).IsRequired();
 

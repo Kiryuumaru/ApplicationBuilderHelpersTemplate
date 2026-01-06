@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
 using Presentation.WebApi.Models.Responses;
-using System.Security.Claims;
+using JwtClaimTypes = Domain.Identity.Constants.ClaimTypes;
 
 namespace Presentation.WebApi.Controllers.V1;
 
@@ -22,7 +22,7 @@ public partial class AuthController
     [ProducesResponseType<UserInfo>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetMe(
-        [FromJwt(ClaimTypes.NameIdentifier), PermissionParameter(PermissionIds.Api.Auth.Me.UserIdParameter)] Guid userId,
+        [FromJwt(JwtClaimTypes.Subject), PermissionParameter(PermissionIds.Api.Auth.Me.UserIdParameter)] Guid userId,
         CancellationToken cancellationToken)
     {
         var user = await userProfileService.GetByIdAsync(userId, cancellationToken);

@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using Domain.Authorization.Constants;
+using Domain.Shared.Constants;
 using Domain.Shared.Exceptions;
 using Application.Authorization.Interfaces;
 using Application.Authorization.Interfaces.Infrastructure;
@@ -24,15 +25,8 @@ internal sealed class PermissionService(
     IRoleRepository roleRepository) : IPermissionService
 {
     private const string ScopeClaimType = "scope";
-    private const string RbacVersionClaimType = "rbac_version";
-    private const string CurrentRbacVersion = "2";
 
-    private static readonly ReadOnlyCollection<Permission> PermissionTree;
-    private static readonly ReadOnlyDictionary<string, Permission> PermissionLookup;
-    private static readonly ReadOnlyCollection<string> PermissionIdentifiers;
     private static readonly ReadOnlyDictionary<string, HashSet<string>> ReachableParameterLookup;
-    private static readonly IReadOnlyDictionary<string, string> EmptyParameterDictionary =
-        new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(0, StringComparer.Ordinal));
     private static readonly HashSet<string> EmptyParameterNameSet = new(StringComparer.Ordinal);
 
     private readonly ITokenService _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
@@ -40,26 +34,7 @@ internal sealed class PermissionService(
 
     static PermissionService()
     {
-        PermissionTree = new ReadOnlyCollection<Permission>([.. Permissions.PermissionTreeRoots]);
-
-        var allPermissions = Permissions.GetAll();
-        var lookup = new Dictionary<string, Permission>(allPermissions.Count, StringComparer.Ordinal);
-        foreach (var permission in allPermissions)
-        {
-            lookup[permission.Path] = permission;
-        }
-
-        PermissionLookup = lookup.AsReadOnly();
-
-        var assignableIdentifiers = lookup
-            .Where(static kvp => kvp.Value.AccessCategory != PermissionAccessCategory.Unspecified)
-            .Select(static kvp => kvp.Key)
-            .OrderBy(static id => id, StringComparer.Ordinal)
-            .ToArray();
-
-        PermissionIdentifiers = Array.AsReadOnly(assignableIdentifiers);
-
-        ReachableParameterLookup = BuildReachableParameterLookup(PermissionTree);
+        ReachableParameterLookup = BuildReachableParameterLookup(PermissionCache.TreeRoots);
     }
 
     public async Task<string> GenerateTokenWithPermissionsAsync(
@@ -132,10 +107,10 @@ internal sealed class PermissionService(
     }
 
     public Task<IReadOnlyCollection<Permission>> GetPermissionTreeAsync(CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyCollection<Permission>>(PermissionTree);
+        => Task.FromResult(PermissionCache.TreeRoots);
 
     public Task<IReadOnlyCollection<string>> GetAllPermissionIdentifiersAsync(CancellationToken cancellationToken = default)
-        => Task.FromResult<IReadOnlyCollection<string>>(PermissionIdentifiers);
+        => Task.FromResult(PermissionCache.AssignableIdentifiers);
 
     public Task<bool> ValidatePermissionsAsync(IEnumerable<string> permissionIdentifiers, CancellationToken cancellationToken = default)
     {
@@ -156,7 +131,7 @@ internal sealed class PermissionService(
                 return Task.FromResult(false);
             }
 
-            if (!PermissionLookup.TryGetValue(parsed.Canonical, out var permission))
+            if (!PermissionCache.ByPath.TryGetValue(parsed.Canonical, out var permission))
             {
                 return Task.FromResult(false);
             }
@@ -193,7 +168,7 @@ internal sealed class PermissionService(
                 continue;
             }
 
-            if (PermissionLookup.TryGetValue(parsed.Canonical, out var permission))
+            if (PermissionCache.ByPath.TryGetValue(parsed.Canonical, out var permission))
             {
                 resolved.Add(permission);
             }
@@ -219,7 +194,7 @@ internal sealed class PermissionService(
             return false;
         }
 
-        if (!PermissionLookup.TryGetValue(parsed.Canonical, out var permission))
+        if (!PermissionCache.ByPath.TryGetValue(parsed.Canonical, out var permission))
         {
             return false;
         }
@@ -229,16 +204,7 @@ internal sealed class PermissionService(
             return false;
         }
 
-        // Check RBAC version and use appropriate evaluation strategy
-        var rbacVersion = GetRbacVersion(principal);
-
-        if (IsLegacyRbacVersion(rbacVersion))
-        {
-            // Legacy tokens (null or "1") get full admin access for backward compatibility
-            return true;
-        }
-
-        // Version 2+: Resolve roles at runtime and evaluate
+        // Resolve roles at runtime and evaluate
         var scope = await ResolveScopeDirectivesAsync(principal, cancellationToken).ConfigureAwait(false);
         return ScopeEvaluator.HasPermission(scope, parsed.Canonical, parsed.Parameters);
     }
@@ -250,14 +216,6 @@ internal sealed class PermissionService(
         if (permissionIdentifiers is null)
         {
             return false;
-        }
-
-        var rbacVersion = GetRbacVersion(principal);
-
-        if (IsLegacyRbacVersion(rbacVersion))
-        {
-            // Legacy tokens get full admin access
-            return permissionIdentifiers.Any(id => !string.IsNullOrWhiteSpace(id));
         }
 
         var scope = await ResolveScopeDirectivesAsync(principal, cancellationToken).ConfigureAwait(false);
@@ -275,7 +233,7 @@ internal sealed class PermissionService(
                 continue;
             }
 
-            if (!PermissionLookup.TryGetValue(parsed.Canonical, out var permission))
+            if (!PermissionCache.ByPath.TryGetValue(parsed.Canonical, out var permission))
             {
                 continue;
             }
@@ -313,14 +271,6 @@ internal sealed class PermissionService(
             return false;
         }
 
-        var rbacVersion = GetRbacVersion(principal);
-
-        if (IsLegacyRbacVersion(rbacVersion))
-        {
-            // Legacy tokens get full admin access
-            return true;
-        }
-
         var scope = await ResolveScopeDirectivesAsync(principal, cancellationToken).ConfigureAwait(false);
 
         foreach (var identifier in identifiers)
@@ -330,7 +280,7 @@ internal sealed class PermissionService(
                 return false;
             }
 
-            if (!PermissionLookup.TryGetValue(parsed.Canonical, out var permission))
+            if (!PermissionCache.ByPath.TryGetValue(parsed.Canonical, out var permission))
             {
                 return false;
             }
@@ -544,7 +494,7 @@ internal sealed class PermissionService(
                 throw new ArgumentException($"Permission identifier '{rawIdentifier}' has an invalid format: {ex.Message}", nameof(permissionIdentifiers), ex);
             }
 
-            if (!PermissionLookup.TryGetValue(parsed.Canonical, out var permission))
+            if (!PermissionCache.ByPath.TryGetValue(parsed.Canonical, out var permission))
             {
                 throw new ArgumentException($"Unknown permission identifier '{parsed.Identifier}'.", nameof(permissionIdentifiers));
             }
@@ -607,7 +557,7 @@ internal sealed class PermissionService(
         }
 
         // Legacy behavior: if no RBAC version, grant full access
-        if (!principal.Claims.Any(claim => string.Equals(claim.Type, RbacVersionClaimType, StringComparison.Ordinal)))
+        if (!principal.Claims.Any(claim => string.Equals(claim.Type, RbacConstants.VersionClaimType, StringComparison.Ordinal)))
         {
             claimSet.Add(Permissions.RootReadIdentifier);
             claimSet.Add(Permissions.RootWriteIdentifier);
@@ -741,26 +691,6 @@ internal sealed class PermissionService(
         return directives;
     }
 
-    /// <summary>
-    /// Gets the RBAC version from the principal's claims.
-    /// </summary>
-    private static string? GetRbacVersion(ClaimsPrincipal principal)
-    {
-        var claim = principal.Claims.FirstOrDefault(c =>
-            string.Equals(c.Type, RbacVersionClaimType, StringComparison.Ordinal));
-
-        return claim?.Value;
-    }
-
-    /// <summary>
-    /// Determines if the RBAC version indicates a legacy token that should get full admin access.
-    /// </summary>
-    private static bool IsLegacyRbacVersion(string? version)
-    {
-        // null (missing) or "1" = legacy token → grant full admin access
-        return string.IsNullOrEmpty(version) || string.Equals(version, "1", StringComparison.Ordinal);
-    }
-
     private static bool HasPermissionInternal(HashSet<string> claimSet, Permission permission, Permission.ParsedIdentifier requestedIdentifier)
     {
         if (claimSet.Contains(Permissions.RootWriteIdentifier) &&
@@ -843,7 +773,7 @@ internal sealed class PermissionService(
 
         IReadOnlyDictionary<string, string> effectiveParameters;
 
-        effectiveParameters = filteredParameters ?? EmptyParameterDictionary;
+        effectiveParameters = filteredParameters ?? EmptyCollections.StringStringDictionary;
 
         return HasMatchingClaim(claimSet, scopePath, effectiveParameters);
     }

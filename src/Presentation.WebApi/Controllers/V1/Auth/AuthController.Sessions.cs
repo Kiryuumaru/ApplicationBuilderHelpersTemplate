@@ -62,9 +62,9 @@ public partial class AuthController
         Guid id,
         CancellationToken cancellationToken)
     {
-        // Verify the session belongs to the specified user
-        var session = await sessionService.GetByIdAsync(id, cancellationToken);
-        if (session is null || session.UserId != userId)
+        // Service validates ownership and revokes
+        var success = await sessionService.RevokeForUserAsync(userId, id, cancellationToken);
+        if (!success)
         {
             return NotFound(new ProblemDetails
             {
@@ -74,7 +74,6 @@ public partial class AuthController
             });
         }
 
-        await sessionService.RevokeAsync(id, cancellationToken);
         return NoContent();
     }
 

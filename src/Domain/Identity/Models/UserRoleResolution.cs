@@ -2,14 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Domain.Authorization.Models;
+using Domain.Shared.Constants;
 
 namespace Domain.Identity.Models;
 
 public sealed class UserRoleResolution(Role role, IReadOnlyDictionary<string, string?>? parameterValues = null)
 {
-    private static readonly IReadOnlyDictionary<string, string?> EmptyParameters =
-        new ReadOnlyDictionary<string, string?>(new Dictionary<string, string?>(StringComparer.Ordinal));
-
     public Role Role { get; } = role ?? throw new ArgumentNullException(nameof(role));
     public IReadOnlyDictionary<string, string?> ParameterValues { get; } = NormalizeParameters(parameterValues);
 
@@ -17,7 +15,7 @@ public sealed class UserRoleResolution(Role role, IReadOnlyDictionary<string, st
     {
         if (parameterValues is null || parameterValues.Count == 0)
         {
-            return EmptyParameters;
+            return EmptyCollections.StringNullableStringDictionary;
         }
 
         if (parameterValues is ReadOnlyDictionary<string, string?>)

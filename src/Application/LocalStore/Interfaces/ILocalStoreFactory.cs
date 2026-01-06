@@ -1,6 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
-using Infrastructure.Storage.Features;
+using Application.LocalStore.Services;
 
 namespace Application.LocalStore.Interfaces;
 

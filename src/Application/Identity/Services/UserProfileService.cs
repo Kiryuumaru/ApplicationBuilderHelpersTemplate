@@ -1,3 +1,4 @@
+using Application.Authorization.Interfaces;
 using Application.Authorization.Interfaces.Infrastructure;
 using Application.Identity.Interfaces;
 using Application.Identity.Interfaces.Infrastructure;
@@ -12,10 +13,10 @@ namespace Application.Identity.Services;
 /// </summary>
 internal sealed class UserProfileService(
     IUserRepository userRepository,
-    IRoleRepository roleRepository) : IUserProfileService
+    IUserRoleResolver userRoleResolver) : IUserProfileService
 {
     private readonly IUserRepository _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
-    private readonly IRoleRepository _roleRepository = roleRepository ?? throw new ArgumentNullException(nameof(roleRepository));
+    private readonly IUserRoleResolver _userRoleResolver = userRoleResolver ?? throw new ArgumentNullException(nameof(userRoleResolver));
 
     public async Task<UserDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
@@ -160,21 +161,8 @@ internal sealed class UserProfileService(
     private async Task<UserDto> MapToUserDtoAsync(User user, CancellationToken cancellationToken)
     {
         var externalLogins = await _userRepository.GetLoginsAsync(user.Id, cancellationToken).ConfigureAwait(false);
-        var roleCodes = await ResolveRoleCodesAsync(user, cancellationToken).ConfigureAwait(false);
+        var roleCodes = await _userRoleResolver.ResolveRoleCodesAsync(user, cancellationToken).ConfigureAwait(false);
 
         return user.ToDto(user.RoleIds, roleCodes, externalLogins);
-    }
-
-    private async Task<IReadOnlyCollection<string>> ResolveRoleCodesAsync(User user, CancellationToken cancellationToken)
-    {
-        if (user.RoleAssignments.Count == 0)
-        {
-            return [];
-        }
-
-        var roleIds = user.RoleAssignments.Select(ra => ra.RoleId).Distinct();
-        var roles = await _roleRepository.GetByIdsAsync(roleIds, cancellationToken).ConfigureAwait(false);
-
-        return roles.Select(r => r.Code).ToArray();
     }
 }

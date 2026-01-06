@@ -40,14 +40,14 @@ public class PermissionServiceTests
     }
 
     [Fact]
-    public async Task HasPermission_GrantsRootReadWhenLegacyToken()
+    public async Task HasPermission_RejectsLegacyToken()
     {
         var service = CreateService(new RecordingTokenService());
         var principal = new ClaimsPrincipal(new ClaimsIdentity());
 
         var result = await service.HasPermissionAsync(principal, OrderCancelPermission, CancellationToken.None);
 
-        Assert.True(result);
+        Assert.False(result);
     }
 
     [Fact]

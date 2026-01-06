@@ -30,6 +30,17 @@ internal sealed class SessionService(ISessionRepository sessionRepository) : ISe
     }
 
     /// <inheritdoc />
+    public async Task<bool> RevokeForUserAsync(Guid userId, Guid sessionId, CancellationToken cancellationToken)
+    {
+        var session = await sessionRepository.GetByIdAsync(sessionId, cancellationToken);
+        if (session is null || session.UserId != userId)
+        {
+            return false;
+        }
+        return await sessionRepository.RevokeAsync(sessionId, cancellationToken);
+    }
+
+    /// <inheritdoc />
     public async Task<int> RevokeAllForUserAsync(Guid userId, CancellationToken cancellationToken)
     {
         return await sessionRepository.RevokeAllForUserAsync(userId, cancellationToken);
@@ -65,6 +76,13 @@ internal sealed class SessionService(ISessionRepository sessionRepository) : ISe
         }
 
         return MapToDto(session);
+    }
+
+    /// <inheritdoc />
+    public Task<SessionDto?> ValidateSessionWithTokenAsync(Guid sessionId, string refreshToken, CancellationToken cancellationToken)
+    {
+        var tokenHash = Common.Services.TokenHasher.Hash(refreshToken);
+        return ValidateSessionAsync(sessionId, tokenHash, cancellationToken);
     }
 
     /// <inheritdoc />

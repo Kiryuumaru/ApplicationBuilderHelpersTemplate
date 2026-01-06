@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Infrastructure.Storage.Features;
+namespace Application.LocalStore.Services;
 
 [Disposable]
 public partial class ConcurrentLocalStore(ILocalStoreService localStoreService, string group) : IDisposable

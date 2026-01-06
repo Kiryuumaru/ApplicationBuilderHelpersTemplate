@@ -54,6 +54,25 @@ public interface IOAuthService
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Processes OAuth login - exchanges code for user info, finds or creates user.
+    /// This encapsulates the full OAuth login flow including user lookup/creation.
+    /// </summary>
+    /// <param name="provider">The OAuth provider.</param>
+    /// <param name="code">The authorization code from the provider.</param>
+    /// <param name="state">The state parameter to validate.</param>
+    /// <param name="expectedState">The expected state value (from session).</param>
+    /// <param name="redirectUri">The redirect URI used in the authorization request.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Result containing user info (existing or newly created) or error details.</returns>
+    Task<OAuthLoginResult> ProcessLoginAsync(
+        ExternalLoginProvider provider,
+        string code,
+        string state,
+        string expectedState,
+        string redirectUri,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Validates the state parameter to prevent CSRF attacks.
     /// </summary>
     /// <param name="state">The state from the callback.</param>

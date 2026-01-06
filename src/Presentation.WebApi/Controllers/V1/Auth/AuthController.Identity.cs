@@ -355,11 +355,7 @@ public partial class AuthController
         }
 
         // Check if this is the last auth method
-        var otherProviders = user.ExternalLogins.Count(l => !string.Equals(l.Provider.ToString(), provider, StringComparison.OrdinalIgnoreCase));
-        var passkeys = await passkeyService.ListPasskeysAsync(userId, cancellationToken);
-
-        // If this OAuth provider is the only auth method (no password, no passkeys, no other providers), prevent unlinking
-        if (!user.HasPassword && otherProviders == 0 && passkeys.Count == 0)
+        if (!await authMethodGuardService.CanUnlinkProviderAsync(userId, provider, cancellationToken))
         {
             return BadRequest(new ProblemDetails
             {

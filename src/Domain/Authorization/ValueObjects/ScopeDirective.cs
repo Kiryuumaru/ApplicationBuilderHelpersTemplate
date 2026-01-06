@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Domain.Authorization.Enums;
+using Domain.Shared.Constants;
 using Domain.Shared.Models;
 
 namespace Domain.Authorization.ValueObjects;
@@ -13,8 +14,6 @@ namespace Domain.Authorization.ValueObjects;
 public sealed class ScopeDirective : ValueObject
 {
     private static readonly char[] Separators = [';'];
-    private static readonly IReadOnlyDictionary<string, string> EmptyParameters =
-        new Dictionary<string, string>(0, StringComparer.Ordinal);
 
     /// <summary>
     /// Gets the directive type (Allow or Deny).
@@ -50,7 +49,7 @@ public sealed class ScopeDirective : ValueObject
         return new ScopeDirective(
             ScopeDirectiveType.Allow,
             permissionPath.Trim(),
-            parameters ?? EmptyParameters);
+            parameters ?? EmptyCollections.StringStringDictionary);
     }
 
     /// <summary>
@@ -78,7 +77,7 @@ public sealed class ScopeDirective : ValueObject
         return new ScopeDirective(
             ScopeDirectiveType.Deny,
             permissionPath.Trim(),
-            parameters ?? EmptyParameters);
+            parameters ?? EmptyCollections.StringStringDictionary);
     }
 
     /// <summary>
@@ -198,7 +197,7 @@ public sealed class ScopeDirective : ValueObject
             parameters[key] = value;
         }
 
-        result = new ScopeDirective(type, permissionPath, parameters?.AsReadOnly() ?? EmptyParameters);
+        result = new ScopeDirective(type, permissionPath, parameters?.AsReadOnly() ?? EmptyCollections.StringStringDictionary);
         return true;
     }
 
@@ -288,7 +287,7 @@ public sealed class ScopeDirective : ValueObject
     {
         if (parameters.Length == 0)
         {
-            return EmptyParameters;
+            return EmptyCollections.StringStringDictionary;
         }
 
         var dict = new Dictionary<string, string>(parameters.Length, StringComparer.Ordinal);

@@ -1,4 +1,5 @@
 using Application.Identity.Models;
+using Application.Common.Services;
 using Domain.Authorization.Constants;
 using Domain.Identity.Enums;
 using Domain.Identity.Models;
@@ -121,7 +122,7 @@ public partial class AuthController
 
         // Note: In a real implementation, expectedState should come from session/cookie
         // For this API-first approach, the client is responsible for state management
-        var result = await oauthService.ProcessCallbackAsync(
+        var result = await oauthService.ProcessLoginAsync(
             provider,
             request.Code,
             request.State,
@@ -139,63 +140,14 @@ public partial class AuthController
             });
         }
 
-        var userInfo = result.UserInfo!;
-
-        // Check if user already exists with this external login
-        var user = await userProfileService.GetByIdAsync(Guid.Empty, cancellationToken); // Placeholder to get existing linked user
-        var providerName = userInfo.Provider.ToString();
-        var existingLogins = user?.ExternalLogins.Where(el => 
-            string.Equals(el.Provider, providerName, StringComparison.Ordinal) && 
-            string.Equals(el.ProviderSubject, userInfo.ProviderSubject, StringComparison.Ordinal)).ToList();
-
-        // We need to search by external login - let's use the OAuth service to check
-        // For now, create new user or find by email
-        var existingByEmail = !string.IsNullOrEmpty(userInfo.Email) && userInfo.EmailVerified
-            ? await userProfileService.GetByEmailAsync(userInfo.Email, cancellationToken)
-            : null;
-
-        bool isNewUser = false;
-        UserDto? userDto = existingByEmail;
-        Guid userId;
-        string? username;
-
-        if (existingByEmail is not null)
-        {
-            // Existing user - get user info for session
-            var userResult = await authenticationService.GetUserForSessionAsync(existingByEmail.Id, cancellationToken);
-            userId = userResult.UserId!.Value;
-            username = userResult.Username;
-        }
-        else
-        {
-            // New user - register with external login
-            isNewUser = true;
-
-            // Generate a unique username from provider info
-            var baseUsername = GenerateUsernameFromOAuth(userInfo);
-
-            var registrationRequest = new ExternalUserRegistrationRequest(
-                Username: baseUsername,
-                Provider: userInfo.Provider,
-                ProviderSubject: userInfo.ProviderSubject,
-                ProviderEmail: userInfo.Email,
-                ProviderDisplayName: userInfo.Name,
-                Email: userInfo.EmailVerified ? userInfo.Email : null,
-                AutoActivate: true);
-
-            userDto = await userRegistrationService.RegisterExternalAsync(registrationRequest, cancellationToken);
-            userId = userDto.Id;
-            username = userDto.Username;
-        }
-
-        // Create session and tokens (single session creation)
+        // Create session and tokens
         var (accessToken, refreshToken, sessionId, oauthExpiresIn) = await CreateSessionAndTokensAsync(
-            userId,
-            username,
+            result.UserId!.Value,
+            result.Username,
             cancellationToken);
 
         var oauthUserInfo = await CreateUserInfoAsync(
-            userId,
+            result.UserId!.Value,
             cancellationToken);
 
         var response = new AuthResponse
@@ -206,7 +158,7 @@ public partial class AuthController
             User = oauthUserInfo
         };
 
-        return isNewUser ? CreatedAtAction(nameof(GetMe), response) : Ok(response);
+        return result.IsNewUser ? CreatedAtAction(nameof(GetMe), response) : Ok(response);
     }
 
     /// <summary>
@@ -246,17 +198,5 @@ public partial class AuthController
     private static bool TryParseProvider(string provider, out ExternalLoginProvider result)
     {
         return Enum.TryParse(provider, ignoreCase: true, out result);
-    }
-
-    private static string GenerateUsernameFromOAuth(OAuthUserInfo userInfo)
-    {
-        // Try to create a username from the provider info
-        var baseUsername = userInfo.Name?.Replace(" ", "").ToLowerInvariant()
-            ?? userInfo.Email?.Split('@')[0].ToLowerInvariant()
-            ?? $"user_{userInfo.ProviderSubject[..Math.Min(8, userInfo.ProviderSubject.Length)]}";
-
-        // Ensure uniqueness by adding random suffix
-        var suffix = Guid.NewGuid().ToString("N")[..6];
-        return $"{baseUsername}_{suffix}";
     }
 }

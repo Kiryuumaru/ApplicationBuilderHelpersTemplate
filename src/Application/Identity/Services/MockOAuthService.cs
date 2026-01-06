@@ -1,5 +1,7 @@
 using Application.Identity.Interfaces;
+using Application.Identity.Interfaces.Infrastructure;
 using Application.Identity.Models;
+using Application.Common.Services;
 using Domain.Identity.Enums;
 using Domain.Identity.Exceptions;
 using System.Security.Cryptography;
@@ -11,8 +13,13 @@ namespace Application.Identity.Services;
 /// This implementation simulates OAuth flows without connecting to real providers.
 /// Replace with real provider implementations when ready to integrate.
 /// </summary>
-public sealed class MockOAuthService : IOAuthService
+internal sealed class MockOAuthService(
+    IUserRepository userRepository,
+    IUserRegistrationService registrationService) : IOAuthService
 {
+    private readonly IUserRepository _userRepository = userRepository;
+    private readonly IUserRegistrationService _registrationService = registrationService;
+
     private static readonly Dictionary<ExternalLoginProvider, OAuthProviderConfig> _providers = new()
     {
         [ExternalLoginProvider.Mock] = new OAuthProviderConfig
@@ -174,6 +181,108 @@ public sealed class MockOAuthService : IOAuthService
         return !string.IsNullOrEmpty(state) &&
                !string.IsNullOrEmpty(expectedState) &&
                string.Equals(state, expectedState, StringComparison.Ordinal);
+    }
+
+    public async Task<OAuthLoginResult> ProcessLoginAsync(
+        ExternalLoginProvider provider,
+        string code,
+        string state,
+        string expectedState,
+        string redirectUri,
+        CancellationToken cancellationToken = default)
+    {
+        // Validate state
+        if (!ValidateState(state, expectedState))
+        {
+            return OAuthLoginResult.Failure("invalid_state", "OAuth state validation failed.");
+        }
+
+        // Process callback to get user info
+        var callbackResult = await ProcessCallbackAsync(provider, code, state, expectedState, redirectUri, cancellationToken);
+        if (!callbackResult.Succeeded)
+        {
+            return OAuthLoginResult.Failure(
+                callbackResult.Error ?? "callback_failed",
+                callbackResult.ErrorDescription ?? "OAuth callback processing failed.");
+        }
+
+        var userInfo = callbackResult.UserInfo!;
+
+        // Try to find existing user by external login
+        var existingUserId = await _userRepository.FindUserByLoginAsync(
+            userInfo.Provider,
+            userInfo.ProviderSubject,
+            cancellationToken);
+
+        if (existingUserId.HasValue)
+        {
+            var existingUser = await _userRepository.FindByIdAsync(existingUserId.Value, cancellationToken);
+            if (existingUser is not null)
+            {
+                return OAuthLoginResult.ExistingUser(existingUser.Id, existingUser.UserName!);
+            }
+        }
+
+        // Try to find existing user by email if verified
+        if (userInfo.EmailVerified && !string.IsNullOrEmpty(userInfo.Email))
+        {
+            var userByEmail = await _userRepository.FindByEmailAsync(userInfo.Email, cancellationToken);
+            if (userByEmail is not null)
+            {
+                // Link the external login to existing user
+                await _userRepository.AddLoginAsync(
+                    userByEmail.Id,
+                    userInfo.Provider,
+                    userInfo.ProviderSubject,
+                    userInfo.Name,
+                    userInfo.Email,
+                    cancellationToken);
+
+                return OAuthLoginResult.ExistingUser(userByEmail.Id, userByEmail.UserName!);
+            }
+        }
+
+        // Create new user with external login
+        var username = GenerateUsernameFromOAuthInfo(userInfo);
+        var registrationRequest = new ExternalUserRegistrationRequest(
+            username,
+            userInfo.Provider,
+            userInfo.ProviderSubject,
+            ProviderEmail: userInfo.Email,
+            ProviderDisplayName: userInfo.Name,
+            Email: userInfo.EmailVerified ? userInfo.Email : null,
+            AutoActivate: true);
+
+        var newUser = await _registrationService.RegisterExternalAsync(registrationRequest, cancellationToken);
+
+        return OAuthLoginResult.NewUser(newUser.Id, newUser.Username);
+    }
+
+    private static string GenerateUsernameFromOAuthInfo(OAuthUserInfo userInfo)
+    {
+        // Try to use name if available
+        if (!string.IsNullOrWhiteSpace(userInfo.Name))
+        {
+            var sanitized = new string(userInfo.Name.Where(c => char.IsLetterOrDigit(c)).ToArray());
+            if (sanitized.Length >= 3)
+            {
+                return sanitized + "_" + Guid.NewGuid().ToString("N")[..6];
+            }
+        }
+
+        // Fall back to email prefix
+        if (!string.IsNullOrWhiteSpace(userInfo.Email))
+        {
+            var emailPrefix = userInfo.Email.Split('@')[0];
+            var sanitized = new string(emailPrefix.Where(c => char.IsLetterOrDigit(c)).ToArray());
+            if (sanitized.Length >= 3)
+            {
+                return sanitized + "_" + Guid.NewGuid().ToString("N")[..6];
+            }
+        }
+
+        // Last resort: generate random username
+        return "user_" + Guid.NewGuid().ToString("N")[..10];
     }
 
     private static string GenerateSecureState()

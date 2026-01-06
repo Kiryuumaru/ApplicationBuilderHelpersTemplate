@@ -78,12 +78,7 @@ public partial class AuthController
         
         if (token is not null)
         {
-            // URL-encode the token for safe transmission
-            var encodedToken = System.Text.Encodings.Web.UrlEncoder.Default.Encode(token);
-            
-            // In production, use a proper base URL from configuration
-            var resetLink = $"{Request.Scheme}://{Request.Host}/reset-password?email={Uri.EscapeDataString(request.Email)}&token={encodedToken}";
-            
+            var resetLink = frontendUrlBuilder.BuildPasswordResetUrl(request.Email, token);
             await emailService.SendPasswordResetLinkAsync(request.Email, resetLink, cancellationToken);
         }
         

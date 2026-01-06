@@ -30,6 +30,11 @@ public sealed class PasskeyChallenge : Entity
     public string OptionsJson { get; private set; }
 
     /// <summary>
+    /// The credential name for registration challenges (null for authentication).
+    /// </summary>
+    public string? CredentialName { get; private set; }
+
+    /// <summary>
     /// When this challenge was created.
     /// </summary>
     public DateTimeOffset CreatedAt { get; private set; }
@@ -45,6 +50,7 @@ public sealed class PasskeyChallenge : Entity
         Guid? userId,
         PasskeyChallengeType type,
         string optionsJson,
+        string? credentialName,
         DateTimeOffset createdAt,
         DateTimeOffset expiresAt) : base(id)
     {
@@ -52,6 +58,7 @@ public sealed class PasskeyChallenge : Entity
         UserId = userId;
         Type = type;
         OptionsJson = optionsJson ?? throw new ArgumentNullException(nameof(optionsJson));
+        CredentialName = credentialName;
         CreatedAt = createdAt;
         ExpiresAt = expiresAt;
     }
@@ -64,6 +71,7 @@ public sealed class PasskeyChallenge : Entity
         Guid? userId,
         PasskeyChallengeType type,
         string optionsJson,
+        string? credentialName = null,
         TimeSpan? lifetime = null)
     {
         var now = DateTimeOffset.UtcNow;
@@ -75,6 +83,7 @@ public sealed class PasskeyChallenge : Entity
             userId,
             type,
             optionsJson,
+            credentialName,
             now,
             expiry);
     }
@@ -111,10 +120,11 @@ public sealed class PasskeyChallenge : Entity
         Guid? userId,
         PasskeyChallengeType type,
         string optionsJson,
+        string? credentialName,
         DateTimeOffset createdAt,
         DateTimeOffset expiresAt)
     {
-        return new PasskeyChallenge(id, challenge, userId, type, optionsJson, createdAt, expiresAt);
+        return new PasskeyChallenge(id, challenge, userId, type, optionsJson, credentialName, createdAt, expiresAt);
     }
 
     // For EF Core

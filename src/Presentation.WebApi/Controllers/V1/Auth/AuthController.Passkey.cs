@@ -161,20 +161,17 @@ public partial class AuthController
             var result = await passkeyService.VerifyLoginAsync(request.ChallengeId, request.AssertionResponseJson, cancellationToken);
 
             var userSession = result.Session;
-            var (accessToken, refreshToken, sessionId, passkeyExpiresIn) = await CreateSessionAndTokensAsync(
-                userSession.UserId,
-                userSession.Username,
-                cancellationToken);
 
+            // Use tokens from the service - no need to create new ones
             var passkeyUserInfo = await CreateUserInfoAsync(
                 userSession.UserId,
                 cancellationToken);
 
             return Ok(new AuthResponse
             {
-                AccessToken = accessToken,
-                RefreshToken = refreshToken,
-                ExpiresIn = passkeyExpiresIn,
+                AccessToken = userSession.AccessToken,
+                RefreshToken = userSession.RefreshToken,
+                ExpiresIn = (int)(userSession.ExpiresAt - userSession.IssuedAt).TotalSeconds,
                 User = passkeyUserInfo
             });
         }
@@ -325,11 +322,7 @@ public partial class AuthController
         }
 
         // Check if this is the last auth method
-        var oauthProviders = user.ExternalLogins.Count;
-        var passkeys = await passkeyService.ListPasskeysAsync(userId, cancellationToken);
-
-        // If this passkey is the only auth method (no password, no oauth, only this passkey), prevent deletion
-        if (!user.HasPassword && oauthProviders == 0 && passkeys.Count <= 1)
+        if (!await authMethodGuardService.CanRemovePasskeyAsync(userId, credentialId, cancellationToken))
         {
             return BadRequest(new ProblemDetails
             {

@@ -72,7 +72,38 @@ public sealed class User : AggregateRoot
         => new(Guid.NewGuid(), null, null, isAnonymous: true);
 
     /// <summary>
+    /// Factory method for hydrating a User from persistence using a data record.
+    /// Preferred for new code - reduces parameter count and improves readability.
+    /// </summary>
+    public static User Hydrate(UserHydrationData data)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        
+        return Hydrate(
+            data.Id,
+            data.RevId,
+            data.UserName,
+            data.NormalizedUserName,
+            data.Email,
+            data.NormalizedEmail,
+            data.EmailConfirmed,
+            data.PasswordHash,
+            data.SecurityStamp,
+            data.PhoneNumber,
+            data.PhoneNumberConfirmed,
+            data.TwoFactorEnabled,
+            data.AuthenticatorKey,
+            data.RecoveryCodes,
+            data.LockoutEnd,
+            data.LockoutEnabled,
+            data.AccessFailedCount,
+            data.IsAnonymous,
+            data.LinkedAt);
+    }
+
+    /// <summary>
     /// Factory method for hydrating a User from persistence. AOT-compatible.
+    /// Consider using the overload that takes UserHydrationData for better readability.
     /// </summary>
     public static User Hydrate(
         Guid id,
@@ -591,23 +622,7 @@ public sealed class User : AggregateRoot
     public void SetEmail(string? email, bool markVerified)
     {
         SetEmail(email);
-        if (markVerified)
-        {
-            if (string.IsNullOrWhiteSpace(email))
-            {
-                 // If email is null/empty, we can't verify it. But SetEmail(null) clears it.
-                 // If markVerified is true but email is null, what should happen?
-                 // The test expects SetEmail("...", markVerified: true).
-                 EmailConfirmed = true;
-            }
-            else
-            {
-                EmailConfirmed = true;
-            }
-        }
-        else
-        {
-            EmailConfirmed = false;
-        }
+        // Only mark as verified if we have an actual email AND markVerified is true
+        EmailConfirmed = markVerified && !string.IsNullOrWhiteSpace(email);
     }
 }

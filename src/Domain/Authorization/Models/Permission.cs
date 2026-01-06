@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Domain.Authorization.Enums;
+using Domain.Shared.Constants;
 
 namespace Domain.Authorization.Models;
 
@@ -187,7 +188,7 @@ public sealed class Permission
             }
         }
 
-        return new ParsedIdentifier(identifier, canonical, parameters is null ? EmptyParameters : new ReadOnlyDictionary<string, string>(parameters));
+        return new ParsedIdentifier(identifier, canonical, parameters is null ? EmptyCollections.StringStringDictionary : new ReadOnlyDictionary<string, string>(parameters));
     }
 
     private static ParsedIdentifier ParsePathOnly(string trimmed)
@@ -201,7 +202,7 @@ public sealed class Permission
         }
 
         var canonical = string.Join(':', segments);
-        return new ParsedIdentifier(trimmed, canonical, EmptyParameters);
+        return new ParsedIdentifier(trimmed, canonical, EmptyCollections.StringStringDictionary);
     }
 
     public static bool TryParseIdentifier(string identifier, out ParsedIdentifier parsed)
@@ -213,7 +214,7 @@ public sealed class Permission
         }
         catch
         {
-            parsed = new ParsedIdentifier(string.Empty, string.Empty, EmptyParameters);
+            parsed = new ParsedIdentifier(string.Empty, string.Empty, EmptyCollections.StringStringDictionary);
             return false;
         }
     }
@@ -242,8 +243,6 @@ public sealed class Permission
 
         return assignments.Count == 0 ? null : $"[{string.Join(';', assignments)}]";
     }
-
-    private static readonly IReadOnlyDictionary<string, string> EmptyParameters = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(0, StringComparer.Ordinal));
 
     public readonly record struct ParsedIdentifier(string Identifier, string Canonical, IReadOnlyDictionary<string, string> Parameters)
     {

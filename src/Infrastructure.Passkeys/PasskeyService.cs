@@ -19,19 +19,19 @@ internal class PasskeyService : IPasskeyService
     private readonly IFido2 _fido2;
     private readonly IPasskeyRepository _passkeyRepository;
     private readonly IUserRepository _userRepository;
+    private readonly IUserTokenService _userTokenService;
     private readonly JsonSerializerOptions _jsonOptions;
-
-    // Temporary storage for credential names during registration flow
-    private static readonly Dictionary<Guid, string> _pendingCredentialNames = new();
 
     public PasskeyService(
         IFido2 fido2,
         IPasskeyRepository passkeyRepository,
-        IUserRepository userRepository)
+        IUserRepository userRepository,
+        IUserTokenService userTokenService)
     {
         _fido2 = fido2 ?? throw new ArgumentNullException(nameof(fido2));
         _passkeyRepository = passkeyRepository ?? throw new ArgumentNullException(nameof(passkeyRepository));
         _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+        _userTokenService = userTokenService ?? throw new ArgumentNullException(nameof(userTokenService));
         _jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
     }
 
@@ -66,17 +66,15 @@ internal class PasskeyService : IPasskeyService
             AttestationPreference = AttestationConveyancePreference.None
         });
 
-        // Store the challenge
+        // Store the challenge with credential name
         var challenge = PasskeyChallenge.Create(
             options.Challenge,
             userId,
             PasskeyChallengeType.Registration,
-            options.ToJson());
+            options.ToJson(),
+            credentialName);
 
         await _passkeyRepository.SaveChallengeAsync(challenge, cancellationToken);
-
-        // Store the credential name for later
-        _pendingCredentialNames[challenge.Id] = credentialName;
 
         return new PasskeyCreationOptions(challenge.Id, options.ToJson());
     }
@@ -126,14 +124,10 @@ internal class PasskeyService : IPasskeyService
         if (result == null)
             throw new PasskeyException("Registration verification failed", challengeId: challengeId);
 
-        // Get the credential name
-        _pendingCredentialNames.TryGetValue(challengeId, out var credentialName);
-        _pendingCredentialNames.Remove(challengeId);
-
-        // Create and store the credential
+        // Create and store the credential using name from challenge entity
         var credential = PasskeyCredential.Create(
             challenge.UserId.Value,
-            credentialName ?? "My Passkey",
+            challenge.CredentialName ?? "My Passkey",
             result.Id,
             result.PublicKey,
             result.SignCount,
@@ -251,25 +245,28 @@ internal class PasskeyService : IPasskeyService
         // Delete the used challenge
         await _passkeyRepository.DeleteChallengeAsync(challengeId, cancellationToken);
 
-        // Get the user
+        // Delegate to IUserTokenService for proper token generation
+        var tokenResult = await _userTokenService.CreateSessionWithTokensAsync(
+            credential.UserId,
+            deviceInfo: null, // Passkey doesn't have device info context here
+            cancellationToken);
+
+        // Get the user for session info
         var user = await _userRepository.FindByIdAsync(credential.UserId, cancellationToken)
             ?? throw new EntityNotFoundException("User", credential.UserId.ToString());
 
-        // Create a session using the user's method
-        var domainSession = user.CreateSession(TimeSpan.FromHours(24)); // Default 24 hour session
-
-        // Convert to DTO (tokens will be set by the caller)
+        // Create DTO with proper tokens from token service
         var sessionDto = new Application.Identity.Models.UserSessionDto
         {
-            SessionId = Guid.NewGuid(),
-            UserId = domainSession.UserId,
-            Username = domainSession.Username,
-            IsAnonymous = domainSession.IsAnonymous,
-            AccessToken = string.Empty, // Will be set by caller
-            RefreshToken = string.Empty, // Will be set by caller
-            IssuedAt = domainSession.IssuedAt,
-            ExpiresAt = domainSession.ExpiresAt,
-            Roles = domainSession.RoleCodes.ToArray()
+            SessionId = tokenResult.SessionId,
+            UserId = credential.UserId,
+            Username = user.UserName,
+            IsAnonymous = user.IsAnonymous,
+            AccessToken = tokenResult.AccessToken,
+            RefreshToken = tokenResult.RefreshToken,
+            IssuedAt = DateTimeOffset.UtcNow,
+            ExpiresAt = DateTimeOffset.UtcNow.AddSeconds(tokenResult.ExpiresInSeconds),
+            Roles = [] // Roles are encoded in the access token
         };
 
         return new PasskeyLoginResult(sessionDto, credential.Id);

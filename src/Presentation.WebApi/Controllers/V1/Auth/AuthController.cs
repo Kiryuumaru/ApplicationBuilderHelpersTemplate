@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Models.Requests;
 using Presentation.WebApi.Models.Responses;
 using System.Security.Authentication;
-using System.Security.Claims;
+using JwtClaimTypes = Domain.Identity.Constants.ClaimTypes;
 
 namespace Presentation.WebApi.Controllers.V1;
 
@@ -35,8 +35,7 @@ public partial class AuthController(
     IEmailService emailService,
     IPasskeyService passkeyService,
     IOAuthService oauthService,
-    IPermissionService permissionService,
-    IUserTokenService userTokenService) : ControllerBase
-{
-    private const string SessionIdClaimType = "sid";
-}
+    IUserTokenService userTokenService,
+    IFrontendUrlBuilder frontendUrlBuilder,
+    IAuthMethodGuardService authMethodGuardService) : ControllerBase;
+
