@@ -56,7 +56,8 @@ internal sealed class AuthenticationService(
             return CredentialValidationResult.TwoFactorRequired(user.Id);
         }
 
-        var roleCodes = await _userRoleResolver.ResolveRoleCodesAsync(user, cancellationToken).ConfigureAwait(false);
+        var roleResolutions = await _userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
+        var roleCodes = roleResolutions.Select(r => r.Code).ToArray();
         return CredentialValidationResult.Success(user.Id, user.UserName, user.Email, roleCodes, user.IsAnonymous);
     }
 
@@ -68,8 +69,9 @@ internal sealed class AuthenticationService(
             return CredentialValidationResult.Failed($"User with ID {userId} not found.");
         }
 
-        var roleCodes = await _userRoleResolver.ResolveRoleCodesAsync(user, cancellationToken).ConfigureAwait(false);
-        return CredentialValidationResult.Success(user.Id, user.UserName, user.Email, roleCodes, user.IsAnonymous);
+        var roleResolutions2 = await _userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
+        var roleCodes2 = roleResolutions2.Select(r => r.Code).ToArray();
+        return CredentialValidationResult.Success(user.Id, user.UserName, user.Email, roleCodes2, user.IsAnonymous);
     }
 
     public async Task<UserSessionDto> AuthenticateAsync(string username, string password, CancellationToken cancellationToken)
@@ -149,7 +151,8 @@ internal sealed class AuthenticationService(
             cancellationToken).ConfigureAwait(false);
 
         // Get formatted role claims for the session DTO
-        var roleClaims = await _userRoleResolver.ResolveFormattedRoleClaimsAsync(user, cancellationToken).ConfigureAwait(false);
+        var roleResolutions = await _userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
+        var roleClaims = roleResolutions.Select(r => r.ToFormattedClaim()).OrderBy(r => r, StringComparer.Ordinal).ToArray();
 
         return new UserSessionDto
         {

@@ -1,3 +1,4 @@
+using Domain.Identity.Enums;
 using Infrastructure.Identity.Interfaces;
 using System.Security.Claims;
 
@@ -12,6 +13,7 @@ internal static class IJwtTokenServiceExtensions
         IEnumerable<string>? scopes = null,
         IEnumerable<Claim>? additionalClaims = null,
         TimeSpan? expiration = null,
+        TokenType tokenType = TokenType.Access,
         CancellationToken cancellationToken = default) =>
         jwtTokenService.GenerateToken(
             userId: userId,
@@ -19,20 +21,7 @@ internal static class IJwtTokenServiceExtensions
             scopes: scopes,
             additionalClaims: additionalClaims,
             expiration: expiration.HasValue ? DateTimeOffset.UtcNow.Add(expiration.Value) : null,
-            cancellationToken: cancellationToken);
-
-    public static Task<string> GenerateApiKeyToken(
-        this IJwtTokenService jwtTokenService,
-        string apiKeyName,
-        IEnumerable<string>? scopes = null,
-        IEnumerable<Claim>? additionalClaims = null,
-        TimeSpan? expiration = null,
-        CancellationToken cancellationToken = default) =>
-        jwtTokenService.GenerateApiKeyToken(
-            apiKeyName: apiKeyName,
-            scopes: scopes,
-            additionalClaims: additionalClaims,
-            expiration: expiration.HasValue ? DateTimeOffset.UtcNow.Add(expiration.Value) : null,
+            tokenType: tokenType,
             cancellationToken: cancellationToken);
 
     public static Task<string> MutateToken(

@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Models.Requests;
 using Presentation.WebApi.Models.Responses;
 using System.Security.Authentication;
-using JwtClaimTypes = Domain.Identity.Constants.ClaimTypes;
+using JwtClaimTypes = Domain.Identity.Constants.JwtClaimTypes;
 
 namespace Presentation.WebApi.Controllers.V1;
 

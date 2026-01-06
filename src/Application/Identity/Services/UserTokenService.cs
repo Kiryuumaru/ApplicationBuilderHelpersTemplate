@@ -5,7 +5,8 @@ using Application.Identity.Models;
 using Domain.Authorization.Constants;
 using Domain.Authorization.ValueObjects;
 using Domain.Identity.Constants;
-using JwtClaimTypes = Domain.Identity.Constants.ClaimTypes;
+using Domain.Identity.Enums;
+using JwtClaimTypes = Domain.Identity.Constants.JwtClaimTypes;
 
 namespace Application.Identity.Services;
 
@@ -96,10 +97,10 @@ public sealed class UserTokenService(
             new(JwtClaimTypes.SessionId, sessionId.ToString())
         };
 
-        // Add role claims using short claim type name (not verbose MS schema)
+        // RFC 9068 Section 2.2.3.1 / RFC 7643 Section 4.1.2 specify "roles" (plural)
         foreach (var role in authData.FormattedRoles)
         {
-            additionalClaims.Add(new Claim("role", role));
+            additionalClaims.Add(new Claim(JwtClaimTypes.Roles, role));
         }
 
         // Get ONLY direct permission grants - NOT role-derived scopes
@@ -112,6 +113,7 @@ public sealed class UserTokenService(
             scopes,
             additionalClaims,
             DateTimeOffset.UtcNow.Add(TokenExpirations.AccessToken),
+            TokenType.Access,
             cancellationToken);
     }
 
@@ -142,6 +144,7 @@ public sealed class UserTokenService(
             refreshScopes,
             additionalClaims: refreshClaims,
             DateTimeOffset.UtcNow.Add(TokenExpirations.RefreshToken),
+            TokenType.Refresh,
             cancellationToken);
     }
 
@@ -157,9 +160,8 @@ public sealed class UserTokenService(
             return TokenRefreshResult.Failure("invalid_token", "The refresh token is invalid or has expired.");
         }
 
-        // Extract user ID
-        var userIdClaim = principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)
-            ?? principal.FindFirst("sub");
+        // Extract user ID using short claim types
+        var userIdClaim = principal.FindFirst(JwtClaimTypes.Subject);
         if (userIdClaim is null || !Guid.TryParse(userIdClaim.Value, out var userId))
         {
             return TokenRefreshResult.Failure("invalid_token", "The refresh token does not contain valid user information.");

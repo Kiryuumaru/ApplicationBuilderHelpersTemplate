@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using JwtClaimTypes = Domain.Identity.Constants.JwtClaimTypes;
 
 namespace Application.UnitTests.Authorization;
 
@@ -16,7 +17,7 @@ public class JwtTokenServiceTests
 		var additionalClaims = new[]
 		{
 			new Claim("tenant", "alpha"),
-			new Claim("nameid", "ignored") // Using short claim type since we changed from verbose ClaimTypes.NameIdentifier
+			new Claim(JwtClaimTypes.Subject, "ignored") // Reserved claim types are skipped
 		};
 
 		var token = await service.GenerateToken(
@@ -32,10 +33,10 @@ public class JwtTokenServiceTests
 		Assert.Equal(["api.read", "api.write"], scopeValues);
 		Assert.Contains(jwt.Claims, claim => claim.Type == "tenant" && claim.Value == "alpha");
 
-		// JWT tokens now use short claim types ("nameid" instead of verbose MS schema)
-		var nameIdentifierClaims = jwt.Claims.Where(static claim => claim.Type == "nameid").ToArray();
-		Assert.Single(nameIdentifierClaims);
-		Assert.Equal("user-1", nameIdentifierClaims[0].Value);
+		// JWT tokens use short claim types from Domain.Identity.Constants.ClaimTypes
+		var subjectClaims = jwt.Claims.Where(static claim => claim.Type == JwtClaimTypes.Subject).ToArray();
+		Assert.Single(subjectClaims);
+		Assert.Equal("user-1", subjectClaims[0].Value);
 		Assert.Contains(jwt.Claims, claim => claim.Type == "rbac_version" && claim.Value == "2");
 	}
 
@@ -71,7 +72,7 @@ public class JwtTokenServiceTests
 			claimsToRemove: [new Claim("tenant", "alpha")],
 			cancellationToken: CancellationToken.None);
 
-		var principal = await service.ValidateToken(mutatedToken, CancellationToken.None);
+		var principal = await service.ValidateToken(mutatedToken, expectedType: null, CancellationToken.None);
 		Assert.NotNull(principal);
 
 		var scopeValues = principal!.Claims.Where(static claim => claim.Type == "scope").Select(static claim => claim.Value).ToArray();

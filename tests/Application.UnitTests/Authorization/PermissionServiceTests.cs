@@ -5,6 +5,7 @@ using Application.Authorization.Services;
 using Application.UnitTests.Authorization.Fakes;
 using System.Linq;
 using System.Security.Claims;
+using JwtClaimTypes = Domain.Identity.Constants.JwtClaimTypes;
 
 using AppTokenValidationResult = Application.Authorization.Models.TokenValidationResult;
 
@@ -276,17 +277,17 @@ public class PermissionServiceTests
                 return Task.FromResult(AppTokenValidationResult.Failed("Token validation failed."));
             }
 
-            var userIdClaim = ValidateTokenPrincipalResult.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userIdClaim = ValidateTokenPrincipalResult.FindFirst(JwtClaimTypes.Subject)?.Value;
             if (!Guid.TryParse(userIdClaim, out var userId))
             {
                 return Task.FromResult(AppTokenValidationResult.Failed("Invalid user ID."));
             }
 
-            var roles = ValidateTokenPrincipalResult.FindAll(ClaimTypes.Role).Select(c => c.Value).ToArray();
+            var roles = ValidateTokenPrincipalResult.FindAll(JwtClaimTypes.Roles).Select(c => c.Value).ToArray();
             return Task.FromResult(AppTokenValidationResult.Success(userId, null, roles));
         }
 
-        public Task<string> GenerateTokenWithScopesAsync(string userId, string? username, IEnumerable<string> scopes, IEnumerable<Claim>? additionalClaims = null, DateTimeOffset? expiration = null, CancellationToken cancellationToken = default)
+        public Task<string> GenerateTokenWithScopesAsync(string userId, string? username, IEnumerable<string> scopes, IEnumerable<Claim>? additionalClaims = null, DateTimeOffset? expiration = null, Domain.Identity.Enums.TokenType tokenType = Domain.Identity.Enums.TokenType.Access, CancellationToken cancellationToken = default)
         {
             LastGenerateTokenUserId = userId;
             LastGenerateTokenUsername = username;

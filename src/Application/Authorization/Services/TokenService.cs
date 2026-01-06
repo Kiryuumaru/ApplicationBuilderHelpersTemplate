@@ -44,9 +44,10 @@ internal sealed class TokenService(
         IEnumerable<string> scopes,
         IEnumerable<Claim>? additionalClaims = null,
         DateTimeOffset? expiration = null,
+        Domain.Identity.Enums.TokenType tokenType = Domain.Identity.Enums.TokenType.Access,
         CancellationToken cancellationToken = default)
     {
-        return _tokenProvider.GenerateTokenWithScopesAsync(userId, username, scopes, additionalClaims, expiration, cancellationToken);
+        return _tokenProvider.GenerateTokenWithScopesAsync(userId, username, scopes, additionalClaims, expiration, tokenType, cancellationToken);
     }
 
     public Task<string> GenerateApiKeyTokenAsync(

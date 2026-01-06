@@ -110,7 +110,8 @@ internal sealed class UserRegistrationService(
         await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
 
         var externalLogins = await _userRepository.GetLoginsAsync(user.Id, cancellationToken).ConfigureAwait(false);
-        var roleCodes = await _userRoleResolver.ResolveRoleCodesAsync(user, cancellationToken).ConfigureAwait(false);
+        var roleResolutions = await _userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
+        var roleCodes = roleResolutions.Select(r => r.Code).ToArray();
 
         return user.ToDto(user.RoleIds, roleCodes, externalLogins);
     }
@@ -150,7 +151,8 @@ internal sealed class UserRegistrationService(
             cancellationToken).ConfigureAwait(false);
 
         var externalLogins = await _userRepository.GetLoginsAsync(user.Id, cancellationToken).ConfigureAwait(false);
-        var roleCodes = await _userRoleResolver.ResolveRoleCodesAsync(user, cancellationToken).ConfigureAwait(false);
+        var roleResolutions = await _userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
+        var roleCodes = roleResolutions.Select(r => r.Code).ToArray();
 
         return user.ToDto(user.RoleIds, roleCodes, externalLogins);
     }

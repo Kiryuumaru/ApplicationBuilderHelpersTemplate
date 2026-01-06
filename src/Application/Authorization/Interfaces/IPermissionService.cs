@@ -78,6 +78,7 @@ public interface IPermissionService
     /// <param name="scopeDirectives">Scope directives to embed as claims.</param>
     /// <param name="additionalClaims">Additional claims to include in the token beyond scopes.</param>
     /// <param name="expiration">Optional expiration override for the delegated token.</param>
+    /// <param name="tokenType">The type of token to generate (Access, Refresh, or ApiKey).</param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>A signed JWT token string.</returns>
     Task<string> GenerateTokenWithScopeAsync(
@@ -86,6 +87,7 @@ public interface IPermissionService
         IEnumerable<Domain.Authorization.ValueObjects.ScopeDirective> scopeDirectives,
         IEnumerable<Claim>? additionalClaims = null,
         DateTimeOffset? expiration = null,
+        Domain.Identity.Enums.TokenType tokenType = Domain.Identity.Enums.TokenType.Access,
         CancellationToken cancellationToken = default);
 
     /// <summary>

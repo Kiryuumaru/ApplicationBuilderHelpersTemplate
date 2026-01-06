@@ -41,10 +41,9 @@ public class TokenFormatTests
         }
 
         // Verify short claim types are used (not verbose MS schemas)
-        Assert.True(jwt.Claims.Any(c => c.Type == "nameid"), "Should have 'nameid' claim (not verbose URL)");
+        Assert.True(jwt.Claims.Any(c => c.Type == "sub"), "Should have 'sub' claim for user ID");
         Assert.True(jwt.Claims.Any(c => c.Type == "name"), "Should have 'name' claim (not verbose URL)");
-        Assert.True(jwt.Claims.Any(c => c.Type == "sub"), "Should have 'sub' claim");
-        Assert.True(jwt.Claims.Any(c => c.Type == "role"), "Should have 'role' claim (not verbose URL)");
+        Assert.True(jwt.Claims.Any(c => c.Type == "roles"), "Should have 'roles' claim (RFC 9068)");
 
         // Verify verbose MS schemas are NOT present
         Assert.False(jwt.Claims.Any(c => c.Type.Contains("schemas.xmlsoap.org")), "Should NOT have verbose xmlsoap schema claims");
@@ -65,7 +64,7 @@ public class TokenFormatTests
         var handler = new JwtSecurityTokenHandler();
         var jwt = handler.ReadJwtToken(authResult!.AccessToken);
 
-        var roleClaim = jwt.Claims.FirstOrDefault(c => c.Type == "role");
+        var roleClaim = jwt.Claims.FirstOrDefault(c => c.Type == "roles");
         Assert.NotNull(roleClaim);
         _output.WriteLine($"[INFO] Role claim value: {roleClaim!.Value}");
 
@@ -125,7 +124,7 @@ public class TokenFormatTests
         Assert.StartsWith("allow;api:auth:refresh;", scopeClaims[0].Value);
 
         // Refresh token should NOT have role claims
-        Assert.DoesNotContain(jwt.Claims, c => c.Type == "role");
+        Assert.DoesNotContain(jwt.Claims, c => c.Type == "roles");
 
         _output.WriteLine("[PASS] Refresh token has only refresh permission");
     }

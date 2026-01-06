@@ -17,6 +17,8 @@ using Domain.Authorization.Enums;
 using Domain.Authorization.Models;
 using Domain.Authorization.Services;
 using Domain.Authorization.ValueObjects;
+using Domain.Identity.Enums;
+using JwtClaimTypes = Domain.Identity.Constants.JwtClaimTypes;
 
 namespace Application.Authorization.Services;
 
@@ -85,6 +87,7 @@ internal sealed class PermissionService(
         IEnumerable<ScopeDirective> scopeDirectives,
         IEnumerable<Claim>? additionalClaims = null,
         DateTimeOffset? expiration = null,
+        TokenType tokenType = TokenType.Access,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(userId);
@@ -103,6 +106,7 @@ internal sealed class PermissionService(
             scopes: scopes,
             additionalClaims: additionalClaimSet,
             expiration: expiration,
+            tokenType: tokenType,
             cancellationToken: cancellationToken);
     }
 
@@ -460,9 +464,9 @@ internal sealed class PermissionService(
 
     private static bool IsReservedIdentityClaimType(string claimType)
     {
-        return string.Equals(claimType, ClaimTypes.NameIdentifier, StringComparison.Ordinal)
-            || string.Equals(claimType, ClaimTypes.Name, StringComparison.Ordinal)
-            || string.Equals(claimType, JwtRegisteredClaimNames.Sub, StringComparison.Ordinal)
+        return string.Equals(claimType, JwtClaimTypes.Subject, StringComparison.Ordinal)
+            || string.Equals(claimType, JwtClaimTypes.Name, StringComparison.Ordinal)
+            || string.Equals(claimType, JwtClaimTypes.SessionId, StringComparison.Ordinal)
             || string.Equals(claimType, JwtRegisteredClaimNames.Jti, StringComparison.Ordinal)
             || string.Equals(claimType, JwtRegisteredClaimNames.Iat, StringComparison.Ordinal);
     }
@@ -556,11 +560,12 @@ internal sealed class PermissionService(
             }
         }
 
-        // Legacy behavior: if no RBAC version, grant full access
+        // SECURITY: Tokens without RBAC version are rejected (no backward compatibility)
+        // This ensures old/malformed tokens cannot gain unauthorized access
         if (!principal.Claims.Any(claim => string.Equals(claim.Type, RbacConstants.VersionClaimType, StringComparison.Ordinal)))
         {
-            claimSet.Add(Permissions.RootReadIdentifier);
-            claimSet.Add(Permissions.RootWriteIdentifier);
+            // Return empty set - token will have no permissions
+            return new HashSet<string>(StringComparer.Ordinal);
         }
 
         return claimSet;
@@ -614,10 +619,9 @@ internal sealed class PermissionService(
         directives.AddRange(ExtractScopeDirectives(principal));
 
         // Parse role claims with inline parameters (format: "ROLE_CODE;param1=value1;param2=value2")
-        // Support both short "role" claim type and verbose ClaimTypes.Role for compatibility
+        // RFC 9068 Section 2.2.3.1 / RFC 7643 Section 4.1.2 specify "roles" (plural)
         var parsedRoles = principal.Claims
-            .Where(c => string.Equals(c.Type, ClaimTypes.Role, StringComparison.Ordinal) ||
-                        string.Equals(c.Type, "role", StringComparison.Ordinal))
+            .Where(c => string.Equals(c.Type, JwtClaimTypes.Roles, StringComparison.Ordinal))
             .Select(c => c.Value)
             .Where(v => !string.IsNullOrWhiteSpace(v))
             .Select(v => Role.TryParseRoleClaim(v, out var parsed) ? (Role.ParsedRoleClaim?)parsed : null)

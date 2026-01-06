@@ -1,5 +1,6 @@
 using Application.Authorization.Models;
 using Domain.Authorization.Constants;
+using Domain.Identity.Enums;
 using Domain.Shared.Exceptions;
 using Infrastructure.Identity.Interfaces;
 using Microsoft.IdentityModel.Tokens;
@@ -9,20 +10,19 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using MsClaimTypes = System.Security.Claims.ClaimTypes;
+using JwtClaimTypes = Domain.Identity.Constants.JwtClaimTypes;
 
 namespace Infrastructure.Identity.Services;
 
 internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguration>>> jwtConfigurationFactory) : IJwtTokenService
 {
-    private const string ScopeClaimType = "scope";
-
     public async Task<string> GenerateToken(
         string userId,
         string username,
         IEnumerable<string>? scopes = null,
         IEnumerable<Claim>? additionalClaims = null,
         DateTimeOffset? expiration = null,
+        TokenType tokenType = TokenType.Access,
         CancellationToken cancellationToken = default)
     {
         var jwtConfiguration = await jwtConfigurationFactory.Value(cancellationToken);
@@ -32,12 +32,10 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
 
         var claims = new List<Claim>
         {
-            // Use short claim type names to avoid verbose MS XML schemas in token
-            new("nameid", userId),
-            new("name", username),
-            new(JwtRegisteredClaimNames.Sub, userId),
-            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
+            new(JwtClaimTypes.Subject, userId),
+            new(JwtClaimTypes.Name, username),
+            new(JwtClaimTypes.TokenId, Guid.NewGuid().ToString()),
+            new(JwtClaimTypes.IssuedAt, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
         };
 
         if (additionalClaims is not null)
@@ -54,7 +52,7 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
                     continue;
                 }
 
-                if (string.Equals(claim.Type, ScopeClaimType, StringComparison.Ordinal))
+                if (string.Equals(claim.Type, JwtClaimTypes.Scope, StringComparison.Ordinal))
                 {
                     continue;
                 }
@@ -86,7 +84,7 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
 
                 if (seenScopes.Add(trimmed))
                 {
-                    claims.Add(new Claim(ScopeClaimType, trimmed));
+                    claims.Add(new Claim(JwtClaimTypes.Scope, trimmed));
                 }
             }
         }
@@ -119,63 +117,23 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
             expirationTime = now.Add(jwtConfiguration.DefaultExpiration);
         }
 
-        var token = new JwtSecurityToken(
+        var tokenTypeValue = GetTokenTypeValue(tokenType);
+
+        var header = new JwtHeader(credentials)
+        {
+            [JwtClaimTypes.TokenType] = tokenTypeValue
+        };
+
+        var payload = new JwtPayload(
             issuer: jwtConfiguration.Issuer,
             audience: jwtConfiguration.Audience,
             claims: claims,
-            expires: expirationTime,
-            signingCredentials: credentials
-        );
+            notBefore: null,
+            expires: expirationTime);
+
+        var token = new JwtSecurityToken(header, payload);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
-    }
-
-    public async Task<string> GenerateApiKeyToken(
-        string apiKeyName,
-        IEnumerable<string>? scopes = null,
-        IEnumerable<Claim>? additionalClaims = null,
-        DateTimeOffset? expiration = null,
-        CancellationToken cancellationToken = default)
-    {
-        var claims = new List<Claim>
-        {
-            new(MsClaimTypes.Name, apiKeyName),
-            new("api_key", "true"),
-            new(JwtRegisteredClaimNames.Sub, apiKeyName),
-            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
-        };
-
-        if (additionalClaims is not null)
-        {
-            foreach (var claim in additionalClaims)
-            {
-                if (claim is null)
-                {
-                    continue;
-                }
-
-                if (IsReservedIdentityClaimType(claim.Type))
-                {
-                    continue;
-                }
-
-                if (string.Equals(claim.Type, ScopeClaimType, StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                claims.Add(CloneClaim(claim));
-            }
-        }
-
-        return await GenerateToken(
-            userId: apiKeyName,
-            username: apiKeyName,
-            scopes: scopes,
-            additionalClaims: claims,
-            expiration: expiration,
-            cancellationToken: cancellationToken);
     }
 
     public async Task<TokenValidationParameters> GetTokenValidationParameters(CancellationToken cancellationToken = default)
@@ -197,7 +155,10 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
         };
     }
 
-    public async Task<ClaimsPrincipal?> ValidateToken(string token, CancellationToken cancellationToken = default)
+    public async Task<ClaimsPrincipal?> ValidateToken(
+        string token,
+        TokenType? expectedType = null,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -221,6 +182,17 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
                         throw new SecurityTokenExpiredException($"The token expired at {expirationUtc:O}.");
                     }
                 }
+
+                if (expectedType.HasValue)
+                {
+                    var expectedTypValue = GetTokenTypeValue(expectedType.Value);
+                    var actualTypValue = jwtToken.Header.Typ;
+
+                    if (!string.Equals(actualTypValue, expectedTypValue, StringComparison.Ordinal))
+                    {
+                        return null;
+                    }
+                }
             }
 
             return principal;
@@ -238,8 +210,8 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
             var tokenHandler = new JwtSecurityTokenHandler();
             var jwtToken = tokenHandler.ReadJwtToken(token);
 
-            var issuedAt = ExtractLifetime(jwtToken, JwtRegisteredClaimNames.Iat, jwtToken.IssuedAt);
-            var expiresAt = ExtractLifetime(jwtToken, JwtRegisteredClaimNames.Exp, jwtToken.ValidTo);
+            var issuedAt = ExtractLifetime(jwtToken, JwtClaimTypes.IssuedAt, jwtToken.IssuedAt);
+            var expiresAt = ExtractLifetime(jwtToken, JwtClaimTypes.ExpiresAt, jwtToken.ValidTo);
 
             var claims = new Dictionary<string, JsonNode?>(StringComparer.Ordinal);
 
@@ -288,7 +260,7 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
             throw new ArgumentException("Token must be provided.", nameof(token));
         }
 
-        var principal = await ValidateToken(token, cancellationToken) ?? throw new SecurityTokenException("Token validation failed.");
+        var principal = await ValidateToken(token, expectedType: null, cancellationToken) ?? throw new SecurityTokenException("Token validation failed.");
 
         JwtSecurityToken jwtToken;
         try
@@ -300,17 +272,17 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
             throw new SecurityTokenException("Token validation failed.", ex);
         }
 
-        var userId = principal.FindFirstValue(MsClaimTypes.NameIdentifier) ?? principal.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        var userId = principal.FindFirstValue(JwtClaimTypes.Subject);
         if (string.IsNullOrWhiteSpace(userId))
         {
             throw new ValidationException("Token does not contain a subject identifier claim.");
         }
 
-        var username = principal.FindFirstValue(MsClaimTypes.Name) ?? principal.Identity?.Name ?? userId;
+        var username = principal.FindFirstValue(JwtClaimTypes.Name) ?? principal.Identity?.Name ?? userId;
 
         var mutableClaims = principal.Claims
             .Where(static claim => !IsReservedIdentityClaimType(claim.Type)
-                && !string.Equals(claim.Type, ScopeClaimType, StringComparison.Ordinal))
+                && !string.Equals(claim.Type, JwtClaimTypes.Scope, StringComparison.Ordinal))
             .Select(CloneClaim)
             .ToList();
 
@@ -364,7 +336,7 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
                 }
 
                 var trimmed = type.Trim();
-                if (IsReservedIdentityClaimType(trimmed) || string.Equals(trimmed, ScopeClaimType, StringComparison.Ordinal))
+                if (IsReservedIdentityClaimType(trimmed) || string.Equals(trimmed, JwtClaimTypes.Scope, StringComparison.Ordinal))
                 {
                     throw new ValidationException($"Claim type '{trimmed}' cannot be removed.");
                 }
@@ -387,7 +359,7 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
                     throw new ValidationException($"Claim type '{claim.Type}' cannot be removed.");
                 }
 
-                if (string.Equals(claim.Type, ScopeClaimType, StringComparison.Ordinal))
+                if (string.Equals(claim.Type, JwtClaimTypes.Scope, StringComparison.Ordinal))
                 {
                     throw new ValidationException("Scope claims must be removed via scopesToRemove.");
                 }
@@ -417,7 +389,7 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
                     throw new ValidationException($"Claim type '{claim.Type}' cannot be added.");
                 }
 
-                if (string.Equals(claim.Type, ScopeClaimType, StringComparison.Ordinal))
+                if (string.Equals(claim.Type, JwtClaimTypes.Scope, StringComparison.Ordinal))
                 {
                     throw new ValidationException("Scope claims must be added via scopesToAdd.");
                 }
@@ -482,7 +454,7 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
 
         foreach (var claim in principal.Claims)
         {
-            if (!string.Equals(claim.Type, ScopeClaimType, StringComparison.Ordinal))
+            if (!string.Equals(claim.Type, JwtClaimTypes.Scope, StringComparison.Ordinal))
             {
                 continue;
             }
@@ -529,14 +501,12 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
 
     private static bool IsReservedIdentityClaimType(string claimType)
     {
-        // Check both short and verbose forms of identity claim types
-        return string.Equals(claimType, MsClaimTypes.NameIdentifier, StringComparison.Ordinal)
-            || string.Equals(claimType, "nameid", StringComparison.Ordinal)
-            || string.Equals(claimType, MsClaimTypes.Name, StringComparison.Ordinal)
-            || string.Equals(claimType, "name", StringComparison.Ordinal)
-            || string.Equals(claimType, JwtRegisteredClaimNames.Sub, StringComparison.Ordinal)
-            || string.Equals(claimType, JwtRegisteredClaimNames.Jti, StringComparison.Ordinal)
-            || string.Equals(claimType, JwtRegisteredClaimNames.Iat, StringComparison.Ordinal);
+        // Only filter claims that are ALWAYS added in GenerateToken base claims
+        // Do NOT filter SessionId - it's only passed via additionalClaims
+        return string.Equals(claimType, JwtClaimTypes.Subject, StringComparison.Ordinal)
+            || string.Equals(claimType, JwtClaimTypes.Name, StringComparison.Ordinal)
+            || string.Equals(claimType, JwtClaimTypes.TokenId, StringComparison.Ordinal)
+            || string.Equals(claimType, JwtClaimTypes.IssuedAt, StringComparison.Ordinal);
     }
 
     private static JsonNode? MergeClaimValues(JsonNode? existing, JsonNode? additional)
@@ -717,6 +687,17 @@ internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguratio
             DateTimeKind.Utc => value,
             DateTimeKind.Unspecified => DateTime.SpecifyKind(value, DateTimeKind.Utc),
             _ => value.ToUniversalTime()
+        };
+    }
+
+    private static string GetTokenTypeValue(TokenType tokenType)
+    {
+        return tokenType switch
+        {
+            TokenType.Access => JwtClaimTypes.TokenTypeValues.AccessToken,
+            TokenType.Refresh => JwtClaimTypes.TokenTypeValues.RefreshToken,
+            TokenType.ApiKey => JwtClaimTypes.TokenTypeValues.ApiKey,
+            _ => throw new ArgumentOutOfRangeException(nameof(tokenType), tokenType, "Unknown token type")
         };
     }
 }

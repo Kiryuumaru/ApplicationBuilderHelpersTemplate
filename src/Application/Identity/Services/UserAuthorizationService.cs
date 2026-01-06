@@ -114,7 +114,8 @@ internal sealed class UserAuthorizationService(
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
-        return await _userRoleResolver.ResolveFormattedRoleClaimsAsync(user, cancellationToken).ConfigureAwait(false);
+        var roleResolutions = await _userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
+        return roleResolutions.Select(r => r.ToFormattedClaim()).OrderBy(r => r, StringComparer.Ordinal).ToArray();
     }
 
     public async Task<IReadOnlyCollection<string>> GetDirectPermissionScopesAsync(Guid userId, CancellationToken cancellationToken)
@@ -141,7 +142,7 @@ internal sealed class UserAuthorizationService(
 
         // Build formatted role claims (e.g., "USER;roleUserId=abc123")
         var formattedRoles = roleResolutions
-            .Select(r => Role.FormatRoleClaim(r.Role.Code, r.ParameterValues))
+            .Select(r => r.ToFormattedClaim())
             .OrderBy(r => r, StringComparer.Ordinal)
             .ToArray();
 

@@ -4,7 +4,7 @@ using Infrastructure.Identity.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using JwtClaimTypes = Domain.Identity.Constants.ClaimTypes;
+using JwtClaimTypes = Domain.Identity.Constants.JwtClaimTypes;
 
 namespace Infrastructure.Identity.ConfigureOptions;
 

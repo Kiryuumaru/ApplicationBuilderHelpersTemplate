@@ -6,10 +6,23 @@ using Domain.Shared.Constants;
 
 namespace Domain.Identity.Models;
 
+/// <summary>
+/// Represents a resolved role assignment with its parameter values.
+/// </summary>
 public sealed class UserRoleResolution(Role role, IReadOnlyDictionary<string, string?>? parameterValues = null)
 {
     public Role Role { get; } = role ?? throw new ArgumentNullException(nameof(role));
     public IReadOnlyDictionary<string, string?> ParameterValues { get; } = NormalizeParameters(parameterValues);
+
+    /// <summary>
+    /// Gets the role code (e.g., "USER", "ADMIN").
+    /// </summary>
+    public string Code => Role.Code;
+
+    /// <summary>
+    /// Formats the role with inline parameters (e.g., "USER;roleUserId=abc123").
+    /// </summary>
+    public string ToFormattedClaim() => Role.FormatRoleClaim(Role.Code, ParameterValues);
 
     private static IReadOnlyDictionary<string, string?> NormalizeParameters(IReadOnlyDictionary<string, string?>? parameterValues)
     {

@@ -96,58 +96,6 @@ public partial class AuthController
         [FromBody] LinkPasswordRequest request,
         CancellationToken cancellationToken)
     {
-        var user = await userProfileService.GetByIdAsync(userId, cancellationToken);
-        if (user is null)
-        {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "User not found",
-                Detail = "The specified user does not exist."
-            });
-        }
-
-        // Check if password is already linked
-        if (user.HasPassword)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Password already linked",
-                Detail = "This account already has a password. Use change-password to update it."
-            });
-        }
-
-        // Check if username is already taken (only if username is changing)
-        if (!string.Equals(user.Username, request.Username, StringComparison.OrdinalIgnoreCase))
-        {
-            var existingUser = await userProfileService.GetByUsernameAsync(request.Username, cancellationToken);
-            if (existingUser is not null)
-            {
-                return Conflict(new ProblemDetails
-                {
-                    Status = StatusCodes.Status409Conflict,
-                    Title = "Username already exists",
-                    Detail = $"The username '{request.Username}' is already taken."
-                });
-            }
-        }
-
-        // Check if email is already taken
-        if (!string.IsNullOrWhiteSpace(request.Email))
-        {
-            var existingByEmail = await userProfileService.GetByEmailAsync(request.Email, cancellationToken);
-            if (existingByEmail is not null && existingByEmail.Id != user.Id)
-            {
-                return Conflict(new ProblemDetails
-                {
-                    Status = StatusCodes.Status409Conflict,
-                    Title = "Email already exists",
-                    Detail = $"The email '{request.Email}' is already registered."
-                });
-            }
-        }
-
         try
         {
             await passwordService.LinkPasswordAsync(
@@ -163,6 +111,33 @@ public partial class AuthController
                 cancellationToken);
 
             return Ok(linkPwdUserInfo);
+        }
+        catch (EntityNotFoundException)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Status = StatusCodes.Status404NotFound,
+                Title = "User not found",
+                Detail = "The specified user does not exist."
+            });
+        }
+        catch (DuplicateEntityException ex)
+        {
+            return Conflict(new ProblemDetails
+            {
+                Status = StatusCodes.Status409Conflict,
+                Title = $"{ex.EntityType} already exists",
+                Detail = ex.Message
+            });
+        }
+        catch (Domain.Shared.Exceptions.ValidationException ex)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Link failed",
+                Detail = ex.Message
+            });
         }
         catch (PasswordValidationException ex)
         {
@@ -198,29 +173,6 @@ public partial class AuthController
         [FromBody] LinkEmailRequest request,
         CancellationToken cancellationToken)
     {
-        var user = await userProfileService.GetByIdAsync(userId, cancellationToken);
-        if (user is null)
-        {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "User not found",
-                Detail = "The specified user does not exist."
-            });
-        }
-
-        // Check if email is already taken by another user
-        var existingByEmail = await userProfileService.GetByEmailAsync(request.Email, cancellationToken);
-        if (existingByEmail is not null && existingByEmail.Id != user.Id)
-        {
-            return Conflict(new ProblemDetails
-            {
-                Status = StatusCodes.Status409Conflict,
-                Title = "Email already exists",
-                Detail = $"The email '{request.Email}' is already registered to another account."
-            });
-        }
-
         try
         {
             await userProfileService.LinkEmailAsync(userId, request.Email, cancellationToken);
@@ -232,12 +184,21 @@ public partial class AuthController
 
             return Ok(linkEmailUserInfo);
         }
+        catch (EntityNotFoundException)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Status = StatusCodes.Status404NotFound,
+                Title = "User not found",
+                Detail = "The specified user does not exist."
+            });
+        }
         catch (DuplicateEntityException ex)
         {
-            return BadRequest(new ProblemDetails
+            return Conflict(new ProblemDetails
             {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Link failed",
+                Status = StatusCodes.Status409Conflict,
+                Title = $"{ex.EntityType} already exists",
                 Detail = ex.Message
             });
         }
@@ -436,21 +397,6 @@ public partial class AuthController
             });
         }
 
-        // Check if username is already taken
-        if (!string.Equals(user.Username, request.Username, StringComparison.OrdinalIgnoreCase))
-        {
-            var existingUser = await userProfileService.GetByUsernameAsync(request.Username, cancellationToken);
-            if (existingUser is not null)
-            {
-                return Conflict(new ProblemDetails
-                {
-                    Status = StatusCodes.Status409Conflict,
-                    Title = "Username already exists",
-                    Detail = $"The username '{request.Username}' is already taken."
-                });
-            }
-        }
-
         try
         {
             await userProfileService.ChangeUsernameAsync(userId, request.Username, cancellationToken);
@@ -464,10 +410,10 @@ public partial class AuthController
         }
         catch (DuplicateEntityException ex)
         {
-            return BadRequest(new ProblemDetails
+            return Conflict(new ProblemDetails
             {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Change failed",
+                Status = StatusCodes.Status409Conflict,
+                Title = "Username already exists",
                 Detail = ex.Message
             });
         }
@@ -506,18 +452,6 @@ public partial class AuthController
             });
         }
 
-        // Check if email is already taken by another user
-        var existingByEmail = await userProfileService.GetByEmailAsync(request.Email, cancellationToken);
-        if (existingByEmail is not null && existingByEmail.Id != user.Id)
-        {
-            return Conflict(new ProblemDetails
-            {
-                Status = StatusCodes.Status409Conflict,
-                Title = "Email already exists",
-                Detail = $"The email '{request.Email}' is already registered to another account."
-            });
-        }
-
         try
         {
             await userProfileService.ChangeEmailAsync(userId, request.Email, cancellationToken);
@@ -531,10 +465,10 @@ public partial class AuthController
         }
         catch (DuplicateEntityException ex)
         {
-            return BadRequest(new ProblemDetails
+            return Conflict(new ProblemDetails
             {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Change failed",
+                Status = StatusCodes.Status409Conflict,
+                Title = "Email already exists",
                 Detail = ex.Message
             });
         }

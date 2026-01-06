@@ -1,4 +1,5 @@
 using Application.Authorization.Models;
+using Domain.Identity.Enums;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 
@@ -13,28 +14,32 @@ internal interface IJwtTokenService
     /// <summary>
     /// Generates a JWT token for the specified user.
     /// </summary>
+    /// <param name="userId">The user ID (sub claim).</param>
+    /// <param name="username">The username (name claim).</param>
+    /// <param name="scopes">Optional scope claims for permissions.</param>
+    /// <param name="additionalClaims">Optional additional claims to include.</param>
+    /// <param name="expiration">Optional expiration override.</param>
+    /// <param name="tokenType">The type of token to generate (sets typ header).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     Task<string> GenerateToken(
         string userId,
         string username,
         IEnumerable<string>? scopes = null,
         IEnumerable<Claim>? additionalClaims = null,
         DateTimeOffset? expiration = null,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Generates an API key token.
-    /// </summary>
-    Task<string> GenerateApiKeyToken(
-        string apiKeyName,
-        IEnumerable<string>? scopes = null,
-        IEnumerable<Claim>? additionalClaims = null,
-        DateTimeOffset? expiration = null,
+        TokenType tokenType = TokenType.Access,
         CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Validates a JWT token and returns the claims principal.
     /// </summary>
-    Task<ClaimsPrincipal?> ValidateToken(string token, CancellationToken cancellationToken = default);
+    /// <param name="token">The token to validate.</param>
+    /// <param name="expectedType">If specified, validates the typ header matches. If null, skips typ validation.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<ClaimsPrincipal?> ValidateToken(
+        string token,
+        TokenType? expectedType = null,
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Decodes a JWT token without validation.

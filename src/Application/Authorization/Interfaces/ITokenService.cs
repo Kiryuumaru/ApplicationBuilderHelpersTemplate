@@ -53,6 +53,7 @@ public interface ITokenService
     /// <param name="scopes">The permission scopes to include.</param>
     /// <param name="additionalClaims">Additional claims to include.</param>
     /// <param name="expiration">Optional expiration override.</param>
+    /// <param name="tokenType">The type of token to generate (Access, Refresh, or ApiKey).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The generated token.</returns>
     Task<string> GenerateTokenWithScopesAsync(
@@ -61,6 +62,7 @@ public interface ITokenService
         IEnumerable<string> scopes,
         IEnumerable<Claim>? additionalClaims = null,
         DateTimeOffset? expiration = null,
+        Domain.Identity.Enums.TokenType tokenType = Domain.Identity.Enums.TokenType.Access,
         CancellationToken cancellationToken = default);
 
     /// <summary>

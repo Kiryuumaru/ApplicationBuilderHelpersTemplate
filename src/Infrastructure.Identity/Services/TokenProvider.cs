@@ -1,7 +1,9 @@
 using Application.Authorization.Interfaces.Infrastructure;
 using Application.Authorization.Models;
+using Domain.Identity.Enums;
 using Infrastructure.Identity.Interfaces;
 using System.Security.Claims;
+using JwtClaimTypes = Domain.Identity.Constants.JwtClaimTypes;
 
 namespace Infrastructure.Identity.Services;
 
@@ -16,9 +18,10 @@ internal class TokenProvider(IJwtTokenService jwtTokenService) : ITokenProvider
     {
         var claims = new List<Claim>();
         
+        // RFC 9068 Section 2.2.3.1 / RFC 7643 Section 4.1.2 specify "roles" (plural)
         foreach (var role in roleCodes)
         {
-            claims.Add(new Claim(ClaimTypes.Role, role));
+            claims.Add(new Claim(JwtClaimTypes.Roles, role));
         }
         
         if (additionalClaims is not null)
@@ -32,6 +35,7 @@ internal class TokenProvider(IJwtTokenService jwtTokenService) : ITokenProvider
             scopes: null,
             additionalClaims: claims,
             expiration: null,
+            tokenType: TokenType.Access,
             cancellationToken: cancellationToken);
     }
 
@@ -48,22 +52,21 @@ internal class TokenProvider(IJwtTokenService jwtTokenService) : ITokenProvider
         string token,
         CancellationToken cancellationToken = default)
     {
-        var principal = await jwtTokenService.ValidateToken(token, cancellationToken);
+        var principal = await jwtTokenService.ValidateToken(token, expectedType: null, cancellationToken);
         
         if (principal is null)
         {
             return TokenValidationResult.Failed("Token validation failed");
         }
         
-        // Support both short ("nameid") and verbose (ClaimTypes.NameIdentifier) claim types
-        var userIdClaim = principal.FindFirstValue("nameid") ?? principal.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userIdClaim = principal.FindFirstValue(JwtClaimTypes.Subject);
         var userId = userIdClaim is not null && Guid.TryParse(userIdClaim, out var parsedUserId) ? parsedUserId : Guid.Empty;
         
-        var sessionIdClaim = principal.FindFirstValue("session_id");
+        var sessionIdClaim = principal.FindFirstValue(JwtClaimTypes.SessionId);
         var sessionId = sessionIdClaim is not null && Guid.TryParse(sessionIdClaim, out var parsedSessionId) ? parsedSessionId : (Guid?)null;
         
-        // Support both short ("role") and verbose (ClaimTypes.Role) claim types
-        var roles = principal.FindAll("role").Concat(principal.FindAll(ClaimTypes.Role)).Select(c => c.Value).Distinct().ToList();
+        // RFC 9068 Section 2.2.3.1 specifies "roles" (plural)
+        var roles = principal.FindAll(JwtClaimTypes.Roles).Select(c => c.Value).Distinct().ToList();
         
         return TokenValidationResult.Success(userId, sessionId, roles);
     }
@@ -74,6 +77,7 @@ internal class TokenProvider(IJwtTokenService jwtTokenService) : ITokenProvider
         IEnumerable<string> scopes,
         IEnumerable<Claim>? additionalClaims = null,
         DateTimeOffset? expiration = null,
+        TokenType tokenType = TokenType.Access,
         CancellationToken cancellationToken = default)
     {
         return await jwtTokenService.GenerateToken(
@@ -82,6 +86,7 @@ internal class TokenProvider(IJwtTokenService jwtTokenService) : ITokenProvider
             scopes: scopes,
             additionalClaims: additionalClaims,
             expiration: expiration,
+            tokenType: tokenType,
             cancellationToken: cancellationToken);
     }
 
@@ -92,11 +97,23 @@ internal class TokenProvider(IJwtTokenService jwtTokenService) : ITokenProvider
         DateTimeOffset? expiration = null,
         CancellationToken cancellationToken = default)
     {
-        return await jwtTokenService.GenerateApiKeyToken(
-            apiKeyName: apiKeyName,
+        var claims = new List<Claim>
+        {
+            new("api_key", "true")
+        };
+
+        if (additionalClaims is not null)
+        {
+            claims.AddRange(additionalClaims);
+        }
+
+        return await jwtTokenService.GenerateToken(
+            userId: apiKeyName,
+            username: apiKeyName,
             scopes: scopes,
-            additionalClaims: additionalClaims,
+            additionalClaims: claims,
             expiration: expiration,
+            tokenType: TokenType.ApiKey,
             cancellationToken: cancellationToken);
     }
 
@@ -104,7 +121,7 @@ internal class TokenProvider(IJwtTokenService jwtTokenService) : ITokenProvider
         string token,
         CancellationToken cancellationToken = default)
     {
-        return await jwtTokenService.ValidateToken(token, cancellationToken);
+        return await jwtTokenService.ValidateToken(token, expectedType: null, cancellationToken);
     }
 
     public async Task<TokenInfo?> DecodeTokenAsync(
