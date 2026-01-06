@@ -44,8 +44,14 @@ POST /api/v1/auth/register
     "username": null,
     "email": null,
     "isAnonymous": true,
-    "roles": ["user"],
-    "permissions": ["users._read", "users._write", ...]
+    "roles": [
+      "USER;roleUserId=550e8400-e29b-41d4-a716-446655440000"
+    ],
+    "permissions": [
+      "allow;_read;userId=550e8400-e29b-41d4-a716-446655440000",
+      "allow;_write;userId=550e8400-e29b-41d4-a716-446655440000",
+      "allow;api:bots:strategies:_read"
+    ]
   }
 }
 ```
@@ -192,10 +198,10 @@ The `UserTokenResult` includes:
 
 ### Access Token
 - **Expiration:** 60 minutes
-- **Contains:** User ID, username, roles, permissions (scope)
-- **Scope:** User's permissions + `deny;api:auth:refresh`
+- **Contains:** User ID, username, session ID, roles
+- **Scope:** Direct permission grants (if any) + `deny;api:auth:refresh;userId={userId}`
 - **Use:** `Authorization: Bearer {accessToken}`
-- **Can:** Access all API endpoints the user has permissions for
+- **Can:** Access all API endpoints the user has permissions for (resolved via token roles + DB role templates + direct grants)
 - **Cannot:** Be used to refresh tokens (blocked by deny directive)
 
 ### Refresh Token
@@ -203,16 +209,16 @@ The `UserTokenResult` includes:
 - **Contains:** User ID, username, session ID
 - **Scope:** `allow;api:auth:refresh;userId={userId}` (only)
 - **Use:** Send in request body to `/auth/refresh` endpoint
-- **Can:** Refresh tokens, access `[Authorize]`-only endpoints (e.g., `/me`, `/logout`)
-- **Cannot:** Access endpoints with `[RequiredPermission]` (e.g., `/users`, `/accounts`)
+- **Can:** Refresh tokens
+- **Cannot:** Access endpoints with `[RequiredPermission]` (e.g., `/auth/me`, `/auth/logout`, `/iam/*`)
 
 ### Token Separation Security Model
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    ACCESS TOKEN                             │
-│  Scope: allow;api:accounts:_read, allow;api:users:_read,   │
-│         ... user permissions ..., deny;api:auth:refresh    │
+│  Roles: USER;roleUserId=...                                 │
+│  Scope: ... direct grants ..., deny;api:auth:refresh        │
 ├─────────────────────────────────────────────────────────────┤
 │  ✅ Can access /api/v1/accounts                            │
 │  ✅ Can access /api/v1/auth/me                             │
@@ -225,8 +231,8 @@ The `UserTokenResult` includes:
 │  Scope: allow;api:auth:refresh;userId={userId}             │
 ├─────────────────────────────────────────────────────────────┤
 │  ✅ Can refresh tokens at /api/v1/auth/refresh             │
-│  ✅ Can access /api/v1/auth/me (Authorize-only)            │
-│  ✅ Can access /api/v1/auth/logout (Authorize-only)        │
+│  ❌ Cannot access /api/v1/auth/me (permission required)     │
+│  ❌ Cannot access /api/v1/auth/logout (permission required) │
 │  ❌ Cannot access /api/v1/accounts (lacks permission)      │
 │  ❌ Cannot access /api/v1/users (lacks permission)         │
 └─────────────────────────────────────────────────────────────┘
@@ -235,7 +241,7 @@ The `UserTokenResult` includes:
 **Key Points:**
 - The `/auth/refresh` endpoint is `[AllowAnonymous]` and validates the token in the request body
 - Access tokens cannot be used as refresh tokens because they have `deny;api:auth:refresh`
-- Refresh tokens can access `[Authorize]`-only endpoints but not `[RequiredPermission]` endpoints
+- Refresh tokens only have refresh permission; they cannot access endpoints that require other permissions
 - This model prevents stolen access tokens from being used to generate new tokens
 
 ## Request/Response Examples

@@ -19,17 +19,28 @@ Authenticate user and receive JWT tokens.
 **Request Body:**
 ```json
 {
-  "email": "user@example.com",
+  "username": "user@example.com",
   "password": "password123"
 }
 ```
+
+`username` accepts either a username or an email address.
 
 **Response:** `200 OK`
 ```json
 {
   "accessToken": "eyJhbGc...",
   "refreshToken": "eyJhbGc...",
-  "expiresIn": 3600
+  "tokenType": "Bearer",
+  "expiresIn": 3600,
+  "user": {
+    "id": "guid",
+    "username": null,
+    "email": null,
+    "roles": ["USER;roleUserId=guid"],
+    "permissions": ["allow;_read;userId=guid", "allow;_write;userId=guid"],
+    "isAnonymous": true
+  }
 }
 ```
 
@@ -42,16 +53,35 @@ Authenticate user and receive JWT tokens.
 
 Register a new user account.
 
+All fields are optional. An empty body (or `{}`) creates an anonymous authenticated user.
+
 **Request Body:**
 ```json
 {
+  "username": "player1",
   "email": "user@example.com",
   "password": "password123",
-  "displayName": "John Doe"
+  "confirmPassword": "password123"
 }
 ```
 
 **Response:** `201 Created`
+```json
+{
+  "accessToken": "eyJhbGc...",
+  "refreshToken": "eyJhbGc...",
+  "tokenType": "Bearer",
+  "expiresIn": 3600,
+  "user": {
+    "id": "guid",
+    "username": null,
+    "email": null,
+    "roles": ["USER;roleUserId=guid"],
+    "permissions": ["allow;_read;userId=guid", "allow;_write;userId=guid"],
+    "isAnonymous": true
+  }
+}
+```
 
 **Errors:**
 - `400 Bad Request` - Invalid input
@@ -94,7 +124,7 @@ Invalidate the current session.
 Authorization: Bearer {accessToken}
 ```
 
-**Response:** `200 OK`
+**Response:** `204 No Content`
 
 ---
 
@@ -111,9 +141,11 @@ Authorization: Bearer {accessToken}
 ```json
 {
   "id": "guid",
-  "email": "user@example.com",
-  "displayName": "John Doe",
-  "roles": ["User"]
+  "username": null,
+  "email": null,
+  "roles": ["USER;roleUserId=guid"],
+  "permissions": ["allow;_read;userId=guid", "allow;_write;userId=guid"],
+  "isAnonymous": true
 }
 ```
 
@@ -165,14 +197,15 @@ Reset password using a reset token.
 ### Access Token
 - Short-lived (default: 1 hour)
 - Used for API authorization
-- Contains user claims (id, email, roles)
+- Contains user claims (subject, session id, roles)
 
 ### Refresh Token
 - Long-lived (default: 7 days)
 - Used only to obtain new access tokens
 - Scope: Only `allow;api:auth:refresh;userId={userId}` permission
 - Cannot access `[RequiredPermission]` endpoints (lacks permissions)
-- Can access `[Authorize]`-only endpoints like `/me`
+
+Access tokens are prevented from being used as refresh tokens by including an explicit `deny;api:auth:refresh;userId={userId}` directive in the access token scope.
 
 ---
 

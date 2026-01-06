@@ -662,6 +662,104 @@ public class CustomRoleManagementTests
     }
 
     /// <summary>
+    /// Tests that removing a role assignment does not affect an already-issued access token,
+    /// but does affect new tokens issued after re-login.
+    /// </summary>
+    [Fact]
+    public async Task RemoveRole_DoesNotAffectExistingTokenUntilReLogin()
+    {
+        _output.WriteLine("[TEST] RemoveRole_DoesNotAffectExistingTokenUntilReLogin");
+
+        var adminAuth = await CreateAdminUserAsync();
+        Assert.NotNull(adminAuth);
+
+        // Create a custom role
+        var roleCode = $"TOKENROLE_{Guid.NewGuid():N}"[..30];
+        var createRoleRequest = new
+        {
+            Code = roleCode,
+            Name = "Role for Token Removal Test",
+            Description = "Role used to test role removal vs token behavior",
+            ScopeTemplates = new[]
+            {
+                new { Type = "allow", PermissionPath = "api:iam:users:read" }
+            }
+        };
+
+        using var createRoleReq = new HttpRequestMessage(HttpMethod.Post, "/api/v1/iam/roles");
+        createRoleReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth!.AccessToken);
+        createRoleReq.Content = JsonContent.Create(createRoleRequest);
+        var createRoleResp = await _sharedHost.Host.HttpClient.SendAsync(createRoleReq);
+        Assert.Equal(HttpStatusCode.Created, createRoleResp.StatusCode);
+
+        var createdRole = JsonSerializer.Deserialize<RoleResponse>(
+            await createRoleResp.Content.ReadAsStringAsync(), JsonOptions);
+        Assert.NotNull(createdRole);
+
+        var regularUser = await RegisterAndGetTokenAsync();
+        Assert.NotNull(regularUser);
+        var regularUserId = regularUser!.User!.Id;
+
+        var targetUser = await RegisterAndGetTokenAsync();
+        Assert.NotNull(targetUser);
+        var targetUserId = targetUser!.User!.Id;
+
+        // Assign role
+        var assignRequest = new { UserId = regularUserId, RoleCode = roleCode };
+        using var assignReq = new HttpRequestMessage(HttpMethod.Post, "/api/v1/iam/roles/assign");
+        assignReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth.AccessToken);
+        assignReq.Content = JsonContent.Create(assignRequest);
+        var assignResp = await _sharedHost.Host.HttpClient.SendAsync(assignReq);
+        Assert.Equal(HttpStatusCode.NoContent, assignResp.StatusCode);
+
+        // Login to get token with role claim
+        var withRoleAuth = await LoginAsync(regularUser.User!.Username!, TestPassword);
+        Assert.NotNull(withRoleAuth);
+        var tokenWithRole = withRoleAuth!.AccessToken;
+
+        // Verify access works with role
+        using (var accessReq1 = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/iam/users/{targetUserId}"))
+        {
+            accessReq1.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenWithRole);
+            var accessResp1 = await _sharedHost.Host.HttpClient.SendAsync(accessReq1);
+            _output.WriteLine($"[RECEIVED] With role (token1): {(int)accessResp1.StatusCode} {accessResp1.StatusCode}");
+            Assert.Equal(HttpStatusCode.OK, accessResp1.StatusCode);
+        }
+
+        // Remove the role assignment
+        _output.WriteLine("[STEP] Removing role from user...");
+        var removeRequest = new { UserId = regularUserId, RoleId = createdRole!.Id };
+        using var removeReq = new HttpRequestMessage(HttpMethod.Post, "/api/v1/iam/roles/remove");
+        removeReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth.AccessToken);
+        removeReq.Content = JsonContent.Create(removeRequest);
+        var removeResp = await _sharedHost.Host.HttpClient.SendAsync(removeReq);
+        Assert.Equal(HttpStatusCode.NoContent, removeResp.StatusCode);
+
+        // Using the SAME token, verify access is unchanged
+        using (var accessReq2 = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/iam/users/{targetUserId}"))
+        {
+            accessReq2.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenWithRole);
+            var accessResp2 = await _sharedHost.Host.HttpClient.SendAsync(accessReq2);
+            _output.WriteLine($"[RECEIVED] After role removal (same token): {(int)accessResp2.StatusCode} {accessResp2.StatusCode}");
+            Assert.Equal(HttpStatusCode.OK, accessResp2.StatusCode);
+        }
+
+        // Re-login and verify access is now denied
+        var withoutRoleAuth = await LoginAsync(regularUser.User!.Username!, TestPassword);
+        Assert.NotNull(withoutRoleAuth);
+
+        using (var accessReq3 = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/iam/users/{targetUserId}"))
+        {
+            accessReq3.Headers.Authorization = new AuthenticationHeaderValue("Bearer", withoutRoleAuth!.AccessToken);
+            var accessResp3 = await _sharedHost.Host.HttpClient.SendAsync(accessReq3);
+            _output.WriteLine($"[RECEIVED] After role removal (re-login): {(int)accessResp3.StatusCode} {accessResp3.StatusCode}");
+            Assert.Equal(HttpStatusCode.Forbidden, accessResp3.StatusCode);
+        }
+
+        _output.WriteLine("[PASS] Role removal affects new tokens, not already-issued tokens");
+    }
+
+    /// <summary>
     /// Tests that modifying a role's permissions takes effect immediately without requiring
     /// users to re-login or regenerate tokens. This is a key feature of role-based access control.
     /// </summary>

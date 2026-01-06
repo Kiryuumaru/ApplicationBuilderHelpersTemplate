@@ -10,7 +10,7 @@ namespace Presentation.WebApi.FunctionalTests.Auth;
 /// Tests for permission-based token separation.
 /// 
 /// Token structure:
-/// - ACCESS TOKENS: Have user's permissions + deny;api:auth:refresh
+/// - ACCESS TOKENS: Carry role claims and direct grants + deny;api:auth:refresh
 /// - REFRESH TOKENS: Have ONLY allow;api:auth:refresh;userId={userId}
 /// 
 /// The /auth/refresh endpoint:

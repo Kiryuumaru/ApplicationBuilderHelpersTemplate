@@ -360,6 +360,163 @@ public class PermissionAllowDenyTests
         _output.WriteLine("[PASS] Revoking Deny grant restores role-based access");
     }
 
+    /// <summary>
+    /// Test that a Deny grant does not apply when its parameters do not match the request,
+    /// even if the user has broad access via a role.
+    /// </summary>
+    [Fact]
+    public async Task DenyGrant_WithNonMatchingParameters_DoesNotOverrideRoleAllow()
+    {
+        _output.WriteLine("[TEST] DenyGrant_WithNonMatchingParameters_DoesNotOverrideRoleAllow");
+
+        var adminAuth = await CreateAdminUserAsync();
+        Assert.NotNull(adminAuth);
+
+        // Create a role that grants broad read access
+        var uniqueId = Guid.NewGuid().ToString("N")[..12];
+        var roleCode = $"READER_{uniqueId}";
+        var createRoleRequest = new
+        {
+            Code = roleCode,
+            Name = $"User Reader {uniqueId}",
+            ScopeTemplates = new[]
+            {
+                new { Type = "allow", PermissionPath = "api:iam:users:read" }
+            }
+        };
+
+        using (var createRoleReq = new HttpRequestMessage(HttpMethod.Post, "/api/v1/iam/roles"))
+        {
+            createRoleReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth!.AccessToken);
+            createRoleReq.Content = JsonContent.Create(createRoleRequest);
+            var createRoleResp = await _sharedHost.Host.HttpClient.SendAsync(createRoleReq);
+            Assert.Equal(HttpStatusCode.Created, createRoleResp.StatusCode);
+        }
+
+        // Create user and two targets
+        var regularUser = await RegisterAndGetTokenAsync();
+        Assert.NotNull(regularUser);
+        var regularUserId = regularUser!.User!.Id;
+
+        var allowedTarget = await RegisterAndGetTokenAsync();
+        Assert.NotNull(allowedTarget);
+        var allowedTargetUserId = allowedTarget!.User!.Id;
+
+        var deniedTarget = await RegisterAndGetTokenAsync();
+        Assert.NotNull(deniedTarget);
+        var deniedTargetUserId = deniedTarget!.User!.Id;
+
+        // Assign role that grants read
+        var assignRequest = new { UserId = regularUserId, RoleCode = roleCode };
+        using (var assignReq = new HttpRequestMessage(HttpMethod.Post, "/api/v1/iam/roles/assign"))
+        {
+            assignReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth.AccessToken);
+            assignReq.Content = JsonContent.Create(assignRequest);
+            var assignResp = await _sharedHost.Host.HttpClient.SendAsync(assignReq);
+            Assert.Equal(HttpStatusCode.NoContent, assignResp.StatusCode);
+        }
+
+        // Grant a deny for a DIFFERENT target userId
+        var denyRequest = new
+        {
+            UserId = regularUserId,
+            PermissionIdentifier = $"api:iam:users:read;userId={deniedTargetUserId}",
+            IsAllow = false,
+            Description = "Block access to one specific user"
+        };
+        using (var denyReq = new HttpRequestMessage(HttpMethod.Post, "/api/v1/iam/permissions/grant"))
+        {
+            denyReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth.AccessToken);
+            denyReq.Content = JsonContent.Create(denyRequest);
+            var denyResp = await _sharedHost.Host.HttpClient.SendAsync(denyReq);
+            Assert.Equal(HttpStatusCode.NoContent, denyResp.StatusCode);
+        }
+
+        var userWithRoleAndDeny = await LoginAsync(regularUser.User!.Username!, TestPassword);
+        Assert.NotNull(userWithRoleAndDeny);
+
+        // Verify: can still access a different user (deny params do not match)
+        using (var accessAllowedReq = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/iam/users/{allowedTargetUserId}"))
+        {
+            accessAllowedReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userWithRoleAndDeny!.AccessToken);
+            var resp = await _sharedHost.Host.HttpClient.SendAsync(accessAllowedReq);
+            _output.WriteLine($"[RECEIVED] Access allowed target: {(int)resp.StatusCode} {resp.StatusCode}");
+            Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        }
+
+        // Verify: cannot access the denied user (deny params match)
+        using (var accessDeniedReq = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/iam/users/{deniedTargetUserId}"))
+        {
+            accessDeniedReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userWithRoleAndDeny.AccessToken);
+            var resp = await _sharedHost.Host.HttpClient.SendAsync(accessDeniedReq);
+            _output.WriteLine($"[RECEIVED] Access denied target: {(int)resp.StatusCode} {resp.StatusCode}");
+            Assert.Equal(HttpStatusCode.Forbidden, resp.StatusCode);
+        }
+
+        _output.WriteLine("[PASS] Deny with non-matching parameters does not override role allow");
+    }
+
+    /// <summary>
+    /// Test that having an Allow grant for one permission does not grant access to other permissions.
+    /// This locks in that the requested permission must match at least one allow directive.
+    /// </summary>
+    [Fact]
+    public async Task AllowGrant_ForDifferentPermission_DoesNotGrantAccessToOtherPermission()
+    {
+        _output.WriteLine("[TEST] AllowGrant_ForDifferentPermission_DoesNotGrantAccessToOtherPermission");
+
+        var adminAuth = await CreateAdminUserAsync();
+        Assert.NotNull(adminAuth);
+
+        var regularUser = await RegisterAndGetTokenAsync();
+        Assert.NotNull(regularUser);
+        var regularUserId = regularUser!.User!.Id;
+
+        var targetUser = await RegisterAndGetTokenAsync();
+        Assert.NotNull(targetUser);
+        var targetUserId = targetUser!.User!.Id;
+
+        // Grant allow ONLY for list users
+        var grantListRequest = new
+        {
+            UserId = regularUserId,
+            PermissionIdentifier = "api:iam:users:list",
+            IsAllow = true,
+            Description = "Allow listing users only"
+        };
+        using (var grantReq = new HttpRequestMessage(HttpMethod.Post, "/api/v1/iam/permissions/grant"))
+        {
+            grantReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth!.AccessToken);
+            grantReq.Content = JsonContent.Create(grantListRequest);
+            var grantResp = await _sharedHost.Host.HttpClient.SendAsync(grantReq);
+            Assert.Equal(HttpStatusCode.NoContent, grantResp.StatusCode);
+        }
+
+        // Re-login to embed the direct allow
+        var userWithListAllow = await LoginAsync(regularUser.User!.Username!, TestPassword);
+        Assert.NotNull(userWithListAllow);
+
+        // Verify list endpoint is allowed
+        using (var listReq = new HttpRequestMessage(HttpMethod.Get, "/api/v1/iam/users"))
+        {
+            listReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userWithListAllow!.AccessToken);
+            var listResp = await _sharedHost.Host.HttpClient.SendAsync(listReq);
+            _output.WriteLine($"[RECEIVED] List users: {(int)listResp.StatusCode} {listResp.StatusCode}");
+            Assert.Equal(HttpStatusCode.OK, listResp.StatusCode);
+        }
+
+        // Verify reading another user's info is still forbidden (permission mismatch)
+        using (var readReq = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/iam/users/{targetUserId}"))
+        {
+            readReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userWithListAllow.AccessToken);
+            var readResp = await _sharedHost.Host.HttpClient.SendAsync(readReq);
+            _output.WriteLine($"[RECEIVED] Read other user: {(int)readResp.StatusCode} {readResp.StatusCode}");
+            Assert.Equal(HttpStatusCode.Forbidden, readResp.StatusCode);
+        }
+
+        _output.WriteLine("[PASS] Allow for one permission does not grant other permissions");
+    }
+
     #endregion
 
     #region Advanced Scenarios

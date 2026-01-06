@@ -104,8 +104,12 @@ public sealed class UserTokenService(
         }
 
         // Get ONLY direct permission grants - NOT role-derived scopes
-        // Role scopes (including deny;api:auth:refresh) are resolved at runtime from the database
+        // Role scopes are resolved at runtime from the database.
         var scopes = authData.DirectPermissionScopes.Select(ScopeDirective.Parse).ToList();
+
+        // Access tokens must never be usable for refresh; enforce via an explicit deny directive.
+        // This allows allow/deny placement flexibility (role vs direct) without relying on token typ.
+        scopes.Add(ScopeDirective.Parse(PermissionIds.Api.Auth.Refresh.WithUserId(authData.UserId.ToString()).Deny()));
 
         return await permissionService.GenerateTokenWithScopeAsync(
             authData.UserId.ToString(),
@@ -167,8 +171,10 @@ public sealed class UserTokenService(
             return TokenRefreshResult.Failure("invalid_token", "The refresh token does not contain valid user information.");
         }
 
-        // Verify this is a refresh token (has refresh permission)
         var refreshPermission = PermissionIds.Api.Auth.Refresh.Permission.WithUserId(userId.ToString());
+
+        // Refresh is authorized via standard permission evaluation (token scopes + role-derived directives).
+        // Access tokens are blocked by an explicit deny;api:auth:refresh directive added at issuance.
         if (!await permissionService.HasPermissionAsync(principal, refreshPermission, cancellationToken))
         {
             return TokenRefreshResult.Failure("invalid_token_type", "The provided token does not have refresh permission.");
@@ -193,4 +199,5 @@ public sealed class UserTokenService(
 
         return TokenRefreshResult.Success(userId, tokens);
     }
+
 }
