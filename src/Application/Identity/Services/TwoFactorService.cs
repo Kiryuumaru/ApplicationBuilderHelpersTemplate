@@ -4,7 +4,6 @@ using Application.Identity.Models;
 using Domain.Identity.Exceptions;
 using Domain.Identity.Models;
 using Domain.Shared.Exceptions;
-using Microsoft.AspNetCore.Identity;
 using System.Security.Cryptography;
 using System.Text;
 

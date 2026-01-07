@@ -1,4 +1,5 @@
 using AbsolutePathHelpers;
+using Application.Abstractions.Application;
 using Application.AppEnvironment.Services;
 using Application.Authorization.Extensions;
 using Application.Configuration.Extensions;
@@ -11,7 +12,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Application.Abstractions.Application;
+namespace Presentation.Abstractions.Commands;
 
 public abstract class BaseCommand<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] THostApplicationBuilder> : Command<THostApplicationBuilder>
     where THostApplicationBuilder : IHostApplicationBuilder

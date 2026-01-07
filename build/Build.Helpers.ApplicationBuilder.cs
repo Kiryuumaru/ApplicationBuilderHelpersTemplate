@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using Nuke.Common.IO;
 using NukeBuildHelpers.RunContext.Interfaces;
 using NukeBuildHelpers.RunContext.Models;
+using Presentation.Abstractions.Commands;
 using Semver;
 using Serilog;
 using System;
@@ -76,7 +77,7 @@ partial class Build
                     applicationRuntime = new ApplicationRuntime(runContext, sp, cts);
                     await cts.Token.WhenCanceled();
                 }))
-                .AddApplication<Application.Application>()
+                .AddApplication<global::Application.Application>()
                 .RunAsync([], cts.Token);
 
             if (ret != 0)

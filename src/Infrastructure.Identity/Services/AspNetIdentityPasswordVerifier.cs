@@ -1,11 +1,10 @@
-using System;
 using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
 using Microsoft.AspNetCore.Identity;
 
-namespace Application.Identity.Services;
+namespace Infrastructure.Identity.Services;
 
-internal sealed class PasswordHasherVerifier(IPasswordHasher<User> passwordHasher) : IPasswordVerifier
+internal sealed class AspNetIdentityPasswordVerifier(IPasswordHasher<User> passwordHasher) : IPasswordVerifier
 {
     private readonly IPasswordHasher<User> _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
 
@@ -16,7 +15,8 @@ internal sealed class PasswordHasherVerifier(IPasswordHasher<User> passwordHashe
             return false;
         }
 
-        var result = _passwordHasher.VerifyHashedPassword(user: null!, passwordHash, providedPassword);
+        var user = User.RegisterAnonymous();
+        var result = _passwordHasher.VerifyHashedPassword(user, passwordHash, providedPassword);
         return result != PasswordVerificationResult.Failed;
     }
 }

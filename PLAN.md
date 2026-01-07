@@ -128,24 +128,31 @@ This plan uses **Ports & Adapters** (a.k.a. **Hexagonal Architecture**) vocabula
 
 ### Phase 2 — Larger improvements (1–2 weeks)
 
+This phase is intentionally split into smaller sub-phases to keep scope controlled and validation frequent.
+
+#### Phase 2.1 — Incremental Roslyn source generation (build pipeline + identifiers)
+
 **Tasks**
-- Replace MSBuild `Exec` codegen with an incremental Roslyn Source Generator (or tighten MSBuild incremental inputs/outputs):
-  - Generate `PermissionIds`/`RoleIds` as compilation-time generated sources without spawning `dotnet`.
-  - Generate smaller outputs: focus on identifiers needed by code, move large flat lists (All paths, metadata arrays) to a compact embedded resource or JSON manifest.
-- Add an AuthZ policy layer:
-  - Replace (or re-implement) `RequiredPermissionAttribute` as a policy/requirement that plugs into ASP.NET Core authorization.
-  - Ensure one place is responsible for permission evaluation and parameter binding.
-- Add a small “API conventions” package inside Presentation:
-  - Standardized ProblemDetails types, error codes, and mapping.
+
+- Replace MSBuild `Exec` codegen with an incremental Roslyn Source Generator
+  - Constraint/clarification: the source generator (analyzer) can target `netstandard2.0` while `Domain` stays `net10.0`.
+    - The generator assembly is a build-time analyzer; it is not a runtime dependency of `Domain`.
+    - Generated sources are compiled into `Domain` and can use `net10.0` APIs/features.
+  - Preferred approach (no `Domain` reference in generator):
+    - Generator inspects `Domain` source via Roslyn (syntax + semantic model) and emits code.
+    - Avoids runtime-loading `Domain` and avoids “API diff” issues.
+  - Optional contract assembly (only if needed for shared markers):
+    - Create `Domain.CodeGen.Abstractions` targeting `netstandard2.0` containing only marker attributes/enums/constants.
+    - `Domain` references `Domain.CodeGen.Abstractions`.
+    - The generator references `Domain.CodeGen.Abstractions`.
+  - Output scope:
+    - Generate only strongly-typed identifiers and small helpers actually used by code (`Permissions.*`, `Roles.*`, etc.).
+    - Avoid generating large flattened “AllValues” graphs unless absolutely required.
+    - If large metadata is needed, prefer a compact manifest (embedded resource) or derive it from the Domain permission tree at runtime.
 
 **Impacted projects**
 - `src/Domain.CodeGenerator` (replaced/repurposed)
 - `src/Domain`
-- `src/Presentation.WebApi`
-
-**Expected payoff**
-- Faster builds and smaller generated sources.
-- Less scaffolding drift and fewer places to update when contracts evolve.
 
 **Risk**
 - Medium/High (build pipeline changes; generator correctness).
@@ -154,6 +161,59 @@ This plan uses **Ports & Adapters** (a.k.a. **Hexagonal Architecture**) vocabula
 - `dotnet build` on clean checkout.
 - Ensure generated sources are stable and deterministic across machines.
 - `dotnet test`.
+
+#### Phase 2.2 — Authorization policy catalog (requirements, not roles)
+
+**Tasks**
+
+- Add an AuthZ policy layer (policy = requirement definition, not a role)
+  - Goal: move endpoint authorization requirements from scattered strings/attributes into a single, testable catalog.
+  - Keep it architecture-safe:
+    - Application defines policy definitions as plain types (no ASP.NET Core dependencies), e.g. `AuthorizationPolicyDefinition` records.
+    - Presentation.WebApi maps those policy definitions onto ASP.NET Core authorization (filters/handlers/attributes).
+  - Roles remain grants (who/what scopes you have). Policies remain requirements (what the endpoint needs).
+  - Outcomes:
+    - Fewer stringly-typed permission paths in controllers.
+    - One place controls permission path + parameter binding rules.
+
+**Impacted projects**
+- `src/Application`
+- `src/Presentation.WebApi`
+
+**Risk**
+- Medium (authorization wiring changes; requires careful tests).
+
+**Validation**
+- `dotnet test`
+- Re-run `tests/Presentation.WebApi.FunctionalTests` and ensure auth behavior stays consistent.
+
+#### Phase 2.3 — Presentation API conventions package (reduce WebApi repetition)
+
+**Tasks**
+
+- Add a small “API conventions” package inside Presentation (not Infrastructure)
+  - Naming/location: `Presentation.WebApi.Conventions` (or `Presentation.Conventions.RestApi`).
+  - Scope (high-value, low-bloat):
+    - ProblemDetails conventions: stable error identifiers, titles, consistent `extensions` (e.g., `traceId`, `errorCode`).
+    - Swagger/OpenAPI conventions: schema/operation filters for ProblemDetails and auth headers.
+    - Standard response annotations helpers for common 400/401/403/404/409/422.
+    - Binding conventions helpers (e.g., shared `[FromJwt]` patterns), kept strictly presentation-focused.
+  - Non-scope:
+    - No external integrations, no HTTP client code, no “SDK”.
+
+**Impacted projects**
+- `src/Presentation.WebApi`
+
+**Risk**
+- Low/Medium (mostly refactoring and consistency).
+
+**Validation**
+- `dotnet test`
+
+**Expected payoff (Phase 2 overall)**
+- Faster builds and smaller generated sources.
+- More consistent authorization requirements and endpoint conventions.
+- Less scaffolding drift and fewer places to update when contracts evolve.
 
 ---
 
@@ -174,6 +234,15 @@ This plan uses **Ports & Adapters** (a.k.a. **Hexagonal Architecture**) vocabula
 11. Codegen outputs must be deterministic and minimized.
 
 ## Codegen strategy
+
+### Source generator build model (proposed)
+
+- Add generator project (analyzer): `src/Domain.SourceGen` (targets `netstandard2.0`)
+  - `Domain.csproj` references it as an analyzer (not a runtime reference).
+  - Generator reads `Domain` syntax/symbols to produce deterministic, incremental outputs.
+- Optional: add `src/Domain.CodeGen.Abstractions` (targets `netstandard2.0`)
+  - Only for shared marker attributes/enums/constants when convenient.
+  - Avoid moving any Domain behavior or logic into abstractions.
 
 **Keep generated**
 - Permission/role identifiers (stable, strongly-typed accessors).

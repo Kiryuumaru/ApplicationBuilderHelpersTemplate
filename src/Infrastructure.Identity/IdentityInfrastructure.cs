@@ -11,6 +11,8 @@ public class IdentityInfrastructure : ApplicationDependency
     {
         base.AddServices(applicationBuilder, services);
 
+        services.AddIdentityCoreServices();
+
         // Register JWT token services using CredentialsService
         services.AddJwtTokenServices(async (sp, ct) =>
         {

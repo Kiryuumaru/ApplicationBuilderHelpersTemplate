@@ -7,7 +7,6 @@ using Application.Identity.Models;
 using Domain.Identity.Exceptions;
 using Domain.Identity.Models;
 using Domain.Shared.Exceptions;
-using Microsoft.AspNetCore.Identity;
 
 namespace Application.Identity.Services;
 
@@ -18,14 +17,14 @@ internal sealed class UserRegistrationService(
     IUserRepository userRepository,
     IRoleRepository roleRepository,
     IUserRoleResolver userRoleResolver,
-    IPasswordHasher<User> passwordHasher,
-    UserManager<User> userManager) : IUserRegistrationService
+    IPasswordHashService passwordHashService,
+    IPasswordStrengthValidator passwordStrengthValidator) : IUserRegistrationService
 {
     private readonly IUserRepository _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
     private readonly IRoleRepository _roleRepository = roleRepository ?? throw new ArgumentNullException(nameof(roleRepository));
     private readonly IUserRoleResolver _userRoleResolver = userRoleResolver ?? throw new ArgumentNullException(nameof(userRoleResolver));
-    private readonly IPasswordHasher<User> _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
-    private readonly UserManager<User> _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
+    private readonly IPasswordHashService _passwordHashService = passwordHashService ?? throw new ArgumentNullException(nameof(passwordHashService));
+    private readonly IPasswordStrengthValidator _passwordStrengthValidator = passwordStrengthValidator ?? throw new ArgumentNullException(nameof(passwordStrengthValidator));
 
     public async Task<UserDto> RegisterUserAsync(UserRegistrationRequest? request, CancellationToken cancellationToken)
     {
@@ -62,18 +61,13 @@ internal sealed class UserRegistrationService(
 
             // Validate password strength
             user = User.Register(request.Username, request.Email);
-            var passwordValidators = _userManager.PasswordValidators;
-            foreach (var validator in passwordValidators)
+            var passwordErrors = await _passwordStrengthValidator.ValidateAsync(user, request.Password, cancellationToken).ConfigureAwait(false);
+            if (passwordErrors.Count > 0)
             {
-                var passwordValidationResult = await validator.ValidateAsync(_userManager, user, request.Password).ConfigureAwait(false);
-                if (!passwordValidationResult.Succeeded)
-                {
-                    var errors = string.Join("; ", passwordValidationResult.Errors.Select(e => e.Description));
-                    throw new PasswordValidationException($"Invalid password: {errors}");
-                }
+                throw new PasswordValidationException($"Invalid password: {string.Join("; ", passwordErrors)}");
             }
 
-            user.SetPasswordHash(_passwordHasher.HashPassword(user, request.Password));
+            user.SetPasswordHash(_passwordHashService.Hash(user, request.Password));
 
             // Process additional role assignments from the request
             if (request.RoleAssignments is { Count: > 0 })

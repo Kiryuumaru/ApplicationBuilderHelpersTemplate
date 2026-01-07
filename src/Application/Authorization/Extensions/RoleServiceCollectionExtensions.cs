@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Application.Authorization.Extensions;
 
-public static class RoleServiceCollectionExtensions
+internal static class RoleServiceCollectionExtensions
 {
     /// <summary>
     /// Registers role services. The infrastructure layer is expected to provide IRoleRepository.

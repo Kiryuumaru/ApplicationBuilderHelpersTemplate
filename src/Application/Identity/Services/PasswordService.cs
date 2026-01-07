@@ -4,7 +4,6 @@ using Domain.Identity.Exceptions;
 using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
 using Domain.Shared.Exceptions;
-using Microsoft.AspNetCore.Identity;
 
 namespace Application.Identity.Services;
 
@@ -13,14 +12,16 @@ namespace Application.Identity.Services;
 /// </summary>
 internal sealed class PasswordService(
     IUserRepository userRepository,
-    IPasswordHasher<User> passwordHasher,
     IPasswordVerifier passwordVerifier,
-    UserManager<User> userManager) : IPasswordService
+    IPasswordHashService passwordHashService,
+    IPasswordStrengthValidator passwordStrengthValidator,
+    IPasswordResetTokenService passwordResetTokenService) : IPasswordService
 {
     private readonly IUserRepository _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
-    private readonly IPasswordHasher<User> _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
     private readonly IPasswordVerifier _passwordVerifier = passwordVerifier ?? throw new ArgumentNullException(nameof(passwordVerifier));
-    private readonly UserManager<User> _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
+    private readonly IPasswordHashService _passwordHashService = passwordHashService ?? throw new ArgumentNullException(nameof(passwordHashService));
+    private readonly IPasswordStrengthValidator _passwordStrengthValidator = passwordStrengthValidator ?? throw new ArgumentNullException(nameof(passwordStrengthValidator));
+    private readonly IPasswordResetTokenService _passwordResetTokenService = passwordResetTokenService ?? throw new ArgumentNullException(nameof(passwordResetTokenService));
 
     public async Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword, CancellationToken cancellationToken)
     {
@@ -38,17 +39,13 @@ internal sealed class PasswordService(
         }
 
         // Validate new password strength
-        foreach (var validator in _userManager.PasswordValidators)
+        var passwordErrors = await _passwordStrengthValidator.ValidateAsync(user, newPassword, cancellationToken).ConfigureAwait(false);
+        if (passwordErrors.Count > 0)
         {
-            var result = await validator.ValidateAsync(_userManager, user, newPassword).ConfigureAwait(false);
-            if (!result.Succeeded)
-            {
-                var errors = string.Join("; ", result.Errors.Select(e => e.Description));
-                throw new PasswordValidationException($"Invalid password: {errors}");
-            }
+            throw new PasswordValidationException($"Invalid password: {string.Join("; ", passwordErrors)}");
         }
 
-        user.SetPasswordHash(_passwordHasher.HashPassword(user, newPassword));
+        user.SetPasswordHash(_passwordHashService.Hash(user, newPassword));
         await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
     }
 
@@ -57,18 +54,13 @@ internal sealed class PasswordService(
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
-        // Validate new password strength
-        foreach (var validator in _userManager.PasswordValidators)
+        var passwordErrors = await _passwordStrengthValidator.ValidateAsync(user, newPassword, cancellationToken).ConfigureAwait(false);
+        if (passwordErrors.Count > 0)
         {
-            var result = await validator.ValidateAsync(_userManager, user, newPassword).ConfigureAwait(false);
-            if (!result.Succeeded)
-            {
-                var errors = string.Join("; ", result.Errors.Select(e => e.Description));
-                throw new PasswordValidationException($"Invalid password: {errors}");
-            }
+            throw new PasswordValidationException($"Invalid password: {string.Join("; ", passwordErrors)}");
         }
 
-        user.SetPasswordHash(_passwordHasher.HashPassword(user, newPassword));
+        user.SetPasswordHash(_passwordHashService.Hash(user, newPassword));
         await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
     }
 
@@ -100,15 +92,10 @@ internal sealed class PasswordService(
             }
         }
 
-        // Validate password strength
-        foreach (var validator in _userManager.PasswordValidators)
+        var passwordErrors = await _passwordStrengthValidator.ValidateAsync(user, password, cancellationToken).ConfigureAwait(false);
+        if (passwordErrors.Count > 0)
         {
-            var result = await validator.ValidateAsync(_userManager, user, password).ConfigureAwait(false);
-            if (!result.Succeeded)
-            {
-                var errors = string.Join("; ", result.Errors.Select(e => e.Description));
-                throw new PasswordValidationException($"Invalid password: {errors}");
-            }
+            throw new PasswordValidationException($"Invalid password: {string.Join("; ", passwordErrors)}");
         }
 
         // Upgrade from anonymous if needed
@@ -127,7 +114,7 @@ internal sealed class PasswordService(
             user.SetEmail(email);
         }
 
-        user.SetPasswordHash(_passwordHasher.HashPassword(user, password));
+        user.SetPasswordHash(_passwordHashService.Hash(user, password));
         await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
     }
 
@@ -139,9 +126,7 @@ internal sealed class PasswordService(
             return null;
         }
 
-        // Generate reset token using ASP.NET Identity's built-in token provider
-        var token = await _userManager.GeneratePasswordResetTokenAsync(user).ConfigureAwait(false);
-        return token;
+        return await _passwordResetTokenService.GenerateResetTokenAsync(user, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<bool> ResetPasswordWithTokenAsync(string email, string token, string newPassword, CancellationToken cancellationToken)
@@ -152,8 +137,6 @@ internal sealed class PasswordService(
             return false;
         }
 
-        // Verify and reset password using ASP.NET Identity's built-in token verification
-        var result = await _userManager.ResetPasswordAsync(user, token, newPassword).ConfigureAwait(false);
-        return result.Succeeded;
+        return await _passwordResetTokenService.ResetPasswordWithTokenAsync(user, token, newPassword, cancellationToken).ConfigureAwait(false);
     }
 }
