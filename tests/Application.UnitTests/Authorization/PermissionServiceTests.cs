@@ -172,45 +172,6 @@ public class PermissionServiceTests
         Assert.False(result);
     }
 
-    [Fact]
-    public async Task MutateTokenAsync_NormalizesPermissionsBeforeDelegation()
-    {
-        var tokenProvider = new RecordingTokenProvider
-        {
-            ValidateTokenPrincipalResult = BuildPrincipalWithScopes(AccountUpdatePermission, OrderCancelPermission)
-        };
-        var service = CreateService(tokenProvider);
-
-        var permissionsToAdd = new[] { "  " + OrderCancelPermission + " ", OrderCancelPermission };
-        var permissionsToRemove = new[] { AccountUpdatePermission, "  " + AccountUpdatePermission };
-
-        var result = await service.MutateTokenAsync(
-            token: "token-value",
-            permissionsToAdd: permissionsToAdd,
-            permissionsToRemove: permissionsToRemove,
-            claimsToAdd: [new Claim("tenant", "alpha")],
-            claimsToRemove: [new Claim("tenant", "beta")],
-            claimTypesToRemove: ["custom_type"],
-            cancellationToken: CancellationToken.None);
-
-        Assert.Equal("mutated-token", result);
-        Assert.Null(tokenProvider.LastMutateScopesToAdd);
-        Assert.Equal([AccountUpdatePermission], tokenProvider.LastMutateScopesToRemove);
-        Assert.Equal("token-value", tokenProvider.LastMutatedToken);
-    }
-
-    [Fact]
-    public async Task ValidateTokenAsync_PassesThroughUnderlyingService()
-    {
-        var principal = BuildPrincipalWithScopes(AccountUpdatePermission);
-        var tokenProvider = new RecordingTokenProvider { ValidateTokenPrincipalResult = principal };
-        var service = CreateService(tokenProvider);
-
-        var result = await service.ValidateTokenAsync("token", CancellationToken.None);
-
-        Assert.Same(principal, result);
-    }
-
     private static ClaimsPrincipal BuildPrincipalWithScopes(params string[] scopes)
     {
         var scopeValue = string.Join(' ', scopes);

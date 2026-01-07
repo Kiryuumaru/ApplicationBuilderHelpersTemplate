@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using Application.Authorization.Models;
 using Domain.Authorization.Models;
 
 namespace Application.Authorization.Interfaces;
@@ -129,42 +128,4 @@ public interface IPermissionService
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns><c>true</c> when all permissions are present; otherwise <c>false</c>.</returns>
     Task<bool> HasAllPermissionsAsync(ClaimsPrincipal principal, IEnumerable<string> permissionIdentifiers, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Validates a JWT token using the configured <see cref="IJwtTokenService"/> pipeline.
-    /// </summary>
-    /// <param name="token">Token string to validate.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns><see cref="ClaimsPrincipal"/> when validation succeeds; otherwise <c>null</c>.</returns>
-    Task<ClaimsPrincipal?> ValidateTokenAsync(string token, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Decodes a JWT token without validation for inspection purposes.
-    /// </summary>
-    /// <param name="token">Token string to decode.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Token metadata when decoding succeeds; otherwise <c>null</c>.</returns>
-    Task<TokenInfo?> DecodeTokenAsync(string token, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Mutates an existing token by adding or removing permissions and arbitrary claims before reissuing it.
-    /// </summary>
-    /// <param name="token">The token to mutate.</param>
-    /// <param name="permissionsToAdd">Permission identifiers to append to the token as scope claims.</param>
-    /// <param name="permissionsToRemove">Permission identifiers to remove from the token.</param>
-    /// <param name="claimsToAdd">Additional non-scope claims to append to the token.</param>
-    /// <param name="claimsToRemove">Specific non-scope claims (type/value pairs) to remove from the token.</param>
-    /// <param name="claimTypesToRemove">Claim types to remove from the token (all values; identity and scope claims are protected).</param>
-    /// <param name="expiration">Optional expiration override for the reissued token.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The reissued token string containing the requested modifications.</returns>
-    Task<string> MutateTokenAsync(
-        string token,
-        IEnumerable<string>? permissionsToAdd = null,
-        IEnumerable<string>? permissionsToRemove = null,
-        IEnumerable<Claim>? claimsToAdd = null,
-        IEnumerable<Claim>? claimsToRemove = null,
-        IEnumerable<string>? claimTypesToRemove = null,
-        DateTimeOffset? expiration = null,
-        CancellationToken cancellationToken = default);
 }

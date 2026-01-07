@@ -38,24 +38,4 @@ public static class IPermissionServiceExtensions
             additionalClaims: additionalClaims,
             expiration: expiration.HasValue ? DateTimeOffset.UtcNow.Add(expiration.Value) : null,
             cancellationToken: cancellationToken);
-
-    public static Task<string> MutateTokenAsync(
-        this IPermissionService permissionService,
-        string token,
-        IEnumerable<string>? permissionsToAdd = null,
-        IEnumerable<string>? permissionsToRemove = null,
-        IEnumerable<Claim>? claimsToAdd = null,
-        IEnumerable<Claim>? claimsToRemove = null,
-        IEnumerable<string>? claimTypesToRemove = null,
-        TimeSpan? expiration = null,
-        CancellationToken cancellationToken = default) =>
-        permissionService.MutateTokenAsync(
-            token: token,
-            permissionsToAdd: permissionsToAdd,
-            permissionsToRemove: permissionsToRemove,
-            claimsToAdd: claimsToAdd,
-            claimsToRemove: claimsToRemove,
-            claimTypesToRemove: claimTypesToRemove,
-            expiration: expiration.HasValue ? DateTimeOffset.UtcNow.Add(expiration.Value) : null,
-            cancellationToken: cancellationToken);
 }

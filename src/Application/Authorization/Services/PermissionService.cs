@@ -5,14 +5,11 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using System.IdentityModel.Tokens.Jwt;
-using Microsoft.IdentityModel.Tokens;
 using Domain.Authorization.Constants;
 using Domain.Shared.Constants;
 using Domain.Shared.Exceptions;
 using Application.Authorization.Interfaces;
 using Application.Authorization.Interfaces.Infrastructure;
-using Application.Authorization.Models;
 using Domain.Authorization.Enums;
 using Domain.Authorization.Models;
 using Domain.Authorization.Services;
@@ -301,174 +298,6 @@ internal sealed class PermissionService(
         }
 
         return true;
-    }
-
-    public async Task<ClaimsPrincipal?> ValidateTokenAsync(string token, CancellationToken cancellationToken = default)
-    {
-        return await _tokenProvider.ValidateTokenPrincipalAsync(token, cancellationToken);
-    }
-
-    public async Task<TokenInfo?> DecodeTokenAsync(string token, CancellationToken cancellationToken = default)
-    {
-        return await _tokenProvider.DecodeTokenAsync(token, cancellationToken);
-    }
-
-    public async Task<string> MutateTokenAsync(
-        string token,
-        IEnumerable<string>? permissionsToAdd = null,
-        IEnumerable<string>? permissionsToRemove = null,
-        IEnumerable<Claim>? claimsToAdd = null,
-        IEnumerable<Claim>? claimsToRemove = null,
-        IEnumerable<string>? claimTypesToRemove = null,
-        DateTimeOffset? expiration = null,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentException.ThrowIfNullOrEmpty(token);
-
-        var principal = await _tokenProvider.ValidateTokenPrincipalAsync(token, cancellationToken) ?? throw new SecurityTokenException("Token validation failed.");
-        var existingPermissions = ExtractPermissionClaims(principal);
-
-        var additions = new List<Claim>();
-        var removals = new List<Claim>();
-        var removalTypes = new HashSet<string>(StringComparer.Ordinal);
-        var scopeAdditions = new List<string>();
-        var scopeRemovals = new List<string>();
-
-        if (claimTypesToRemove is not null)
-        {
-            foreach (var type in claimTypesToRemove)
-            {
-                if (string.IsNullOrWhiteSpace(type))
-                {
-                    continue;
-                }
-
-                var trimmed = type.Trim();
-                if (IsReservedIdentityClaimType(trimmed) || string.Equals(trimmed, ScopeClaimType, StringComparison.Ordinal))
-                {
-                    throw new ValidationException($"Claim type '{trimmed}' cannot be removed via mutation.");
-                }
-
-                removalTypes.Add(trimmed);
-            }
-        }
-
-        if (claimsToRemove is not null)
-        {
-            foreach (var claim in claimsToRemove)
-            {
-                if (claim is null || string.IsNullOrWhiteSpace(claim.Type))
-                {
-                    continue;
-                }
-
-                if (IsReservedIdentityClaimType(claim.Type))
-                {
-                    throw new ValidationException($"Claim type '{claim.Type}' cannot be removed via mutation.");
-                }
-
-                if (string.Equals(claim.Type, ScopeClaimType, StringComparison.Ordinal))
-                {
-                    throw new ValidationException("Scope claims must be removed via permissionsToRemove.");
-                }
-
-                removals.Add(CloneClaim(claim));
-            }
-        }
-
-        if (permissionsToRemove is not null)
-        {
-            var normalizedRemovals = NormalizeAndValidate(permissionsToRemove, allowEmpty: true);
-            foreach (var permission in normalizedRemovals)
-            {
-                scopeRemovals.Add(permission);
-                existingPermissions.Remove(permission);
-            }
-        }
-
-        if (permissionsToAdd is not null)
-        {
-            var normalizedAdditions = NormalizeAndValidate(permissionsToAdd, allowEmpty: true);
-            foreach (var permission in normalizedAdditions)
-            {
-                if (existingPermissions.Add(permission))
-                {
-                    scopeAdditions.Add(permission);
-                }
-            }
-        }
-
-        if (claimsToAdd is not null)
-        {
-            foreach (var claim in claimsToAdd)
-            {
-                if (claim is null)
-                {
-                    continue;
-                }
-
-                if (string.IsNullOrWhiteSpace(claim.Type))
-                {
-                    throw new ArgumentException("Claims to add must define a type.", nameof(claimsToAdd));
-                }
-
-                if (IsReservedIdentityClaimType(claim.Type))
-                {
-                    throw new ValidationException($"Claim type '{claim.Type}' cannot be added via mutation.");
-                }
-
-                if (string.Equals(claim.Type, ScopeClaimType, StringComparison.Ordinal))
-                {
-                    throw new ValidationException("Scope claims must be added via permissionsToAdd.");
-                }
-
-                var alreadyQueued = additions.Any(existing =>
-                    string.Equals(existing.Type, claim.Type, StringComparison.Ordinal) &&
-                    string.Equals(existing.Value, claim.Value, StringComparison.Ordinal) &&
-                    string.Equals(existing.ValueType, claim.ValueType, StringComparison.Ordinal));
-
-                if (!alreadyQueued)
-                {
-                    additions.Add(CloneClaim(claim));
-                }
-            }
-        }
-
-        var additionsList = additions.Count == 0 ? null : additions;
-        var removalsList = removals.Count == 0 ? null : removals;
-        var removalTypesList = removalTypes.Count == 0 ? null : removalTypes.ToArray();
-        var scopeAdditionsList = scopeAdditions.Count == 0 ? null : scopeAdditions;
-        var scopeRemovalsList = scopeRemovals.Count == 0 ? null : scopeRemovals;
-
-        return await _tokenProvider.MutateTokenAsync(
-            token: token,
-            scopesToAdd: scopeAdditionsList,
-            scopesToRemove: scopeRemovalsList,
-            claimsToAdd: additionsList,
-            claimsToRemove: removalsList,
-            claimTypesToRemove: removalTypesList,
-            expiration: expiration,
-            cancellationToken: cancellationToken);
-    }
-
-    private static Claim CloneClaim(Claim source)
-    {
-        var clone = new Claim(source.Type, source.Value, source.ValueType, source.Issuer, source.OriginalIssuer);
-        foreach (var property in source.Properties)
-        {
-            clone.Properties[property.Key] = property.Value;
-        }
-
-        return clone;
-    }
-
-    private static bool IsReservedIdentityClaimType(string claimType)
-    {
-        return string.Equals(claimType, JwtClaimTypes.Subject, StringComparison.Ordinal)
-            || string.Equals(claimType, JwtClaimTypes.Name, StringComparison.Ordinal)
-            || string.Equals(claimType, JwtClaimTypes.SessionId, StringComparison.Ordinal)
-            || string.Equals(claimType, JwtRegisteredClaimNames.Jti, StringComparison.Ordinal)
-            || string.Equals(claimType, JwtRegisteredClaimNames.Iat, StringComparison.Ordinal);
     }
 
     private static string[] NormalizeAndValidate(IEnumerable<string> permissionIdentifiers, bool allowEmpty)

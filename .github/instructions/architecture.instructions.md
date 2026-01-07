@@ -14,7 +14,10 @@ applyTo: '**'
 │                      PRESENTATION                           │
 │  (Blazor, CLI, API Controllers)                            │
 │  - Can reference: Application, Domain                       │
-│  - CANNOT reference: Infrastructure directly                │
+│  - MUST NOT use Infrastructure types in consumer code        │
+│    (controllers/components/use-cases)                        │
+│  - Composition root MAY reference Infrastructure             │
+│    (e.g., Program.cs) for DI wiring only                     │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -47,11 +50,19 @@ applyTo: '**'
 
 ### ❌ NEVER DO:
 
-1. **Direct Infrastructure Reference from Presentation**
+1. **Direct Infrastructure Usage in Presentation (consumer code)**
    ```csharp
-   // BAD: Blazor component directly using EF Core
-   @inject EFCoreDbContext DbContext
+    // BAD: Presentation consumer code directly using EF Core
+    // (Controllers/components must depend on Application abstractions)
+    @inject EFCoreDbContext DbContext
    ```
+
+    ✅ Allowed exception:
+    ```csharp
+    // OK: Composition root wiring (Program.cs) may reference Infrastructure
+    // to register implementations into DI.
+    using Infrastructure.EFCore;
+    ```
 
 2. **Concrete Types in Application Layer**
    ```csharp
@@ -236,6 +247,7 @@ Before committing, verify:
 - [ ] Application layer only references Domain
 - [ ] Infrastructure projects implement Application interfaces
 - [ ] Presentation injects interfaces, not concrete types
+- [ ] Presentation references Infrastructure only in composition root (e.g., Program.cs)
 - [ ] No `using Infrastructure.*` in Application layer
 - [ ] No framework-specific attributes in Domain entities
 - [ ] All external service calls go through abstractions

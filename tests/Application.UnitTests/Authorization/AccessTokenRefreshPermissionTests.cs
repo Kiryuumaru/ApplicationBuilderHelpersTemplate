@@ -84,7 +84,7 @@ public class AccessTokenRefreshPermissionTests
         await roleRepo.SaveAsync(Roles.User.Instantiate(), CancellationToken.None);
 
         var permissionService = new PermissionService(tokenProvider, roleRepo);
-        var service = new UserTokenService(userAuthorizationService, sessionService, permissionService);
+        var service = new UserTokenService(userAuthorizationService, sessionService, permissionService, tokenProvider);
 
         var result = await service.RefreshTokensAsync("not-a-real-token", CancellationToken.None);
 

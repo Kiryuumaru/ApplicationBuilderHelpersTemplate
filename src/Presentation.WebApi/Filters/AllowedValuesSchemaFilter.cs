@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 using System.Text.Json.Nodes;
 
-namespace Presentation.WebApi.Models.SchemaFilters;
+namespace Presentation.WebApi.Filters;
 
 /// <summary>
 /// Automatically applies allowable values to Swagger schema based on System.ComponentModel.DataAnnotations.AllowedValuesAttribute.

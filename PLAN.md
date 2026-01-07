@@ -21,14 +21,36 @@
 - Application layer currently depends on ASP.NET Core primitives (hosting, health checks) and ASP.NET Identity types.
 - Controllers repeatedly build `ProblemDetails` and map exceptions inline.
 - Many small request/response models and mapping helpers create high boilerplate.
-- MSBuild-driven codegen runs as an `Exec` on build and generates large identifier graphs for permissions/roles.
+- Historically: MSBuild-driven codegen ran as an `Exec` on build and generated large identifier graphs for permissions/roles.
+
+---
+
+## Recent changes (already completed)
+
+- Replaced MSBuild `Exec` codegen with Roslyn incremental source generation.
+- Unified source generation into a single analyzer project: `src/Domain.SourceGenerators`.
+- Authorization identifier generation is gated to run only for the `Domain` compilation (analyzer is referenced by `src/Domain/Domain.csproj`).
+- Build constants generation is opt-in via `GenerateBuildConstants=true` and is wired centrally in `Directory.Build.targets` (projects enabling build constants do not need per-project analyzer references).
+- Renamed `Presentation.Abstractions` -> `Presentation` (project + namespaces). Base command type is now `Presentation.Commands.BaseCommand`.
+
+**Status (as of 2026-01-07)**
+- Phase 2.1 is complete and validated by `dotnet build` and `dotnet test`.
+- Phase 0 (exception-to-ProblemDetails mapping + controller happy-path style) is complete and validated by `dotnet test`.
+- Phase 1 / Phase 2.2 / Phase 2.3 are not started.
+
+**Constraint**
+- Logging is intentionally left as-is.
+  - Do not refactor or relocate `src/Application/Logger/*` as part of this plan.
+
+**Where to continue**
+- Recommended next: Phase 1 (architecture-aligned refactors).
 
 ## Terminology (Ports & Adapters)
 
 This plan uses **Ports & Adapters** (a.k.a. **Hexagonal Architecture**) vocabulary:
 
 - **Inbound ports**: Application interfaces that represent use-cases (safe for Presentation to inject). Example: `IUserTokenService`.
-- **Outbound ports**: Application interfaces that represent external dependencies to be implemented by Infrastructure. Examples: `ITokenIssuer`, `ITokenValidator`, `IUserRepository`.
+- **Outbound ports**: Application interfaces that represent external dependencies to be implemented by Infrastructure. Examples: `ITokenProvider` (token issue/validate/decode/mutate behind one port), `IUserRepository`.
 - **Driving adapters (inbound adapters)**: Presentation components that call inbound ports (e.g., API controllers).
 - **Driven adapters (outbound adapters)**: Infrastructure implementations that fulfill outbound ports (e.g., JWT signer/validator, EF Core repositories).
 
@@ -78,39 +100,135 @@ This plan uses **Ports & Adapters** (a.k.a. **Hexagonal Architecture**) vocabula
   - Move Identity-framework-specific behaviors (password validator usage, `UserManager<User>`, token providers) behind Application interfaces.
   - Implement those interfaces in Infrastructure (Identity/EFCore.Identity).
   - Keep Application logic expressed in terms of Domain entities/value objects + Application abstractions.
-- Remove ASP.NET hosting types from Application:
-  - Move health-check endpoint mapping and middleware configuration out of `Application.Application` into Presentation.
-  - Keep Application responsible only for registering application services.
-  - Exception (explicit): keep logging services in Application.
-    - `Application.Logger` stays responsible for configuring Serilog/OpenTelemetry and registering logger-related services.
-    - Presentation may call Application logging extension methods, but we do not remove/migrate the logging subsystem out of Application.
 - Consolidate token services:
-  - Apply a clear token-port split (less friction than friend assemblies):
+  - Keep a single token port boundary:
     - Keep consumer-facing orchestration at `IUserTokenService` (session creation + refresh rotation invariants).
-    - Replace generic “provider” naming with intent-revealing ports implemented by Infrastructure:
-      - `ITokenIssuer` (issue signed tokens from claims/scopes)
-      - `ITokenValidator` (validate/decode/mutate tokens)
-      - Alternatively, a single `ITokenCodec` if you want one boundary.
-    - Place ports under a dedicated folder/namespace to make intent obvious:
-      - `Application/Authorization/Ports/Outbound/*` (implemented by Infrastructure)
-      - `Application/Identity/Ports/Inbound/*` (used by Presentation)
-    - Keep JWT/crypto mechanics inside Infrastructure (e.g., internal `JwtTokenService`), exposed only via the outbound ports.
+    - Keep a single Application-owned outbound port (existing `ITokenProvider`) that covers issuing + validating + decoding + mutation.
+    - Keep JWT/crypto mechanics inside Infrastructure (e.g., internal `JwtTokenService`), exposed only via the single outbound port.
   - Enforce DI boundaries via composition root (preferred) and optionally via access modifiers:
     - Presentation and other consumers may inject only **public Application interfaces** (e.g., `IUserTokenService`, `IPermissionService`).
-    - Infrastructure registrations occur only in Infrastructure DI extension methods (e.g., `AddIdentityInfrastructure()`), keeping concrete types out of Presentation.
-    - Optionally keep outbound port implementations `internal` to Infrastructure to reduce accidental injection even when referenced.
+    - Presentation consumer code must not reference or inject Infrastructure types.
+    - Composition root (e.g., `Program.cs`) may reference Infrastructure for DI wiring only (prefer calling Infrastructure DI extension methods like `AddIdentityInfrastructure()` rather than constructing concrete types inline).
   - Prevent bypass paths:
     - Refresh token issuance/rotation must not be exposed as a general token API; it remains an auth/session concern owned by `IUserTokenService`.
     - Avoid alternate refresh-token formats or parallel issuance paths that bypass session validation.
 - Controller conventions:
   - Introduce a single helper for `CreatedAtAction`, `NotFound`, `Conflict`, and consistent `ProblemDetails` shapes.
-  - Replace repeated mapping helpers with a small mapping layer (extension methods per feature).
+  - Defer mapping-layer extraction (extension methods per feature) to a later phase.
 
 **Impacted projects**
 - `src/Application`
 - `src/Infrastructure.Identity`
 - `src/Infrastructure.EFCore.Identity`
 - `src/Presentation.WebApi`
+
+**Affected files (controller inventory)**
+
+These are the currently scanned controller entrypoints most impacted by “Controller conventions” (response helpers, mapping layer, repetition reduction).
+
+- `src/Presentation.WebApi/Controllers/V1/DebugController.cs`
+
+- `src/Presentation.WebApi/Controllers/V1/Auth/AuthController.cs`
+- `src/Presentation.WebApi/Controllers/V1/Auth/AuthController.Helpers.cs`
+- `src/Presentation.WebApi/Controllers/V1/Auth/AuthController.Identity.cs`
+- `src/Presentation.WebApi/Controllers/V1/Auth/AuthController.Login.cs`
+- `src/Presentation.WebApi/Controllers/V1/Auth/AuthController.Me.cs`
+- `src/Presentation.WebApi/Controllers/V1/Auth/AuthController.OAuth.cs`
+- `src/Presentation.WebApi/Controllers/V1/Auth/AuthController.Passkey.cs`
+- `src/Presentation.WebApi/Controllers/V1/Auth/AuthController.Password.cs`
+- `src/Presentation.WebApi/Controllers/V1/Auth/AuthController.Sessions.cs`
+- `src/Presentation.WebApi/Controllers/V1/Auth/AuthController.Token.cs`
+- `src/Presentation.WebApi/Controllers/V1/Auth/AuthController.TwoFactor.cs`
+
+- `src/Presentation.WebApi/Controllers/V1/Iam/IamController.cs`
+- `src/Presentation.WebApi/Controllers/V1/Iam/IamController.Permissions.cs`
+- `src/Presentation.WebApi/Controllers/V1/Iam/IamController.Roles.cs`
+- `src/Presentation.WebApi/Controllers/V1/Iam/IamController.Users.cs`
+
+**Target folder structure (goal state)**
+
+Goal: controllers are grouped by feature and split by endpoint area (not by `partial` files). Endpoint-specific request/response models live with their controller area (“model dispersion”), while cross-cutting/shared API contracts remain centralized.
+
+```
+src/Presentation.WebApi/
+  Controllers/
+    V1/
+      Auth/
+        AuthHelpers.cs
+        Login/
+          AuthLoginController.cs
+          AuthLoginHelpers.cs
+          Requests/
+            LoginRequest.cs
+            RegisterRequest.cs
+          Responses/
+            AuthResponse.cs              # only if AuthResponse is truly Login-scoped
+        Me/
+          AuthMeController.cs
+          AuthMeHelpers.cs               # only if Me-scoped helpers exist
+          Responses/
+            AuthMeResponse.cs            # only if Me-scoped; otherwise central Models
+        Password/
+          AuthPasswordController.cs
+          AuthPasswordHelpers.cs         # only if Password-scoped helpers exist
+          Requests/
+            ForgotPasswordRequest.cs
+            ResetPasswordRequest.cs
+        Passkeys/
+          AuthPasskeysController.cs
+          AuthPasskeysHelpers.cs         # only if Passkeys-scoped helpers exist
+          Requests/
+            CreatePasskeyOptionsRequest.cs
+            CreatePasskeyRequest.cs
+        Sessions/
+          AuthSessionsController.cs
+          AuthSessionsHelpers.cs         # only if Sessions-scoped helpers exist
+        Token/
+          AuthTokenController.cs
+          AuthTokenHelpers.cs            # only if Token-scoped helpers exist
+        TwoFactor/
+          AuthTwoFactorController.cs
+          AuthTwoFactorHelpers.cs        # only if 2FA-scoped helpers exist
+        OAuth/
+          AuthOAuthController.cs
+          AuthOAuthHelpers.cs            # only if OAuth-scoped helpers exist
+
+      Iam/
+        Users/
+          IamUsersController.cs
+          Requests/
+            UpdateUserRequest.cs
+          Responses/
+            UserResponse.cs
+        Roles/
+          IamRolesController.cs
+          Requests/
+            CreateRoleRequest.cs
+          Responses/
+            RoleInfoResponse.cs
+        Permissions/
+          IamPermissionsController.cs
+
+      Debug/
+        DebugController.cs
+        Requests/
+          CreateAdminRequest.cs
+
+  Models/
+    Shared/
+      ListResponse.cs
+      PagedResponse.cs
+      IdResponse.cs
+      ProblemDetailsResponse.cs
+```
+
+Notes:
+- Keep the URL surface unchanged by keeping the same route prefix: `api/v{v:apiVersion}/auth` and `api/v{v:apiVersion}/iam`.
+- Prefer naming/namespaces that mirror folders (e.g., `Presentation.WebApi.Controllers.V1.Auth.Login`).
+- Keep “shared” DTOs (used by multiple controller areas) in `src/Presentation.WebApi/Models/*` instead of duplicating them under multiple controller folders.
+- Helpers:
+  - Use a feature-level helper file for shared Auth helpers: `Controllers/V1/Auth/AuthHelpers.cs`.
+  - For helpers used by exactly one controller area, keep them next to that area (e.g., `Controllers/V1/Auth/Login/AuthLoginHelpers.cs`).
 
 **Expected payoff**
 - Cleaner boundaries (Application becomes host-agnostic).
@@ -134,21 +252,12 @@ This phase is intentionally split into smaller sub-phases to keep scope controll
 
 **Tasks**
 
-- Replace MSBuild `Exec` codegen with an incremental Roslyn Source Generator
-  - Constraint/clarification: the source generator (analyzer) can target `netstandard2.0` while `Domain` stays `net10.0`.
-    - The generator assembly is a build-time analyzer; it is not a runtime dependency of `Domain`.
-    - Generated sources are compiled into `Domain` and can use `net10.0` APIs/features.
-  - Preferred approach (no `Domain` reference in generator):
-    - Generator inspects `Domain` source via Roslyn (syntax + semantic model) and emits code.
-    - Avoids runtime-loading `Domain` and avoids “API diff” issues.
-  - Optional contract assembly (only if needed for shared markers):
-    - Create `Domain.CodeGen.Abstractions` targeting `netstandard2.0` containing only marker attributes/enums/constants.
-    - `Domain` references `Domain.CodeGen.Abstractions`.
-    - The generator references `Domain.CodeGen.Abstractions`.
-  - Output scope:
-    - Generate only strongly-typed identifiers and small helpers actually used by code (`Permissions.*`, `Roles.*`, etc.).
-    - Avoid generating large flattened “AllValues” graphs unless absolutely required.
-    - If large metadata is needed, prefer a compact manifest (embedded resource) or derive it from the Domain permission tree at runtime.
+- Replace MSBuild `Exec` codegen with incremental Roslyn Source Generators (completed)
+  - Generator assembly: `src/Domain.SourceGenerators` (targets `netstandard2.0`).
+  - Authorization identifier generation emits into `Domain` only (generator is gated to the `Domain` compilation).
+  - Build constants generation is opt-in via `GenerateBuildConstants=true` and is wired centrally in `Directory.Build.targets`.
+    - Projects enabling build constants do not need per-project analyzer references.
+    - Base command type is configured via `BaseCommandType` (defaulting to `Presentation.Commands.BaseCommand`).
 
 **Impacted projects**
 - `src/Domain.SourceGenerators`
@@ -227,7 +336,7 @@ This phase is intentionally split into smaller sub-phases to keep scope controll
 7. Avoid pass-through layers: if a service does nothing but forward, remove or give it policy.
 8. Prevent accidental DI misuse:
    - Presentation injects only Application interfaces (inbound ports).
-   - Infrastructure is registered via DI extension methods; Presentation never references Infrastructure token types.
+  - Presentation consumer code never references Infrastructure types; composition root may reference Infrastructure for DI wiring only.
    - Outbound ports (implemented by Infrastructure) are named by intent (`*Issuer`, `*Validator`, `*Store`) and live in a dedicated `Ports/Outbound` (or `Abstractions`) namespace.
 9. Reuse shared response wrappers (`ListResponse<T>`, etc.) instead of one-off list DTOs.
 10. Generated code must live in build output only (obj/analyzers), never hand-edited.
@@ -237,12 +346,14 @@ This phase is intentionally split into smaller sub-phases to keep scope controll
 
 ### Source generator build model (proposed)
 
-- Add generator project (analyzer): `src/Domain.SourceGen` (targets `netstandard2.0`)
+- Add generator project (analyzer): `src/Domain.SourceGenerators` (targets `netstandard2.0`) (completed)
   - `Domain.csproj` references it as an analyzer (not a runtime reference).
-  - Generator reads `Domain` syntax/symbols to produce deterministic, incremental outputs.
-- Optional: add `src/Domain.CodeGen.Abstractions` (targets `netstandard2.0`)
-  - Only for shared marker attributes/enums/constants when convenient.
-  - Avoid moving any Domain behavior or logic into abstractions.
+  - Build constants generation is enabled per-project via `GenerateBuildConstants=true` and the analyzer is injected by `Directory.Build.targets`.
+  - Generator reads syntax/symbols to produce deterministic, incremental outputs.
+
+Optional: add `src/Domain.CodeGen.Abstractions` (targets `netstandard2.0`)
+- Only if shared marker attributes/enums/constants are needed.
+- Avoid moving any Domain behavior or logic into abstractions.
 
 **Keep generated**
 - Permission/role identifiers (stable, strongly-typed accessors).

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Application.Authorization.Interfaces.Infrastructure;
 using Application.Authorization.Interfaces;
 using Application.Identity.Interfaces;
 using Application.Identity.Models;
@@ -17,7 +18,8 @@ namespace Application.Identity.Services;
 public sealed class UserTokenService(
     IUserAuthorizationService userAuthorizationService,
     ISessionService sessionService,
-    IPermissionService permissionService) : IUserTokenService
+    IPermissionService permissionService,
+    ITokenProvider tokenProvider) : IUserTokenService
 {
 
     /// <inheritdoc />
@@ -158,7 +160,7 @@ public sealed class UserTokenService(
         CancellationToken cancellationToken)
     {
         // Validate token and get principal
-        var principal = await permissionService.ValidateTokenAsync(refreshToken, cancellationToken);
+        var principal = await tokenProvider.ValidateTokenPrincipalAsync(refreshToken, cancellationToken);
         if (principal is null)
         {
             return TokenRefreshResult.Failure("invalid_token", "The refresh token is invalid or has expired.");
