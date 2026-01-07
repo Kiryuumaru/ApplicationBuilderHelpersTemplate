@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<LangVersion>14</LangVersion>
 		<GenerateBuildConstants>true</GenerateBuildConstants>
-		<BaseCommandType>Presentation.Abstractions.Commands.BaseCommand</BaseCommandType>
+		<BaseCommandType>Presentation.Commands.BaseCommand</BaseCommandType>
 		<TargetFramework>net10.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
@@ -28,17 +28,13 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Application\Application.csproj" />
-		<ProjectReference Include="..\Presentation.Abstractions\Presentation.Abstractions.csproj" />
+		<ProjectReference Include="..\Presentation\Presentation.csproj" />
 		<ProjectReference Include="..\Infrastructure.EFCore\Infrastructure.EFCore.csproj" />
 		<ProjectReference Include="..\Infrastructure.EFCore.Identity\Infrastructure.EFCore.Identity.csproj" />
 		<ProjectReference Include="..\Infrastructure.EFCore.LocalStore\Infrastructure.EFCore.LocalStore.csproj" />
 		<ProjectReference Include="..\Infrastructure.EFCore.Sqlite\Infrastructure.EFCore.Sqlite.csproj" />
 		<ProjectReference Include="..\Infrastructure.Identity\Infrastructure.Identity.csproj" />
 		<ProjectReference Include="..\Infrastructure.Passkeys\Infrastructure.Passkeys.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<Compile Remove="Extensions\LoggerApplicationHostBuilderExtensions.cs" />
 	</ItemGroup>
 
 </Project>

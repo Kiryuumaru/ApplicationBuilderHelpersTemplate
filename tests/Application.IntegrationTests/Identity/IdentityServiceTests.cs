@@ -299,6 +299,8 @@ public class IdentityServiceTests
         
         services.AddIdentityServices();
 
+        services.AddIdentityCoreServices();
+
         // Use shared memory database with EF Core
         var dbName = Guid.NewGuid().ToString();
         var connectionString = $"Data Source={dbName};Mode=Memory;Cache=Shared";

@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 using Nuke.Common.IO;
 using NukeBuildHelpers.RunContext.Interfaces;
 using NukeBuildHelpers.RunContext.Models;
-using Presentation.Abstractions.Commands;
+using Presentation.Commands;
 using Semver;
 using Serilog;
 using System;

@@ -151,7 +151,7 @@ This phase is intentionally split into smaller sub-phases to keep scope controll
     - If large metadata is needed, prefer a compact manifest (embedded resource) or derive it from the Domain permission tree at runtime.
 
 **Impacted projects**
-- `src/Domain.CodeGenerator` (replaced/repurposed)
+- `src/Domain.SourceGenerators`
 - `src/Domain`
 
 **Risk**

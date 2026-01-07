@@ -20,7 +20,7 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\src\Application\Application.csproj" />
-	  <ProjectReference Include="..\src\Presentation.Abstractions\Presentation.Abstractions.csproj" />
+	  <ProjectReference Include="..\src\Presentation\Presentation.csproj" />
 	</ItemGroup>
 
 </Project>

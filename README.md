@@ -86,7 +86,7 @@ Dependencies flow inward: Outer layers depend on inner layers, never reverse.
 │   └── features/                           # Feature documentation
 ├── src/
 │   ├── Domain/                             # Entities, ValueObjects, Business Rules
-│   ├── Domain.CodeGenerator/               # Source generators
+│   ├── Domain.SourceGenerators/            # Roslyn analyzers (authorization identifiers + build constants)
 │   ├── Application/                        # Services, Interfaces
 │   ├── Infrastructure.EFCore/              # Base EF Core DbContext
 │   ├── Infrastructure.EFCore.Identity/     # Identity stores

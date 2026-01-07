@@ -12,7 +12,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Presentation.Abstractions.Commands;
+namespace Presentation.Commands;
 
 public abstract class BaseCommand<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] THostApplicationBuilder> : Command<THostApplicationBuilder>
     where THostApplicationBuilder : IHostApplicationBuilder
