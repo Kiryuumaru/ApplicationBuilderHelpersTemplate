@@ -23,7 +23,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<!-- Tests run WebApi as subprocess, no project reference needed -->
+		<ProjectReference Include="..\..\src\Presentation.WebApi\Presentation.WebApi.csproj" ReferenceOutputAssembly="false" />
 	</ItemGroup>
 
 	<ItemGroup>

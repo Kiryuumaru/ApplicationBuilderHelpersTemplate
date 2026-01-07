@@ -34,8 +34,7 @@ internal sealed class PasswordService(
 
         if (!_passwordVerifier.Verify(user.PasswordHash, currentPassword))
         {
-            // Throw UnauthorizedAccessException for credential failures (maps to 401)
-            throw new UnauthorizedAccessException("Current password is incorrect.");
+            throw new InvalidPasswordException();
         }
 
         // Validate new password strength

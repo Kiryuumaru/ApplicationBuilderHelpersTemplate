@@ -3,6 +3,8 @@ using Application.Common.Services;
 using Domain.Authorization.Constants;
 using Domain.Identity.Enums;
 using Domain.Identity.Models;
+using Domain.Identity.Exceptions;
+using Domain.Shared.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
@@ -59,23 +61,13 @@ public partial class AuthController
     {
         if (!TryParseProvider(provider, out var parsedProvider))
         {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Invalid provider",
-                Detail = $"OAuth provider '{provider}' is not supported."
-            });
+            throw new Domain.Shared.Exceptions.ValidationException("provider", $"OAuth provider '{provider}' is not supported.");
         }
 
         var isEnabled = await oauthService.IsProviderEnabledAsync(parsedProvider, cancellationToken);
         if (!isEnabled)
         {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Provider not enabled",
-                Detail = $"OAuth provider '{provider}' is not currently enabled."
-            });
+            throw new Domain.Shared.Exceptions.ValidationException("provider", $"OAuth provider '{provider}' is not currently enabled.");
         }
 
         var authUrl = await oauthService.GetAuthorizationUrlAsync(
@@ -112,12 +104,7 @@ public partial class AuthController
     {
         if (!TryParseProvider(request.Provider, out var provider))
         {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Invalid provider",
-                Detail = $"OAuth provider '{request.Provider}' is not supported."
-            });
+            throw new Domain.Shared.Exceptions.ValidationException("provider", $"OAuth provider '{request.Provider}' is not supported.");
         }
 
         // Note: In a real implementation, expectedState should come from session/cookie
@@ -132,12 +119,7 @@ public partial class AuthController
 
         if (!result.Succeeded)
         {
-            return Unauthorized(new ProblemDetails
-            {
-                Status = StatusCodes.Status401Unauthorized,
-                Title = result.Error ?? "Authentication failed",
-                Detail = result.ErrorDescription ?? "OAuth authentication was not successful."
-            });
+            throw new OAuthAuthenticationFailedException(result.Error, result.ErrorDescription);
         }
 
         // Create session and tokens
@@ -172,7 +154,8 @@ public partial class AuthController
     [HttpGet("users/{userId:guid}/identity/external")]
     [RequiredPermission(PermissionIds.Api.Auth.Identity.External.List.Identifier)]
     [ProducesResponseType<ExternalLoginsResponse>(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetExternalLogins(
         [FromRoute, Required, PermissionParameter(PermissionIds.Api.Auth.UserIdParameter)] Guid userId,
         CancellationToken cancellationToken)
@@ -180,7 +163,7 @@ public partial class AuthController
         var user = await userProfileService.GetByIdAsync(userId, cancellationToken);
         if (user is null)
         {
-            return NotFound();
+            throw new EntityNotFoundException("User", userId.ToString());
         }
 
         return Ok(new ExternalLoginsResponse

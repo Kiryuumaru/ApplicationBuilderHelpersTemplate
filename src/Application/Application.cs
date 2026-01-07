@@ -7,13 +7,9 @@ using Application.LocalStore.Extensions;
 using Application.Logger.Extensions;
 using Application.NativeCmd.Extensions;
 using ApplicationBuilderHelpers;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
 
 namespace Application;
 
@@ -34,27 +30,6 @@ public class Application : ApplicationDependency
 
         applicationBuilder.AddLoggerServices();
 
-        services.AddHttpClient(Options.DefaultName, (sp, client) =>
-        {
-            using var scope = sp.CreateScope();
-            var applicationConstans = scope.ServiceProvider.GetRequiredService<IApplicationConstants>();
-            client.DefaultRequestHeaders.Add("Client-Agent", applicationConstans.AppName);
-        });
-
-        applicationBuilder.Builder.Services.AddHealthChecks()
-            .AddCheck("self", () => HealthCheckResult.Healthy(), ["live"]);
-
-        applicationBuilder.Services.AddServiceDiscovery();
-
-        applicationBuilder.Builder.Services.ConfigureHttpClientDefaults(http =>
-        {
-            // Turn on resilience by default
-            //http.AddStandardResilienceHandler();
-
-            // Turn on service discovery by default
-            http.AddServiceDiscovery();
-        });
-
         services.AddCommonServices();
         services.AddAppEnvironmentServices();
         services.AddNativeCmdServices();
@@ -67,18 +42,6 @@ public class Application : ApplicationDependency
         base.AddMiddlewares(applicationHost, host);
 
         applicationHost.AddLoggerMiddlewares();
-
-        if (applicationHost.Host is WebApplication webApplicationBuilder)
-        {
-            if (webApplicationBuilder.Environment.IsDevelopment())
-            {
-                webApplicationBuilder.MapHealthChecks("/health");
-                webApplicationBuilder.MapHealthChecks("/alive", new HealthCheckOptions
-                {
-                    Predicate = r => r.Tags.Contains("live")
-                });
-            }
-        }
     }
 
     public override void RunPreparation(ApplicationHost applicationHost)

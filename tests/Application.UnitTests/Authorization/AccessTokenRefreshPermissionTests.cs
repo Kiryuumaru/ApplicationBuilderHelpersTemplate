@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using Application.Authorization.Interfaces;
+using Application.Authorization.Interfaces.Infrastructure;
 using Application.Authorization.Services;
 using Application.Identity.Interfaces;
 using Application.Identity.Models;
@@ -42,8 +42,8 @@ public class AccessTokenRefreshPermissionTests
         var userRole = Roles.User.Instantiate();
         await roleRepo.SaveAsync(userRole, CancellationToken.None);
 
-        var tokenService = Substitute.For<ITokenService>();
-        var service = new PermissionService(tokenService, roleRepo);
+        var tokenProvider = Substitute.For<ITokenProvider>();
+        var service = new PermissionService(tokenProvider, roleRepo);
 
         // Act: Check if access token has refresh permission
         var refreshPermission = PermissionIds.Api.Auth.Refresh.Permission.WithUserId(TestUserId.ToString());
@@ -76,14 +76,14 @@ public class AccessTokenRefreshPermissionTests
         var identity = new ClaimsIdentity(claims, "Bearer");
         var principal = new ClaimsPrincipal(identity);
 
-        var tokenService = Substitute.For<ITokenService>();
-        tokenService.ValidateTokenPrincipalAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+        var tokenProvider = Substitute.For<ITokenProvider>();
+        tokenProvider.ValidateTokenPrincipalAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(principal);
 
         var roleRepo = new InMemoryRoleRepository();
         await roleRepo.SaveAsync(Roles.User.Instantiate(), CancellationToken.None);
 
-        var permissionService = new PermissionService(tokenService, roleRepo);
+        var permissionService = new PermissionService(tokenProvider, roleRepo);
         var service = new UserTokenService(userAuthorizationService, sessionService, permissionService);
 
         var result = await service.RefreshTokensAsync("not-a-real-token", CancellationToken.None);

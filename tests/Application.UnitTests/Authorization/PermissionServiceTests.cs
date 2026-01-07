@@ -1,13 +1,9 @@
-using Application.Authorization.Interfaces;
 using Application.Authorization.Interfaces.Infrastructure;
 using Application.Authorization.Models;
 using Application.Authorization.Services;
 using Application.UnitTests.Authorization.Fakes;
 using System.Linq;
 using System.Security.Claims;
-using JwtClaimTypes = Domain.Identity.Constants.JwtClaimTypes;
-
-using AppTokenValidationResult = Application.Authorization.Models.TokenValidationResult;
 
 namespace Application.UnitTests.Authorization;
 
@@ -19,8 +15,8 @@ public class PermissionServiceTests
     [Fact]
     public async Task GenerateTokenWithPermissionsAsync_NormalizesAndDelegatesScopes()
     {
-        var tokenService = new RecordingTokenService();
-        var service = CreateService(tokenService);
+        var tokenProvider = new RecordingTokenProvider();
+        var service = CreateService(tokenProvider);
 
         var permissions = new[]
         {
@@ -35,15 +31,15 @@ public class PermissionServiceTests
             permissionIdentifiers: permissions,
             cancellationToken: CancellationToken.None);
 
-        Assert.Equal([AccountUpdatePermission, OrderCancelPermission], tokenService.LastGeneratedScopes);
-        Assert.Equal("user-123", tokenService.LastGenerateTokenUserId);
-        Assert.Equal("user@test", tokenService.LastGenerateTokenUsername);
+        Assert.Equal([AccountUpdatePermission, OrderCancelPermission], tokenProvider.LastGeneratedScopes);
+        Assert.Equal("user-123", tokenProvider.LastGenerateTokenUserId);
+        Assert.Equal("user@test", tokenProvider.LastGenerateTokenUsername);
     }
 
     [Fact]
     public async Task HasPermission_RejectsLegacyToken()
     {
-        var service = CreateService(new RecordingTokenService());
+        var service = CreateService(new RecordingTokenProvider());
         var principal = new ClaimsPrincipal(new ClaimsIdentity());
 
         var result = await service.HasPermissionAsync(principal, OrderCancelPermission, CancellationToken.None);
@@ -54,7 +50,7 @@ public class PermissionServiceTests
     [Fact]
     public async Task ValidatePermissionsAsync_AllowsAncestorScopedParameters()
     {
-        var service = CreateService(new RecordingTokenService());
+        var service = CreateService(new RecordingTokenProvider());
 
         var result = await service.ValidatePermissionsAsync(["api:_read;userId=user-123"]);
 
@@ -64,7 +60,7 @@ public class PermissionServiceTests
     [Fact]
     public async Task ValidatePermissionsAsync_RejectsUnknownParameters()
     {
-        var service = CreateService(new RecordingTokenService());
+        var service = CreateService(new RecordingTokenProvider());
 
         var result = await service.ValidatePermissionsAsync(["api:_read;tenantId=abc"]);
 
@@ -74,7 +70,7 @@ public class PermissionServiceTests
     [Fact]
     public async Task HasPermission_AllowsUserScopedRootGrant()
     {
-        var service = CreateService(new RecordingTokenService());
+        var service = CreateService(new RecordingTokenProvider());
         // New directive format: allow;permission_path;param=value
         var identity = new ClaimsIdentity(
         [
@@ -97,7 +93,7 @@ public class PermissionServiceTests
     [Fact]
     public async Task HasPermission_DeniesWhenParameterMissingOnRequest()
     {
-        var service = CreateService(new RecordingTokenService());
+        var service = CreateService(new RecordingTokenProvider());
         // Scope requires userId parameter
         var principal = BuildPrincipalWithScopes("allow;api:_read;userId=user-123");
         // Request has no userId parameter - the scope requires userId so this DENIES
@@ -111,7 +107,7 @@ public class PermissionServiceTests
     [Fact]
     public async Task HasPermission_DeniesAccessToOtherUser()
     {
-        var service = CreateService(new RecordingTokenService());
+        var service = CreateService(new RecordingTokenProvider());
         // Scope requires userId=user-123
         var principal = BuildPrincipalWithScopes("allow;api:_read;userId=user-123");
 
@@ -124,7 +120,7 @@ public class PermissionServiceTests
     [Fact]
     public async Task HasAnyPermission_DeniesWhenOnlyOtherUserSpecified()
     {
-        var service = CreateService(new RecordingTokenService());
+        var service = CreateService(new RecordingTokenProvider());
         // Scope only allows user-123
         var principal = BuildPrincipalWithScopes("allow;api:_read;userId=user-123");
 
@@ -138,7 +134,7 @@ public class PermissionServiceTests
     [Fact]
     public async Task HasPermission_WriteScopeAllowsWriteOperations()
     {
-        var service = CreateService(new RecordingTokenService());
+        var service = CreateService(new RecordingTokenProvider());
         // Use new directive format with _write scope
         var principal = BuildPrincipalWithScopes("allow;api:_write;userId=user-123");
 
@@ -150,7 +146,7 @@ public class PermissionServiceTests
     [Fact]
     public async Task HasPermission_ReadScopeDoesNotAllowWriteOperations()
     {
-        var service = CreateService(new RecordingTokenService());
+        var service = CreateService(new RecordingTokenProvider());
         // Only read scope, no write
         var principal = BuildPrincipalWithScopes("allow;api:_read;userId=user-123");
 
@@ -162,7 +158,7 @@ public class PermissionServiceTests
     [Fact]
     public async Task HasAllPermissions_ReturnsFalseWhenAnyMissing()
     {
-        var service = CreateService(new RecordingTokenService());
+        var service = CreateService(new RecordingTokenProvider());
         // Only allows AccountUpdatePermission path, not position close
         var identity = new ClaimsIdentity(
         [
@@ -179,11 +175,11 @@ public class PermissionServiceTests
     [Fact]
     public async Task MutateTokenAsync_NormalizesPermissionsBeforeDelegation()
     {
-        var tokenService = new RecordingTokenService
+        var tokenProvider = new RecordingTokenProvider
         {
             ValidateTokenPrincipalResult = BuildPrincipalWithScopes(AccountUpdatePermission, OrderCancelPermission)
         };
-        var service = CreateService(tokenService);
+        var service = CreateService(tokenProvider);
 
         var permissionsToAdd = new[] { "  " + OrderCancelPermission + " ", OrderCancelPermission };
         var permissionsToRemove = new[] { AccountUpdatePermission, "  " + AccountUpdatePermission };
@@ -198,17 +194,17 @@ public class PermissionServiceTests
             cancellationToken: CancellationToken.None);
 
         Assert.Equal("mutated-token", result);
-        Assert.Null(tokenService.LastMutateScopesToAdd);
-        Assert.Equal([AccountUpdatePermission], tokenService.LastMutateScopesToRemove);
-        Assert.Equal("token-value", tokenService.LastMutatedToken);
+        Assert.Null(tokenProvider.LastMutateScopesToAdd);
+        Assert.Equal([AccountUpdatePermission], tokenProvider.LastMutateScopesToRemove);
+        Assert.Equal("token-value", tokenProvider.LastMutatedToken);
     }
 
     [Fact]
     public async Task ValidateTokenAsync_PassesThroughUnderlyingService()
     {
         var principal = BuildPrincipalWithScopes(AccountUpdatePermission);
-        var tokenService = new RecordingTokenService { ValidateTokenPrincipalResult = principal };
-        var service = CreateService(tokenService);
+        var tokenProvider = new RecordingTokenProvider { ValidateTokenPrincipalResult = principal };
+        var service = CreateService(tokenProvider);
 
         var result = await service.ValidateTokenAsync("token", CancellationToken.None);
 
@@ -239,10 +235,10 @@ public class PermissionServiceTests
         return new ClaimsPrincipal(identity);
     }
 
-    private static PermissionService CreateService(RecordingTokenService tokenService)
-        => new(tokenService, new InMemoryRoleRepository());
+    private static PermissionService CreateService(RecordingTokenProvider tokenProvider)
+        => new(tokenProvider, new InMemoryRoleRepository());
 
-    private sealed class RecordingTokenService : ITokenService
+    private sealed class RecordingTokenProvider : ITokenProvider
     {
         public string GenerateTokenResult { get; set; } = "token";
         public string GenerateApiKeyTokenResult { get; set; } = "api-token";
@@ -258,34 +254,6 @@ public class PermissionServiceTests
         public string? LastMutatedToken { get; private set; }
         public IReadOnlyCollection<string>? LastMutateScopesToAdd { get; private set; }
         public IReadOnlyCollection<string>? LastMutateScopesToRemove { get; private set; }
-
-        public Task<string> GenerateAccessTokenAsync(Guid userId, string? username, IReadOnlyCollection<string> roleCodes, IEnumerable<Claim>? additionalClaims = null, CancellationToken cancellationToken = default)
-        {
-            LastGenerateTokenUserId = userId.ToString();
-            LastGenerateTokenUsername = username;
-            LastGeneratedScopes = roleCodes.ToArray();
-            return Task.FromResult(GenerateTokenResult);
-        }
-
-        public Task<string> GenerateRefreshTokenAsync(Guid sessionId, CancellationToken cancellationToken = default)
-            => Task.FromResult("refresh-token");
-
-        public Task<AppTokenValidationResult> ValidateTokenAsync(string token, CancellationToken cancellationToken = default)
-        {
-            if (ValidateTokenPrincipalResult is null)
-            {
-                return Task.FromResult(AppTokenValidationResult.Failed("Token validation failed."));
-            }
-
-            var userIdClaim = ValidateTokenPrincipalResult.FindFirst(JwtClaimTypes.Subject)?.Value;
-            if (!Guid.TryParse(userIdClaim, out var userId))
-            {
-                return Task.FromResult(AppTokenValidationResult.Failed("Invalid user ID."));
-            }
-
-            var roles = ValidateTokenPrincipalResult.FindAll(JwtClaimTypes.Roles).Select(c => c.Value).ToArray();
-            return Task.FromResult(AppTokenValidationResult.Success(userId, null, roles));
-        }
 
         public Task<string> GenerateTokenWithScopesAsync(string userId, string? username, IEnumerable<string> scopes, IEnumerable<Claim>? additionalClaims = null, DateTimeOffset? expiration = null, Domain.Identity.Enums.TokenType tokenType = Domain.Identity.Enums.TokenType.Access, CancellationToken cancellationToken = default)
         {

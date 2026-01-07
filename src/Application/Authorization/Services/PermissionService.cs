@@ -23,7 +23,7 @@ using JwtClaimTypes = Domain.Identity.Constants.JwtClaimTypes;
 namespace Application.Authorization.Services;
 
 internal sealed class PermissionService(
-    ITokenService tokenService,
+    ITokenProvider tokenProvider,
     IRoleRepository roleRepository) : IPermissionService
 {
     private const string ScopeClaimType = "scope";
@@ -31,7 +31,7 @@ internal sealed class PermissionService(
     private static readonly ReadOnlyDictionary<string, HashSet<string>> ReachableParameterLookup;
     private static readonly HashSet<string> EmptyParameterNameSet = new(StringComparer.Ordinal);
 
-    private readonly ITokenService _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
+    private readonly ITokenProvider _tokenProvider = tokenProvider ?? throw new ArgumentNullException(nameof(tokenProvider));
     private readonly IRoleRepository _roleRepository = roleRepository ?? throw new ArgumentNullException(nameof(roleRepository));
 
     static PermissionService()
@@ -52,7 +52,7 @@ internal sealed class PermissionService(
         var normalizedPermissions = NormalizeAndValidate(permissionIdentifiers, allowEmpty: true);
         var additionalClaimSet = additionalClaims?.ToArray();
 
-        return await _tokenService.GenerateTokenWithScopesAsync(
+        return await _tokenProvider.GenerateTokenWithScopesAsync(
             userId: userId,
             username: username ?? string.Empty,
             scopes: normalizedPermissions,
@@ -73,7 +73,7 @@ internal sealed class PermissionService(
         var normalizedPermissions = NormalizeAndValidate(permissionIdentifiers, allowEmpty: true);
         var additionalClaimSet = additionalClaims?.ToArray();
 
-        return await _tokenService.GenerateApiKeyTokenAsync(
+        return await _tokenProvider.GenerateApiKeyTokenAsync(
             apiKeyName: apiKeyName,
             scopes: normalizedPermissions,
             additionalClaims: additionalClaimSet,
@@ -100,7 +100,7 @@ internal sealed class PermissionService(
 
         var additionalClaimSet = additionalClaims?.ToArray();
 
-        return await _tokenService.GenerateTokenWithScopesAsync(
+        return await _tokenProvider.GenerateTokenWithScopesAsync(
             userId: userId,
             username: username ?? string.Empty,
             scopes: scopes,
@@ -305,12 +305,12 @@ internal sealed class PermissionService(
 
     public async Task<ClaimsPrincipal?> ValidateTokenAsync(string token, CancellationToken cancellationToken = default)
     {
-        return await _tokenService.ValidateTokenPrincipalAsync(token, cancellationToken);
+        return await _tokenProvider.ValidateTokenPrincipalAsync(token, cancellationToken);
     }
 
     public async Task<TokenInfo?> DecodeTokenAsync(string token, CancellationToken cancellationToken = default)
     {
-        return await _tokenService.DecodeTokenAsync(token, cancellationToken);
+        return await _tokenProvider.DecodeTokenAsync(token, cancellationToken);
     }
 
     public async Task<string> MutateTokenAsync(
@@ -325,7 +325,7 @@ internal sealed class PermissionService(
     {
         ArgumentException.ThrowIfNullOrEmpty(token);
 
-        var principal = await _tokenService.ValidateTokenPrincipalAsync(token, cancellationToken) ?? throw new SecurityTokenException("Token validation failed.");
+        var principal = await _tokenProvider.ValidateTokenPrincipalAsync(token, cancellationToken) ?? throw new SecurityTokenException("Token validation failed.");
         var existingPermissions = ExtractPermissionClaims(principal);
 
         var additions = new List<Claim>();
@@ -440,7 +440,7 @@ internal sealed class PermissionService(
         var scopeAdditionsList = scopeAdditions.Count == 0 ? null : scopeAdditions;
         var scopeRemovalsList = scopeRemovals.Count == 0 ? null : scopeRemovals;
 
-        return await _tokenService.MutateTokenAsync(
+        return await _tokenProvider.MutateTokenAsync(
             token: token,
             scopesToAdd: scopeAdditionsList,
             scopesToRemove: scopeRemovalsList,

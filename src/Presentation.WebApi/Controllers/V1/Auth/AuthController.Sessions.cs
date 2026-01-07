@@ -1,4 +1,5 @@
 using Domain.Authorization.Constants;
+using Domain.Shared.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
@@ -66,12 +67,7 @@ public partial class AuthController
         var success = await sessionService.RevokeForUserAsync(userId, id, cancellationToken);
         if (!success)
         {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "Session not found",
-                Detail = "The specified session was not found."
-            });
+            throw new EntityNotFoundException("Session", id.ToString());
         }
 
         return NoContent();

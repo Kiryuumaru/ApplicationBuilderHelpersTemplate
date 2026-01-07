@@ -7,8 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
 using Presentation.WebApi.Models.Requests;
 using System.ComponentModel.DataAnnotations;
-using System.Security.Authentication;
-using System.Security.Claims;
 
 namespace Presentation.WebApi.Controllers.V1;
 
@@ -34,29 +32,8 @@ public partial class AuthController
         [FromBody] ChangePasswordRequest request,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            await passwordService.ChangePasswordAsync(userId, request.CurrentPassword, request.NewPassword, cancellationToken);
-            return NoContent();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Unauthorized(new ProblemDetails
-            {
-                Status = StatusCodes.Status401Unauthorized,
-                Title = "Invalid password",
-                Detail = "The current password is incorrect."
-            });
-        }
-        catch (PasswordValidationException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Password change failed",
-                Detail = ex.Message
-            });
-        }
+        await passwordService.ChangePasswordAsync(userId, request.CurrentPassword, request.NewPassword, cancellationToken);
+        return NoContent();
     }
 
     /// <summary>
@@ -108,12 +85,7 @@ public partial class AuthController
         
         if (!success)
         {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Password reset failed",
-                Detail = "The password reset token is invalid or has expired."
-            });
+            throw new PasswordResetTokenInvalidException();
         }
         
         return NoContent();

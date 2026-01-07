@@ -56,28 +56,16 @@ public partial class IamController
         [FromBody] PermissionGrantRequest request,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            // Use the current user's username as the granter
-            var grantedBy = User.Identity?.Name;
-            await userAuthorizationService.GrantPermissionAsync(
-                request.UserId,
-                request.PermissionIdentifier,
-                request.IsAllow,
-                request.Description,
-                grantedBy,
-                cancellationToken);
-            return NoContent();
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "Not found",
-                Detail = ex.Message
-            });
-        }
+        // Use the current user's username as the granter
+        var grantedBy = User.Identity?.Name;
+        await userAuthorizationService.GrantPermissionAsync(
+            request.UserId,
+            request.PermissionIdentifier,
+            request.IsAllow,
+            request.Description,
+            grantedBy,
+            cancellationToken);
+        return NoContent();
     }
 
     /// <summary>
@@ -95,33 +83,16 @@ public partial class IamController
         [FromBody] PermissionRevocationRequest request,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var revoked = await userAuthorizationService.RevokePermissionAsync(
-                request.UserId,
-                request.PermissionIdentifier,
-                cancellationToken);
+        var revoked = await userAuthorizationService.RevokePermissionAsync(
+            request.UserId,
+            request.PermissionIdentifier,
+            cancellationToken);
 
-            if (!revoked)
-            {
-                return NotFound(new ProblemDetails
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    Title = "Permission not found",
-                    Detail = $"User does not have direct permission '{request.PermissionIdentifier}'."
-                });
-            }
-
-            return NoContent();
-        }
-        catch (EntityNotFoundException ex)
+        if (!revoked)
         {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "Not found",
-                Detail = ex.Message
-            });
+            throw new EntityNotFoundException("Permission", request.PermissionIdentifier);
         }
+
+        return NoContent();
     }
 }

@@ -129,14 +129,17 @@ internal sealed class AuthenticationService(
 
     public async Task<UserSessionDto> Complete2faAuthenticationAsync(Guid userId, string code, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
-            ?? throw new EntityNotFoundException("User", userId.ToString());
+        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false);
+        if (user is null)
+        {
+            throw new TwoFactorSessionInvalidException();
+        }
 
         // SECURITY: Verify 2FA code before creating session
         var isValid = await _twoFactorService.Verify2faCodeAsync(userId, code, cancellationToken).ConfigureAwait(false);
         if (!isValid)
         {
-            throw new AuthenticationException("Invalid 2FA code.");
+            throw new InvalidTwoFactorCodeException();
         }
 
         return await CreateSessionForUserInternalAsync(user, cancellationToken).ConfigureAwait(false);

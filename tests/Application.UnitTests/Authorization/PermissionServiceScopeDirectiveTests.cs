@@ -619,8 +619,7 @@ public class PermissionServiceScopeDirectiveTests
         var jwtTokenService = new JwtTokenService(lazyJwtFactory);
 
         var tokenProvider = new TokenProvider(jwtTokenService);
-        var tokenService = new TokenService(tokenProvider);
-        return new PermissionService(tokenService, new InMemoryRoleRepository());
+        return new PermissionService(tokenProvider, new InMemoryRoleRepository());
     }
 
     /// <summary>

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
 using Presentation.WebApi.Models.Responses;
+using System.Security.Authentication;
 using JwtClaimTypes = Domain.Identity.Constants.JwtClaimTypes;
 
 namespace Presentation.WebApi.Controllers.V1;
@@ -28,12 +29,7 @@ public partial class AuthController
         var user = await userProfileService.GetByIdAsync(userId, cancellationToken);
         if (user is null)
         {
-            return Unauthorized(new ProblemDetails
-            {
-                Status = StatusCodes.Status401Unauthorized,
-                Title = "User not found",
-                Detail = "The user associated with this token no longer exists."
-            });
+            throw new AuthenticationException("The user associated with this token no longer exists.");
         }
 
         var meUserInfo = await CreateUserInfoAsync(

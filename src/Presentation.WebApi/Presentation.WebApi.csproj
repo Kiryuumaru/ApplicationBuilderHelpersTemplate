@@ -17,6 +17,8 @@
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.1" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.1" />
 		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.1" />
+		<PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.1.0" />
+		<PackageReference Include="Microsoft.Extensions.ServiceDiscovery" Version="10.1.0" />
 		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
 		<PackageReference Include="Scalar.AspNetCore" Version="2.11.10" />
 		<PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="10.1.0" />
@@ -31,6 +33,10 @@
 		<ProjectReference Include="..\Infrastructure.EFCore.Sqlite\Infrastructure.EFCore.Sqlite.csproj" />
 		<ProjectReference Include="..\Infrastructure.Identity\Infrastructure.Identity.csproj" />
 		<ProjectReference Include="..\Infrastructure.Passkeys\Infrastructure.Passkeys.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Remove="Extensions\LoggerApplicationHostBuilderExtensions.cs" />
 	</ItemGroup>
 
 </Project>

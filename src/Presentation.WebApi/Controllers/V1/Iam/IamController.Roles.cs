@@ -46,12 +46,7 @@ public partial class IamController
         var role = await roleService.GetByIdAsync(roleId, cancellationToken);
         if (role is null)
         {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "Not found",
-                Detail = $"Role with ID '{roleId}' not found."
-            });
+            throw new EntityNotFoundException("Role", roleId.ToString());
         }
 
         return Ok(MapRoleToResponse(role));
@@ -72,60 +67,21 @@ public partial class IamController
         [FromBody] CreateRoleRequest request,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var scopeTemplates = ParseScopeTemplates(request.ScopeTemplates);
+        var scopeTemplates = ParseScopeTemplates(request.ScopeTemplates);
 
-            var descriptor = new RoleDescriptor(
-                Code: request.Code,
-                Name: request.Name,
-                Description: request.Description,
-                IsSystemRole: false,
-                ScopeTemplates: scopeTemplates);
+        var descriptor = new RoleDescriptor(
+            Code: request.Code,
+            Name: request.Name,
+            Description: request.Description,
+            IsSystemRole: false,
+            ScopeTemplates: scopeTemplates);
 
-            var role = await roleService.CreateRoleAsync(descriptor, cancellationToken);
+        var role = await roleService.CreateRoleAsync(descriptor, cancellationToken);
 
-            return CreatedAtAction(
-                nameof(GetRole),
-                new { roleId = role.Id },
-                MapRoleToResponse(role));
-        }
-        catch (DuplicateEntityException ex)
-        {
-            return Conflict(new ProblemDetails
-            {
-                Status = StatusCodes.Status409Conflict,
-                Title = "Conflict",
-                Detail = ex.Message
-            });
-        }
-        catch (ReservedNameException ex)
-        {
-            return Conflict(new ProblemDetails
-            {
-                Status = StatusCodes.Status409Conflict,
-                Title = "Conflict",
-                Detail = ex.Message
-            });
-        }
-        catch (SystemRoleException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Invalid operation",
-                Detail = ex.Message
-            });
-        }
-        catch (Domain.Shared.Exceptions.ValidationException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Validation error",
-                Detail = ex.Message
-            });
-        }
+        return CreatedAtAction(
+            nameof(GetRole),
+            new { roleId = role.Id },
+            MapRoleToResponse(role));
     }
 
     /// <summary>
@@ -145,45 +101,15 @@ public partial class IamController
         [FromBody] UpdateRoleRequest request,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var role = await roleService.UpdateMetadataAsync(roleId, request.Name, request.Description, cancellationToken);
+        var role = await roleService.UpdateMetadataAsync(roleId, request.Name, request.Description, cancellationToken);
 
-            if (request.ScopeTemplates is not null)
-            {
-                var scopeTemplates = ParseScopeTemplates(request.ScopeTemplates);
-                role = await roleService.ReplaceScopeTemplatesAsync(roleId, scopeTemplates, cancellationToken);
-            }
+        if (request.ScopeTemplates is not null)
+        {
+            var scopeTemplates = ParseScopeTemplates(request.ScopeTemplates);
+            role = await roleService.ReplaceScopeTemplatesAsync(roleId, scopeTemplates, cancellationToken);
+        }
 
-            return Ok(MapRoleToResponse(role));
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "Not found",
-                Detail = ex.Message
-            });
-        }
-        catch (SystemRoleException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Invalid operation",
-                Detail = ex.Message
-            });
-        }
-        catch (Domain.Shared.Exceptions.ValidationException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Validation error",
-                Detail = ex.Message
-            });
-        }
+        return Ok(MapRoleToResponse(role));
     }
 
     /// <summary>
@@ -199,30 +125,13 @@ public partial class IamController
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeleteRole(Guid roleId, CancellationToken cancellationToken)
     {
-        try
+        var deleted = await roleService.DeleteRoleAsync(roleId, cancellationToken);
+        if (!deleted)
         {
-            var deleted = await roleService.DeleteRoleAsync(roleId, cancellationToken);
-            if (!deleted)
-            {
-                return NotFound(new ProblemDetails
-                {
-                    Status = StatusCodes.Status404NotFound,
-                    Title = "Not found",
-                    Detail = $"Role with ID '{roleId}' not found."
-                });
-            }
+            throw new EntityNotFoundException("Role", roleId.ToString());
+        }
 
-            return NoContent();
-        }
-        catch (SystemRoleException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Invalid operation",
-                Detail = ex.Message
-            });
-        }
+        return NoContent();
     }
 
     /// <summary>
@@ -240,32 +149,11 @@ public partial class IamController
         [FromBody] RoleAssignmentRequest request,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            await userAuthorizationService.AssignRoleAsync(
-                request.UserId,
-                new AppRoleAssignment(request.RoleCode, request.ParameterValues),
-                cancellationToken);
-            return NoContent();
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "Not found",
-                Detail = ex.Message
-            });
-        }
-        catch (ValidationException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Invalid operation",
-                Detail = ex.Message
-            });
-        }
+        await userAuthorizationService.AssignRoleAsync(
+            request.UserId,
+            new AppRoleAssignment(request.RoleCode, request.ParameterValues),
+            cancellationToken);
+        return NoContent();
     }
 
     /// <summary>
@@ -283,20 +171,8 @@ public partial class IamController
         [FromBody] RoleRemovalRequest request,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            await userAuthorizationService.RemoveRoleAsync(request.UserId, request.RoleId, cancellationToken);
-            return NoContent();
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "Not found",
-                Detail = ex.Message
-            });
-        }
+        await userAuthorizationService.RemoveRoleAsync(request.UserId, request.RoleId, cancellationToken);
+        return NoContent();
     }
 
     #region Role Helper Methods

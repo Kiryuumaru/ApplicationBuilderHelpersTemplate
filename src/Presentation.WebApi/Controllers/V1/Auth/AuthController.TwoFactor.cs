@@ -7,7 +7,6 @@ using Presentation.WebApi.Attributes;
 using Presentation.WebApi.Models.Requests;
 using Presentation.WebApi.Models.Responses;
 using System.ComponentModel.DataAnnotations;
-using AuthenticationException = Domain.Identity.Exceptions.AuthenticationException;
 
 namespace Presentation.WebApi.Controllers.V1;
 
@@ -59,24 +58,12 @@ public partial class AuthController
         [FromBody] EnableTwoFactorRequest request,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var recoveryCodes = await twoFactorService.Enable2faAsync(userId, request.VerificationCode, cancellationToken);
+        var recoveryCodes = await twoFactorService.Enable2faAsync(userId, request.VerificationCode, cancellationToken);
 
-            return Ok(new EnableTwoFactorResponse
-            {
-                RecoveryCodes = recoveryCodes
-            });
-        }
-        catch (TwoFactorException ex)
+        return Ok(new EnableTwoFactorResponse
         {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Invalid verification code",
-                Detail = ex.Message
-            });
-        }
+            RecoveryCodes = recoveryCodes
+        });
     }
 
     /// <summary>
@@ -92,6 +79,8 @@ public partial class AuthController
     [RequiredPermission(PermissionIds.Api.Auth._2Fa.Disable.Identifier)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DisableTwoFactor(
         [FromRoute, Required, PermissionParameter(PermissionIds.Api.Auth.UserIdParameter)] Guid userId,
         [FromBody] DisableTwoFactorRequest request,
@@ -101,57 +90,24 @@ public partial class AuthController
         var user = await userProfileService.GetByIdAsync(userId, cancellationToken);
         if (user is null)
         {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "User not found",
-                Detail = "The specified user does not exist."
-            });
+            throw new EntityNotFoundException("User", userId.ToString());
         }
 
         if (user.Username is null)
         {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Username required",
-                Detail = "The user must have a username to disable 2FA with password verification."
-            });
+            throw new Domain.Shared.Exceptions.ValidationException(
+                propertyName: "Username",
+                message: "The user must have a username to disable 2FA with password verification.");
         }
 
-        try
+        var validationResult = await authenticationService.ValidateCredentialsAsync(user.Username, request.Password, cancellationToken);
+        if (!validationResult.Succeeded && !validationResult.RequiresTwoFactor)
         {
-            // Authenticate to verify password (may throw AuthenticationException for bad password or 2FA required)
-            await authenticationService.AuthenticateAsync(user.Username, request.Password, cancellationToken);
-        }
-        catch (AuthenticationException)
-        {
-            return Unauthorized(new ProblemDetails
-            {
-                Status = StatusCodes.Status401Unauthorized,
-                Title = "Invalid password",
-                Detail = "The password is incorrect."
-            });
-        }
-        catch (TwoFactorRequiredException)
-        {
-            // 2FA required exception means the password was correct - proceed
+            throw new InvalidPasswordException("The password is incorrect.");
         }
 
-        try
-        {
-            await twoFactorService.Disable2faAsync(userId, cancellationToken);
-            return NoContent();
-        }
-        catch (TwoFactorException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Cannot disable 2FA",
-                Detail = ex.Message
-            });
-        }
+        await twoFactorService.Disable2faAsync(userId, cancellationToken);
+        return NoContent();
     }
 
     /// <summary>
@@ -168,58 +124,17 @@ public partial class AuthController
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> TwoFactorLogin([FromBody] TwoFactorLoginRequest request, CancellationToken cancellationToken)
     {
-        try
+        var userSession = await authenticationService.Complete2faAuthenticationAsync(request.UserId, request.Code, cancellationToken);
+
+        var userInfo = await CreateUserInfoAsync(userSession.UserId, cancellationToken);
+
+        return Ok(new AuthResponse
         {
-            // Verify 2FA code first
-            var isValidCode = await twoFactorService.Verify2faCodeAsync(request.UserId, request.Code, cancellationToken);
-            if (!isValidCode)
-            {
-                return Unauthorized(new ProblemDetails
-                {
-                    Status = StatusCodes.Status401Unauthorized,
-                    Title = "Invalid code",
-                    Detail = "The 2FA code is invalid or has expired."
-                });
-            }
-
-            // Get user info for session
-            var userResult = await authenticationService.GetUserForSessionAsync(request.UserId, cancellationToken);
-            if (!userResult.Succeeded)
-            {
-                return Unauthorized(new ProblemDetails
-                {
-                    Status = StatusCodes.Status401Unauthorized,
-                    Title = "Invalid request",
-                    Detail = "The user ID is invalid."
-                });
-            }
-
-            var (accessToken, refreshToken, sessionId, twoFactorExpiresIn) = await CreateSessionAndTokensAsync(
-                userResult.UserId!.Value,
-                userResult.Username,
-                cancellationToken);
-
-            var twoFactorUserInfo = await CreateUserInfoAsync(
-                userResult.UserId!.Value,
-                cancellationToken);
-
-            return Ok(new AuthResponse
-            {
-                AccessToken = accessToken,
-                RefreshToken = refreshToken,
-                ExpiresIn = twoFactorExpiresIn,
-                User = twoFactorUserInfo
-            });
-        }
-        catch (EntityNotFoundException)
-        {
-            return Unauthorized(new ProblemDetails
-            {
-                Status = StatusCodes.Status401Unauthorized,
-                Title = "Invalid request",
-                Detail = "The user ID is invalid or the 2FA session has expired."
-            });
-        }
+            AccessToken = userSession.AccessToken,
+            RefreshToken = userSession.RefreshToken,
+            ExpiresIn = (int)(userSession.ExpiresAt - userSession.IssuedAt).TotalSeconds,
+            User = userInfo
+        });
     }
 
     /// <summary>
@@ -244,19 +159,7 @@ public partial class AuthController
         [FromRoute, Required, PermissionParameter(PermissionIds.Api.Auth.UserIdParameter)] Guid userId,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var recoveryCodes = await twoFactorService.GenerateRecoveryCodesAsync(userId, cancellationToken);
-            return Ok(new RecoveryCodesResponse(recoveryCodes));
-        }
-        catch (TwoFactorException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "2FA not enabled",
-                Detail = ex.Message
-            });
-        }
+        var recoveryCodes = await twoFactorService.GenerateRecoveryCodesAsync(userId, cancellationToken);
+        return Ok(new RecoveryCodesResponse(recoveryCodes));
     }
 }

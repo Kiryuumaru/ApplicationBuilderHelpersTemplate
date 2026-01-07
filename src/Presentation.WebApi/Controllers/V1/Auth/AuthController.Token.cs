@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Domain.Identity.Exceptions;
 using Presentation.WebApi.Models.Requests;
 using Presentation.WebApi.Models.Responses;
 
@@ -25,12 +26,7 @@ public partial class AuthController
 
         if (!result.Succeeded)
         {
-            return Unauthorized(new ProblemDetails
-            {
-                Status = StatusCodes.Status401Unauthorized,
-                Title = result.Error ?? "Authentication failed",
-                Detail = result.ErrorDescription ?? "The refresh token is invalid or expired."
-            });
+            throw new RefreshTokenInvalidException(result.Error, result.ErrorDescription);
         }
 
         var refreshUserInfo = await CreateUserInfoAsync(result.UserId!.Value, cancellationToken);

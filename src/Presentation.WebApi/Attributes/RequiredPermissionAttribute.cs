@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Application.Authorization.Interfaces;
+using Domain.Authorization.Exceptions;
 using Domain.Authorization.Constants;
 using Domain.Authorization.Models;
 using Domain.Shared.Constants;
@@ -15,6 +16,7 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using JwtClaimTypes = Domain.Identity.Constants.JwtClaimTypes;
 
 namespace Presentation.WebApi.Attributes;
 
@@ -59,12 +61,7 @@ public sealed partial class RequiredPermissionAttribute : Attribute, IAsyncActio
         if (permissionService is null)
         {
             logger?.LogError("IPermissionService is not registered in the current request scope. Permission check cannot proceed.");
-            context.Result = CreateProblemResult(
-                context,
-                StatusCodes.Status500InternalServerError,
-                "Permission service unavailable",
-                "IPermissionService is not registered in the current request scope. Permission check cannot proceed.");
-            return;
+            throw new InvalidOperationException("IPermissionService is not registered in the current request scope. Permission check cannot proceed.");
         }
 
         var user = context.HttpContext.User;
@@ -74,21 +71,7 @@ public sealed partial class RequiredPermissionAttribute : Attribute, IAsyncActio
             return;
         }
 
-        string requiredIdentifier;
-        try
-        {
-            requiredIdentifier = ResolveRequiredIdentifier(context, logger);
-        }
-        catch (InvalidOperationException ex)
-        {
-            logger?.LogError(ex, "Failed to resolve permission identifier for {ActionName}.", context.ActionDescriptor.DisplayName);
-            context.Result = CreateProblemResult(
-                context,
-                StatusCodes.Status500InternalServerError,
-                "Permission resolution failure",
-                ex.Message);
-            return;
-        }
+        var requiredIdentifier = ResolveRequiredIdentifier(context, logger);
 
         if (!await permissionService.HasPermissionAsync(user, requiredIdentifier, context.HttpContext.RequestAborted))
         {
@@ -97,16 +80,7 @@ public sealed partial class RequiredPermissionAttribute : Attribute, IAsyncActio
                 context.ActionDescriptor.DisplayName,
                 requiredIdentifier);
 
-            context.Result = CreateProblemResult(
-                context,
-                StatusCodes.Status403Forbidden,
-                "Forbidden",
-                $"User lacks permission '{requiredIdentifier}' to access {context.ActionDescriptor.DisplayName}.",
-                new Dictionary<string, object?>
-                {
-                    ["requiredPermission"] = requiredIdentifier
-                });
-            return;
+            throw new PermissionDeniedException(requiredIdentifier);
         }
 
         await next();
@@ -201,7 +175,7 @@ public sealed partial class RequiredPermissionAttribute : Attribute, IAsyncActio
         switch (placeholderName.ToLowerInvariant())
         {
             case "userid":
-                var userId = context.HttpContext.User.FindFirst("sub")?.Value;
+                var userId = context.HttpContext.User.FindFirst(JwtClaimTypes.Subject)?.Value;
                 return userId;
         }
         
@@ -295,46 +269,5 @@ public sealed partial class RequiredPermissionAttribute : Attribute, IAsyncActio
 
         return lookup;
     }
-
-    private static ObjectResult CreateProblemResult(
-        ActionContext context,
-        int statusCode,
-        string title,
-        string detail,
-        IReadOnlyDictionary<string, object?>? extensions = null)
-    {
-        var problem = new ProblemDetails
-        {
-            Title = title,
-            Detail = detail,
-            Status = statusCode,
-            Instance = context.HttpContext.Request.Path,
-            Type = GetProblemTypeUri(statusCode),
-            Extensions =
-            {
-                ["traceId"] = context.HttpContext.TraceIdentifier,
-            },
-        };
-
-        if (extensions is { Count: > 0 })
-        {
-            foreach (var pair in extensions)
-            {
-                problem.Extensions[pair.Key] = pair.Value;
-            }
-        }
-
-        return new ObjectResult(problem)
-        {
-            StatusCode = statusCode,
-        };
-    }
-
-    private static string? GetProblemTypeUri(int statusCode) => statusCode switch
-    {
-        StatusCodes.Status403Forbidden => "https://tools.ietf.org/html/rfc7231#section-6.5.3",
-        StatusCodes.Status500InternalServerError => "https://tools.ietf.org/html/rfc7231#section-6.6.1",
-        _ => null,
-    };
 
 }

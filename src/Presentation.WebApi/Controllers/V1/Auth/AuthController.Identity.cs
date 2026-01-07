@@ -21,10 +21,12 @@ public partial class AuthController
     /// <returns>Information about the user's linked identities.</returns>
     /// <response code="200">Returns the user's linked identities.</response>
     /// <response code="401">Not authenticated.</response>
+    /// <response code="404">User not found.</response>
     [HttpGet("users/{userId:guid}/identity")]
     [RequiredPermission(PermissionIds.Api.Auth.Identity.Read.Identifier)]
     [ProducesResponseType<IdentitiesResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetIdentities(
         [FromRoute, Required, PermissionParameter(PermissionIds.Api.Auth.UserIdParameter)] Guid userId,
         CancellationToken cancellationToken)
@@ -32,12 +34,7 @@ public partial class AuthController
         var user = await userProfileService.GetByIdAsync(userId, cancellationToken);
         if (user is null)
         {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "User not found",
-                Detail = "The specified user does not exist."
-            });
+            throw new EntityNotFoundException("User", userId.ToString());
         }
 
         // Get linked OAuth providers
@@ -96,58 +93,18 @@ public partial class AuthController
         [FromBody] LinkPasswordRequest request,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            await passwordService.LinkPasswordAsync(
-                userId,
-                request.Username,
-                request.Password,
-                request.Email,
-                cancellationToken);
+        await passwordService.LinkPasswordAsync(
+            userId,
+            request.Username,
+            request.Password,
+            request.Email,
+            cancellationToken);
 
-            // Get updated user info with inline role format
-            var linkPwdUserInfo = await CreateUserInfoAsync(
-                userId,
-                cancellationToken);
+        var linkPwdUserInfo = await CreateUserInfoAsync(
+            userId,
+            cancellationToken);
 
-            return Ok(linkPwdUserInfo);
-        }
-        catch (EntityNotFoundException)
-        {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "User not found",
-                Detail = "The specified user does not exist."
-            });
-        }
-        catch (DuplicateEntityException ex)
-        {
-            return Conflict(new ProblemDetails
-            {
-                Status = StatusCodes.Status409Conflict,
-                Title = $"{ex.EntityType} already exists",
-                Detail = ex.Message
-            });
-        }
-        catch (Domain.Shared.Exceptions.ValidationException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Link failed",
-                Detail = ex.Message
-            });
-        }
-        catch (PasswordValidationException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Link failed",
-                Detail = ex.Message
-            });
-        }
+        return Ok(linkPwdUserInfo);
     }
 
     /// <summary>
@@ -173,35 +130,13 @@ public partial class AuthController
         [FromBody] LinkEmailRequest request,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            await userProfileService.LinkEmailAsync(userId, request.Email, cancellationToken);
+        await userProfileService.LinkEmailAsync(userId, request.Email, cancellationToken);
 
-            // Get updated user info with inline role format
-            var linkEmailUserInfo = await CreateUserInfoAsync(
-                userId,
-                cancellationToken);
+        var linkEmailUserInfo = await CreateUserInfoAsync(
+            userId,
+            cancellationToken);
 
-            return Ok(linkEmailUserInfo);
-        }
-        catch (EntityNotFoundException)
-        {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "User not found",
-                Detail = "The specified user does not exist."
-            });
-        }
-        catch (DuplicateEntityException ex)
-        {
-            return Conflict(new ProblemDetails
-            {
-                Status = StatusCodes.Status409Conflict,
-                Title = $"{ex.EntityType} already exists",
-                Detail = ex.Message
-            });
-        }
+        return Ok(linkEmailUserInfo);
     }
 
     /// <summary>
@@ -220,11 +155,13 @@ public partial class AuthController
     /// <response code="200">Passkey linked successfully.</response>
     /// <response code="400">Invalid attestation response or expired challenge.</response>
     /// <response code="401">Not authenticated.</response>
+    /// <response code="404">User not found.</response>
     [HttpPost("users/{userId:guid}/identity/passkeys/link")]
     [RequiredPermission(PermissionIds.Api.Auth.Identity.Passkeys.Register.Identifier)]
     [ProducesResponseType<UserInfo>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> LinkPasskey(
         [FromRoute, Required, PermissionParameter(PermissionIds.Api.Auth.UserIdParameter)] Guid userId,
         [FromBody] PasskeyRegistrationRequest request,
@@ -233,41 +170,21 @@ public partial class AuthController
         var user = await userProfileService.GetByIdAsync(userId, cancellationToken);
         if (user is null)
         {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "User not found",
-                Detail = "The specified user does not exist."
-            });
+            throw new EntityNotFoundException("User", userId.ToString());
         }
 
-        try
+        await passkeyService.VerifyRegistrationAsync(request.ChallengeId, request.AttestationResponseJson, cancellationToken);
+
+        if (user.IsAnonymous)
         {
-            // Register the passkey
-            var result = await passkeyService.VerifyRegistrationAsync(request.ChallengeId, request.AttestationResponseJson, cancellationToken);
-
-            // If user was anonymous, upgrade them
-            if (user.IsAnonymous)
-            {
-                await userRegistrationService.UpgradeAnonymousWithPasskeyAsync(userId, cancellationToken);
-            }
-
-            // Get updated user info with inline role format
-            var linkPasskeyUserInfo = await CreateUserInfoAsync(
-                userId,
-                cancellationToken);
-
-            return Ok(linkPasskeyUserInfo);
+            await userRegistrationService.UpgradeAnonymousWithPasskeyAsync(userId, cancellationToken);
         }
-        catch (Domain.Shared.Exceptions.ValidationException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Passkey registration failed",
-                Detail = ex.Message
-            });
-        }
+
+        var linkPasskeyUserInfo = await CreateUserInfoAsync(
+            userId,
+            cancellationToken);
+
+        return Ok(linkPasskeyUserInfo);
     }
 
     /// <summary>
@@ -295,62 +212,30 @@ public partial class AuthController
         var user = await userProfileService.GetByIdAsync(userId, cancellationToken);
         if (user is null)
         {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "User not found",
-                Detail = "The specified user does not exist."
-            });
+            throw new EntityNotFoundException("User", userId.ToString());
         }
 
         // Check if provider is linked
         var link = user.ExternalLogins.FirstOrDefault(l => string.Equals(l.Provider.ToString(), provider, StringComparison.OrdinalIgnoreCase));
         if (link is null)
         {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "Provider not linked",
-                Detail = $"The provider '{provider}' is not linked to this account."
-            });
+            throw new EntityNotFoundException("ExternalLogin", provider);
         }
 
         // Check if this is the last auth method
         if (!await authMethodGuardService.CanUnlinkProviderAsync(userId, provider, cancellationToken))
         {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Cannot unlink last authentication method",
-                Detail = "You must have at least one authentication method linked to your account."
-            });
+            throw new Domain.Shared.Exceptions.ValidationException("You must have at least one authentication method linked to your account.");
         }
 
         // Parse provider string to enum
         if (!Enum.TryParse<ExternalLoginProvider>(provider, ignoreCase: true, out var providerEnum))
         {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "Unknown provider",
-                Detail = $"The provider '{provider}' is not a recognized OAuth provider."
-            });
+            throw new EntityNotFoundException("ExternalLoginProvider", provider);
         }
 
-        try
-        {
-            await userProfileService.UnlinkExternalLoginAsync(userId, providerEnum, cancellationToken);
-            return NoContent();
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Unlink failed",
-                Detail = ex.Message
-            });
-        }
+        await userProfileService.UnlinkExternalLoginAsync(userId, providerEnum, cancellationToken);
+        return NoContent();
     }
 
     /// <summary>
@@ -364,12 +249,14 @@ public partial class AuthController
     /// <response code="400">Invalid request or anonymous user.</response>
     /// <response code="401">Not authenticated.</response>
     /// <response code="409">Username already exists.</response>
+    /// <response code="404">User not found.</response>
     [HttpPut("users/{userId:guid}/identity/username")]
     [RequiredPermission(PermissionIds.Api.Auth.Identity.Username.Change.Identifier)]
     [ProducesResponseType<UserInfo>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ChangeUsername(
         [FromRoute, Required, PermissionParameter(PermissionIds.Api.Auth.UserIdParameter)] Guid userId,
         [FromBody] ChangeUsernameRequest request,
@@ -378,45 +265,22 @@ public partial class AuthController
         var user = await userProfileService.GetByIdAsync(userId, cancellationToken);
         if (user is null)
         {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "User not found",
-                Detail = "The specified user does not exist."
-            });
+            throw new EntityNotFoundException("User", userId.ToString());
         }
 
         // Anonymous users cannot change username
         if (user.IsAnonymous)
         {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Cannot change username",
-                Detail = "Anonymous users cannot change username. Link a password or OAuth first."
-            });
+            throw new Domain.Shared.Exceptions.ValidationException("Anonymous users cannot change username. Link a password or OAuth first.");
         }
 
-        try
-        {
-            await userProfileService.ChangeUsernameAsync(userId, request.Username, cancellationToken);
+        await userProfileService.ChangeUsernameAsync(userId, request.Username, cancellationToken);
 
-            // Get updated user info with inline role format
-            var changeUsernameUserInfo = await CreateUserInfoAsync(
-                userId,
-                cancellationToken);
+        var changeUsernameUserInfo = await CreateUserInfoAsync(
+            userId,
+            cancellationToken);
 
-            return Ok(changeUsernameUserInfo);
-        }
-        catch (DuplicateEntityException ex)
-        {
-            return Conflict(new ProblemDetails
-            {
-                Status = StatusCodes.Status409Conflict,
-                Title = "Username already exists",
-                Detail = ex.Message
-            });
-        }
+        return Ok(changeUsernameUserInfo);
     }
 
     /// <summary>
@@ -430,12 +294,14 @@ public partial class AuthController
     /// <response code="400">Invalid request.</response>
     /// <response code="401">Not authenticated.</response>
     /// <response code="409">Email already exists.</response>
+    /// <response code="404">User not found.</response>
     [HttpPut("users/{userId:guid}/identity/email")]
     [RequiredPermission(PermissionIds.Api.Auth.Identity.Email.Change.Identifier)]
     [ProducesResponseType<UserInfo>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ChangeEmail(
         [FromRoute, Required, PermissionParameter(PermissionIds.Api.Auth.UserIdParameter)] Guid userId,
         [FromBody] ChangeEmailRequest request,
@@ -444,34 +310,16 @@ public partial class AuthController
         var user = await userProfileService.GetByIdAsync(userId, cancellationToken);
         if (user is null)
         {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "User not found",
-                Detail = "The specified user does not exist."
-            });
+            throw new EntityNotFoundException("User", userId.ToString());
         }
 
-        try
-        {
-            await userProfileService.ChangeEmailAsync(userId, request.Email, cancellationToken);
+        await userProfileService.ChangeEmailAsync(userId, request.Email, cancellationToken);
 
-            // Get updated user info with inline role format
-            var changeEmailUserInfo = await CreateUserInfoAsync(
-                userId,
-                cancellationToken);
+        var changeEmailUserInfo = await CreateUserInfoAsync(
+            userId,
+            cancellationToken);
 
-            return Ok(changeEmailUserInfo);
-        }
-        catch (DuplicateEntityException ex)
-        {
-            return Conflict(new ProblemDetails
-            {
-                Status = StatusCodes.Status409Conflict,
-                Title = "Email already exists",
-                Detail = ex.Message
-            });
-        }
+        return Ok(changeEmailUserInfo);
     }
 
     /// <summary>
@@ -484,11 +332,13 @@ public partial class AuthController
     /// <response code="204">Email unlinked successfully.</response>
     /// <response code="400">No email is linked, or email is required for login.</response>
     /// <response code="401">Not authenticated.</response>
+    /// <response code="404">User not found.</response>
     [HttpDelete("users/{userId:guid}/identity/email")]
     [RequiredPermission(PermissionIds.Api.Auth.Identity.Email.Unlink.Identifier)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UnlinkEmail(
         [FromRoute, Required, PermissionParameter(PermissionIds.Api.Auth.UserIdParameter)] Guid userId,
         CancellationToken cancellationToken)
@@ -496,23 +346,13 @@ public partial class AuthController
         var user = await userProfileService.GetByIdAsync(userId, cancellationToken);
         if (user is null)
         {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "User not found",
-                Detail = "The specified user does not exist."
-            });
+            throw new EntityNotFoundException("User", userId.ToString());
         }
 
         // Check if user has an email to unlink
         if (string.IsNullOrWhiteSpace(user.Email))
         {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "No email linked",
-                Detail = "No email is linked to this account."
-            });
+            throw new Domain.Shared.Exceptions.ValidationException("No email is linked to this account.");
         }
 
         // Check if email is required for login (no username set)
@@ -520,27 +360,10 @@ public partial class AuthController
         
         if (!hasUsername)
         {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Cannot unlink email",
-                Detail = "Email is required for login because you have no username. Set a username first before unlinking email."
-            });
+            throw new Domain.Shared.Exceptions.ValidationException("Email is required for login because you have no username. Set a username first before unlinking email.");
         }
 
-        try
-        {
-            await userProfileService.UnlinkEmailAsync(userId, cancellationToken);
-            return NoContent();
-        }
-        catch (EntityNotFoundException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Unlink failed",
-                Detail = ex.Message
-            });
-        }
+        await userProfileService.UnlinkEmailAsync(userId, cancellationToken);
+        return NoContent();
     }
 }

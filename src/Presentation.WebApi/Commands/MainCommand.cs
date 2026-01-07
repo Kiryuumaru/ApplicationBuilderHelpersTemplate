@@ -1,17 +1,18 @@
 using AbsolutePathHelpers;
+using Application.Abstractions.Application;
 using Application.AppEnvironment.Services;
 using Application.Authorization.Extensions;
 using Application.Common.Extensions;
 using Application.Common.Interfaces;
 using Application.Common.Services;
 using Application.Configuration.Extensions;
-using Application.Logger.Extensions;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Attributes;
 using Asp.Versioning;
 using Domain.Authorization.Constants;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
@@ -19,12 +20,14 @@ using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Presentation.WebApi.Models.SchemaFilters;
+using Presentation.WebApi.Filters;
 using Scalar.AspNetCore;
 using System.Reflection;
 using System.Text;
@@ -58,6 +61,25 @@ internal class MainCommand : Build.BaseCommand<WebApplicationBuilder>
     {
         base.AddServices(applicationBuilder, services);
 
+        services.AddScoped<ApiExceptionFilter>();
+
+        services.AddHttpClient(Options.DefaultName, (sp, client) =>
+        {
+            var applicationConstants = sp.GetRequiredService<IApplicationConstants>();
+            client.DefaultRequestHeaders.Add("Client-Agent", applicationConstants.AppName);
+        });
+
+        services.AddHealthChecks()
+            .AddCheck("self", () => HealthCheckResult.Healthy(), ["live"]);
+
+        services.AddServiceDiscovery();
+
+        services.ConfigureHttpClientDefaults(http =>
+        {
+            // Turn on service discovery by default
+            http.AddServiceDiscovery();
+        });
+
         services.AddProblemDetails();
         services.AddOpenApi(options =>
         {
@@ -84,6 +106,7 @@ internal class MainCommand : Build.BaseCommand<WebApplicationBuilder>
         services.AddControllers(options =>
         {
             options.ModelBinderProviders.Insert(0, new ModelBinders.FromJwtModelBinderProvider());
+            options.Filters.AddService<ApiExceptionFilter>();
         });
 
         // Add Authentication
@@ -143,6 +166,15 @@ internal class MainCommand : Build.BaseCommand<WebApplicationBuilder>
         var app = (WebApplication)host;
 
         app.UseExceptionHandler();
+
+        if (app.Environment.IsDevelopment())
+        {
+            app.MapHealthChecks("/health");
+            app.MapHealthChecks("/alive", new HealthCheckOptions
+            {
+                Predicate = r => r.Tags.Contains("live")
+            });
+        }
 
         app.MapControllers();
 

@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
 using Presentation.WebApi.Models.Requests;
 using Presentation.WebApi.Models.Responses;
-using System.Security.Authentication;
 using JwtClaimTypes = Domain.Identity.Constants.JwtClaimTypes;
 
 namespace Presentation.WebApi.Controllers.V1;
@@ -32,64 +31,38 @@ public partial class AuthController
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
     {
-        try
+        var result = await authenticationService.ValidateCredentialsAsync(request.Username, request.Password, cancellationToken);
+
+        if (!result.Succeeded && !result.RequiresTwoFactor)
         {
-            var result = await authenticationService.ValidateCredentialsAsync(request.Username, request.Password, cancellationToken);
+            throw new Domain.Identity.Exceptions.AuthenticationException("Invalid credentials.");
+        }
 
-            if (!result.Succeeded && !result.RequiresTwoFactor)
+        if (result.RequiresTwoFactor)
+        {
+            return Accepted(new TwoFactorRequiredResponse
             {
-                return Unauthorized(new ProblemDetails
-                {
-                    Status = StatusCodes.Status401Unauthorized,
-                    Title = "Invalid credentials",
-                    Detail = "The username or password is incorrect."
-                });
-            }
-
-            if (result.RequiresTwoFactor)
-            {
-                return Accepted(new TwoFactorRequiredResponse
-                {
-                    UserId = result.UserId!.Value
-                });
-            }
-
-            // Create session and get effective permissions
-            var (accessToken, refreshToken, sessionId, expiresIn) = await CreateSessionAndTokensAsync(
-                result.UserId!.Value,
-                result.Username,
-                cancellationToken);
-
-            var userInfo = await CreateUserInfoAsync(
-                result.UserId!.Value,
-                cancellationToken);
-
-            return Ok(new AuthResponse
-            {
-                AccessToken = accessToken,
-                RefreshToken = refreshToken,
-                ExpiresIn = expiresIn,
-                User = userInfo
+                UserId = result.UserId!.Value
             });
         }
-        catch (Domain.Identity.Exceptions.AuthenticationException)
+
+        // Create session and get effective permissions
+        var (accessToken, refreshToken, sessionId, expiresIn) = await CreateSessionAndTokensAsync(
+            result.UserId!.Value,
+            result.Username,
+            cancellationToken);
+
+        var userInfo = await CreateUserInfoAsync(
+            result.UserId!.Value,
+            cancellationToken);
+
+        return Ok(new AuthResponse
         {
-            return Unauthorized(new ProblemDetails
-            {
-                Status = StatusCodes.Status401Unauthorized,
-                Title = "Invalid credentials",
-                Detail = "The username or password is incorrect."
-            });
-        }
-        catch (Domain.Identity.Exceptions.AccountLockedException ex)
-        {
-            return StatusCode(StatusCodes.Status403Forbidden, new ProblemDetails
-            {
-                Status = StatusCodes.Status403Forbidden,
-                Title = "Account locked",
-                Detail = ex.Message
-            });
-        }
+            AccessToken = accessToken,
+            RefreshToken = refreshToken,
+            ExpiresIn = expiresIn,
+            User = userInfo
+        });
     }
 
     /// <summary>
@@ -110,102 +83,71 @@ public partial class AuthController
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Register([FromBody] RegisterRequest? request, CancellationToken cancellationToken)
     {
-        try
+        // Default to empty request for anonymous registration
+        request ??= new RegisterRequest();
+
+        // Validate username is required when providing password
+        if (!string.IsNullOrWhiteSpace(request.Password) && string.IsNullOrWhiteSpace(request.Username))
         {
-            // Default to empty request for anonymous registration
-            request ??= new RegisterRequest();
+            throw new ValidationException("Username", "Username is required when providing a password.");
+        }
 
-            // Validate username is required when providing password
-            if (!string.IsNullOrWhiteSpace(request.Password) && string.IsNullOrWhiteSpace(request.Username))
-            {
-                return BadRequest(new ProblemDetails
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    Title = "Username required",
-                    Detail = "Username is required when providing a password."
-                });
-            }
+        // Validate username is provided if email is provided
+        if (!string.IsNullOrWhiteSpace(request.Email) && string.IsNullOrWhiteSpace(request.Username))
+        {
+            throw new ValidationException("Username", "Username is required when providing an email.");
+        }
 
-            // Validate username is provided if email is provided
-            if (!string.IsNullOrWhiteSpace(request.Email) && string.IsNullOrWhiteSpace(request.Username))
-            {
-                return BadRequest(new ProblemDetails
-                {
-                    Status = StatusCodes.Status400BadRequest,
-                    Title = "Username required",
-                    Detail = "Username is required when providing an email."
-                });
-            }
+        // Check if this is anonymous registration
+        if (request.IsAnonymous)
+        {
+            var anonymousUser = await userRegistrationService.RegisterUserAsync(null, cancellationToken);
 
-            // Check if this is anonymous registration
-            if (request.IsAnonymous)
-            {
-                var anonymousUser = await userRegistrationService.RegisterUserAsync(null, cancellationToken);
-
-                var (accessToken, refreshToken, _, expiresInAnon) = await CreateSessionAndTokensAsync(
-                    anonymousUser.Id,
-                    anonymousUser.Username,
-                    cancellationToken);
-
-                var anonUserInfo = await CreateUserInfoAsync(
-                    anonymousUser.Id,
-                    cancellationToken);
-
-                return CreatedAtAction(nameof(GetMe), new AuthResponse
-                {
-                    AccessToken = accessToken,
-                    RefreshToken = refreshToken,
-                    ExpiresIn = expiresInAnon,
-                    User = anonUserInfo
-                });
-            }
-
-            // Full registration with username/password - service handles validation
-            var registrationRequest = new UserRegistrationRequest(
-                request.Username!,
-                request.Password!,
-                request.ConfirmPassword,
-                request.Email,
-                AutoActivate: true);
-
-            var user = await userRegistrationService.RegisterUserAsync(registrationRequest, cancellationToken);
-
-            // Create session for the newly registered user (no double session)
-            var (newAccessToken, newRefreshToken, sessionId, newExpiresIn) = await CreateSessionAndTokensAsync(
-                user.Id,
-                user.Username,
+            var (accessToken, refreshToken, _, expiresInAnon) = await CreateSessionAndTokensAsync(
+                anonymousUser.Id,
+                anonymousUser.Username,
                 cancellationToken);
 
-            var newUserInfo = await CreateUserInfoAsync(
-                user.Id,
+            var anonUserInfo = await CreateUserInfoAsync(
+                anonymousUser.Id,
                 cancellationToken);
 
             return CreatedAtAction(nameof(GetMe), new AuthResponse
             {
-                AccessToken = newAccessToken,
-                RefreshToken = newRefreshToken,
-                ExpiresIn = newExpiresIn,
-                User = newUserInfo
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
+                ExpiresIn = expiresInAnon,
+                User = anonUserInfo
             });
         }
-        catch (DuplicateEntityException ex)
+
+        // Full registration with username/password - service handles validation
+        var registrationRequest = new UserRegistrationRequest(
+            request.Username!,
+            request.Password!,
+            request.ConfirmPassword,
+            request.Email,
+            AutoActivate: true);
+
+        var user = await userRegistrationService.RegisterUserAsync(registrationRequest, cancellationToken);
+
+        // Create session for the newly registered user (no double session)
+        var (newAccessToken, newRefreshToken, sessionId, newExpiresIn) = await CreateSessionAndTokensAsync(
+            user.Id,
+            user.Username,
+            cancellationToken);
+
+        var newUserInfo = await CreateUserInfoAsync(
+            user.Id,
+            cancellationToken);
+
+        return CreatedAtAction(nameof(GetMe), new AuthResponse
         {
-            return Conflict(new ProblemDetails
-            {
-                Status = StatusCodes.Status409Conflict,
-                Title = "Registration failed",
-                Detail = ex.Message
-            });
-        }
-        catch (PasswordValidationException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Invalid password",
-                Detail = ex.Message
-            });
-        }
+            AccessToken = newAccessToken,
+            RefreshToken = newRefreshToken,
+            ExpiresIn = newExpiresIn,
+            User = newUserInfo
+        });
     }
 
     /// <summary>

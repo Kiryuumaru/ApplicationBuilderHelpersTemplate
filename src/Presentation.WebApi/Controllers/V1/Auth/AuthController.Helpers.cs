@@ -2,7 +2,6 @@ using Domain.Authorization.Constants;
 using Domain.Authorization.ValueObjects;
 using Application.Identity.Models;
 using Application.Common.Services;
-using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Models.Responses;
 using JwtClaimTypes = Domain.Identity.Constants.JwtClaimTypes;
 
@@ -25,16 +24,6 @@ public partial class AuthController
     private string? GetCurrentUsername()
     {
         return User.FindFirst(JwtClaimTypes.Name)?.Value;
-    }
-
-    private static ProblemDetails CreateUnauthorizedProblem()
-    {
-        return new ProblemDetails
-        {
-            Status = StatusCodes.Status401Unauthorized,
-            Title = "Authentication required",
-            Detail = "You must be logged in to perform this action."
-        };
     }
 
     private Guid? GetCurrentSessionId()

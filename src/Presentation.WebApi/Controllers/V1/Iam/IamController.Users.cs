@@ -52,12 +52,7 @@ public partial class IamController
 
         if (user is null)
         {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "User not found",
-                Detail = $"No user found with ID '{id}'."
-            });
+            throw new EntityNotFoundException("User", id.ToString());
         }
 
         return Ok(MapToResponse(user));
@@ -80,27 +75,20 @@ public partial class IamController
         [FromBody] UpdateUserRequest request,
         CancellationToken cancellationToken)
     {
-        try
+        await userProfileService.UpdateUserAsync(id, new UserUpdateRequest
         {
-            await userProfileService.UpdateUserAsync(id, new UserUpdateRequest
-            {
-                Email = request.Email,
-                PhoneNumber = request.PhoneNumber,
-                LockoutEnabled = request.LockoutEnabled
-            }, cancellationToken);
+            Email = request.Email,
+            PhoneNumber = request.PhoneNumber,
+            LockoutEnabled = request.LockoutEnabled
+        }, cancellationToken);
 
-            var user = await userProfileService.GetByIdAsync(id, cancellationToken);
-            return Ok(MapToResponse(user!));
-        }
-        catch (EntityNotFoundException)
+        var user = await userProfileService.GetByIdAsync(id, cancellationToken);
+        if (user is null)
         {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "User not found",
-                Detail = $"No user found with ID '{id}'."
-            });
+            throw new EntityNotFoundException("User", id.ToString());
         }
+
+        return Ok(MapToResponse(user));
     }
 
     /// <summary>
@@ -118,20 +106,8 @@ public partial class IamController
         Guid id,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            await userRegistrationService.DeleteUserAsync(id, cancellationToken);
-            return NoContent();
-        }
-        catch (EntityNotFoundException)
-        {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "User not found",
-                Detail = $"No user found with ID '{id}'."
-            });
-        }
+        await userRegistrationService.DeleteUserAsync(id, cancellationToken);
+        return NoContent();
     }
 
     /// <summary>
@@ -148,25 +124,13 @@ public partial class IamController
         [PermissionParameter(PermissionIds.Api.Iam.Users.Permissions.UserIdParameter)] Guid id,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var permissions = await userAuthorizationService.GetEffectivePermissionsAsync(id, cancellationToken);
+        var permissions = await userAuthorizationService.GetEffectivePermissionsAsync(id, cancellationToken);
 
-            return Ok(new PermissionsResponse
-            {
-                UserId = id,
-                Permissions = permissions
-            });
-        }
-        catch (EntityNotFoundException)
+        return Ok(new PermissionsResponse
         {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "User not found",
-                Detail = $"No user found with ID '{id}'."
-            });
-        }
+            UserId = id,
+            Permissions = permissions
+        });
     }
 
     /// <summary>
@@ -186,29 +150,8 @@ public partial class IamController
         [FromBody] AdminResetPasswordRequest request,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            await passwordService.ResetPasswordAsync(id, request.NewPassword, cancellationToken);
-            return NoContent();
-        }
-        catch (EntityNotFoundException)
-        {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "User not found",
-                Detail = $"No user found with ID '{id}'."
-            });
-        }
-        catch (PasswordValidationException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Password reset failed",
-                Detail = ex.Message
-            });
-        }
+        await passwordService.ResetPasswordAsync(id, request.NewPassword, cancellationToken);
+        return NoContent();
     }
 
     private static UserResponse MapToResponse(UserDto user)

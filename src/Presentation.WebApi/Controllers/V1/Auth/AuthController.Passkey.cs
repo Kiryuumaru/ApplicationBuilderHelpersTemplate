@@ -67,51 +67,9 @@ public partial class AuthController
         [FromBody] PasskeyRegistrationRequest request,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var result = await passkeyService.VerifyRegistrationAsync(request.ChallengeId, request.AttestationResponseJson, cancellationToken);
+        var result = await passkeyService.VerifyRegistrationAsync(request.ChallengeId, request.AttestationResponseJson, cancellationToken);
 
-            return StatusCode(StatusCodes.Status201Created, new PasskeyRegistrationResponse(result.CredentialId, result.CredentialName));
-        }
-        catch (Domain.Shared.Exceptions.ValidationException ex)
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Invalid passkey registration",
-                Detail = ex.Message
-            });
-        }
-        catch (PasskeyException ex)
-        {
-            // PasskeyException for challenge validation errors
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Passkey registration error",
-                Detail = ex.Message
-            });
-        }
-        catch (JsonException ex)
-        {
-            // Infrastructure.Passkeys throws JsonException for invalid attestation JSON
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Invalid attestation response",
-                Detail = ex.Message
-            });
-        }
-        catch (Fido2VerificationException ex)
-        {
-            // Fido2NetLib throws Fido2VerificationException for invalid attestation data
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Passkey verification failed",
-                Detail = ex.Message
-            });
-        }
+        return StatusCode(StatusCodes.Status201Created, new PasskeyRegistrationResponse(result.CredentialId, result.CredentialName));
     }
 
     /// <summary>
@@ -156,73 +114,22 @@ public partial class AuthController
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> PasskeyLogin([FromBody] PasskeyLoginRequest request, CancellationToken cancellationToken)
     {
-        try
-        {
-            var result = await passkeyService.VerifyLoginAsync(request.ChallengeId, request.AssertionResponseJson, cancellationToken);
+        var result = await passkeyService.VerifyLoginAsync(request.ChallengeId, request.AssertionResponseJson, cancellationToken);
 
-            var userSession = result.Session;
+        var userSession = result.Session;
 
-            // Use tokens from the service - no need to create new ones
-            var passkeyUserInfo = await CreateUserInfoAsync(
-                userSession.UserId,
-                cancellationToken);
+        // Use tokens from the service - no need to create new ones
+        var passkeyUserInfo = await CreateUserInfoAsync(
+            userSession.UserId,
+            cancellationToken);
 
-            return Ok(new AuthResponse
-            {
-                AccessToken = userSession.AccessToken,
-                RefreshToken = userSession.RefreshToken,
-                ExpiresIn = (int)(userSession.ExpiresAt - userSession.IssuedAt).TotalSeconds,
-                User = passkeyUserInfo
-            });
-        }
-        catch (Domain.Shared.Exceptions.ValidationException ex)
+        return Ok(new AuthResponse
         {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Invalid passkey authentication",
-                Detail = ex.Message
-            });
-        }
-        catch (System.Security.Authentication.AuthenticationException)
-        {
-            return Unauthorized(new ProblemDetails
-            {
-                Status = StatusCodes.Status401Unauthorized,
-                Title = "Authentication failed",
-                Detail = "Passkey authentication failed."
-            });
-        }
-        catch (PasskeyException ex)
-        {
-            // PasskeyException for challenge validation errors
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Passkey authentication error",
-                Detail = ex.Message
-            });
-        }
-        catch (JsonException ex)
-        {
-            // Infrastructure.Passkeys throws JsonException for invalid assertion JSON
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Invalid assertion response",
-                Detail = ex.Message
-            });
-        }
-        catch (Fido2VerificationException ex)
-        {
-            // Fido2NetLib throws Fido2VerificationException for invalid assertion data
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Passkey verification failed",
-                Detail = ex.Message
-            });
-        }
+            AccessToken = userSession.AccessToken,
+            RefreshToken = userSession.RefreshToken,
+            ExpiresIn = (int)(userSession.ExpiresAt - userSession.IssuedAt).TotalSeconds,
+            User = passkeyUserInfo
+        });
     }
 
     /// <summary>
@@ -272,20 +179,8 @@ public partial class AuthController
         [FromBody] PasskeyRenameRequest request,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            await passkeyService.RenamePasskeyAsync(userId, credentialId, request.Name, cancellationToken);
-            return NoContent();
-        }
-        catch (EntityNotFoundException)
-        {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "Passkey not found",
-                Detail = "The specified passkey was not found or does not belong to the specified user."
-            });
-        }
+        await passkeyService.RenamePasskeyAsync(userId, credentialId, request.Name, cancellationToken);
+        return NoContent();
     }
 
     /// <summary>
@@ -313,38 +208,16 @@ public partial class AuthController
         var user = await userProfileService.GetByIdAsync(userId, cancellationToken);
         if (user is null)
         {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "User not found",
-                Detail = "The specified user does not exist."
-            });
+            throw new EntityNotFoundException("User", userId.ToString());
         }
 
         // Check if this is the last auth method
         if (!await authMethodGuardService.CanRemovePasskeyAsync(userId, credentialId, cancellationToken))
         {
-            return BadRequest(new ProblemDetails
-            {
-                Status = StatusCodes.Status400BadRequest,
-                Title = "Cannot unlink last authentication method",
-                Detail = "You must have at least one authentication method linked to your account."
-            });
+            throw new Domain.Shared.Exceptions.ValidationException("You must have at least one authentication method linked to your account.");
         }
 
-        try
-        {
-            await passkeyService.RevokePasskeyAsync(userId, credentialId, cancellationToken);
-            return NoContent();
-        }
-        catch (EntityNotFoundException)
-        {
-            return NotFound(new ProblemDetails
-            {
-                Status = StatusCodes.Status404NotFound,
-                Title = "Passkey not found",
-                Detail = "The specified passkey was not found or does not belong to the specified user."
-            });
-        }
+        await passkeyService.RevokePasskeyAsync(userId, credentialId, cancellationToken);
+        return NoContent();
     }
 }
