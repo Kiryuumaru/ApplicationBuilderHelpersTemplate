@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
 using Presentation.WebApi.Controllers.V1.Iam.UsersController.Requests;
 using Presentation.WebApi.Controllers.V1.Iam.UsersController.Responses;
+using Presentation.WebApi.Models.Shared;
 
 namespace Presentation.WebApi.Controllers.V1.Iam.UsersController;
 
@@ -34,19 +35,15 @@ public sealed class IamUsersController(
     /// <returns>List of all users.</returns>
     [HttpGet("users")]
     [RequiredPermission(PermissionIds.Api.Iam.Users.List.Identifier)]
-    [ProducesResponseType<UserListResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<PagedResponse<UserResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> ListUsers(CancellationToken cancellationToken)
     {
         var users = await userProfileService.ListAsync(cancellationToken);
 
-        var response = new UserListResponse
-        {
-            Users = users.Select(MapToResponse).ToList(),
-            Total = users.Count
-        };
+        var items = users.Select(MapToResponse).ToList();
 
-        return Ok(response);
+        return Ok(PagedResponse<UserResponse>.From(items, items.Count));
     }
 
     /// <summary>

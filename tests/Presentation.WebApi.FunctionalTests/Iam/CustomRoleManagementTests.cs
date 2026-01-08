@@ -409,11 +409,11 @@ public class CustomRoleManagementTests
         var body = await response.Content.ReadAsStringAsync();
         var result = JsonSerializer.Deserialize<RoleListResponse>(body, JsonOptions);
         Assert.NotNull(result);
-        Assert.True(result!.Roles.Count >= 2, "Should have at least ADMIN and USER system roles");
+        Assert.True(result!.Items.Count >= 2, "Should have at least ADMIN and USER system roles");
 
         // Verify system roles are present
-        Assert.Contains(result.Roles, r => r.Code == "ADMIN" && r.IsSystemRole);
-        Assert.Contains(result.Roles, r => r.Code == "USER" && r.IsSystemRole);
+        Assert.Contains(result.Items, r => r.Code == "ADMIN" && r.IsSystemRole);
+        Assert.Contains(result.Items, r => r.Code == "USER" && r.IsSystemRole);
 
         _output.WriteLine("[PASS] ListRoles returns all roles including system roles");
     }
@@ -1117,7 +1117,7 @@ public class CustomRoleManagementTests
 
     private sealed class RoleListResponse
     {
-        public IReadOnlyCollection<RoleResponse> Roles { get; set; } = [];
+        public IReadOnlyCollection<RoleResponse> Items { get; set; } = [];
     }
 
     #endregion

@@ -61,6 +61,7 @@ internal class MainCommand : Build.BaseCommand<WebApplicationBuilder>
         base.AddServices(applicationBuilder, services);
 
         services.AddScoped<ApiExceptionFilter>();
+        services.AddScoped<Controllers.V1.Auth.Shared.AuthResponseFactory>();
 
         services.AddHttpClient(Options.DefaultName, (sp, client) =>
         {

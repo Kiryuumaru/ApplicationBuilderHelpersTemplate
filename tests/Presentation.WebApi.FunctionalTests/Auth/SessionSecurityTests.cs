@@ -99,7 +99,7 @@ public class SessionSecurityTests
         var listResponse = await _sharedHost.Host.HttpClient.SendAsync(listRequest);
         var listContent = await listResponse.Content.ReadAsStringAsync();
         var user1Sessions = JsonSerializer.Deserialize<SessionListResponse>(listContent, JsonOptions);
-        var user1SessionId = user1Sessions!.Sessions.First().Id;
+        var user1SessionId = user1Sessions!.Items.First().Id;
 
         // User2 tries to revoke user1's session using user1's userId in the route
         _output.WriteLine("[STEP] User2 attempting to revoke User1's session...");
@@ -151,8 +151,8 @@ public class SessionSecurityTests
         var sessions2 = JsonSerializer.Deserialize<SessionListResponse>(content2, JsonOptions);
 
         // Verify they are different
-        var sessionIds1 = sessions1!.Sessions.Select(s => s.Id).ToHashSet();
-        var sessionIds2 = sessions2!.Sessions.Select(s => s.Id).ToHashSet();
+        var sessionIds1 = sessions1!.Items.Select(s => s.Id).ToHashSet();
+        var sessionIds2 = sessions2!.Items.Select(s => s.Id).ToHashSet();
 
         Assert.Empty(sessionIds1.Intersect(sessionIds2));
         _output.WriteLine("[PASS] Users see only their own sessions");
@@ -249,7 +249,7 @@ public class SessionSecurityTests
 
         // Revoke the oldest session (session1) using session2's access token
         // Sessions are sorted by LastUsedAt descending, so Last() gives us the oldest
-        var session1Info = sessions!.Sessions.Last(s => !s.IsCurrent);
+        var session1Info = sessions!.Items.Last(s => !s.IsCurrent);
         _output.WriteLine($"[STEP] Revoking session {session1Info.Id}...");
 
         using var revokeRequest = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{userId}/sessions/{session1Info.Id}");
@@ -292,7 +292,7 @@ public class SessionSecurityTests
         var listContent = await listResponse.Content.ReadAsStringAsync();
         var sessions = JsonSerializer.Deserialize<SessionListResponse>(listContent, JsonOptions);
 
-        var session1Info = sessions!.Sessions.First(s => !s.IsCurrent);
+        var session1Info = sessions!.Items.First(s => !s.IsCurrent);
         _output.WriteLine($"[STEP] Revoking session {session1Info.Id}...");
 
         // Revoke session1 using session2's access token
@@ -333,7 +333,7 @@ public class SessionSecurityTests
         var listContent = await listResponse.Content.ReadAsStringAsync();
         var sessions = JsonSerializer.Deserialize<SessionListResponse>(listContent, JsonOptions);
 
-        var session1Info = sessions!.Sessions.First(s => !s.IsCurrent);
+        var session1Info = sessions!.Items.First(s => !s.IsCurrent);
         _output.WriteLine($"[STEP] Revoking session {session1Info.Id}...");
 
         // Revoke session1 using session2's access token
@@ -386,7 +386,7 @@ public class SessionSecurityTests
         var content = await listResponse.Content.ReadAsStringAsync();
         var sessions = JsonSerializer.Deserialize<SessionListResponse>(content, JsonOptions);
 
-        Assert.Equal(3, sessions!.Sessions.Count);
+        Assert.Equal(3, sessions!.Items.Count);
         _output.WriteLine("[PASS] Each login creates a new distinct session");
     }
 
@@ -484,7 +484,7 @@ public class SessionSecurityTests
         var listContent = await listResponse.Content.ReadAsStringAsync();
         var sessions = JsonSerializer.Deserialize<SessionListResponse>(listContent, JsonOptions);
 
-        _output.WriteLine($"[INFO] Total sessions before revoke: {sessions!.Sessions.Count}");
+        _output.WriteLine($"[INFO] Total sessions before revoke: {sessions!.Items.Count}");
 
         // Revoke all sessions (including current)
         using var revokeRequest = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{userId}/sessions");
@@ -526,7 +526,7 @@ public class SessionSecurityTests
         Assert.NotNull(sessions);
 
         // Exactly one should be current
-        var currentCount = sessions!.Sessions.Count(s => s.IsCurrent);
+        var currentCount = sessions!.Items.Count(s => s.IsCurrent);
         Assert.Equal(1, currentCount);
 
         _output.WriteLine("[PASS] IsCurrent flag is correctly set");
@@ -548,9 +548,9 @@ public class SessionSecurityTests
         var sessions = JsonSerializer.Deserialize<SessionListResponse>(content, JsonOptions);
 
         Assert.NotNull(sessions);
-        Assert.NotEmpty(sessions!.Sessions);
+        Assert.NotEmpty(sessions!.Items);
 
-        foreach (var session in sessions.Sessions)
+        foreach (var session in sessions.Items)
         {
             Assert.NotEqual(default, session.CreatedAt);
             Assert.True(session.CreatedAt <= DateTimeOffset.UtcNow.AddMinutes(1));
@@ -700,7 +700,7 @@ public class SessionSecurityTests
         bool IsCurrent);
 
     private record SessionListResponse(
-        IReadOnlyList<SessionInfo> Sessions);
+        IReadOnlyList<SessionInfo> Items);
 
     private record RevokeAllResponse(
         int RevokedCount);

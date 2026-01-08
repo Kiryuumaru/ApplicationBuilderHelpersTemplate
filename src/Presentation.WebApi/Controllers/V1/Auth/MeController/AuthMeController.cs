@@ -3,6 +3,7 @@ using Asp.Versioning;
 using Domain.Authorization.Constants;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
+using Presentation.WebApi.Controllers.V1.Auth.Shared;
 using Presentation.WebApi.Controllers.V1.Auth.Shared.Responses;
 using System.Security.Authentication;
 using JwtClaimTypes = Domain.Identity.Constants.JwtClaimTypes;
@@ -19,7 +20,7 @@ namespace Presentation.WebApi.Controllers.V1.Auth.MeController;
 [Tags("Authentication")]
 public sealed class AuthMeController(
     IUserProfileService userProfileService,
-    IUserAuthorizationService userAuthorizationService) : ControllerBase
+    AuthResponseFactory authResponseFactory) : ControllerBase
 {
     /// <summary>
     /// Gets the current user's information.
@@ -43,22 +44,7 @@ public sealed class AuthMeController(
             throw new AuthenticationException("The user associated with this token no longer exists.");
         }
 
-        var meUserInfo = await CreateUserInfoAsync(userId, cancellationToken);
+        var meUserInfo = await authResponseFactory.CreateUserInfoAsync(userId, cancellationToken);
         return Ok(meUserInfo);
-    }
-
-    private async Task<UserInfo> CreateUserInfoAsync(Guid userId, CancellationToken cancellationToken)
-    {
-        var authData = await userAuthorizationService.GetAuthorizationDataAsync(userId, cancellationToken);
-
-        return new UserInfo
-        {
-            Id = authData.UserId,
-            Username = authData.Username,
-            Email = authData.Email,
-            Roles = authData.FormattedRoles,
-            Permissions = authData.EffectivePermissions,
-            IsAnonymous = authData.IsAnonymous
-        };
     }
 }

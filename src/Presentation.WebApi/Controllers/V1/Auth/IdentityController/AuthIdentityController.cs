@@ -8,6 +8,7 @@ using Presentation.WebApi.Attributes;
 using Presentation.WebApi.Controllers.V1.Auth.IdentityController.Requests;
 using Presentation.WebApi.Controllers.V1.Auth.IdentityController.Responses;
 using Presentation.WebApi.Controllers.V1.Auth.PasskeysController.Requests;
+using Presentation.WebApi.Controllers.V1.Auth.Shared;
 using SharedResponses = Presentation.WebApi.Controllers.V1.Auth.Shared.Responses;
 using System.ComponentModel.DataAnnotations;
 
@@ -27,7 +28,7 @@ public sealed class AuthIdentityController(
     IUserProfileService userProfileService,
     IPasskeyService passkeyService,
     IAuthMethodGuardService authMethodGuardService,
-    IUserAuthorizationService userAuthorizationService) : ControllerBase
+    AuthResponseFactory authResponseFactory) : ControllerBase
 {
     /// <summary>
     /// Gets the user's linked identities.
@@ -114,7 +115,7 @@ public sealed class AuthIdentityController(
             request.Email,
             cancellationToken);
 
-        var linkPwdUserInfo = await CreateUserInfoAsync(
+        var linkPwdUserInfo = await authResponseFactory.CreateUserInfoAsync(
             userId,
             cancellationToken);
 
@@ -146,7 +147,7 @@ public sealed class AuthIdentityController(
     {
         await userProfileService.LinkEmailAsync(userId, request.Email, cancellationToken);
 
-        var linkEmailUserInfo = await CreateUserInfoAsync(
+        var linkEmailUserInfo = await authResponseFactory.CreateUserInfoAsync(
             userId,
             cancellationToken);
 
@@ -194,7 +195,7 @@ public sealed class AuthIdentityController(
             await userRegistrationService.UpgradeAnonymousWithPasskeyAsync(userId, cancellationToken);
         }
 
-        var linkPasskeyUserInfo = await CreateUserInfoAsync(
+        var linkPasskeyUserInfo = await authResponseFactory.CreateUserInfoAsync(
             userId,
             cancellationToken);
 
@@ -286,7 +287,7 @@ public sealed class AuthIdentityController(
 
         await userProfileService.ChangeUsernameAsync(userId, request.Username, cancellationToken);
 
-        var changeUsernameUserInfo = await CreateUserInfoAsync(
+        var changeUsernameUserInfo = await authResponseFactory.CreateUserInfoAsync(
             userId,
             cancellationToken);
 
@@ -325,7 +326,7 @@ public sealed class AuthIdentityController(
 
         await userProfileService.ChangeEmailAsync(userId, request.Email, cancellationToken);
 
-        var changeEmailUserInfo = await CreateUserInfoAsync(
+        var changeEmailUserInfo = await authResponseFactory.CreateUserInfoAsync(
             userId,
             cancellationToken);
 
@@ -373,20 +374,5 @@ public sealed class AuthIdentityController(
 
         await userProfileService.UnlinkEmailAsync(userId, cancellationToken);
         return NoContent();
-    }
-
-    private async Task<SharedResponses.UserInfo> CreateUserInfoAsync(Guid userId, CancellationToken cancellationToken)
-    {
-        var authData = await userAuthorizationService.GetAuthorizationDataAsync(userId, cancellationToken);
-
-        return new SharedResponses.UserInfo
-        {
-            Id = authData.UserId,
-            Username = authData.Username,
-            Email = authData.Email,
-            Roles = authData.FormattedRoles,
-            Permissions = authData.EffectivePermissions,
-            IsAnonymous = authData.IsAnonymous
-        };
     }
 }

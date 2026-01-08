@@ -4,6 +4,7 @@ using Domain.Identity.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Controllers.V1.Auth.TokenController.Requests;
+using Presentation.WebApi.Controllers.V1.Auth.Shared;
 using Presentation.WebApi.Controllers.V1.Auth.Shared.Responses;
 
 namespace Presentation.WebApi.Controllers.V1.Auth.TokenController;
@@ -17,8 +18,8 @@ namespace Presentation.WebApi.Controllers.V1.Auth.TokenController;
 [Produces("application/json")]
 [Tags("Authentication")]
 public sealed class AuthTokenController(
-    IUserAuthorizationService userAuthorizationService,
-    IUserTokenService userTokenService) : ControllerBase
+    IUserTokenService userTokenService,
+    AuthResponseFactory authResponseFactory) : ControllerBase
 {
     /// <summary>
     /// Refreshes an expired access token using a valid refresh token.
@@ -41,7 +42,7 @@ public sealed class AuthTokenController(
             throw new RefreshTokenInvalidException(result.Error, result.ErrorDescription);
         }
 
-        var refreshUserInfo = await CreateUserInfoAsync(result.UserId!.Value, cancellationToken);
+        var refreshUserInfo = await authResponseFactory.CreateUserInfoAsync(result.UserId!.Value, cancellationToken);
 
         return Ok(new AuthResponse
         {
@@ -50,20 +51,5 @@ public sealed class AuthTokenController(
             ExpiresIn = result.Tokens.ExpiresInSeconds,
             User = refreshUserInfo
         });
-    }
-
-    private async Task<UserInfo> CreateUserInfoAsync(Guid userId, CancellationToken cancellationToken)
-    {
-        var authData = await userAuthorizationService.GetAuthorizationDataAsync(userId, cancellationToken);
-
-        return new UserInfo
-        {
-            Id = authData.UserId,
-            Username = authData.Username,
-            Email = authData.Email,
-            Roles = authData.FormattedRoles,
-            Permissions = authData.EffectivePermissions,
-            IsAnonymous = authData.IsAnonymous
-        };
     }
 }

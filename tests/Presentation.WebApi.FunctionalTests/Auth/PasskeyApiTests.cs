@@ -225,7 +225,7 @@ public class PasskeyApiTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();
-        Assert.Contains("passkeys", content.ToLowerInvariant());
+        Assert.Contains("items", content.ToLowerInvariant());
     }
 
     [Fact]

@@ -339,10 +339,10 @@ public class RefactoringRegressionTests
 
         var sessionsResult = JsonSerializer.Deserialize<SessionsResponse>(sessionsContent, JsonOptions);
         
-        _output.WriteLine($"Sessions count after register: {sessionsResult?.Sessions?.Length ?? 0}");
+        _output.WriteLine($"Sessions count after register: {sessionsResult?.Items?.Length ?? 0}");
 
         // Assert - Should be exactly 1 session
-        Assert.Single(sessionsResult!.Sessions!);
+        Assert.Single(sessionsResult!.Items!);
     }
 
     /// <summary>
@@ -391,10 +391,10 @@ public class RefactoringRegressionTests
         var sessionsContent = await sessionsResponse.Content.ReadAsStringAsync();
         var sessionsResult = JsonSerializer.Deserialize<SessionsResponse>(sessionsContent, JsonOptions);
 
-        _output.WriteLine($"Sessions count after 1 register + 3 logins: {sessionsResult?.Sessions?.Length ?? 0}");
+        _output.WriteLine($"Sessions count after 1 register + 3 logins: {sessionsResult?.Items?.Length ?? 0}");
 
         // Assert - Should be exactly 4 sessions (1 register + 3 logins)
-        Assert.Equal(4, sessionsResult!.Sessions!.Length);
+        Assert.Equal(4, sessionsResult!.Items!.Length);
     }
 
     #endregion
@@ -716,7 +716,7 @@ public class AuthUserInfo
 
 public class SessionsResponse
 {
-    public SessionInfo[]? Sessions { get; set; }
+    public SessionInfo[]? Items { get; set; }
 }
 
 public class SessionInfo

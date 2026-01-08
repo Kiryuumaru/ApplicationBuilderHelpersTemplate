@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
 using Presentation.WebApi.Controllers.V1.Auth.PasskeysController.Requests;
 using Presentation.WebApi.Controllers.V1.Auth.PasskeysController.Responses;
+using Presentation.WebApi.Controllers.V1.Auth.Shared;
+using Presentation.WebApi.Models.Shared;
 using SharedResponses = Presentation.WebApi.Controllers.V1.Auth.Shared.Responses;
 using System.ComponentModel.DataAnnotations;
 
@@ -24,7 +26,7 @@ public sealed class AuthPasskeysController(
     IPasskeyService passkeyService,
     IUserProfileService userProfileService,
     IAuthMethodGuardService authMethodGuardService,
-    IUserAuthorizationService userAuthorizationService) : ControllerBase
+    AuthResponseFactory authResponseFactory) : ControllerBase
 {
     /// <summary>
     /// Gets the options needed to create a new passkey for the user.
@@ -129,7 +131,7 @@ public sealed class AuthPasskeysController(
 
         var userSession = result.Session;
 
-        var passkeyUserInfo = await CreateUserInfoAsync(
+        var passkeyUserInfo = await authResponseFactory.CreateUserInfoAsync(
             userSession.UserId,
             cancellationToken);
 
@@ -152,7 +154,7 @@ public sealed class AuthPasskeysController(
     /// <response code="401">Not authenticated.</response>
     [HttpGet("users/{userId:guid}/identity/passkeys")]
     [RequiredPermission(PermissionIds.Api.Auth.Identity.Passkeys.List.Identifier)]
-    [ProducesResponseType<PasskeyListResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ListResponse<PasskeyInfoResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> ListPasskeys(
         [FromRoute, Required, PermissionParameter(PermissionIds.Api.Auth.UserIdParameter)] Guid userId,
@@ -160,11 +162,9 @@ public sealed class AuthPasskeysController(
     {
         var passkeys = await passkeyService.ListPasskeysAsync(userId, cancellationToken);
 
-        var response = new PasskeyListResponse(
-            passkeys.Select(p => new PasskeyInfoResponse(p.Id, p.Name, p.RegisteredAt, p.LastUsedAt)).ToList()
-        );
+        var items = passkeys.Select(p => new PasskeyInfoResponse(p.Id, p.Name, p.RegisteredAt, p.LastUsedAt)).ToList();
 
-        return Ok(response);
+        return Ok(ListResponse<PasskeyInfoResponse>.From(items));
     }
 
     /// <summary>
@@ -228,20 +228,5 @@ public sealed class AuthPasskeysController(
 
         await passkeyService.RevokePasskeyAsync(userId, credentialId, cancellationToken);
         return NoContent();
-    }
-
-    private async Task<SharedResponses.UserInfo> CreateUserInfoAsync(Guid userId, CancellationToken cancellationToken)
-    {
-        var authData = await userAuthorizationService.GetAuthorizationDataAsync(userId, cancellationToken);
-
-        return new SharedResponses.UserInfo
-        {
-            Id = authData.UserId,
-            Username = authData.Username,
-            Email = authData.Email,
-            Roles = authData.FormattedRoles,
-            Permissions = authData.EffectivePermissions,
-            IsAnonymous = authData.IsAnonymous
-        };
     }
 }

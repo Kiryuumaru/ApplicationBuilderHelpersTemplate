@@ -6,6 +6,7 @@ using Domain.Shared.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
+using Presentation.WebApi.Controllers.V1.Auth.Shared;
 using Presentation.WebApi.Controllers.V1.Auth.TwoFactorController.Requests;
 using Presentation.WebApi.Controllers.V1.Auth.TwoFactorController.Responses;
 using SharedResponses = Presentation.WebApi.Controllers.V1.Auth.Shared.Responses;
@@ -25,7 +26,7 @@ public sealed class AuthTwoFactorController(
     ITwoFactorService twoFactorService,
     IUserProfileService userProfileService,
     IAuthenticationService authenticationService,
-    IUserAuthorizationService userAuthorizationService) : ControllerBase
+    AuthResponseFactory authResponseFactory) : ControllerBase
 {
     /// <summary>
     /// Gets the 2FA setup information for the user.
@@ -140,7 +141,7 @@ public sealed class AuthTwoFactorController(
     {
         var userSession = await authenticationService.Complete2faAuthenticationAsync(request.UserId, request.Code, cancellationToken);
 
-        var userInfo = await CreateUserInfoAsync(userSession.UserId, cancellationToken);
+        var userInfo = await authResponseFactory.CreateUserInfoAsync(userSession.UserId, cancellationToken);
 
         return Ok(new SharedResponses.AuthResponse
         {
@@ -175,20 +176,5 @@ public sealed class AuthTwoFactorController(
     {
         var recoveryCodes = await twoFactorService.GenerateRecoveryCodesAsync(userId, cancellationToken);
         return Ok(new RecoveryCodesResponse(recoveryCodes));
-    }
-
-    private async Task<SharedResponses.UserInfo> CreateUserInfoAsync(Guid userId, CancellationToken cancellationToken)
-    {
-        var authData = await userAuthorizationService.GetAuthorizationDataAsync(userId, cancellationToken);
-
-        return new SharedResponses.UserInfo
-        {
-            Id = authData.UserId,
-            Username = authData.Username,
-            Email = authData.Email,
-            Roles = authData.FormattedRoles,
-            Permissions = authData.EffectivePermissions,
-            IsAnonymous = authData.IsAnonymous
-        };
     }
 }

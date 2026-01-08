@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
 using Presentation.WebApi.Controllers.V1.Iam.PermissionsController.Requests;
 using Presentation.WebApi.Controllers.V1.Iam.PermissionsController.Responses;
+using Presentation.WebApi.Models.Shared;
 using AuthorizationPermissions = Domain.Authorization.Constants.Permissions;
 
 namespace Presentation.WebApi.Controllers.V1.Iam.PermissionsController;
@@ -29,14 +30,14 @@ public sealed class IamPermissionsController(
     /// </summary>
     /// <returns>The permission tree.</returns>
     [HttpGet("permissions")]
-    [ProducesResponseType<PermissionListResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ListResponse<PermissionInfoResponse>>(StatusCodes.Status200OK)]
     public IActionResult ListPermissions()
     {
         var permissions = AuthorizationPermissions.PermissionTreeRoots
             .Select(MapToResponse)
             .ToList();
 
-        return Ok(new PermissionListResponse { Permissions = permissions });
+        return Ok(ListResponse<PermissionInfoResponse>.From(permissions));
     }
 
     /// <summary>

@@ -1,4 +1,3 @@
-using Application.Common.Services;
 using Application.Identity.Interfaces;
 using Application.Identity.Models;
 using Asp.Versioning;
@@ -8,7 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
 using Presentation.WebApi.Controllers.V1.Auth.LoginController.Requests;
-using Presentation.WebApi.Controllers.V1.Auth.MeController;
+using Presentation.WebApi.Controllers.V1.Auth.Shared;
 using Presentation.WebApi.Controllers.V1.Auth.Shared.Responses;
 using Presentation.WebApi.Controllers.V1.Auth.TwoFactorController.Responses;
 using Presentation.WebApi.Extensions;
@@ -28,8 +27,7 @@ public sealed class AuthLoginController(
     IUserRegistrationService userRegistrationService,
     IAuthenticationService authenticationService,
     ISessionService sessionService,
-    IUserAuthorizationService userAuthorizationService,
-    IUserTokenService userTokenService) : ControllerBase
+    AuthResponseFactory authResponseFactory) : ControllerBase
 {
     /// <summary>
     /// Authenticates a user and returns JWT tokens.
@@ -64,11 +62,16 @@ public sealed class AuthLoginController(
             });
         }
 
-        var (accessToken, refreshToken, _, expiresIn) = await CreateSessionAndTokensAsync(
+        var userAgent = Request.Headers.UserAgent.ToString();
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+        var (accessToken, refreshToken, _, expiresIn) = await authResponseFactory.CreateSessionAndTokensAsync(
             result.UserId!.Value,
+            userAgent,
+            ipAddress,
             cancellationToken);
 
-        var userInfo = await CreateUserInfoAsync(result.UserId!.Value, cancellationToken);
+        var userInfo = await authResponseFactory.CreateUserInfoAsync(result.UserId!.Value, cancellationToken);
 
         return Ok(new AuthResponse
         {
@@ -113,11 +116,16 @@ public sealed class AuthLoginController(
         {
             var anonymousUser = await userRegistrationService.RegisterUserAsync(null, cancellationToken);
 
-            var (accessToken, refreshToken, _, expiresInAnon) = await CreateSessionAndTokensAsync(
+            var userAgent = Request.Headers.UserAgent.ToString();
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+            var (accessToken, refreshToken, _, expiresInAnon) = await authResponseFactory.CreateSessionAndTokensAsync(
                 anonymousUser.Id,
+                userAgent,
+                ipAddress,
                 cancellationToken);
 
-            var anonUserInfo = await CreateUserInfoAsync(anonymousUser.Id, cancellationToken);
+            var anonUserInfo = await authResponseFactory.CreateUserInfoAsync(anonymousUser.Id, cancellationToken);
 
             var response = new AuthResponse
             {
@@ -127,7 +135,7 @@ public sealed class AuthLoginController(
                 User = anonUserInfo
             };
 
-            return CreatedAtMe(response);
+            return this.CreatedAtMe(response);
         }
 
         var registrationRequest = new UserRegistrationRequest(
@@ -139,11 +147,16 @@ public sealed class AuthLoginController(
 
         var user = await userRegistrationService.RegisterUserAsync(registrationRequest, cancellationToken);
 
-        var (newAccessToken, newRefreshToken, _, newExpiresIn) = await CreateSessionAndTokensAsync(
+        var regUserAgent = Request.Headers.UserAgent.ToString();
+        var regIpAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+        var (newAccessToken, newRefreshToken, _, newExpiresIn) = await authResponseFactory.CreateSessionAndTokensAsync(
             user.Id,
+            regUserAgent,
+            regIpAddress,
             cancellationToken);
 
-        var newUserInfo = await CreateUserInfoAsync(user.Id, cancellationToken);
+        var newUserInfo = await authResponseFactory.CreateUserInfoAsync(user.Id, cancellationToken);
 
         var newResponse = new AuthResponse
         {
@@ -153,7 +166,7 @@ public sealed class AuthLoginController(
             User = newUserInfo
         };
 
-        return CreatedAtMe(newResponse);
+        return this.CreatedAtMe(newResponse);
     }
 
     /// <summary>
@@ -185,45 +198,5 @@ public sealed class AuthLoginController(
             await sessionService.RevokeAsync(sessionId.Value, cancellationToken);
         }
         return NoContent();
-    }
-
-    private IActionResult CreatedAtMe(AuthResponse response)
-    {
-        _ = RouteData.Values.TryGetValue("v", out var apiVersion);
-
-        return CreatedAtAction(
-            actionName: nameof(AuthMeController.GetMe),
-            controllerName: "AuthMe",
-            routeValues: apiVersion is null ? null : new { v = apiVersion },
-            value: response);
-    }
-
-    private async Task<(string AccessToken, string RefreshToken, Guid SessionId, int ExpiresInSeconds)> CreateSessionAndTokensAsync(
-        Guid userId,
-        CancellationToken cancellationToken)
-    {
-        var userAgent = Request.Headers.UserAgent.ToString();
-        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-        var deviceName = DeviceInfoParser.ParseDeviceName(userAgent);
-
-        var deviceInfo = new SessionDeviceInfo(deviceName, userAgent, ipAddress);
-        var result = await userTokenService.CreateSessionWithTokensAsync(userId, deviceInfo, cancellationToken);
-
-        return (result.AccessToken, result.RefreshToken, result.SessionId, result.ExpiresInSeconds);
-    }
-
-    private async Task<UserInfo> CreateUserInfoAsync(Guid userId, CancellationToken cancellationToken)
-    {
-        var authData = await userAuthorizationService.GetAuthorizationDataAsync(userId, cancellationToken);
-
-        return new UserInfo
-        {
-            Id = authData.UserId,
-            Username = authData.Username,
-            Email = authData.Email,
-            Roles = authData.FormattedRoles,
-            Permissions = authData.EffectivePermissions,
-            IsAnonymous = authData.IsAnonymous
-        };
     }
 }

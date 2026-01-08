@@ -1,6 +1,4 @@
-using Application.Common.Services;
 using Application.Identity.Interfaces;
-using Application.Identity.Models;
 using Asp.Versioning;
 using Domain.Authorization.Constants;
 using Domain.Identity.Enums;
@@ -9,9 +7,9 @@ using Domain.Shared.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
-using Presentation.WebApi.Controllers.V1.Auth.MeController;
 using Presentation.WebApi.Controllers.V1.Auth.OAuthController.Requests;
 using Presentation.WebApi.Controllers.V1.Auth.OAuthController.Responses;
+using Presentation.WebApi.Controllers.V1.Auth.Shared;
 using Presentation.WebApi.Controllers.V1.Auth.Shared.Responses;
 using System.ComponentModel.DataAnnotations;
 
@@ -28,8 +26,7 @@ namespace Presentation.WebApi.Controllers.V1.Auth.OAuthController;
 public sealed class AuthOAuthController(
     IOAuthService oauthService,
     IUserProfileService userProfileService,
-    IUserAuthorizationService userAuthorizationService,
-    IUserTokenService userTokenService) : ControllerBase
+    AuthResponseFactory authResponseFactory) : ControllerBase
 {
     /// <summary>
     /// Gets available OAuth providers.
@@ -137,11 +134,16 @@ public sealed class AuthOAuthController(
 
         var userId = result.UserId ?? throw new InvalidOperationException("OAuth login succeeded but no user id was returned.");
 
-        var (accessToken, refreshToken, _, expiresInSeconds) = await CreateSessionAndTokensAsync(
+        var userAgent = Request.Headers.UserAgent.ToString();
+        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+        var (accessToken, refreshToken, _, expiresInSeconds) = await authResponseFactory.CreateSessionAndTokensAsync(
             userId,
+            userAgent,
+            ipAddress,
             cancellationToken);
 
-        var oauthUserInfo = await CreateUserInfoAsync(userId, cancellationToken);
+        var oauthUserInfo = await authResponseFactory.CreateUserInfoAsync(userId, cancellationToken);
 
         var response = new AuthResponse
         {
@@ -151,7 +153,7 @@ public sealed class AuthOAuthController(
             User = oauthUserInfo
         };
 
-        return CreatedAtMeOrOk(result.IsNewUser, response);
+        return this.CreatedAtMeOrOk(result.IsNewUser, response);
     }
 
     /// <summary>
@@ -192,50 +194,5 @@ public sealed class AuthOAuthController(
     private static bool TryParseProvider(string provider, out ExternalLoginProvider result)
     {
         return Enum.TryParse(provider, ignoreCase: true, out result);
-    }
-
-    private IActionResult CreatedAtMeOrOk(bool isNewUser, AuthResponse response)
-    {
-        return isNewUser ? CreatedAtMe(response) : Ok(response);
-    }
-
-    private IActionResult CreatedAtMe(AuthResponse response)
-    {
-        _ = RouteData.Values.TryGetValue("v", out var apiVersion);
-
-        return CreatedAtAction(
-            actionName: nameof(AuthMeController.GetMe),
-            controllerName: "AuthMe",
-            routeValues: apiVersion is null ? null : new { v = apiVersion },
-            value: response);
-    }
-
-    private async Task<(string AccessToken, string RefreshToken, Guid SessionId, int ExpiresInSeconds)> CreateSessionAndTokensAsync(
-        Guid userId,
-        CancellationToken cancellationToken)
-    {
-        var userAgent = Request.Headers.UserAgent.ToString();
-        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
-        var deviceName = DeviceInfoParser.ParseDeviceName(userAgent);
-
-        var deviceInfo = new SessionDeviceInfo(deviceName, userAgent, ipAddress);
-        var result = await userTokenService.CreateSessionWithTokensAsync(userId, deviceInfo, cancellationToken);
-
-        return (result.AccessToken, result.RefreshToken, result.SessionId, result.ExpiresInSeconds);
-    }
-
-    private async Task<UserInfo> CreateUserInfoAsync(Guid userId, CancellationToken cancellationToken)
-    {
-        var authData = await userAuthorizationService.GetAuthorizationDataAsync(userId, cancellationToken);
-
-        return new UserInfo
-        {
-            Id = authData.UserId,
-            Username = authData.Username,
-            Email = authData.Email,
-            Roles = authData.FormattedRoles,
-            Permissions = authData.EffectivePermissions,
-            IsAnonymous = authData.IsAnonymous
-        };
     }
 }

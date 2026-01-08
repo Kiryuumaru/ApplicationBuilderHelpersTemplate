@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
 using Presentation.WebApi.Controllers.V1.Auth.SessionsController.Responses;
 using Presentation.WebApi.Extensions;
+using Presentation.WebApi.Models.Shared;
 using System.ComponentModel.DataAnnotations;
 
 namespace Presentation.WebApi.Controllers.V1.Auth.SessionsController;
@@ -30,7 +31,7 @@ public sealed class AuthSessionsController(ISessionService sessionService) : Con
     /// <response code="401">Not authenticated.</response>
     [HttpGet("users/{userId:guid}/sessions")]
     [RequiredPermission(PermissionIds.Api.Auth.Sessions.List.Identifier)]
-    [ProducesResponseType<SessionListResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ListResponse<SessionInfoResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> ListSessions(
         [FromRoute, Required, PermissionParameter(PermissionIds.Api.Auth.UserIdParameter)] Guid userId,
@@ -50,7 +51,7 @@ public sealed class AuthSessionsController(ISessionService sessionService) : Con
             IsCurrent = s.Id == currentSessionId
         }).ToList();
 
-        return Ok(new SessionListResponse { Sessions = sessionInfos });
+        return Ok(ListResponse<SessionInfoResponse>.From(sessionInfos));
     }
 
     /// <summary>

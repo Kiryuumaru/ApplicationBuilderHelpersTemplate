@@ -51,8 +51,8 @@ public class SessionApiTests
 
         var result = JsonSerializer.Deserialize<SessionListResponse>(content, JsonOptions);
         Assert.NotNull(result);
-        Assert.Single(result!.Sessions);
-        Assert.True(result.Sessions[0].IsCurrent, "The only session should be marked as current");
+        Assert.Single(result!.Items);
+        Assert.True(result.Items[0].IsCurrent, "The only session should be marked as current");
 
         _output.WriteLine("[PASS] List sessions returned one current session");
     }
@@ -103,8 +103,8 @@ public class SessionApiTests
 
         var result = JsonSerializer.Deserialize<SessionListResponse>(content, JsonOptions);
         Assert.NotNull(result);
-        Assert.Equal(2, result!.Sessions.Count);
-        Assert.Single(result.Sessions, s => s.IsCurrent);
+        Assert.Equal(2, result!.Items.Count);
+        Assert.Single(result.Items, s => s.IsCurrent);
 
         _output.WriteLine("[PASS] List sessions returned multiple sessions with one current");
     }
@@ -129,7 +129,7 @@ public class SessionApiTests
         var listResponse = await _sharedHost.Host.HttpClient.SendAsync(listRequest);
         var listContent = await listResponse.Content.ReadAsStringAsync();
         var sessions = JsonSerializer.Deserialize<SessionListResponse>(listContent, JsonOptions);
-        var currentSession = sessions!.Sessions.First(s => s.IsCurrent);
+        var currentSession = sessions!.Items.First(s => s.IsCurrent);
 
         _output.WriteLine($"[STEP] DELETE /api/v1/auth/users/{userId}/sessions/{currentSession.Id} (current session)...");
         using var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{userId}/sessions/{currentSession.Id}");
@@ -164,7 +164,7 @@ public class SessionApiTests
         var listResponse = await _sharedHost.Host.HttpClient.SendAsync(listRequest);
         var listContent = await listResponse.Content.ReadAsStringAsync();
         var sessions = JsonSerializer.Deserialize<SessionListResponse>(listContent, JsonOptions);
-        var otherSession = sessions!.Sessions.First(s => !s.IsCurrent);
+        var otherSession = sessions!.Items.First(s => !s.IsCurrent);
 
         _output.WriteLine($"[STEP] DELETE /api/v1/auth/users/{userId}/sessions/{otherSession.Id} (other session)...");
         using var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{userId}/sessions/{otherSession.Id}");
@@ -182,7 +182,7 @@ public class SessionApiTests
         var verifyContent = await verifyResponse.Content.ReadAsStringAsync();
         var remainingSessions = JsonSerializer.Deserialize<SessionListResponse>(verifyContent, JsonOptions);
 
-        Assert.Single(remainingSessions!.Sessions);
+        Assert.Single(remainingSessions!.Items);
         _output.WriteLine("[PASS] Revoked other session successfully");
     }
 
@@ -233,7 +233,7 @@ public class SessionApiTests
         var listResponse = await _sharedHost.Host.HttpClient.SendAsync(listRequest);
         var listContent = await listResponse.Content.ReadAsStringAsync();
         var initialSessions = JsonSerializer.Deserialize<SessionListResponse>(listContent, JsonOptions);
-        Assert.Equal(3, initialSessions!.Sessions.Count);
+        Assert.Equal(3, initialSessions!.Items.Count);
 
         _output.WriteLine($"[STEP] DELETE /api/v1/auth/users/{userId}/sessions (revoke all)...");
         using var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{userId}/sessions");
@@ -443,7 +443,7 @@ public class SessionApiTests
         bool IsCurrent);
 
     private record SessionListResponse(
-        IReadOnlyList<SessionInfoResponse> Sessions);
+        IReadOnlyList<SessionInfoResponse> Items);
 
     private record SessionRevokeAllResponse(
         int RevokedCount);

@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Attributes;
 using Presentation.WebApi.Controllers.V1.Iam.RolesController.Requests;
 using Presentation.WebApi.Controllers.V1.Iam.RolesController.Responses;
+using Presentation.WebApi.Models.Shared;
 using AppRoleAssignment = Application.Identity.Models.RoleAssignmentRequest;
 
 namespace Presentation.WebApi.Controllers.V1.Iam.RolesController;
@@ -36,14 +37,14 @@ public sealed class IamRolesController(
     /// <returns>List of available roles.</returns>
     [HttpGet("roles")]
     [RequiredPermission(PermissionIds.Api.Iam.Roles.List.Identifier)]
-    [ProducesResponseType<RoleListResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ListResponse<RoleInfoResponse>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> ListRoles(CancellationToken cancellationToken)
     {
         var allRoles = await roleService.ListAsync(cancellationToken);
 
         var roles = allRoles.Select(MapToResponse).ToList();
 
-        return Ok(new RoleListResponse { Roles = roles });
+        return Ok(ListResponse<RoleInfoResponse>.From(roles));
     }
 
     /// <summary>
