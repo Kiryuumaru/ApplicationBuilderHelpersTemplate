@@ -779,7 +779,7 @@ public class PermissionAllowDenyTests
         };
 
         _output.WriteLine($"[HELPER] Creating admin user: {username}");
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/debug/create-admin", createAdminRequest);
+        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/devtools/create-admin", createAdminRequest);
 
         if (!response.IsSuccessStatusCode)
         {

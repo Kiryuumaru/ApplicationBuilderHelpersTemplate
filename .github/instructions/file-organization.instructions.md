@@ -20,61 +20,61 @@ Organize files into folders based on their purpose within each project:
 ### Domain Layer Folders
 ```
 Domain/
-??? {Feature}/
-?   ??? Entities/          # Aggregate roots and entities
-?   ??? ValueObjects/      # Immutable value types
-?   ??? Enums/             # Enumeration types
-?   ??? Events/            # Domain events
-?   ??? Exceptions/        # Domain-specific exceptions
+└── {Feature}/
+    ├── Entities/          # Aggregate roots and entities
+    ├── ValueObjects/      # Immutable value types
+    ├── Enums/             # Enumeration types
+    ├── Events/            # Domain events
+    └── Exceptions/        # Domain-specific exceptions
 ```
 
 ### Application Layer Folders
 ```
 Application/
-??? {Feature}/
-?   ??? Interfaces/        # Service contracts and abstractions
-?   ??? Services/          # Application service implementations
-?   ??? Models/            # DTOs, request/response models
-?   ??? Validators/        # Input validation logic
-?   ??? Extensions/        # Extension method classes
+└── {Feature}/
+    ├── Interfaces/        # Service contracts and abstractions
+    ├── Services/          # Application service implementations
+    ├── Models/            # DTOs, request/response models
+    ├── Validators/        # Input validation logic
+    └── Extensions/        # Extension method classes
 ```
 
 ### Infrastructure Layer Folders
 ```
 Infrastructure.{Provider}/
-??? Services/              # Interface implementations
-??? Repositories/          # Data access implementations
-??? Configurations/        # EF Core configurations, options
-??? Extensions/            # DI registration extensions
-??? Models/                # Provider-specific models (e.g., API responses)
+├── Services/              # Interface implementations
+├── Repositories/          # Data access implementations
+├── Configurations/        # EF Core configurations, options
+├── Extensions/            # DI registration extensions
+└── Models/                # Provider-specific models (e.g., API responses)
 ```
 
 ### Presentation Layer Folders
 ```
 Presentation.WebApi/
-??? Controllers/
-?   ??? V{n}/              # Versioned controllers
-??? Models/                # API request/response DTOs
-?   ??? Requests/          # Input models
-?   ??? Responses/         # Output models
-?   ??? SchemaFilters/     # Swagger customizations
-??? Attributes/            # Custom attributes
-??? Middleware/            # HTTP pipeline middleware
-??? Filters/               # Action/exception filters
-??? ConfigureOptions/      # Options configuration
+├── Controllers/
+│   └── V{n}/              # Versioned controllers
+├── Models/                # API request/response DTOs
+│   ├── Requests/          # Input models
+│   ├── Responses/         # Output models
+│   └── SchemaFilters/     # Swagger customizations
+├── Attributes/            # Custom attributes
+├── Middleware/            # HTTP pipeline middleware
+├── Filters/               # Action/exception filters
+└── ConfigureOptions/      # Options configuration
 
 Presentation.WebApp/
-??? Components/
-?   ??? Layout/            # Layout components
-?   ??? Pages/             # Routable page components
-?   ??? Shared/            # Reusable UI components
-??? Services/              # Client-side services
-??? Models/                # View models
+├── Components/
+│   ├── Layout/            # Layout components
+│   ├── Pages/             # Routable page components
+│   └── Shared/            # Reusable UI components
+├── Services/              # Client-side services
+└── Models/                # View models
 ```
 
 ## Forbidden Patterns
 
-### ? NEVER DO:
+### NEVER DO:
 
 1. **Multiple Public Types in One File**
    ```csharp
@@ -109,53 +109,63 @@ Presentation.WebApp/
    // Models/OrderService.cs           // WRONG! Services go in Services/
    ```
 
+5. **Empty Placeholder Types (Stub Files)**
+   ```csharp
+   // BAD: Empty stubs left behind after refactors
+   // These create clutter and make it unclear which controllers are real.
+   [NonController]
+   internal sealed class AuthLoginController { }
+   ```
+
+   If a controller/type is moved to a slice folder, delete the old file instead of leaving an empty placeholder.
+
 ## Required Patterns
 
-### ? ALWAYS DO:
+### ALWAYS DO:
 
 1. **One Type Per File**
    ```
    Services/
-   ??? OrderService.cs          # Contains only OrderService
-   ??? OrderValidator.cs        # Contains only OrderValidator
+   ├── OrderService.cs          # Contains only OrderService
+   └── OrderValidator.cs        # Contains only OrderValidator
    
    Models/
-   ??? OrderRequest.cs          # Contains only OrderRequest
-   ??? OrderResponse.cs         # Contains only OrderResponse
+   ├── OrderRequest.cs          # Contains only OrderRequest
+   └── OrderResponse.cs         # Contains only OrderResponse
    ```
 
 2. **Group Related Response Models**
    ```
    Controllers/V1/
-   ??? MarketsController.cs     # Controller only
+   └── MarketsController.cs     # Controller only
    
    Models/Responses/
-   ??? ExchangeInfo.cs
-   ??? ExchangeListResponse.cs
-   ??? PriceResponse.cs
-   ??? PriceInfo.cs
-   ??? AllPricesResponse.cs
-   ??? TradingPairInfo.cs
-   ??? TradingPairsResponse.cs
-   ??? CandleInfo.cs
-   ??? CandlesResponse.cs
+   ├── ExchangeInfo.cs
+   ├── ExchangeListResponse.cs
+   ├── PriceResponse.cs
+   ├── PriceInfo.cs
+   ├── AllPricesResponse.cs
+   ├── TradingPairInfo.cs
+   ├── TradingPairsResponse.cs
+   ├── CandleInfo.cs
+   └── CandlesResponse.cs
    ```
 
 3. **Feature-Based Organization for Large Projects**
    ```
    Application/
-   ??? Trading/
-   ?   ??? Interfaces/
-   ?   ?   ??? IOrderService.cs
-   ?   ??? Services/
-   ?   ?   ??? OrderService.cs
-   ?   ??? Models/
-   ?       ??? OrderResult.cs
-   ??? Identity/
-       ??? Interfaces/
-       ?   ??? IUserService.cs
-       ??? Services/
-           ??? UserService.cs
+   ├── Trading/
+   │   ├── Interfaces/
+   │   │   └── IOrderService.cs
+   │   ├── Services/
+   │   │   └── OrderService.cs
+   │   └── Models/
+   │       └── OrderResult.cs
+   └── Identity/
+       ├── Interfaces/
+       │   └── IUserService.cs
+       └── Services/
+           └── UserService.cs
    ```
 
 ## Exceptions (When Multiple Types Are Acceptable)
