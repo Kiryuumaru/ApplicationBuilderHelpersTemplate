@@ -2,6 +2,14 @@
 
 A clean architecture application template for building .NET applications with authentication, authorization, and user management out of the box. Built with .NET 10 and Clean Architecture principles.
 
+## 🚀 Quick Start
+
+Run this command to create a new project from this template:
+
+```powershell
+C:\Windows\System32\WindowsPowerShell\v1.0\powershell -c "& ([ScriptBlock]::Create((irm https://raw.githubusercontent.com/Kiryuumaru/ApplicationBuilderHelpersTemplate/master/init.ps1)))"
+```
+
 ## 📋 Overview
 
 This template provides a solid foundation for building web applications with:
