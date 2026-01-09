@@ -31,6 +31,11 @@ public sealed class AuthOAuthController(
     /// <summary>
     /// Gets available OAuth providers.
     /// </summary>
+    /// <remarks>
+    /// Returns all configured OAuth providers with their enabled status.
+    /// Use this to display available social login options to users.
+    /// Disabled providers are included but should be hidden or grayed out in the UI.
+    /// </remarks>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>List of available OAuth providers.</returns>
     /// <response code="200">Returns available providers.</response>
@@ -54,8 +59,13 @@ public sealed class AuthOAuthController(
     }
 
     /// <summary>
-    /// Initiates OAuth login flow with an external provider.
+    /// Initiates OAuth login flow.
     /// </summary>
+    /// <remarks>
+    /// Returns an authorization URL to redirect the user to the OAuth provider.
+    /// Store the returned state value to verify the callback.
+    /// After user authorizes, they will be redirected to your redirect URI with a code.
+    /// </remarks>
     /// <param name="provider">The OAuth provider name (e.g., "google", "github", "mock").</param>
     /// <param name="request">OAuth login request with redirect URI.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -95,8 +105,14 @@ public sealed class AuthOAuthController(
     }
 
     /// <summary>
-    /// Processes OAuth callback and completes login or registration.
+    /// Processes OAuth callback.
     /// </summary>
+    /// <remarks>
+    /// Completes the OAuth flow by exchanging the authorization code for tokens.
+    /// If the OAuth email matches an existing user, they are logged in.
+    /// If no matching user exists, a new account is created and linked.
+    /// Returns 201 Created for new users, 200 OK for existing users.
+    /// </remarks>
     /// <param name="request">OAuth callback data.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>JWT tokens on success.</returns>
@@ -159,6 +175,11 @@ public sealed class AuthOAuthController(
     /// <summary>
     /// Gets the user's linked external logins.
     /// </summary>
+    /// <remarks>
+    /// Returns all OAuth providers linked to the user's account.
+    /// Includes provider name, display name, associated email, and when it was linked.
+    /// Use this to show which social accounts are connected.
+    /// </remarks>
     /// <param name="userId">The user ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>List of linked external logins.</returns>

@@ -29,8 +29,13 @@ public sealed class AuthTwoFactorController(
     AuthResponseFactory authResponseFactory) : ControllerBase
 {
     /// <summary>
-    /// Gets the 2FA setup information for the user.
+    /// Gets the 2FA setup information.
     /// </summary>
+    /// <remarks>
+    /// Returns the shared key and authenticator URI for QR code generation.
+    /// Display the URI as a QR code for the user to scan with their authenticator app.
+    /// The formatted shared key can be entered manually if QR scanning is unavailable.
+    /// </remarks>
     /// <param name="userId">The user ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The shared key and authenticator URI for QR code generation.</returns>
@@ -55,8 +60,13 @@ public sealed class AuthTwoFactorController(
     }
 
     /// <summary>
-    /// Enables two-factor authentication for the user.
+    /// Enables two-factor authentication.
     /// </summary>
+    /// <remarks>
+    /// Completes 2FA setup by verifying a code from the authenticator app.
+    /// Returns one-time recovery codes that can be used if the authenticator is lost.
+    /// Store recovery codes securely; they cannot be retrieved again.
+    /// </remarks>
     /// <param name="userId">The user ID.</param>
     /// <param name="request">The verification code from the authenticator app.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -83,8 +93,13 @@ public sealed class AuthTwoFactorController(
     }
 
     /// <summary>
-    /// Disables two-factor authentication for the user.
+    /// Disables two-factor authentication.
     /// </summary>
+    /// <remarks>
+    /// Requires password confirmation to prevent unauthorized disabling.
+    /// After disabling, login will no longer require a 2FA code.
+    /// Previously generated recovery codes are invalidated.
+    /// </remarks>
     /// <param name="userId">The user ID.</param>
     /// <param name="request">The user's password to confirm the action.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -126,8 +141,13 @@ public sealed class AuthTwoFactorController(
     }
 
     /// <summary>
-    /// Completes login with a two-factor authentication code.
+    /// Completes login with a 2FA code.
     /// </summary>
+    /// <remarks>
+    /// Called after initial login returns 202 Accepted indicating 2FA is required.
+    /// Accepts either a TOTP code from the authenticator app or a recovery code.
+    /// Recovery codes are single-use and should be regenerated if running low.
+    /// </remarks>
     /// <param name="request">The user ID and 2FA code.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>JWT tokens for the authenticated user.</returns>
@@ -153,11 +173,12 @@ public sealed class AuthTwoFactorController(
     }
 
     /// <summary>
-    /// Generates new recovery codes for two-factor authentication.
+    /// Generates new recovery codes.
     /// </summary>
     /// <remarks>
-    /// This will invalidate any previously generated recovery codes.
-    /// Requires 2FA to be enabled on the account.
+    /// Invalidates any previously generated recovery codes and issues new ones.
+    /// Returns 10 new single-use recovery codes for account recovery.
+    /// Use this if you've used most recovery codes or suspect they were compromised.
     /// </remarks>
     /// <param name="userId">The user ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>

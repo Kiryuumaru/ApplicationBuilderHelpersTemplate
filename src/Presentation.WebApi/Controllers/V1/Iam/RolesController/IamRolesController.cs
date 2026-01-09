@@ -31,10 +31,16 @@ public sealed class IamRolesController(
     IRoleService roleService) : ControllerBase
 {
     /// <summary>
-    /// Lists all available roles (static and custom).
+    /// Lists all available roles.
     /// </summary>
+    /// <remarks>
+    /// Returns both system-defined roles and custom roles created by administrators.
+    /// Each role includes its code, name, description, and scope templates defining its permissions.
+    /// System roles cannot be modified or deleted.
+    /// </remarks>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>List of available roles.</returns>
+    /// <response code="200">Returns the list of all roles.</response>
     [HttpGet("roles")]
     [RequiredPermission(PermissionIds.Api.Iam.Roles.List.Identifier)]
     [ProducesResponseType<ListResponse<RoleInfoResponse>>(StatusCodes.Status200OK)]
@@ -50,9 +56,16 @@ public sealed class IamRolesController(
     /// <summary>
     /// Gets a specific role by ID.
     /// </summary>
+    /// <remarks>
+    /// Retrieves complete role information including its scope templates.
+    /// Scope templates define which permissions are granted (allow) or denied by the role.
+    /// Parameter placeholders in scope templates are resolved when the role is assigned to a user.
+    /// </remarks>
     /// <param name="roleId">The role ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The role details.</returns>
+    /// <response code="200">Returns the role details.</response>
+    /// <response code="404">Role not found.</response>
     [HttpGet("roles/{roleId:guid}")]
     [RequiredPermission(PermissionIds.Api.Iam.Roles.Read.Identifier)]
     [ProducesResponseType<RoleInfoResponse>(StatusCodes.Status200OK)]
@@ -71,9 +84,17 @@ public sealed class IamRolesController(
     /// <summary>
     /// Creates a new custom role.
     /// </summary>
+    /// <remarks>
+    /// Creates a custom role with specified scope templates defining its permission boundaries.
+    /// The role code must be unique across all roles (system and custom).
+    /// Scope templates can include parameter placeholders (e.g., <c>{userId}</c>) that are resolved during role assignment.
+    /// </remarks>
     /// <param name="request">The role creation request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The created role.</returns>
+    /// <response code="201">Role created successfully.</response>
+    /// <response code="400">Invalid role data.</response>
+    /// <response code="409">Role with same code already exists.</response>
     [HttpPost("roles")]
     [RequiredPermission(PermissionIds.Api.Iam.Roles.Create.Identifier)]
     [ProducesResponseType<RoleInfoResponse>(StatusCodes.Status201Created)]
@@ -103,10 +124,18 @@ public sealed class IamRolesController(
     /// <summary>
     /// Updates an existing custom role.
     /// </summary>
+    /// <remarks>
+    /// Allows modification of role metadata (name, description) and scope templates.
+    /// System roles cannot be updated; only custom roles support modification.
+    /// Changes to scope templates take effect immediately for all users assigned this role.
+    /// </remarks>
     /// <param name="roleId">The role ID.</param>
     /// <param name="request">The role update request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated role.</returns>
+    /// <response code="200">Returns the updated role.</response>
+    /// <response code="400">Invalid role data or cannot modify system role.</response>
+    /// <response code="404">Role not found.</response>
     [HttpPut("roles/{roleId:guid}")]
     [RequiredPermission(PermissionIds.Api.Iam.Roles.Update.Identifier)]
     [ProducesResponseType<RoleInfoResponse>(StatusCodes.Status200OK)]
@@ -131,9 +160,17 @@ public sealed class IamRolesController(
     /// <summary>
     /// Deletes a custom role.
     /// </summary>
+    /// <remarks>
+    /// Permanently removes a custom role from the system.
+    /// System roles cannot be deleted. Users currently assigned this role will lose its permissions.
+    /// This action cannot be undone.
+    /// </remarks>
     /// <param name="roleId">The role ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>No content.</returns>
+    /// <response code="204">Role deleted successfully.</response>
+    /// <response code="400">Cannot delete system role.</response>
+    /// <response code="404">Role not found.</response>
     [HttpDelete("roles/{roleId:guid}")]
     [RequiredPermission(PermissionIds.Api.Iam.Roles.Delete.Identifier)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -151,11 +188,19 @@ public sealed class IamRolesController(
     }
 
     /// <summary>
-    /// Assigns a role to a user (admin only).
+    /// Assigns a role to a user.
     /// </summary>
+    /// <remarks>
+    /// Associates a role with a user, granting them the permissions defined by the role's scope templates.
+    /// If the role has parameter placeholders, provide values in the <c>parameterValues</c> dictionary.
+    /// A user can have multiple roles assigned; permissions are combined from all assigned roles.
+    /// </remarks>
     /// <param name="request">The role assignment request containing user ID and role code.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>No content.</returns>
+    /// <response code="204">Role assigned successfully.</response>
+    /// <response code="400">Invalid assignment data.</response>
+    /// <response code="404">User or role not found.</response>
     [HttpPost("roles/assign")]
     [RequiredPermission(PermissionIds.Api.Iam.Roles.Assign.Identifier)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -173,11 +218,19 @@ public sealed class IamRolesController(
     }
 
     /// <summary>
-    /// Removes a role from a user (admin only).
+    /// Removes a role from a user.
     /// </summary>
+    /// <remarks>
+    /// Revokes a role assignment from a user, removing the permissions granted by that role.
+    /// Other role assignments and direct permissions remain unaffected.
+    /// The role itself is not deleted; it can be reassigned to other users.
+    /// </remarks>
     /// <param name="request">The role removal request containing user ID and role ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>No content.</returns>
+    /// <response code="204">Role removed successfully.</response>
+    /// <response code="400">Invalid removal data.</response>
+    /// <response code="404">User or role assignment not found.</response>
     [HttpPost("roles/remove")]
     [RequiredPermission(PermissionIds.Api.Iam.Roles.Remove.Identifier)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

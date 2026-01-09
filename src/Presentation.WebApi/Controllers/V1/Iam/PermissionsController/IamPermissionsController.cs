@@ -28,7 +28,13 @@ public sealed class IamPermissionsController(
     /// <summary>
     /// Lists all available permissions in the system.
     /// </summary>
+    /// <remarks>
+    /// Returns a hierarchical tree of all permissions defined in the system.
+    /// Each permission includes its path, identifier, description, and any child permissions.
+    /// This endpoint is useful for building permission selection UIs or understanding the available authorization scopes.
+    /// </remarks>
     /// <returns>The permission tree.</returns>
+    /// <response code="200">Returns the hierarchical permission tree.</response>
     [HttpGet("permissions")]
     [ProducesResponseType<ListResponse<PermissionInfoResponse>>(StatusCodes.Status200OK)]
     public IActionResult ListPermissions()
@@ -41,11 +47,20 @@ public sealed class IamPermissionsController(
     }
 
     /// <summary>
-    /// Grants a direct permission to a user (admin only).
+    /// Grants a direct permission to a user.
     /// </summary>
+    /// <remarks>
+    /// Grants a specific permission directly to a user, bypassing role-based assignment.
+    /// Direct permissions take precedence over role-inherited permissions when evaluating access.
+    /// The <c>isAllow</c> flag determines whether this is an allow or deny grant.
+    /// Use deny grants to explicitly block access that would otherwise be allowed by roles.
+    /// </remarks>
     /// <param name="request">The permission grant request containing user ID and permission identifier.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>No content.</returns>
+    /// <response code="204">Permission granted successfully.</response>
+    /// <response code="400">Invalid permission identifier.</response>
+    /// <response code="404">User not found.</response>
     [HttpPost("permissions/grant")]
     [RequiredPermission(PermissionIds.Api.Iam.Permissions.Grant.Identifier)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -67,11 +82,19 @@ public sealed class IamPermissionsController(
     }
 
     /// <summary>
-    /// Revokes a direct permission from a user (admin only).
+    /// Revokes a direct permission from a user.
     /// </summary>
+    /// <remarks>
+    /// Removes a previously granted direct permission from a user.
+    /// This only affects direct permission grants; role-inherited permissions remain unaffected.
+    /// If the user has the permission through a role assignment, they will retain access after revocation.
+    /// </remarks>
     /// <param name="request">The permission revocation request containing user ID and permission identifier.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>No content.</returns>
+    /// <response code="204">Permission revoked successfully.</response>
+    /// <response code="400">Invalid permission identifier.</response>
+    /// <response code="404">User or permission grant not found.</response>
     [HttpPost("permissions/revoke")]
     [RequiredPermission(PermissionIds.Api.Iam.Permissions.Revoke.Identifier)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

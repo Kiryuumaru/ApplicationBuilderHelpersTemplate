@@ -22,8 +22,13 @@ public sealed class AuthTokenController(
     AuthResponseFactory authResponseFactory) : ControllerBase
 {
     /// <summary>
-    /// Refreshes an expired access token using a valid refresh token.
+    /// Refreshes an expired access token.
     /// </summary>
+    /// <remarks>
+    /// Exchanges a valid refresh token for a new access/refresh token pair.
+    /// The old refresh token is invalidated after use (rotation).
+    /// If the refresh token is expired or revoked, the user must re-authenticate.
+    /// </remarks>
     /// <param name="request">The refresh token.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>New JWT access and refresh tokens.</returns>

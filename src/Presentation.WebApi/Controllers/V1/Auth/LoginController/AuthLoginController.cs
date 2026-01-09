@@ -30,8 +30,14 @@ public sealed class AuthLoginController(
     AuthResponseFactory authResponseFactory) : ControllerBase
 {
     /// <summary>
-    /// Authenticates a user and returns JWT tokens.
+    /// Authenticates a user with credentials.
     /// </summary>
+    /// <remarks>
+    /// Validates username/password and returns JWT tokens if successful.
+    /// If two-factor authentication is enabled, returns 202 Accepted with a user ID.
+    /// The client must then call the <c>/login/2fa</c> endpoint with the TOTP code.
+    /// Failed attempts increment the lockout counter if lockout is enabled for the account.
+    /// </remarks>
     /// <param name="request">The login credentials.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>JWT access and refresh tokens along with user information, or a 2FA challenge.</returns>
@@ -84,9 +90,14 @@ public sealed class AuthLoginController(
 
     /// <summary>
     /// Registers a new user account.
-    /// With no body or empty body, creates an anonymous user.
-    /// With username/password, creates a full account.
     /// </summary>
+    /// <remarks>
+    /// Supports two registration modes:
+    /// - Anonymous: No body or empty body creates a temporary anonymous user that can be upgraded later.
+    /// - Full account: Provide username and password to create a complete account.
+    /// Anonymous users receive tokens but cannot login again without upgrading their account.
+    /// Email is optional and can be linked after registration.
+    /// </remarks>
     /// <param name="request">The registration details. All fields optional for anonymous registration.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>JWT tokens for the newly registered user.</returns>
@@ -170,14 +181,16 @@ public sealed class AuthLoginController(
     }
 
     /// <summary>
-    /// Invalidates the current session (logout).
+    /// Logs out the current session.
     /// </summary>
+    /// <remarks>
+    /// Revokes the current session so the refresh token can no longer be used.
+    /// Other active sessions for this user remain valid.
+    /// To logout from all devices, use the <c>DELETE /users/{userId}/sessions</c> endpoint.
+    /// </remarks>
     /// <param name="userId">The user ID from JWT claims (used for permission check).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Success status.</returns>
-    /// <remarks>
-    /// Revokes the current session so the refresh token can no longer be used.
-    /// </remarks>
     /// <response code="204">Successfully logged out.</response>
     /// <response code="401">Not authenticated.</response>
     /// <response code="403">Insufficient permissions.</response>

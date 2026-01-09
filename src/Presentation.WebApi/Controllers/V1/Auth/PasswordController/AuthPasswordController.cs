@@ -28,6 +28,11 @@ public sealed class AuthPasswordController(
     /// <summary>
     /// Changes the user's password.
     /// </summary>
+    /// <remarks>
+    /// Requires the current password for verification before setting a new one.
+    /// The new password must meet the configured password policy (length, complexity).
+    /// Existing sessions remain valid after password change.
+    /// </remarks>
     /// <param name="userId">The user ID.</param>
     /// <param name="request">The password change details including current and new password.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -50,14 +55,16 @@ public sealed class AuthPasswordController(
     }
 
     /// <summary>
-    /// Initiates a password reset by sending a reset email.
+    /// Initiates a password reset.
     /// </summary>
+    /// <remarks>
+    /// Sends a password reset link to the specified email address if it exists.
+    /// For security, always returns success regardless of whether the email is registered.
+    /// Reset tokens expire after a configured time period (typically 24 hours).
+    /// </remarks>
     /// <param name="request">The email address to send reset link to.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Success status (always returns success for security).</returns>
-    /// <remarks>
-    /// For security reasons, this endpoint always returns success even if the email doesn't exist.
-    /// </remarks>
     /// <response code="204">Password reset initiated (if email exists).</response>
     [HttpPost("forgot-password")]
     [AllowAnonymous]
@@ -76,8 +83,13 @@ public sealed class AuthPasswordController(
     }
 
     /// <summary>
-    /// Resets the user's password using a reset token.
+    /// Resets the password using a reset token.
     /// </summary>
+    /// <remarks>
+    /// Completes the password reset flow started by <c>/forgot-password</c>.
+    /// The token from the email link must be provided along with the new password.
+    /// Tokens are single-use and expire after the configured time period.
+    /// </remarks>
     /// <param name="request">The password reset details including token and new password.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Success status.</returns>

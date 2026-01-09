@@ -24,6 +24,11 @@ public sealed class AuthSessionsController(ISessionService sessionService) : Con
     /// <summary>
     /// Lists all active sessions for the user.
     /// </summary>
+    /// <remarks>
+    /// Returns all currently active sessions including device name, IP address, and last activity.
+    /// The current session is marked with <c>isCurrent: true</c> for UI highlighting.
+    /// Use this to review where the account is logged in before revoking sessions.
+    /// </remarks>
     /// <param name="userId">The user ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>List of active sessions.</returns>
@@ -55,8 +60,13 @@ public sealed class AuthSessionsController(ISessionService sessionService) : Con
     }
 
     /// <summary>
-    /// Revokes a specific session (logout that device).
+    /// Revokes a specific session.
     /// </summary>
+    /// <remarks>
+    /// Invalidates the specified session, logging out that device.
+    /// The refresh token associated with the session will no longer work.
+    /// You can revoke your own current session (equivalent to logout) or other sessions.
+    /// </remarks>
     /// <param name="userId">The user ID.</param>
     /// <param name="id">The session ID to revoke.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -84,8 +94,13 @@ public sealed class AuthSessionsController(ISessionService sessionService) : Con
     }
 
     /// <summary>
-    /// Revokes all sessions for the user (logout everywhere).
+    /// Revokes all sessions for the user.
     /// </summary>
+    /// <remarks>
+    /// Logs out from all devices including the current session.
+    /// Use this for security purposes when you suspect unauthorized access.
+    /// Returns the count of sessions that were revoked.
+    /// </remarks>
     /// <param name="userId">The user ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Success status with count of revoked sessions.</returns>

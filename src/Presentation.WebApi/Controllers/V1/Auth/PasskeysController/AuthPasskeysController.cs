@@ -29,12 +29,13 @@ public sealed class AuthPasskeysController(
     AuthResponseFactory authResponseFactory) : ControllerBase
 {
     /// <summary>
-    /// Gets the options needed to create a new passkey for the user.
+    /// Gets options for creating a new passkey.
     /// </summary>
     /// <remarks>
-    /// Call this endpoint first to get WebAuthn options, then pass the options to
-    /// navigator.credentials.create() in the browser. Use the returned challengeId
-    /// when calling the registration endpoint.
+    /// Returns WebAuthn options required by <c>navigator.credentials.create()</c>.
+    /// Pass the options JSON to the browser's WebAuthn API.
+    /// The returned challenge ID must be provided when completing registration.
+    /// Challenge expires after a short period (typically 5 minutes).
     /// </remarks>
     /// <param name="userId">The user ID.</param>
     /// <param name="request">The passkey registration options request.</param>
@@ -57,11 +58,13 @@ public sealed class AuthPasskeysController(
     }
 
     /// <summary>
-    /// Registers a new passkey for the user.
+    /// Registers a new passkey.
     /// </summary>
     /// <remarks>
-    /// Call this endpoint after navigator.credentials.create() returns, passing the
-    /// challengeId from the options endpoint and the JSON-serialized attestation response.
+    /// Completes passkey registration by verifying the attestation response from the browser.
+    /// Call this after <c>navigator.credentials.create()</c> returns.
+    /// The challenge ID must match the one from the options endpoint.
+    /// Does not upgrade anonymous users; use the link endpoint for that.
     /// </remarks>
     /// <param name="userId">The user ID.</param>
     /// <param name="request">The passkey registration request with challenge ID and attestation response.</param>
@@ -86,12 +89,13 @@ public sealed class AuthPasskeysController(
     }
 
     /// <summary>
-    /// Gets the options needed to authenticate with a passkey.
+    /// Gets options for passkey authentication.
     /// </summary>
     /// <remarks>
-    /// Call this endpoint first to get WebAuthn options, then pass the options to
-    /// navigator.credentials.get() in the browser. Use the returned challengeId
-    /// when calling the login endpoint.
+    /// Returns WebAuthn options required by <c>navigator.credentials.get()</c>.
+    /// Optionally provide a username to filter credentials for that user.
+    /// The returned challenge ID must be provided when completing login.
+    /// Challenge expires after a short period (typically 5 minutes).
     /// </remarks>
     /// <param name="request">Optional username for user-specific credential filtering.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -108,11 +112,13 @@ public sealed class AuthPasskeysController(
     }
 
     /// <summary>
-    /// Authenticates with a passkey and returns JWT tokens.
+    /// Authenticates with a passkey.
     /// </summary>
     /// <remarks>
-    /// Call this endpoint after navigator.credentials.get() returns, passing the
-    /// challengeId from the options endpoint and the JSON-serialized assertion response.
+    /// Completes passkey login by verifying the assertion response from the browser.
+    /// Call this after <c>navigator.credentials.get()</c> returns.
+    /// The challenge ID must match the one from the options endpoint.
+    /// Returns JWT tokens on successful authentication.
     /// </remarks>
     /// <param name="request">The passkey login request with challenge ID and assertion response.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -147,6 +153,11 @@ public sealed class AuthPasskeysController(
     /// <summary>
     /// Lists all passkeys for the user.
     /// </summary>
+    /// <remarks>
+    /// Returns all registered passkeys with their names and registration dates.
+    /// Use this to display passkey management UI to users.
+    /// Last used timestamp helps identify inactive credentials.
+    /// </remarks>
     /// <param name="userId">The user ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>List of registered passkeys.</returns>
@@ -170,6 +181,11 @@ public sealed class AuthPasskeysController(
     /// <summary>
     /// Renames a passkey.
     /// </summary>
+    /// <remarks>
+    /// Updates the friendly name of a passkey for easier identification.
+    /// The name is purely for display purposes and doesn't affect authentication.
+    /// Use descriptive names like "MacBook Pro" or "iPhone 15".
+    /// </remarks>
     /// <param name="userId">The user ID.</param>
     /// <param name="credentialId">The passkey credential ID.</param>
     /// <param name="request">The rename request with new name.</param>
@@ -194,8 +210,13 @@ public sealed class AuthPasskeysController(
     }
 
     /// <summary>
-    /// Revokes (deletes) a passkey.
+    /// Revokes a passkey.
     /// </summary>
+    /// <remarks>
+    /// Permanently deletes a passkey from the account.
+    /// Cannot revoke if it's the only authentication method; at least one must remain.
+    /// After revocation, the passkey can no longer be used for login.
+    /// </remarks>
     /// <param name="userId">The user ID.</param>
     /// <param name="credentialId">The passkey credential ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>

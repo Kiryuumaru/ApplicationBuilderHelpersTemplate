@@ -27,12 +27,18 @@ public sealed class DevToolsAdminController(
     IUserRegistrationService userRegistrationService) : ControllerBase
 {
     /// <summary>
-    /// Grants the ADMIN role to a user (DEBUG builds only).
-    /// This endpoint exists solely for testing purposes.
+    /// Grants the ADMIN role to a user.
     /// </summary>
+    /// <remarks>
+    /// DEBUG builds only. Elevates an existing user to administrator status.
+    /// This endpoint bypasses normal authorization checks for testing purposes.
+    /// Requires the caller to be authenticated but does not require admin permissions.
+    /// </remarks>
     /// <param name="userId">The user ID to grant admin access to.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>No content on success.</returns>
+    /// <response code="204">Admin role granted successfully.</response>
+    /// <response code="404">User not found.</response>
     [HttpPost("users/{userId:guid}/make-admin")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -54,11 +60,19 @@ public sealed class DevToolsAdminController(
     }
 
     /// <summary>
-    /// Creates a user and grants them ADMIN role in one step (DEBUG builds only).
+    /// Creates an admin user in one step.
     /// </summary>
+    /// <remarks>
+    /// DEBUG builds only. Combines user registration and admin role assignment into a single operation.
+    /// This endpoint is anonymous and does not require authentication, making it suitable for test bootstrapping.
+    /// The created user will have full administrative privileges immediately.
+    /// </remarks>
     /// <param name="request">The registration request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The created user's ID.</returns>
+    /// <response code="201">Admin user created successfully.</response>
+    /// <response code="400">Invalid registration data.</response>
+    /// <response code="409">Username or email already exists.</response>
     [HttpPost("create-admin")]
     [AllowAnonymous]
     [ProducesResponseType<CreateAdminResponse>(StatusCodes.Status201Created)]

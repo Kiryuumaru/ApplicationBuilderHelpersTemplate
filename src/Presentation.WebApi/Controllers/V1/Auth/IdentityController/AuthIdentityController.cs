@@ -33,6 +33,11 @@ public sealed class AuthIdentityController(
     /// <summary>
     /// Gets the user's linked identities.
     /// </summary>
+    /// <remarks>
+    /// Returns a comprehensive view of all authentication methods linked to the account.
+    /// Includes password status, email, OAuth providers, and passkeys.
+    /// Use this to display account security settings and linked auth methods.
+    /// </remarks>
     /// <param name="userId">The user ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Information about the user's linked identities.</returns>
@@ -87,8 +92,13 @@ public sealed class AuthIdentityController(
 
     /// <summary>
     /// Links a password to the user's account.
-    /// For anonymous users, this upgrades them to a full account.
     /// </summary>
+    /// <remarks>
+    /// For anonymous users, this upgrades them to a full account with username/password login.
+    /// Requires a unique username and optionally an email address.
+    /// The password must meet the configured password policy requirements.
+    /// After linking, the user can login with username and password.
+    /// </remarks>
     /// <param name="userId">The user ID.</param>
     /// <param name="request">The password linking request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -124,8 +134,12 @@ public sealed class AuthIdentityController(
 
     /// <summary>
     /// Links an email to the user's account.
-    /// Email alone does not upgrade anonymous users - they need a password, OAuth, or passkey.
     /// </summary>
+    /// <remarks>
+    /// Associates an email address with the account for notifications and password recovery.
+    /// Email alone does not upgrade anonymous users; they need a password, OAuth, or passkey.
+    /// The email must be unique across all accounts.
+    /// </remarks>
     /// <param name="userId">The user ID.</param>
     /// <param name="request">The email linking request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -156,12 +170,12 @@ public sealed class AuthIdentityController(
 
     /// <summary>
     /// Links a passkey to the user's account.
-    /// For anonymous users, this upgrades them to a full account (passkeys are passwordless).
     /// </summary>
     /// <remarks>
-    /// This endpoint wraps passkey registration with anonymous user upgrade logic.
-    /// Call this endpoint after navigator.credentials.create() returns, passing the
-    /// challengeId from the options endpoint and the JSON-serialized attestation response.
+    /// For anonymous users, this upgrades them to a full account with passwordless login.
+    /// Call this after <c>navigator.credentials.create()</c> returns with the attestation response.
+    /// The challenge ID must match the one from the options endpoint.
+    /// Passkeys provide strong authentication without passwords.
     /// </remarks>
     /// <param name="userId">The user ID.</param>
     /// <param name="request">The passkey registration request with challenge ID and attestation response.</param>
@@ -203,8 +217,13 @@ public sealed class AuthIdentityController(
     }
 
     /// <summary>
-    /// Unlinks an OAuth provider from the user's account.
+    /// Unlinks an OAuth provider from the account.
     /// </summary>
+    /// <remarks>
+    /// Removes the association between the account and the specified OAuth provider.
+    /// Cannot unlink if it's the only authentication method; at least one must remain.
+    /// After unlinking, the OAuth account can be linked to a different user.
+    /// </remarks>
     /// <param name="userId">The user ID.</param>
     /// <param name="provider">The provider to unlink (e.g., "google", "github").</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -253,6 +272,11 @@ public sealed class AuthIdentityController(
     /// <summary>
     /// Changes the user's username.
     /// </summary>
+    /// <remarks>
+    /// Updates the username used for login. The new username must be unique.
+    /// Anonymous users cannot change username; they must link a password or OAuth first.
+    /// Existing sessions remain valid after the username change.
+    /// </remarks>
     /// <param name="userId">The user ID.</param>
     /// <param name="request">The username change request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -297,6 +321,11 @@ public sealed class AuthIdentityController(
     /// <summary>
     /// Changes the user's email address.
     /// </summary>
+    /// <remarks>
+    /// Updates the email address associated with the account.
+    /// The new email must be unique and will need to be verified.
+    /// Email verification status is reset after change.
+    /// </remarks>
     /// <param name="userId">The user ID.</param>
     /// <param name="request">The email change request.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -334,9 +363,13 @@ public sealed class AuthIdentityController(
     }
 
     /// <summary>
-    /// Unlinks the email from the user's account.
-    /// Email can only be unlinked if the user has a username to login with.
+    /// Unlinks the email from the account.
     /// </summary>
+    /// <remarks>
+    /// Removes the email address from the account.
+    /// Requires a username to be set since email might be needed for password recovery.
+    /// After unlinking, the email can be used on another account.
+    /// </remarks>
     /// <param name="userId">The user ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>No content on success.</returns>

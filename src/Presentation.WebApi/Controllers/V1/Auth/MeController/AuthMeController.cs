@@ -23,8 +23,13 @@ public sealed class AuthMeController(
     AuthResponseFactory authResponseFactory) : ControllerBase
 {
     /// <summary>
-    /// Gets the current user's information.
+    /// Gets the current user's profile.
     /// </summary>
+    /// <remarks>
+    /// Returns profile information for the authenticated user based on the JWT token.
+    /// Includes username, email, roles, and account status.
+    /// Use this endpoint to refresh user info after profile changes.
+    /// </remarks>
     /// <param name="userId">The user ID from JWT claims.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The current user's information.</returns>
