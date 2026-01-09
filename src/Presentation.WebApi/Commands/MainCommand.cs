@@ -37,9 +37,6 @@ namespace Presentation.WebApi.Commands;
 [Command("Main subcommand.")]
 internal class MainCommand : Build.BaseCommand<WebApplicationBuilder>
 {
-    [CommandOption("file-asset-vault-registry-dir", Description = "Viana edge grid use a file asset vault registry dir instead of service registered from infrastructure", EnvironmentVariable = "VIANA_EDGE_GRID_FILE_ASSET_VAULT_REGISTRY_DIR")]
-    public AbsolutePath? FileAssetVaultRegistryPath { get; set; }
-
     [CommandOption("urls", Description = "Server listening URLs (semicolon-separated)", EnvironmentVariable = "ASPNETCORE_URLS")]
     public string? Urls { get; set; }
 
