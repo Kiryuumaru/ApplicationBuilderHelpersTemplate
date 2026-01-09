@@ -39,14 +39,8 @@ public static class Roles
             TemplateParametersOverride: ["roleUserId"],
             ScopeTemplates:
             [
-                // Users can read/write their own resources (scoped by userId).
-                // Permission checks without userId param won't match (e.g., api:users:list).
-                // Permission checks with different userId won't match (isolation).
                 ScopeTemplate.Allow(Permissions.RootReadIdentifier, ("userId", "{roleUserId}")),
-                ScopeTemplate.Allow(Permissions.RootWriteIdentifier, ("userId", "{roleUserId}")),
-
-                // Public/global resources - no user scoping needed
-                ScopeTemplate.Allow("api:bots:strategies:_read")
+                ScopeTemplate.Allow(Permissions.RootWriteIdentifier, ("userId", "{roleUserId}"))
             ]);
 
         All = [Admin, User];
