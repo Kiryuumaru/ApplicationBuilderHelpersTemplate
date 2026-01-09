@@ -1,4 +1,5 @@
 using Domain.Authorization.Models;
+using Infrastructure.EFCore.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,7 +21,7 @@ internal sealed class EFCoreAspNetRoleStore(IDbContextFactory<EFCoreDbContext> c
     {
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         context.Set<Role>().Add(role);
-        await context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesWithExceptionHandlingAsync("Role", role.Code, cancellationToken);
         return IdentityResult.Success;
     }
 
@@ -31,7 +32,7 @@ internal sealed class EFCoreAspNetRoleStore(IDbContextFactory<EFCoreDbContext> c
         if (existing is not null)
         {
             context.Set<Role>().Remove(existing);
-            await context.SaveChangesAsync(cancellationToken);
+            await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
         }
         return IdentityResult.Success;
     }
@@ -79,7 +80,7 @@ internal sealed class EFCoreAspNetRoleStore(IDbContextFactory<EFCoreDbContext> c
     {
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         context.Set<Role>().Update(role);
-        await context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesWithExceptionHandlingAsync("Role", role.Code, cancellationToken);
         return IdentityResult.Success;
     }
 }

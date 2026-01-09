@@ -3,6 +3,7 @@ using Application.Authorization.Interfaces.Infrastructure;
 using Domain.Authorization.Exceptions;
 using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;
+using Infrastructure.EFCore.Extensions;
 using Infrastructure.EFCore.Identity.Models;
 using Microsoft.EntityFrameworkCore;
 using RolesConstants = Domain.Authorization.Constants.Roles;
@@ -180,8 +181,8 @@ internal sealed class EFCoreRoleRepository(IDbContextFactory<EFCoreDbContext> co
         {
             context.Entry(existing).CurrentValues.SetValues(entity);
         }
-        
-        await context.SaveChangesAsync(cancellationToken);
+
+        await context.SaveChangesWithExceptionHandlingAsync("Role", role.Code, cancellationToken);
     }
 
     public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken)
@@ -201,7 +202,7 @@ internal sealed class EFCoreRoleRepository(IDbContextFactory<EFCoreDbContext> co
         }
 
         context.Set<RoleEntity>().Remove(entity);
-        await context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
         return true;
     }
 

@@ -2,6 +2,7 @@ using Application.Identity.Interfaces.Infrastructure;
 using Domain.Identity.Enums;
 using Domain.Identity.Models;
 using Domain.Shared.Exceptions;
+using Infrastructure.EFCore.Extensions;
 using Infrastructure.EFCore.Identity.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,7 +21,7 @@ internal sealed class EFCorePasskeyRepository(IDbContextFactory<EFCoreDbContext>
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         var entity = MapCredentialToEntity(credential);
         context.Set<PasskeyCredentialEntity>().Add(entity);
-        await context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesWithExceptionHandlingAsync("PasskeyCredential", credential.Id.ToString(), cancellationToken);
     }
 
     public async Task<IReadOnlyCollection<PasskeyCredential>> GetCredentialsByUserIdAsync(Guid userId, CancellationToken cancellationToken)
@@ -89,7 +90,7 @@ internal sealed class EFCorePasskeyRepository(IDbContextFactory<EFCoreDbContext>
         entity.SignCount = credential.SignCount;
         entity.LastUsedAt = credential.LastUsedAt;
 
-        await context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
     }
 
     public async Task DeleteCredentialAsync(Guid credentialId, CancellationToken cancellationToken)
@@ -99,7 +100,7 @@ internal sealed class EFCorePasskeyRepository(IDbContextFactory<EFCoreDbContext>
         if (entity is not null)
         {
             context.Set<PasskeyCredentialEntity>().Remove(entity);
-            await context.SaveChangesAsync(cancellationToken);
+            await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
         }
     }
 
@@ -110,7 +111,7 @@ internal sealed class EFCorePasskeyRepository(IDbContextFactory<EFCoreDbContext>
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         var entity = MapChallengeToEntity(challenge);
         context.Set<PasskeyChallengeEntity>().Add(entity);
-        await context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
     }
 
     public async Task<PasskeyChallenge?> GetChallengeByIdAsync(Guid challengeId, CancellationToken cancellationToken)
@@ -127,7 +128,7 @@ internal sealed class EFCorePasskeyRepository(IDbContextFactory<EFCoreDbContext>
         if (entity is not null)
         {
             context.Set<PasskeyChallengeEntity>().Remove(entity);
-            await context.SaveChangesAsync(cancellationToken);
+            await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
         }
     }
 
@@ -142,7 +143,7 @@ internal sealed class EFCorePasskeyRepository(IDbContextFactory<EFCoreDbContext>
         if (expired.Count > 0)
         {
             context.Set<PasskeyChallengeEntity>().RemoveRange(expired);
-            await context.SaveChangesAsync(cancellationToken);
+            await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
         }
     }
 

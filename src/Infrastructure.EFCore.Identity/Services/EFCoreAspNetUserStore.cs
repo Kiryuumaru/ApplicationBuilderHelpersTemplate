@@ -1,4 +1,5 @@
 using Domain.Identity.Models;
+using Infrastructure.EFCore.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -27,7 +28,7 @@ internal sealed class EFCoreAspNetUserStore(IDbContextFactory<EFCoreDbContext> c
     {
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         context.Set<User>().Add(user);
-        await context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesWithExceptionHandlingAsync("User", user.UserName ?? user.Id.ToString(), cancellationToken);
         return IdentityResult.Success;
     }
 
@@ -38,7 +39,7 @@ internal sealed class EFCoreAspNetUserStore(IDbContextFactory<EFCoreDbContext> c
         if (existing is not null)
         {
             context.Set<User>().Remove(existing);
-            await context.SaveChangesAsync(cancellationToken);
+            await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
         }
         return IdentityResult.Success;
     }
@@ -94,7 +95,7 @@ internal sealed class EFCoreAspNetUserStore(IDbContextFactory<EFCoreDbContext> c
     {
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         context.Set<User>().Update(user);
-        await context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesWithExceptionHandlingAsync("User", user.UserName ?? user.Id.ToString(), cancellationToken);
         return IdentityResult.Success;
     }
 

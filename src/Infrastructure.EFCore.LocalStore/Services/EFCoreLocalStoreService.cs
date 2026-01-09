@@ -1,4 +1,5 @@
 using Application.LocalStore.Interfaces;
+using Infrastructure.EFCore.Extensions;
 using Infrastructure.EFCore.LocalStore.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -87,7 +88,7 @@ public sealed class EFCoreLocalStoreService(
             if (existing != null)
             {
                 _dbContext.Set<LocalStoreEntry>().Remove(existing);
-                await _dbContext.SaveChangesAsync(cancellationToken);
+                await _dbContext.SaveChangesWithExceptionHandlingAsync(cancellationToken);
             }
         }
         else
@@ -105,7 +106,7 @@ public sealed class EFCoreLocalStoreService(
             {
                 existing.Data = data;
             }
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            await _dbContext.SaveChangesWithExceptionHandlingAsync(cancellationToken);
         }
     }
 

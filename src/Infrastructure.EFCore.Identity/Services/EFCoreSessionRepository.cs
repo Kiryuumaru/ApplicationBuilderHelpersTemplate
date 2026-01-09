@@ -1,6 +1,7 @@
 using Application.Identity.Interfaces.Infrastructure;
 using Domain.Identity.Models;
 using Domain.Shared.Exceptions;
+using Infrastructure.EFCore.Extensions;
 using Infrastructure.EFCore.Identity.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,7 +18,7 @@ internal sealed class EFCoreSessionRepository(IDbContextFactory<EFCoreDbContext>
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         var entity = MapToEntity(session);
         context.Set<LoginSessionEntity>().Add(entity);
-        await context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
     }
 
     public async Task<LoginSession?> GetByIdAsync(Guid sessionId, CancellationToken cancellationToken)
@@ -56,7 +57,7 @@ internal sealed class EFCoreSessionRepository(IDbContextFactory<EFCoreDbContext>
         entity.IsRevoked = session.IsRevoked;
         entity.RevokedAt = session.RevokedAt;
 
-        await context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
     }
 
     public async Task<bool> RevokeAsync(Guid sessionId, CancellationToken cancellationToken)
@@ -71,7 +72,7 @@ internal sealed class EFCoreSessionRepository(IDbContextFactory<EFCoreDbContext>
 
         entity.IsRevoked = true;
         entity.RevokedAt = DateTimeOffset.UtcNow;
-        await context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
         return true;
     }
 
@@ -90,7 +91,7 @@ internal sealed class EFCoreSessionRepository(IDbContextFactory<EFCoreDbContext>
             session.RevokedAt = now;
         }
 
-        await context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
         return sessions.Count;
     }
 
@@ -109,7 +110,7 @@ internal sealed class EFCoreSessionRepository(IDbContextFactory<EFCoreDbContext>
             session.RevokedAt = now;
         }
 
-        await context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
         return sessions.Count;
     }
 
@@ -125,7 +126,7 @@ internal sealed class EFCoreSessionRepository(IDbContextFactory<EFCoreDbContext>
             .ToList();
 
         context.Set<LoginSessionEntity>().RemoveRange(toDelete);
-        await context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
         return toDelete.Count;
     }
 
