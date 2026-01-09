@@ -19,6 +19,7 @@ public interface ITokenProvider
     /// <param name="additionalClaims">Additional claims to include.</param>
     /// <param name="expiration">Optional expiration override.</param>
     /// <param name="tokenType">The type of token to generate (Access, Refresh, or ApiKey).</param>
+    /// <param name="tokenId">Optional custom token ID (jti claim). If null, a random GUID is used.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The generated token.</returns>
     Task<string> GenerateTokenWithScopesAsync(
@@ -28,6 +29,7 @@ public interface ITokenProvider
         IEnumerable<Claim>? additionalClaims = null,
         DateTimeOffset? expiration = null,
         Domain.Identity.Enums.TokenType tokenType = Domain.Identity.Enums.TokenType.Access,
+        string? tokenId = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

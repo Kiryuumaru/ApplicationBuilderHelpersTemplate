@@ -8,7 +8,7 @@ using Application.UnitTests.Authorization.Fakes;
 using Domain.Authorization.Constants;
 using NSubstitute;
 using Xunit;
-using JwtClaimTypes = Domain.Identity.Constants.JwtClaimTypes;
+using TokenClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 
 namespace Application.UnitTests.Authorization;
 
@@ -30,8 +30,8 @@ public class AccessTokenRefreshPermissionTests
         // Arrange: Create a principal like an access token would have (roles, no scope claim)
         var claims = new List<Claim>
         {
-            new(JwtClaimTypes.Subject, TestUserId.ToString()),
-            new(JwtClaimTypes.Roles, $"USER;roleUserId={TestUserId}"),
+            new(TokenClaimTypes.Subject, TestUserId.ToString()),
+            new(TokenClaimTypes.Roles, $"USER;roleUserId={TestUserId}"),
             new(RbacConstants.VersionClaimType, RbacConstants.CurrentVersion)
         };
         var identity = new ClaimsIdentity(claims, "Bearer");
@@ -67,10 +67,10 @@ public class AccessTokenRefreshPermissionTests
         // (added at access token issuance).
         var claims = new List<Claim>
         {
-            new(JwtClaimTypes.Subject, TestUserId.ToString()),
-            new(JwtClaimTypes.SessionId, TestSessionId.ToString()),
-            new(JwtClaimTypes.Roles, $"USER;roleUserId={TestUserId}"),
-            new(JwtClaimTypes.Scope, PermissionIds.Api.Auth.Refresh.WithUserId(TestUserId.ToString()).Deny()),
+            new(TokenClaimTypes.Subject, TestUserId.ToString()),
+            new(TokenClaimTypes.SessionId, TestSessionId.ToString()),
+            new(TokenClaimTypes.Roles, $"USER;roleUserId={TestUserId}"),
+            new(TokenClaimTypes.Scope, PermissionIds.Api.Auth.Refresh.WithUserId(TestUserId.ToString()).Deny()),
             new(RbacConstants.VersionClaimType, RbacConstants.CurrentVersion)
         };
         var identity = new ClaimsIdentity(claims, "Bearer");

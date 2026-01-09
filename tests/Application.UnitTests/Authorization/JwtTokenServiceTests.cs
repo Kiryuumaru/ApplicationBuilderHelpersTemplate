@@ -4,7 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
-using JwtClaimTypes = Domain.Identity.Constants.JwtClaimTypes;
+using TokenClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 
 namespace Application.UnitTests.Authorization;
 
@@ -17,7 +17,7 @@ public class JwtTokenServiceTests
 		var additionalClaims = new[]
 		{
 			new Claim("tenant", "alpha"),
-			new Claim(JwtClaimTypes.Subject, "ignored") // Reserved claim types are skipped
+			new Claim(TokenClaimTypes.Subject, "ignored") // Reserved claim types are skipped
 		};
 
 		var token = await service.GenerateToken(
@@ -34,7 +34,7 @@ public class JwtTokenServiceTests
 		Assert.Contains(jwt.Claims, claim => claim.Type == "tenant" && claim.Value == "alpha");
 
 		// JWT tokens use short claim types from Domain.Identity.Constants.ClaimTypes
-		var subjectClaims = jwt.Claims.Where(static claim => claim.Type == JwtClaimTypes.Subject).ToArray();
+		var subjectClaims = jwt.Claims.Where(static claim => claim.Type == TokenClaimTypes.Subject).ToArray();
 		Assert.Single(subjectClaims);
 		Assert.Equal("user-1", subjectClaims[0].Value);
 		Assert.Contains(jwt.Claims, claim => claim.Type == "rbac_version" && claim.Value == "2");

@@ -115,6 +115,16 @@ public static class Permissions
                     WLeaf("revoke_all", "Revoke all sessions except current.")
                 ),
 
+                // API Keys management
+                Node(
+                    "api_keys",
+                    "Manage own API keys for programmatic access.",
+                    "API key operations",
+                    RLeaf("list", "List own API keys."),
+                    WLeaf("create", "Create a new API key."),
+                    WLeaf("revoke", "Revoke an API key.")
+                ),
+
                 // Two-factor authentication
                 Node(
                     "2fa",

@@ -8,7 +8,7 @@ using Infrastructure.Identity.Interfaces;
 using Infrastructure.Identity.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using JwtClaimTypes = Domain.Identity.Constants.JwtClaimTypes;
+using TokenClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 
 namespace Application.UnitTests.Authorization;
 
@@ -465,8 +465,8 @@ public class PermissionServiceScopeDirectiveTests
     {
         var claims = new[]
         {
-            new Claim(JwtClaimTypes.Subject, "legacy-user"),
-            new Claim(JwtClaimTypes.Name, "legacy@example.com"),
+            new Claim(TokenClaimTypes.Subject, "legacy-user"),
+            new Claim(TokenClaimTypes.Name, "legacy@example.com"),
             new Claim("scope", "api:iam:users:_read")
         };
         var identity = new ClaimsIdentity(claims, "Test");
@@ -484,8 +484,8 @@ public class PermissionServiceScopeDirectiveTests
     {
         var claims = new[]
         {
-            new Claim(JwtClaimTypes.Subject, "v1-user"),
-            new Claim(JwtClaimTypes.Name, "v1@example.com"),
+            new Claim(TokenClaimTypes.Subject, "v1-user"),
+            new Claim(TokenClaimTypes.Name, "v1@example.com"),
             new Claim("rbac_version", "1"),
             new Claim("scope", "api:iam:users:_read")
         };
@@ -504,8 +504,8 @@ public class PermissionServiceScopeDirectiveTests
     {
         var claims = new[]
         {
-            new Claim(JwtClaimTypes.Subject, "v2-user"),
-            new Claim(JwtClaimTypes.Name, "v2@example.com"),
+            new Claim(TokenClaimTypes.Subject, "v2-user"),
+            new Claim(TokenClaimTypes.Name, "v2@example.com"),
             new Claim("rbac_version", "2"),
             new Claim("scope", PermissionIds.Api.Iam.Users.Read.WithUserId("v2-user").Allow())
         };
@@ -633,8 +633,8 @@ public class PermissionServiceScopeDirectiveTests
 
         var claimsList = new List<Claim>
         {
-            new Claim(JwtClaimTypes.Subject, userId),
-            new Claim(JwtClaimTypes.Name, $"{userId}@example.com"),
+            new Claim(TokenClaimTypes.Subject, userId),
+            new Claim(TokenClaimTypes.Name, $"{userId}@example.com"),
             new Claim("rbac_version", "2") // Use new RBAC version to enable directive-based evaluation
         };
 

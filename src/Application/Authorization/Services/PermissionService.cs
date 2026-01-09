@@ -15,7 +15,7 @@ using Domain.Authorization.Models;
 using Domain.Authorization.Services;
 using Domain.Authorization.ValueObjects;
 using Domain.Identity.Enums;
-using JwtClaimTypes = Domain.Identity.Constants.JwtClaimTypes;
+using TokenClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 
 namespace Application.Authorization.Services;
 
@@ -85,6 +85,7 @@ internal sealed class PermissionService(
         IEnumerable<Claim>? additionalClaims = null,
         DateTimeOffset? expiration = null,
         TokenType tokenType = TokenType.Access,
+        string? tokenId = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(userId);
@@ -104,6 +105,7 @@ internal sealed class PermissionService(
             additionalClaims: additionalClaimSet,
             expiration: expiration,
             tokenType: tokenType,
+            tokenId: tokenId,
             cancellationToken: cancellationToken);
     }
 
@@ -450,7 +452,7 @@ internal sealed class PermissionService(
         // Parse role claims with inline parameters (format: "ROLE_CODE;param1=value1;param2=value2")
         // RFC 9068 Section 2.2.3.1 / RFC 7643 Section 4.1.2 specify "roles" (plural)
         var parsedRoles = principal.Claims
-            .Where(c => string.Equals(c.Type, JwtClaimTypes.Roles, StringComparison.Ordinal))
+            .Where(c => string.Equals(c.Type, TokenClaimTypes.Roles, StringComparison.Ordinal))
             .Select(c => c.Value)
             .Where(v => !string.IsNullOrWhiteSpace(v))
             .Select(v => Role.TryParseRoleClaim(v, out var parsed) ? (Role.ParsedRoleClaim?)parsed : null)

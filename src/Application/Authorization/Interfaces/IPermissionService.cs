@@ -78,6 +78,7 @@ public interface IPermissionService
     /// <param name="additionalClaims">Additional claims to include in the token beyond scopes.</param>
     /// <param name="expiration">Optional expiration override for the delegated token.</param>
     /// <param name="tokenType">The type of token to generate (Access, Refresh, or ApiKey).</param>
+    /// <param name="tokenId">Optional custom token ID (jti claim). If null, a random GUID is used.</param>
     /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
     /// <returns>A signed JWT token string.</returns>
     Task<string> GenerateTokenWithScopeAsync(
@@ -87,6 +88,7 @@ public interface IPermissionService
         IEnumerable<Claim>? additionalClaims = null,
         DateTimeOffset? expiration = null,
         Domain.Identity.Enums.TokenType tokenType = Domain.Identity.Enums.TokenType.Access,
+        string? tokenId = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

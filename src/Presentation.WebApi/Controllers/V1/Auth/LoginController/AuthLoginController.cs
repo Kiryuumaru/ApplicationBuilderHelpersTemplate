@@ -11,7 +11,7 @@ using Presentation.WebApi.Controllers.V1.Auth.Shared;
 using Presentation.WebApi.Controllers.V1.Auth.Shared.Responses;
 using Presentation.WebApi.Controllers.V1.Auth.TwoFactorController.Responses;
 using Presentation.WebApi.Extensions;
-using JwtClaimTypes = Domain.Identity.Constants.JwtClaimTypes;
+using TokenClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 
 namespace Presentation.WebApi.Controllers.V1.Auth.LoginController;
 
@@ -200,7 +200,7 @@ public sealed class AuthLoginController(
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Logout(
-        [FromJwt(JwtClaimTypes.Subject), PermissionParameter(PermissionIds.Api.Auth.Logout.UserIdParameter)] Guid userId,
+        [FromJwt(TokenClaimTypes.Subject), PermissionParameter(PermissionIds.Api.Auth.Logout.UserIdParameter)] Guid userId,
         CancellationToken cancellationToken)
     {
         _ = userId;

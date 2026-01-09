@@ -15,6 +15,7 @@ internal class TokenProvider(IJwtTokenService jwtTokenService) : ITokenProvider
         IEnumerable<Claim>? additionalClaims = null,
         DateTimeOffset? expiration = null,
         TokenType tokenType = TokenType.Access,
+        string? tokenId = null,
         CancellationToken cancellationToken = default)
     {
         return await jwtTokenService.GenerateToken(
@@ -24,6 +25,7 @@ internal class TokenProvider(IJwtTokenService jwtTokenService) : ITokenProvider
             additionalClaims: additionalClaims,
             expiration: expiration,
             tokenType: tokenType,
+            tokenId: tokenId,
             cancellationToken: cancellationToken);
     }
 

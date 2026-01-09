@@ -9,8 +9,11 @@ namespace Application.UnitTests.Authorization;
 
 public class PermissionServiceTests
 {
-    private const string AccountUpdatePermission = "api:portfolio:accounts:update;userId=user-123";
-    private const string OrderCancelPermission = "api:trading:orders:cancel;userId=user-123";
+    // Use real permissions from the system that exist under api:auth (user-scoped)
+    private const string SessionsListPermission = "api:auth:sessions:list;userId=user-123";
+    private const string ApiKeysListPermission = "api:auth:api_keys:list;userId=user-123";
+    // A write permission for testing write scope matching
+    private const string SessionsRevokePermission = "api:auth:sessions:revoke;userId=user-123";
 
     [Fact]
     public async Task GenerateTokenWithPermissionsAsync_NormalizesAndDelegatesScopes()
@@ -20,9 +23,9 @@ public class PermissionServiceTests
 
         var permissions = new[]
         {
-            "  " + AccountUpdatePermission + "  ",
-            AccountUpdatePermission,
-            OrderCancelPermission
+            "  " + SessionsListPermission + "  ",
+            SessionsListPermission,
+            ApiKeysListPermission
         };
 
         await service.GenerateTokenWithPermissionsAsync(
@@ -31,7 +34,7 @@ public class PermissionServiceTests
             permissionIdentifiers: permissions,
             cancellationToken: CancellationToken.None);
 
-        Assert.Equal([AccountUpdatePermission, OrderCancelPermission], tokenProvider.LastGeneratedScopes);
+        Assert.Equal([SessionsListPermission, ApiKeysListPermission], tokenProvider.LastGeneratedScopes);
         Assert.Equal("user-123", tokenProvider.LastGenerateTokenUserId);
         Assert.Equal("user@test", tokenProvider.LastGenerateTokenUsername);
     }
@@ -42,7 +45,7 @@ public class PermissionServiceTests
         var service = CreateService(new RecordingTokenProvider());
         var principal = new ClaimsPrincipal(new ClaimsIdentity());
 
-        var result = await service.HasPermissionAsync(principal, OrderCancelPermission, CancellationToken.None);
+        var result = await service.HasPermissionAsync(principal, ApiKeysListPermission, CancellationToken.None);
 
         Assert.False(result);
     }
@@ -79,11 +82,11 @@ public class PermissionServiceTests
         ]);
         var principal = new ClaimsPrincipal(identity);
 
-        // Requests carry parameters in semicolon notation
-        var permitted = "api:portfolio:accounts:list;userId=user-123";
-        var otherUser = "api:portfolio:accounts:list;userId=user-456";
+        // Requests carry parameters in semicolon notation - use real permission under api:auth
+        var permitted = "api:auth:sessions:list;userId=user-123";
+        var otherUser = "api:auth:sessions:list;userId=user-456";
         // Non-scoped request without userId - DENIED because scope requires userId
-        var nonScoped = "api:favorites:read";
+        var nonScoped = "api:_read";
 
         Assert.True(await service.HasPermissionAsync(principal, permitted, CancellationToken.None));
         Assert.False(await service.HasPermissionAsync(principal, otherUser, CancellationToken.None));
@@ -97,7 +100,7 @@ public class PermissionServiceTests
         // Scope requires userId parameter
         var principal = BuildPrincipalWithScopes("allow;api:_read;userId=user-123");
         // Request has no userId parameter - the scope requires userId so this DENIES
-        var permissionWithoutParameter = "api:favorites:read";
+        var permissionWithoutParameter = "api:_read";
 
         // The scope says "allow api:_read only for userId=user-123"
         // A request without userId doesn't satisfy this - so it's DENIED
@@ -112,7 +115,7 @@ public class PermissionServiceTests
         var principal = BuildPrincipalWithScopes("allow;api:_read;userId=user-123");
 
         // Attempt with userId=user-456 (different user)
-        var attempt = "api:portfolio:accounts:list;userId=user-456";
+        var attempt = "api:auth:sessions:list;userId=user-456";
 
         Assert.False(await service.HasPermissionAsync(principal, attempt, CancellationToken.None));
     }
@@ -125,10 +128,10 @@ public class PermissionServiceTests
         var principal = BuildPrincipalWithScopes("allow;api:_read;userId=user-123");
 
         // Both requests are for user-456 (different user)
-        var otherUser = "api:portfolio:accounts:list;userId=user-456";
-        var otherUserPositions = "api:trading:orders:read;userId=user-456";
+        var otherUser = "api:auth:sessions:list;userId=user-456";
+        var otherUserApiKeys = "api:auth:api_keys:list;userId=user-456";
 
-        Assert.False(await service.HasAnyPermissionAsync(principal, [otherUser, otherUserPositions], CancellationToken.None));
+        Assert.False(await service.HasAnyPermissionAsync(principal, [otherUser, otherUserApiKeys], CancellationToken.None));
     }
 
     [Fact]
@@ -138,7 +141,7 @@ public class PermissionServiceTests
         // Use new directive format with _write scope
         var principal = BuildPrincipalWithScopes("allow;api:_write;userId=user-123");
 
-        var result = await service.HasPermissionAsync(principal, AccountUpdatePermission, CancellationToken.None);
+        var result = await service.HasPermissionAsync(principal, SessionsRevokePermission, CancellationToken.None);
 
         Assert.True(result);
     }
@@ -150,7 +153,7 @@ public class PermissionServiceTests
         // Only read scope, no write
         var principal = BuildPrincipalWithScopes("allow;api:_read;userId=user-123");
 
-        var result = await service.HasPermissionAsync(principal, AccountUpdatePermission, CancellationToken.None);
+        var result = await service.HasPermissionAsync(principal, SessionsRevokePermission, CancellationToken.None);
 
         Assert.False(result);
     }
@@ -159,15 +162,15 @@ public class PermissionServiceTests
     public async Task HasAllPermissions_ReturnsFalseWhenAnyMissing()
     {
         var service = CreateService(new RecordingTokenProvider());
-        // Only allows AccountUpdatePermission path, not position close
+        // Only allows sessions:list path, not api_keys:list
         var identity = new ClaimsIdentity(
         [
-            new Claim("scope", "allow;api:portfolio:accounts:update;userId=user-123"),
+            new Claim("scope", "allow;api:auth:sessions:list;userId=user-123"),
             new Claim("rbac_version", "2")
         ]);
         var principal = new ClaimsPrincipal(identity);
 
-        var result = await service.HasAllPermissionsAsync(principal, [AccountUpdatePermission, OrderCancelPermission], CancellationToken.None);
+        var result = await service.HasAllPermissionsAsync(principal, [SessionsListPermission, ApiKeysListPermission], CancellationToken.None);
 
         Assert.False(result);
     }
@@ -216,7 +219,7 @@ public class PermissionServiceTests
         public IReadOnlyCollection<string>? LastMutateScopesToAdd { get; private set; }
         public IReadOnlyCollection<string>? LastMutateScopesToRemove { get; private set; }
 
-        public Task<string> GenerateTokenWithScopesAsync(string userId, string? username, IEnumerable<string> scopes, IEnumerable<Claim>? additionalClaims = null, DateTimeOffset? expiration = null, Domain.Identity.Enums.TokenType tokenType = Domain.Identity.Enums.TokenType.Access, CancellationToken cancellationToken = default)
+        public Task<string> GenerateTokenWithScopesAsync(string userId, string? username, IEnumerable<string> scopes, IEnumerable<Claim>? additionalClaims = null, DateTimeOffset? expiration = null, Domain.Identity.Enums.TokenType tokenType = Domain.Identity.Enums.TokenType.Access, string? tokenId = null, CancellationToken cancellationToken = default)
         {
             LastGenerateTokenUserId = userId;
             LastGenerateTokenUsername = username;

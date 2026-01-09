@@ -20,6 +20,7 @@ internal interface IJwtTokenService
     /// <param name="additionalClaims">Optional additional claims to include.</param>
     /// <param name="expiration">Optional expiration override.</param>
     /// <param name="tokenType">The type of token to generate (sets typ header).</param>
+    /// <param name="tokenId">Optional custom token ID (jti claim). If null, a random GUID is used.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<string> GenerateToken(
         string userId,
@@ -28,6 +29,7 @@ internal interface IJwtTokenService
         IEnumerable<Claim>? additionalClaims = null,
         DateTimeOffset? expiration = null,
         TokenType tokenType = TokenType.Access,
+        string? tokenId = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

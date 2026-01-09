@@ -1,10 +1,14 @@
+using System.IdentityModel.Tokens.Jwt;
+using Application.Identity.Enums;
 using Application.Identity.Interfaces;
 using Domain.Identity.Constants;
 using Infrastructure.Identity.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using JwtClaimTypes = Domain.Identity.Constants.JwtClaimTypes;
+using Microsoft.IdentityModel.JsonWebTokens;
+using JwtClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 
 namespace Infrastructure.Identity.ConfigureOptions;
 
@@ -44,7 +48,7 @@ internal class ConfigureJwtBearerOptions(IServiceProvider serviceProvider) : ICo
             }
         };
 
-        // Add session validation on token validated
+        // Unified token validation on token validated
         var originalOnTokenValidated = options.Events.OnTokenValidated;
         options.Events.OnTokenValidated = async context =>
         {
@@ -59,22 +63,32 @@ internal class ConfigureJwtBearerOptions(IServiceProvider serviceProvider) : ICo
                 return;
             }
 
-            // Extract session ID from claims
-            var sessionIdClaim = context.Principal?.FindFirst(JwtClaimTypes.SessionId);
-            if (sessionIdClaim is null || !Guid.TryParse(sessionIdClaim.Value, out var sessionId))
+            // Extract typ header from security token
+            // Handle both JwtSecurityToken (older handler) and JsonWebToken (newer handler)
+            var typHeader = context.SecurityToken switch
             {
-                context.Fail("Token is missing required session identifier.");
-                return;
-            }
+                JsonWebToken jsonWebToken => jsonWebToken.Typ,
+                JwtSecurityToken jwtSecurityToken => jwtSecurityToken.Header?.Typ,
+                _ => null
+            };
 
-            // Validate session is still active
+            // Determine allowed token types based on endpoint
+            var path = context.HttpContext.Request.Path;
+            var allowedTypes = GetAllowedTokenTypes(path);
+
+            // Use unified validation service
             using var scope = context.HttpContext.RequestServices.CreateScope();
-            var sessionService = scope.ServiceProvider.GetRequiredService<ISessionService>();
-            var session = await sessionService.GetByIdAsync(sessionId, context.HttpContext.RequestAborted);
+            var tokenValidation = scope.ServiceProvider.GetRequiredService<ITokenValidationService>();
 
-            if (session is null || !session.IsValid)
+            var result = await tokenValidation.ValidatePostSignatureAsync(
+                context.Principal!,
+                typHeader,
+                allowedTypes,
+                context.HttpContext.RequestAborted);
+
+            if (!result.IsValid)
             {
-                context.Fail("Session has been revoked or is no longer valid.");
+                context.Fail(result.Error ?? "Token validation failed");
             }
         };
 
@@ -88,5 +102,22 @@ internal class ConfigureJwtBearerOptions(IServiceProvider serviceProvider) : ICo
 
         // Disable claim type mapping - keep JWT claim types as-is ("sub" stays "sub", not mapped to ClaimTypes.NameIdentifier)
         options.MapInboundClaims = false;
+    }
+
+    /// <summary>
+    /// Determines which token types are allowed for a given endpoint path.
+    /// </summary>
+    private static TokenType[] GetAllowedTokenTypes(PathString path)
+    {
+        // Refresh endpoint only accepts refresh tokens
+        if (path.StartsWithSegments("/api/v1/auth/refresh"))
+        {
+            return [TokenType.Refresh];
+        }
+
+        // All endpoints accept access tokens, API keys, and refresh tokens.
+        // Refresh tokens pass authentication but will fail authorization checks
+        // (403 Forbidden) because they lack the necessary permission claims.
+        return [TokenType.Access, TokenType.ApiKey, TokenType.Refresh];
     }
 }

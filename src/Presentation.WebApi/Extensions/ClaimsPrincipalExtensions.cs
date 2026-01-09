@@ -15,7 +15,7 @@ public static class ClaimsPrincipalExtensions
     /// <returns>User ID when present and valid; otherwise null.</returns>
     public static Guid? GetUserId(this ClaimsPrincipal user)
     {
-        var userIdClaim = user.FindFirst(JwtClaimTypes.Subject);
+        var userIdClaim = user.FindFirst(TokenClaimTypes.Subject);
         if (userIdClaim is not null && Guid.TryParse(userIdClaim.Value, out var userId))
         {
             return userId;
@@ -30,7 +30,7 @@ public static class ClaimsPrincipalExtensions
     /// <returns>Username when present; otherwise null.</returns>
     public static string? GetUsername(this ClaimsPrincipal user)
     {
-        return user.FindFirst(JwtClaimTypes.Name)?.Value;
+        return user.FindFirst(TokenClaimTypes.Name)?.Value;
     }
 
     /// <summary>
@@ -40,7 +40,7 @@ public static class ClaimsPrincipalExtensions
     /// <returns>Session ID when present and valid; otherwise null.</returns>
     public static Guid? GetSessionId(this ClaimsPrincipal user)
     {
-        var sessionIdClaim = user.FindFirst(JwtClaimTypes.SessionId);
+        var sessionIdClaim = user.FindFirst(TokenClaimTypes.SessionId);
         if (sessionIdClaim is not null && Guid.TryParse(sessionIdClaim.Value, out var sessionId))
         {
             return sessionId;

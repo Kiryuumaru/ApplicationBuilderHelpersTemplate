@@ -27,6 +27,7 @@ public static class EFCoreIdentityServiceCollectionExtensions
         services.AddScoped<ISessionRepository, EFCoreSessionRepository>();
         services.AddScoped<IPasskeyRepository, EFCorePasskeyRepository>();
         services.AddScoped<IRoleRepository, EFCoreRoleRepository>();
+        services.AddScoped<IApiKeyRepository, EFCoreApiKeyRepository>();
 
         // Background worker for anonymous user cleanup
         services.AddHostedService<AnonymousUserCleanupWorker>();

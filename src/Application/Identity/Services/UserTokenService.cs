@@ -7,7 +7,7 @@ using Domain.Authorization.Constants;
 using Domain.Authorization.ValueObjects;
 using Domain.Identity.Constants;
 using Domain.Identity.Enums;
-using JwtClaimTypes = Domain.Identity.Constants.JwtClaimTypes;
+using TokenClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 
 namespace Application.Identity.Services;
 
@@ -96,13 +96,13 @@ public sealed class UserTokenService(
     {
         var additionalClaims = new List<Claim>
         {
-            new(JwtClaimTypes.SessionId, sessionId.ToString())
+            new(TokenClaimTypes.SessionId, sessionId.ToString())
         };
 
         // RFC 9068 Section 2.2.3.1 / RFC 7643 Section 4.1.2 specify "roles" (plural)
         foreach (var role in authData.FormattedRoles)
         {
-            additionalClaims.Add(new Claim(JwtClaimTypes.Roles, role));
+            additionalClaims.Add(new Claim(TokenClaimTypes.Roles, role));
         }
 
         // Get ONLY direct permission grants - NOT role-derived scopes
@@ -120,6 +120,7 @@ public sealed class UserTokenService(
             additionalClaims,
             DateTimeOffset.UtcNow.Add(TokenExpirations.AccessToken),
             TokenType.Access,
+            tokenId: null,
             cancellationToken);
     }
 
@@ -135,7 +136,7 @@ public sealed class UserTokenService(
     {
         var refreshClaims = new List<Claim>
         {
-            new(JwtClaimTypes.SessionId, sessionId.ToString())
+            new(TokenClaimTypes.SessionId, sessionId.ToString())
         };
 
         // Refresh token only has permission to refresh - nothing else
@@ -151,6 +152,7 @@ public sealed class UserTokenService(
             additionalClaims: refreshClaims,
             DateTimeOffset.UtcNow.Add(TokenExpirations.RefreshToken),
             TokenType.Refresh,
+            tokenId: null,
             cancellationToken);
     }
 
@@ -167,7 +169,7 @@ public sealed class UserTokenService(
         }
 
         // Extract user ID using short claim types
-        var userIdClaim = principal.FindFirst(JwtClaimTypes.Subject);
+        var userIdClaim = principal.FindFirst(TokenClaimTypes.Subject);
         if (userIdClaim is null || !Guid.TryParse(userIdClaim.Value, out var userId))
         {
             return TokenRefreshResult.Failure("invalid_token", "The refresh token does not contain valid user information.");
@@ -183,7 +185,7 @@ public sealed class UserTokenService(
         }
 
         // Extract session ID
-        var sessionIdClaim = principal.FindFirst(JwtClaimTypes.SessionId);
+        var sessionIdClaim = principal.FindFirst(TokenClaimTypes.SessionId);
         if (sessionIdClaim is null || !Guid.TryParse(sessionIdClaim.Value, out var sessionId))
         {
             return TokenRefreshResult.Failure("invalid_token", "The refresh token does not contain a valid session.");

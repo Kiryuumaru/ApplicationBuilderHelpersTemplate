@@ -22,6 +22,7 @@ public class IdentityEntityConfiguration : IEFCoreEntityConfiguration
         ConfigureUserRoleAssignment(modelBuilder);
         ConfigureUserPermissionGrant(modelBuilder);
         ConfigureLoginSession(modelBuilder);
+        ConfigureApiKey(modelBuilder);
     }
 
     private static void ConfigureUser(ModelBuilder modelBuilder)
@@ -251,5 +252,31 @@ public class IdentityEntityConfiguration : IEFCoreEntityConfiguration
         entity.HasIndex(s => s.UserId);
         entity.HasIndex(s => s.ExpiresAt);  // For cleanup queries
         entity.HasIndex(s => new { s.UserId, s.IsRevoked });  // For active sessions query
+    }
+
+    private static void ConfigureApiKey(ModelBuilder modelBuilder)
+    {
+        var entity = modelBuilder.Entity<ApiKeyEntity>();
+
+        entity.ToTable("ApiKeys");
+
+        entity.HasKey(k => k.Id);
+
+        entity.Property(k => k.Id)
+            .HasConversion(id => id.ToString(), str => Guid.Parse(str))
+            .IsRequired();
+        entity.Property(k => k.UserId)
+            .HasConversion(id => id.ToString(), str => Guid.Parse(str))
+            .IsRequired();
+        entity.Property(k => k.Name).IsRequired().HasMaxLength(100);
+        entity.Property(k => k.CreatedAt).IsRequired();
+        entity.Property(k => k.ExpiresAt);
+        entity.Property(k => k.LastUsedAt);
+        entity.Property(k => k.IsRevoked).IsRequired();
+        entity.Property(k => k.RevokedAt);
+
+        entity.HasIndex(k => k.UserId);
+        entity.HasIndex(k => new { k.UserId, k.IsRevoked });  // For active API keys query
+        entity.HasIndex(k => k.ExpiresAt);  // For cleanup queries
     }
 }

@@ -6,7 +6,7 @@ using Presentation.WebApi.Attributes;
 using Presentation.WebApi.Controllers.V1.Auth.Shared;
 using Presentation.WebApi.Controllers.V1.Auth.Shared.Responses;
 using System.Security.Authentication;
-using JwtClaimTypes = Domain.Identity.Constants.JwtClaimTypes;
+using TokenClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 
 namespace Presentation.WebApi.Controllers.V1.Auth.MeController;
 
@@ -40,7 +40,7 @@ public sealed class AuthMeController(
     [ProducesResponseType<UserInfo>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetMe(
-        [FromJwt(JwtClaimTypes.Subject), PermissionParameter(PermissionIds.Api.Auth.Me.UserIdParameter)] Guid userId,
+        [FromJwt(TokenClaimTypes.Subject), PermissionParameter(PermissionIds.Api.Auth.Me.UserIdParameter)] Guid userId,
         CancellationToken cancellationToken)
     {
         var user = await userProfileService.GetByIdAsync(userId, cancellationToken);

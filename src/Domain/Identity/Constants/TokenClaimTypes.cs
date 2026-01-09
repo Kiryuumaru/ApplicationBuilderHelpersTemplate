@@ -4,7 +4,7 @@ namespace Domain.Identity.Constants;
 /// Standard claim type names used in JWT tokens.
 /// Uses short claim names per RFC 7519 and RFC 9068.
 /// </summary>
-public static class JwtClaimTypes
+public static class TokenClaimTypes
 {
     #region Identity Claims
 

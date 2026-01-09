@@ -16,7 +16,7 @@ using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using JwtClaimTypes = Domain.Identity.Constants.JwtClaimTypes;
+using TokenClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 
 namespace Presentation.WebApi.Attributes;
 
@@ -175,7 +175,7 @@ public sealed partial class RequiredPermissionAttribute : Attribute, IAsyncActio
         switch (placeholderName.ToLowerInvariant())
         {
             case "userid":
-                var userId = context.HttpContext.User.FindFirst(JwtClaimTypes.Subject)?.Value;
+                var userId = context.HttpContext.User.FindFirst(TokenClaimTypes.Subject)?.Value;
                 return userId;
         }
         

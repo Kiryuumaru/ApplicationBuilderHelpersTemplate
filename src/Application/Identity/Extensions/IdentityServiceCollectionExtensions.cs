@@ -42,6 +42,8 @@ internal static class IdentityServiceCollectionExtensions
         services.AddScoped<IUserTokenService, UserTokenService>();
         services.AddScoped<IFrontendUrlBuilder, FrontendUrlBuilder>();
         services.AddScoped<IAuthMethodGuardService, AuthMethodGuardService>();
+        services.AddScoped<IApiKeyService, ApiKeyService>();
+        services.AddScoped<ITokenValidationService, TokenValidationService>();
         
         services.AddScoped<IAnonymousUserCleanupService, AnonymousUserCleanupService>();
 
