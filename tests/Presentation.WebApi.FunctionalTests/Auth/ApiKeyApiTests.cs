@@ -720,6 +720,515 @@ public class ApiKeyApiTests
 
     #endregion
 
+    #region Random User Journey Tests
+
+    [Fact]
+    public async Task Journey_CreateKeyUseItThenRevoke()
+    {
+        _output.WriteLine("[TEST] Journey_CreateKeyUseItThenRevoke");
+
+        var auth = await RegisterUniqueUserAsync();
+        Assert.NotNull(auth);
+
+        // Create key
+        var key = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, "Temp Key");
+        Assert.NotNull(key);
+
+        // Use key successfully
+        using var req1 = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
+        req1.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key!.Key);
+        var res1 = await _sharedHost.Host.HttpClient.SendAsync(req1);
+        Assert.Equal(HttpStatusCode.OK, res1.StatusCode);
+
+        // Revoke
+        using var revokeReq = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{auth.User.Id}/api-keys/{key.Id}");
+        revokeReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+        var revokeRes = await _sharedHost.Host.HttpClient.SendAsync(revokeReq);
+        Assert.Equal(HttpStatusCode.NoContent, revokeRes.StatusCode);
+
+        // Use key fails
+        using var req2 = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
+        req2.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key.Key);
+        var res2 = await _sharedHost.Host.HttpClient.SendAsync(req2);
+        Assert.Equal(HttpStatusCode.Unauthorized, res2.StatusCode);
+
+        _output.WriteLine("[PASS] Create-use-revoke journey completed");
+    }
+
+    [Fact]
+    public async Task Journey_TwoUsersCannotShareKeys()
+    {
+        _output.WriteLine("[TEST] Journey_TwoUsersCannotShareKeys");
+
+        var user1 = await RegisterUniqueUserAsync();
+        var user2 = await RegisterUniqueUserAsync();
+        Assert.NotNull(user1);
+        Assert.NotNull(user2);
+
+        // User1 creates key
+        var key1 = await CreateApiKeyAsync(user1!.User.Id, user1.AccessToken, "User1 Key");
+        Assert.NotNull(key1);
+
+        // User2 tries to revoke User1's key
+        using var req = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{user1.User.Id}/api-keys/{key1!.Id}");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user2!.AccessToken);
+        var res = await _sharedHost.Host.HttpClient.SendAsync(req);
+        Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
+
+        _output.WriteLine("[PASS] Users cannot interfere with each other's keys");
+    }
+
+    [Fact]
+    public async Task Journey_CreateMultipleKeysRevokeOne()
+    {
+        _output.WriteLine("[TEST] Journey_CreateMultipleKeysRevokeOne");
+
+        var auth = await RegisterUniqueUserAsync();
+        Assert.NotNull(auth);
+
+        var key1 = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, "Key A");
+        var key2 = await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, "Key B");
+        var key3 = await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, "Key C");
+        Assert.NotNull(key1);
+        Assert.NotNull(key2);
+        Assert.NotNull(key3);
+
+        // Revoke middle key
+        using var revokeReq = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{auth.User.Id}/api-keys/{key2!.Id}");
+        revokeReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+        await _sharedHost.Host.HttpClient.SendAsync(revokeReq);
+
+        // Key1 and Key3 still work
+        using var req1 = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
+        req1.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key1!.Key);
+        Assert.Equal(HttpStatusCode.OK, (await _sharedHost.Host.HttpClient.SendAsync(req1)).StatusCode);
+
+        using var req3 = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
+        req3.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key3!.Key);
+        Assert.Equal(HttpStatusCode.OK, (await _sharedHost.Host.HttpClient.SendAsync(req3)).StatusCode);
+
+        // Key2 is revoked
+        using var req2 = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
+        req2.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key2.Key);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await _sharedHost.Host.HttpClient.SendAsync(req2)).StatusCode);
+
+        // List shows 2 keys
+        var list = await ListApiKeysAsync(auth.User.Id, auth.AccessToken);
+        Assert.Equal(2, list!.Items.Count);
+
+        _output.WriteLine("[PASS] Revoking one key doesn't affect others");
+    }
+
+    [Fact]
+    public async Task Journey_ApiKeyCannotManageItself()
+    {
+        _output.WriteLine("[TEST] Journey_ApiKeyCannotManageItself");
+
+        var auth = await RegisterUniqueUserAsync();
+        Assert.NotNull(auth);
+
+        var key = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, "Self-Aware Key");
+        Assert.NotNull(key);
+
+        // Try to revoke itself using the API key
+        using var req = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{auth.User.Id}/api-keys/{key!.Id}");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key.Key);
+        var res = await _sharedHost.Host.HttpClient.SendAsync(req);
+        Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
+
+        _output.WriteLine("[PASS] API key cannot revoke itself");
+    }
+
+    [Fact]
+    public async Task Journey_AccessTokenAndApiKeyBothWork()
+    {
+        _output.WriteLine("[TEST] Journey_AccessTokenAndApiKeyBothWork");
+
+        var auth = await RegisterUniqueUserAsync();
+        Assert.NotNull(auth);
+
+        var key = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, "Parallel Key");
+        Assert.NotNull(key);
+
+        // Access token works
+        using var req1 = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
+        req1.Headers.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+        Assert.Equal(HttpStatusCode.OK, (await _sharedHost.Host.HttpClient.SendAsync(req1)).StatusCode);
+
+        // API key also works
+        using var req2 = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
+        req2.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key!.Key);
+        Assert.Equal(HttpStatusCode.OK, (await _sharedHost.Host.HttpClient.SendAsync(req2)).StatusCode);
+
+        _output.WriteLine("[PASS] Both token types work simultaneously");
+    }
+
+    [Fact]
+    public async Task Journey_CreateKeyWithSpecialCharactersInName()
+    {
+        _output.WriteLine("[TEST] Journey_CreateKeyWithSpecialCharactersInName");
+
+        var auth = await RegisterUniqueUserAsync();
+        Assert.NotNull(auth);
+
+        var specialName = "My Key! @#$%^&*() - Test_123";
+        var key = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, specialName);
+        Assert.NotNull(key);
+        Assert.Equal(specialName, key!.Name);
+
+        var list = await ListApiKeysAsync(auth.User.Id, auth.AccessToken);
+        Assert.Contains(list!.Items, k => k.Name == specialName);
+
+        _output.WriteLine("[PASS] Special characters in name preserved");
+    }
+
+    [Fact]
+    public async Task Journey_RevokeAllKeysThenCreateNew()
+    {
+        _output.WriteLine("[TEST] Journey_RevokeAllKeysThenCreateNew");
+
+        var auth = await RegisterUniqueUserAsync();
+        Assert.NotNull(auth);
+
+        // Create and revoke a few keys
+        for (int i = 0; i < 3; i++)
+        {
+            var k = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, $"OldKey{i}");
+            using var req = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{auth.User.Id}/api-keys/{k!.Id}");
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+            await _sharedHost.Host.HttpClient.SendAsync(req);
+        }
+
+        // List should be empty
+        var listBefore = await ListApiKeysAsync(auth!.User.Id, auth.AccessToken);
+        Assert.Empty(listBefore!.Items);
+
+        // Create new key
+        var newKey = await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, "FreshStart");
+        Assert.NotNull(newKey);
+
+        // New key works
+        using var useReq = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
+        useReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", newKey!.Key);
+        Assert.Equal(HttpStatusCode.OK, (await _sharedHost.Host.HttpClient.SendAsync(useReq)).StatusCode);
+
+        _output.WriteLine("[PASS] Can create new keys after revoking all");
+    }
+
+    [Fact]
+    public async Task Journey_ApiKeyReturnsCorrectUserInMe()
+    {
+        _output.WriteLine("[TEST] Journey_ApiKeyReturnsCorrectUserInMe");
+
+        var auth = await RegisterUniqueUserAsync();
+        Assert.NotNull(auth);
+
+        var key = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, "Identity Key");
+        Assert.NotNull(key);
+
+        using var req = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key!.Key);
+        var res = await _sharedHost.Host.HttpClient.SendAsync(req);
+        var content = await res.Content.ReadAsStringAsync();
+        var me = JsonSerializer.Deserialize<UserInfoResponse>(content, JsonOptions);
+
+        Assert.Equal(auth.User.Id, me!.Id);
+        Assert.Equal(auth.User.Username, me.Username);
+
+        _output.WriteLine("[PASS] API key returns correct user identity");
+    }
+
+    [Fact]
+    public async Task Journey_KeyWithExpirationStillWorksBeforeExpiry()
+    {
+        _output.WriteLine("[TEST] Journey_KeyWithExpirationStillWorksBeforeExpiry");
+
+        var auth = await RegisterUniqueUserAsync();
+        Assert.NotNull(auth);
+
+        var expiresAt = DateTimeOffset.UtcNow.AddHours(24);
+        var key = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, "24h Key", expiresAt);
+        Assert.NotNull(key);
+        Assert.NotNull(key!.ExpiresAt);
+
+        // Key works before expiry
+        using var req = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key.Key);
+        Assert.Equal(HttpStatusCode.OK, (await _sharedHost.Host.HttpClient.SendAsync(req)).StatusCode);
+
+        _output.WriteLine("[PASS] Key with future expiration works");
+    }
+
+    [Fact]
+    public async Task Journey_ListKeysShowsCorrectMetadata()
+    {
+        _output.WriteLine("[TEST] Journey_ListKeysShowsCorrectMetadata");
+
+        var auth = await RegisterUniqueUserAsync();
+        Assert.NotNull(auth);
+
+        var expires = DateTimeOffset.UtcNow.AddDays(7);
+        var key = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, "Metadata Key", expires);
+        Assert.NotNull(key);
+
+        var list = await ListApiKeysAsync(auth.User.Id, auth.AccessToken);
+        var listed = list!.Items.First(k => k.Id == key!.Id);
+
+        Assert.Equal("Metadata Key", listed.Name);
+        Assert.NotNull(listed.ExpiresAt);
+        Assert.True(listed.CreatedAt > DateTimeOffset.UtcNow.AddMinutes(-5));
+
+        _output.WriteLine("[PASS] List returns correct metadata");
+    }
+
+    [Fact]
+    public async Task Journey_RapidCreateAndRevoke()
+    {
+        _output.WriteLine("[TEST] Journey_RapidCreateAndRevoke");
+
+        var auth = await RegisterUniqueUserAsync();
+        Assert.NotNull(auth);
+
+        // Rapidly create and revoke 5 keys
+        for (int i = 0; i < 5; i++)
+        {
+            var k = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, $"Rapid{i}");
+            Assert.NotNull(k);
+
+            using var req = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{auth.User.Id}/api-keys/{k!.Id}");
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+            var res = await _sharedHost.Host.HttpClient.SendAsync(req);
+            Assert.Equal(HttpStatusCode.NoContent, res.StatusCode);
+        }
+
+        var list = await ListApiKeysAsync(auth!.User.Id, auth.AccessToken);
+        Assert.Empty(list!.Items);
+
+        _output.WriteLine("[PASS] Rapid create/revoke cycles work");
+    }
+
+    [Fact]
+    public async Task Journey_UseKeyThenRefreshAccessToken()
+    {
+        _output.WriteLine("[TEST] Journey_UseKeyThenRefreshAccessToken");
+
+        var auth = await RegisterUniqueUserAsync();
+        Assert.NotNull(auth);
+
+        var key = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, "Persistent Key");
+        Assert.NotNull(key);
+
+        // Refresh access token
+        var refreshRes = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", 
+            new { RefreshToken = auth.RefreshToken });
+        Assert.Equal(HttpStatusCode.OK, refreshRes.StatusCode);
+
+        // API key still works after session refresh
+        using var req = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key!.Key);
+        Assert.Equal(HttpStatusCode.OK, (await _sharedHost.Host.HttpClient.SendAsync(req)).StatusCode);
+
+        _output.WriteLine("[PASS] API key survives session refresh");
+    }
+
+    [Fact]
+    public async Task Journey_TwoUsersDifferentKeyNames()
+    {
+        _output.WriteLine("[TEST] Journey_TwoUsersDifferentKeyNames");
+
+        var user1 = await RegisterUniqueUserAsync();
+        var user2 = await RegisterUniqueUserAsync();
+
+        // Both users create keys with same name
+        var key1 = await CreateApiKeyAsync(user1!.User.Id, user1.AccessToken, "Production");
+        var key2 = await CreateApiKeyAsync(user2!.User.Id, user2.AccessToken, "Production");
+
+        Assert.NotNull(key1);
+        Assert.NotNull(key2);
+        Assert.NotEqual(key1!.Id, key2!.Id);
+        Assert.NotEqual(key1.Key, key2.Key);
+
+        // Each key only accesses its owner
+        using var req1 = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
+        req1.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key1.Key);
+        var res1 = await _sharedHost.Host.HttpClient.SendAsync(req1);
+        var me1 = JsonSerializer.Deserialize<UserInfoResponse>(await res1.Content.ReadAsStringAsync(), JsonOptions);
+        Assert.Equal(user1.User.Id, me1!.Id);
+
+        using var req2 = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
+        req2.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key2.Key);
+        var res2 = await _sharedHost.Host.HttpClient.SendAsync(req2);
+        var me2 = JsonSerializer.Deserialize<UserInfoResponse>(await res2.Content.ReadAsStringAsync(), JsonOptions);
+        Assert.Equal(user2.User.Id, me2!.Id);
+
+        _output.WriteLine("[PASS] Same key name, different users, isolated");
+    }
+
+    [Fact]
+    public async Task Journey_CreateKeyImmediatelyUse()
+    {
+        _output.WriteLine("[TEST] Journey_CreateKeyImmediatelyUse");
+
+        var auth = await RegisterUniqueUserAsync();
+        Assert.NotNull(auth);
+
+        var key = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, "Instant Key");
+        Assert.NotNull(key);
+
+        // Immediately use without delay
+        using var req = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key!.Key);
+        var res = await _sharedHost.Host.HttpClient.SendAsync(req);
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+
+        _output.WriteLine("[PASS] Key works immediately after creation");
+    }
+
+    [Fact]
+    public async Task Journey_RevokeNonExistentKeyForUser()
+    {
+        _output.WriteLine("[TEST] Journey_RevokeNonExistentKeyForUser");
+
+        var auth = await RegisterUniqueUserAsync();
+        Assert.NotNull(auth);
+
+        var fakeKeyId = Guid.NewGuid();
+        using var req = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{auth!.User.Id}/api-keys/{fakeKeyId}");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+        var res = await _sharedHost.Host.HttpClient.SendAsync(req);
+
+        Assert.Equal(HttpStatusCode.NotFound, res.StatusCode);
+
+        _output.WriteLine("[PASS] Revoking non-existent key returns 404");
+    }
+
+    [Fact]
+    public async Task Journey_ListAfterMultipleOperations()
+    {
+        _output.WriteLine("[TEST] Journey_ListAfterMultipleOperations");
+
+        var auth = await RegisterUniqueUserAsync();
+        Assert.NotNull(auth);
+
+        // Create 5 keys
+        var keys = new List<CreateApiKeyResponse>();
+        for (int i = 0; i < 5; i++)
+        {
+            var k = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, $"Key{i}");
+            keys.Add(k!);
+        }
+
+        // Revoke 2 of them (indices 1 and 3)
+        using var rev1 = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{auth!.User.Id}/api-keys/{keys[1].Id}");
+        rev1.Headers.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+        await _sharedHost.Host.HttpClient.SendAsync(rev1);
+
+        using var rev2 = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{auth.User.Id}/api-keys/{keys[3].Id}");
+        rev2.Headers.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+        await _sharedHost.Host.HttpClient.SendAsync(rev2);
+
+        // List should show 3 keys
+        var list = await ListApiKeysAsync(auth.User.Id, auth.AccessToken);
+        Assert.Equal(3, list!.Items.Count);
+        Assert.Contains(list.Items, k => k.Name == "Key0");
+        Assert.Contains(list.Items, k => k.Name == "Key2");
+        Assert.Contains(list.Items, k => k.Name == "Key4");
+        Assert.DoesNotContain(list.Items, k => k.Name == "Key1");
+        Assert.DoesNotContain(list.Items, k => k.Name == "Key3");
+
+        _output.WriteLine("[PASS] List correctly reflects create/revoke operations");
+    }
+
+    [Fact]
+    public async Task Journey_ApiKeyCannotAccessOtherUserData()
+    {
+        _output.WriteLine("[TEST] Journey_ApiKeyCannotAccessOtherUserData");
+
+        var user1 = await RegisterUniqueUserAsync();
+        var user2 = await RegisterUniqueUserAsync();
+
+        var key1 = await CreateApiKeyAsync(user1!.User.Id, user1.AccessToken, "User1 Key");
+        Assert.NotNull(key1);
+
+        // User1's API key tries to list User2's API keys
+        using var req = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{user2!.User.Id}/api-keys");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key1!.Key);
+        var res = await _sharedHost.Host.HttpClient.SendAsync(req);
+
+        // Should be 403 (API keys can't list any API keys including other users')
+        Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
+
+        _output.WriteLine("[PASS] API key cannot access other user's data");
+    }
+
+    [Fact]
+    public async Task Journey_CreateKeyWithMaxLengthName()
+    {
+        _output.WriteLine("[TEST] Journey_CreateKeyWithMaxLengthName");
+
+        var auth = await RegisterUniqueUserAsync();
+        Assert.NotNull(auth);
+
+        var maxName = new string('X', 100); // Exactly 100 chars
+        var key = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, maxName);
+        Assert.NotNull(key);
+        Assert.Equal(maxName, key!.Name);
+
+        _output.WriteLine("[PASS] 100-char name accepted");
+    }
+
+    [Fact]
+    public async Task Journey_UseMultipleKeysInSequence()
+    {
+        _output.WriteLine("[TEST] Journey_UseMultipleKeysInSequence");
+
+        var auth = await RegisterUniqueUserAsync();
+        Assert.NotNull(auth);
+
+        var keyA = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, "KeyA");
+        var keyB = await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, "KeyB");
+        var keyC = await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, "KeyC");
+
+        // Use each key in sequence
+        foreach (var key in new[] { keyA, keyB, keyC })
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key!.Key);
+            var res = await _sharedHost.Host.HttpClient.SendAsync(req);
+            Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        }
+
+        _output.WriteLine("[PASS] Multiple keys all work in sequence");
+    }
+
+    [Fact]
+    public async Task Journey_EmptyListAfterRegisterThenPopulate()
+    {
+        _output.WriteLine("[TEST] Journey_EmptyListAfterRegisterThenPopulate");
+
+        var auth = await RegisterUniqueUserAsync();
+        Assert.NotNull(auth);
+
+        // Verify empty
+        var listBefore = await ListApiKeysAsync(auth!.User.Id, auth.AccessToken);
+        Assert.Empty(listBefore!.Items);
+
+        // Add one
+        await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, "First");
+        var listAfter = await ListApiKeysAsync(auth.User.Id, auth.AccessToken);
+        Assert.Single(listAfter!.Items);
+
+        // Add two more
+        await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, "Second");
+        await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, "Third");
+        var listFinal = await ListApiKeysAsync(auth.User.Id, auth.AccessToken);
+        Assert.Equal(3, listFinal!.Items.Count);
+
+        _output.WriteLine("[PASS] List grows correctly as keys are added");
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private async Task<AuthResponse?> RegisterUniqueUserAsync()
