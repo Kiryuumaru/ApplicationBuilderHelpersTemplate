@@ -38,7 +38,7 @@ public class PermissionsApiTests
         Assert.NotNull(userAuth);
         var userId = userAuth!.User!.Id;
 
-        var grantRequest = new { UserId = userId, PermissionIdentifier = "api:portfolio:read", Description = "Test grant" };
+        var grantRequest = new { UserId = userId, PermissionIdentifier = "api:iam:users:read", Description = "Test grant" };
 
         _output.WriteLine("[STEP] POST /api/v1/iam/permissions/grant...");
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/iam/permissions/grant");
@@ -62,7 +62,7 @@ public class PermissionsApiTests
         Assert.NotNull(userAuth);
         var userId = userAuth!.User!.Id;
 
-        var revokeRequest = new { UserId = userId, PermissionIdentifier = "api:portfolio:read" };
+        var revokeRequest = new { UserId = userId, PermissionIdentifier = "api:iam:users:read" };
 
         _output.WriteLine("[STEP] POST /api/v1/iam/permissions/revoke...");
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/iam/permissions/revoke");

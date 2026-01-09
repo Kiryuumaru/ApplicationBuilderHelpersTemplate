@@ -185,7 +185,7 @@ public class StressTests
                     var body = new
                     {
                         UserId = userId,
-                        PermissionIdentifier = "api:portfolio:read",
+                        PermissionIdentifier = "api:iam:users:read",
                         Description = "Stress test"
                     };
 

@@ -58,7 +58,7 @@ public class ScopeEvaluatorTests
             ScopeDirective.Allow("api:iam:users:_read")
         };
 
-        var result = ScopeEvaluator.HasPermission(scope, "api:portfolio:read");
+        var result = ScopeEvaluator.HasPermission(scope, "api:iam:roles:read");
 
         Assert.False(result);
     }
@@ -126,14 +126,14 @@ public class ScopeEvaluatorTests
         var scope = new[]
         {
             ScopeDirective.Allow("_read"),
-            ScopeDirective.Deny("api:portfolio:read")
+            ScopeDirective.Deny("api:iam:roles:read")
         };
 
         var canReadUsers = ScopeEvaluator.HasPermission(scope, "api:iam:users:read");
-        var canReadPortfolio = ScopeEvaluator.HasPermission(scope, "api:portfolio:read");
+        var canReadRoles = ScopeEvaluator.HasPermission(scope, "api:iam:roles:read");
 
         Assert.True(canReadUsers);
-        Assert.False(canReadPortfolio);
+        Assert.False(canReadRoles);
     }
 
     [Fact]
@@ -214,7 +214,7 @@ public class ScopeEvaluatorTests
 
         Assert.Contains("api:iam:users:read", rLeafs);
         Assert.Contains("api:iam:users:list", rLeafs);
-        Assert.Contains("api:portfolio:accounts:list", rLeafs);
+        Assert.Contains("api:iam:roles:list", rLeafs);
     }
 
     [Fact]
@@ -255,10 +255,10 @@ public class ScopeEvaluatorTests
     public void PermissionParsing_SemicolonFormat_WithMultipleParameters()
     {
         // Test that parsing semicolon format with multiple params works
-        var success = Permission.TryParseIdentifier("api:portfolio:accounts:read;userId=user-1", out var parsed);
+        var success = Permission.TryParseIdentifier("api:iam:users:read;userId=user-1", out var parsed);
 
         Assert.True(success);
-        Assert.Equal("api:portfolio:accounts:read", parsed.Canonical);
+        Assert.Equal("api:iam:users:read", parsed.Canonical);
         Assert.Equal("user-1", parsed.Parameters["userId"]);
     }
 

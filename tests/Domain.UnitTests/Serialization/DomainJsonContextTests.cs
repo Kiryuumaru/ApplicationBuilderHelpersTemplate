@@ -20,7 +20,7 @@ public class DomainJsonContextTests
     [Fact]
     public void PermissionParsedIdentifier_RoundTrips()
     {
-        var parsed = Permission.ParseIdentifier("api:portfolio:accounts:update");
+        var parsed = Permission.ParseIdentifier("api:iam:users:update");
         var typeInfo = (System.Text.Json.Serialization.Metadata.JsonTypeInfo<Permission.ParsedIdentifier>)
             DomainJsonContext.Default.GetTypeInfo(typeof(Permission.ParsedIdentifier))!;
 

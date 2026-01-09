@@ -16,13 +16,13 @@ public class UserTests
     public void GrantPermission_NormalizesIdentifier()
     {
         var user = CreateUser();
-        var grant = UserPermissionGrant.Allow(" api : portfolio : accounts : list ");
+        var grant = UserPermissionGrant.Allow(" api : iam : users : list ");
 
         user.GrantPermission(grant);
 
         var identifiers = user.GetPermissionIdentifiers();
         Assert.Single(identifiers);
-        Assert.Equal("api:portfolio:accounts:list", identifiers.First());
+        Assert.Equal("api:iam:users:list", identifiers.First());
     }
 
     [Fact]
@@ -30,7 +30,7 @@ public class UserTests
     {
         var user = CreateUser();
         user.Activate();
-        user.GrantPermission(UserPermissionGrant.Allow("api:portfolio:accounts:list"));
+        user.GrantPermission(UserPermissionGrant.Allow("api:iam:users:list"));
         
         // Set password hash
         var prop = typeof(User).GetProperty(nameof(User.PasswordHash));
@@ -74,15 +74,15 @@ public class UserTests
     public void BuildEffectivePermissions_IncludesRoleGrants()
     {
         var user = CreateUser();
-        user.GrantPermission(UserPermissionGrant.Allow("api:portfolio:accounts:list"));
+        user.GrantPermission(UserPermissionGrant.Allow("api:iam:users:list"));
 
         var role = Role.Create("admin", "Administrator");
-        role.AddScopeTemplate(ScopeTemplate.Allow("api:trading:orders:cancel"));
+        role.AddScopeTemplate(ScopeTemplate.Allow("api:iam:users:delete"));
 
         var identifiers = user.BuildEffectivePermissions([new UserRoleResolution(role)]);
 
-        Assert.Contains("api:portfolio:accounts:list", identifiers);
-        Assert.Contains("api:trading:orders:cancel", identifiers);
+        Assert.Contains("api:iam:users:list", identifiers);
+        Assert.Contains("api:iam:users:delete", identifiers);
     }
 
     [Fact]

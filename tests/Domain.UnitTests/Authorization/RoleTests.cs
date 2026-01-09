@@ -9,7 +9,7 @@ public class RoleTests
     public void AddScopeTemplate_AddsTemplateOnce()
     {
         var role = Role.Create("analyst", "Analyst");
-        var template = ScopeTemplate.Allow("api:portfolio:accounts:list");
+        var template = ScopeTemplate.Allow("api:iam:users:list");
 
         role.AddScopeTemplate(template);
         role.AddScopeTemplate(template);
@@ -21,18 +21,18 @@ public class RoleTests
     public void ReplaceScopeTemplates_ReplacesExistingSet()
     {
         var role = Role.Create("operator", "Operator");
-        role.AddScopeTemplate(ScopeTemplate.Allow("api:user:profile:read"));
+        role.AddScopeTemplate(ScopeTemplate.Allow("api:auth:me"));
 
         var updated = new[]
         {
-            ScopeTemplate.Allow("api:portfolio:accounts:list"),
-            ScopeTemplate.Allow("api:trading:orders:cancel")
+            ScopeTemplate.Allow("api:iam:users:list"),
+            ScopeTemplate.Allow("api:iam:users:delete")
         };
 
         role.ReplaceScopeTemplates(updated);
 
         Assert.Equal(2, role.ScopeTemplates.Count);
-        Assert.Contains(role.ScopeTemplates, t => t.PermissionPath == "api:trading:orders:cancel");
-        Assert.DoesNotContain(role.ScopeTemplates, t => t.PermissionPath == "api:user:profile:read");
+        Assert.Contains(role.ScopeTemplates, t => t.PermissionPath == "api:iam:users:delete");
+        Assert.DoesNotContain(role.ScopeTemplates, t => t.PermissionPath == "api:auth:me");
     }
 }

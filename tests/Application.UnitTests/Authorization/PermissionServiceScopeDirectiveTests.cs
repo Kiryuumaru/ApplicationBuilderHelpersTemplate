@@ -50,10 +50,10 @@ public class PermissionServiceScopeDirectiveTests
     [Fact]
     public void Allow_WithMultipleParameters_ReturnsCorrectFormat()
     {
-        // Using generated PermissionIds with userId parameter (accountId no longer exists)
-        var directive = PermissionIds.Api.Portfolio.Accounts.Read.WithUserId("user-1").Allow();
+        // Using generated PermissionIds with tenantId parameter
+        var directive = PermissionIds.SecOpsDebug.V1.Forensics.Read.WithTenantId("tenant-1").Allow();
 
-        Assert.Equal("allow;api:portfolio:accounts:_read;userId=user-1", directive);
+        Assert.Equal("allow;sec_ops_debug:v1:forensics:_read;tenantId=tenant-1", directive);
     }
 
     [Fact]
@@ -218,7 +218,7 @@ public class PermissionServiceScopeDirectiveTests
 
         var hasAny = await service.HasAnyPermissionAsync(principal, new string[]
         {
-            PermissionIds.Api.Portfolio.Accounts.List.Permission.WithUserId("user-1"), // Not granted
+            PermissionIds.Api.Iam.Roles.List.Permission, // Not granted
             PermissionIds.Api.Iam.Users.ReadPermission.Permission.WithUserId("user-1")  // Granted
         }, CancellationToken.None);
 
@@ -266,22 +266,22 @@ public class PermissionServiceScopeDirectiveTests
     #region Fine-Grained Access Tests
 
     [Fact]
-    public async Task MultiAccountAccess_OnlyAllowsSpecificUsers()
+    public async Task MultiAccountAccess_OnlyAllowsSpecificTenants()
     {
         var (service, principal) = CreateServiceWithPrincipal(
             "admin-user",
-            PermissionIds.Api.Portfolio.Accounts.Read.WithUserId("user-1").Allow(),
-            PermissionIds.Api.Portfolio.Accounts.Read.WithUserId("user-2").Allow()
+            PermissionIds.SecOpsDebug.V1.Forensics.Read.WithTenantId("tenant-1").Allow(),
+            PermissionIds.SecOpsDebug.V1.Forensics.Read.WithTenantId("tenant-2").Allow()
         );
 
-        // Using strongly-typed Permission API with userId only
-        var canAccessUser1 = await service.HasPermissionAsync(principal, PermissionIds.Api.Portfolio.Accounts.ReadPermission.Permission.WithUserId("user-1"), CancellationToken.None);
-        var canAccessUser2 = await service.HasPermissionAsync(principal, PermissionIds.Api.Portfolio.Accounts.ReadPermission.Permission.WithUserId("user-2"), CancellationToken.None);
-        var canAccessUser3 = await service.HasPermissionAsync(principal, PermissionIds.Api.Portfolio.Accounts.ReadPermission.Permission.WithUserId("user-3"), CancellationToken.None);
+        // Using strongly-typed Permission API with tenantId - use List leaf permission
+        var canAccessTenant1 = await service.HasPermissionAsync(principal, PermissionIds.SecOpsDebug.V1.Forensics.List.Permission.WithTenantId("tenant-1"), CancellationToken.None);
+        var canAccessTenant2 = await service.HasPermissionAsync(principal, PermissionIds.SecOpsDebug.V1.Forensics.List.Permission.WithTenantId("tenant-2"), CancellationToken.None);
+        var canAccessTenant3 = await service.HasPermissionAsync(principal, PermissionIds.SecOpsDebug.V1.Forensics.List.Permission.WithTenantId("tenant-3"), CancellationToken.None);
 
-        Assert.True(canAccessUser1);
-        Assert.True(canAccessUser2);
-        Assert.False(canAccessUser3); // Not granted
+        Assert.True(canAccessTenant1);
+        Assert.True(canAccessTenant2);
+        Assert.False(canAccessTenant3); // Not granted
     }
 
     [Fact]
@@ -311,12 +311,12 @@ public class PermissionServiceScopeDirectiveTests
 
         // Should grant access to any read permission
         var canReadUsers = await service.HasPermissionAsync(principal, "api:iam:users:read", CancellationToken.None);
-        var canReadAccounts = await service.HasPermissionAsync(principal, "api:portfolio:accounts:list", CancellationToken.None);
-        var canReadFavorites = await service.HasPermissionAsync(principal, "api:favorites:read", CancellationToken.None);
+        var canReadRoles = await service.HasPermissionAsync(principal, "api:iam:roles:list", CancellationToken.None);
+        var canReadForensics = await service.HasPermissionAsync(principal, "sec_ops_debug:v1:forensics:list", CancellationToken.None);
 
         Assert.True(canReadUsers);
-        Assert.True(canReadAccounts);
-        Assert.True(canReadFavorites);
+        Assert.True(canReadRoles);
+        Assert.True(canReadForensics);
 
         // But NOT write permissions
         var canUpdateUsers = await service.HasPermissionAsync(principal, "api:iam:users:update", CancellationToken.None);
@@ -328,19 +328,19 @@ public class PermissionServiceScopeDirectiveTests
     {
         var (service, principal) = CreateServiceWithPrincipal(
             "user-nested",
-            PermissionIds.Api.Portfolio.Accounts.Read.WithUserId("user-nested").Allow()
+            PermissionIds.SecOpsDebug.V1.Forensics.Read.WithTenantId("tenant-nested").Allow()
         );
 
-        // Request with userId parameter - should match
-        var withUserId = await service.HasPermissionAsync(principal, PermissionIds.Api.Portfolio.Accounts.ReadPermission.Permission.WithUserId("user-nested"), CancellationToken.None);
-        Assert.True(withUserId);
+        // Request with tenantId parameter - should match (use List leaf permission)
+        var withTenantId = await service.HasPermissionAsync(principal, PermissionIds.SecOpsDebug.V1.Forensics.List.Permission.WithTenantId("tenant-nested"), CancellationToken.None);
+        Assert.True(withTenantId);
 
-        // Request with different userId - should not match
-        var differentUserId = await service.HasPermissionAsync(principal, PermissionIds.Api.Portfolio.Accounts.ReadPermission.Permission.WithUserId("other-user"), CancellationToken.None);
-        Assert.False(differentUserId);
+        // Request with different tenantId - should not match
+        var differentTenantId = await service.HasPermissionAsync(principal, PermissionIds.SecOpsDebug.V1.Forensics.List.Permission.WithTenantId("other-tenant"), CancellationToken.None);
+        Assert.False(differentTenantId);
 
         // Request with no params - scope has params, so should not match
-        var noParams = await service.HasPermissionAsync(principal, PermissionIds.Api.Portfolio.Accounts.ReadPermission.Permission, CancellationToken.None);
+        var noParams = await service.HasPermissionAsync(principal, PermissionIds.SecOpsDebug.V1.Forensics.List.Permission, CancellationToken.None);
         Assert.False(noParams);
     }
 
@@ -396,15 +396,15 @@ public class PermissionServiceScopeDirectiveTests
     {
         var (service, principal) = CreateServiceWithPrincipal(
             "user-global-deny",
-            PermissionIds.Read.Allow(),                    // Allow all reads
-            PermissionIds.Api.Portfolio.Read.Deny()       // But deny portfolio read
+            PermissionIds.Read.Allow(),                           // Allow all reads
+            PermissionIds.SecOpsDebug.V1.Forensics.Read.Deny()   // But deny forensics read
         );
 
         var canReadUsers = await service.HasPermissionAsync(principal, "api:iam:users:read", CancellationToken.None);
-        var canReadPortfolio = await service.HasPermissionAsync(principal, "api:portfolio:read", CancellationToken.None);
+        var canReadForensics = await service.HasPermissionAsync(principal, "sec_ops_debug:v1:forensics:list", CancellationToken.None);
 
-        Assert.True(canReadUsers);   // Allowed by global _read
-        Assert.False(canReadPortfolio); // Explicitly denied
+        Assert.True(canReadUsers);    // Allowed by global _read
+        Assert.False(canReadForensics); // Explicitly denied
     }
 
     #endregion
@@ -435,11 +435,10 @@ public class PermissionServiceScopeDirectiveTests
             PermissionIds.Api.Iam.Users.Read.WithUserId("user-path").Allow()
         );
 
-        // Having users:_read should not grant access to sibling portfolio
-        // Using strongly-typed Permission API
-        var canReadPortfolio = await service.HasPermissionAsync(principal, PermissionIds.Api.Portfolio.ReadPermission.Permission.WithUserId("user-path"), CancellationToken.None);
+        // Having users:_read should not grant access to sibling roles
+        var canReadRoles = await service.HasPermissionAsync(principal, "api:iam:roles:list", CancellationToken.None);
 
-        Assert.False(canReadPortfolio);
+        Assert.False(canReadRoles);
     }
 
     [Fact]
@@ -518,7 +517,7 @@ public class PermissionServiceScopeDirectiveTests
         // With rbac_version="2", only explicit scopes are granted
         // Using strongly-typed Permission API
         var hasGranted = await service.HasPermissionAsync(principal, PermissionIds.Api.Iam.Users.ReadPermission.Permission.WithUserId("v2-user"), CancellationToken.None);
-        var hasNotGranted = await service.HasPermissionAsync(principal, PermissionIds.Api.Portfolio.Accounts.List.Permission.WithUserId("v2-user"), CancellationToken.None);
+        var hasNotGranted = await service.HasPermissionAsync(principal, PermissionIds.Api.Iam.Roles.List.Permission, CancellationToken.None);
 
         Assert.True(hasGranted);
         Assert.False(hasNotGranted);
@@ -573,7 +572,7 @@ public class PermissionServiceScopeDirectiveTests
         Assert.NotEmpty(PermissionIds.All);
         Assert.Contains("api:iam:users:read", PermissionIds.All);
         Assert.Contains("api:iam:users:update", PermissionIds.All);
-        Assert.Contains("api:portfolio:accounts:list", PermissionIds.All);
+        Assert.Contains("sec_ops_debug:v1:forensics:list", PermissionIds.All);
     }
 
     [Fact]
