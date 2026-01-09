@@ -5,7 +5,7 @@ namespace Application.Identity.Interfaces.Infrastructure;
 /// <summary>
 /// Repository for API key persistence operations.
 /// </summary>
-internal interface IApiKeyRepository
+public interface IApiKeyRepository
 {
     /// <summary>
     /// Gets an API key by its ID.

@@ -6,7 +6,7 @@ namespace Application.Identity.Interfaces.Infrastructure;
 /// Internal repository for login session persistence operations.
 /// Renamed from ISessionStore to follow repository naming convention.
 /// </summary>
-internal interface ISessionRepository
+public interface ISessionRepository
 {
     /// <summary>
     /// Creates a new login session.

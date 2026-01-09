@@ -8,7 +8,7 @@ namespace Application.Identity.Interfaces.Infrastructure;
 /// Internal repository for user persistence operations.
 /// Merges IUserStore and IExternalLoginStore into a single cohesive interface.
 /// </summary>
-internal interface IUserRepository
+public interface IUserRepository
 {
     // User operations
     Task<User?> FindByIdAsync(Guid id, CancellationToken cancellationToken);

@@ -6,7 +6,7 @@ namespace Application.Authorization.Interfaces.Infrastructure;
 /// Internal repository for role persistence operations.
 /// Absorbs functionality from both IRoleRepository (public) and IRoleLookup (deleted).
 /// </summary>
-internal interface IRoleRepository
+public interface IRoleRepository
 {
     Task<Role?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 

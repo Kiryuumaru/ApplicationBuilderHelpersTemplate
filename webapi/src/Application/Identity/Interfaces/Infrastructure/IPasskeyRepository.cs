@@ -6,7 +6,7 @@ namespace Application.Identity.Interfaces.Infrastructure;
 /// Internal repository for passkey credential and challenge persistence operations.
 /// Merges IPasskeyCredentialStore and IPasskeyChallengeStore into a single cohesive interface.
 /// </summary>
-internal interface IPasskeyRepository
+public interface IPasskeyRepository
 {
     // Credential operations (from IPasskeyCredentialStore)
 
