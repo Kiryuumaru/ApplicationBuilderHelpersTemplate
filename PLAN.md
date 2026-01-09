@@ -17,6 +17,70 @@ Implement user-managed API keys that mirror the user's access permissions with s
 | `Refresh` | `rt+jwt` | Long (7-30 days) | Obtain new access tokens |
 | `ApiKey` | `ak+jwt` | Configurable (months/years/never) | Programmatic/bot access |
 
+### Current JWT Token Structure
+
+All tokens follow the same structure but with different claims:
+
+**Access Token (`at+jwt`):**
+```json
+{
+  "sub": "user-id",
+  "name": "username",
+  "jti": "random-guid",           // Random, not used for lookup
+  "sid": "session-id",            // Session ID for revocation lookup
+  "iat": 1704844800,
+  "exp": 1704848400,
+  "rbac_version": "2",
+  "roles": ["USER;roleUserId=user-id"],  // Role codes with inline params
+  "scope": [                      // ONLY direct grants + explicit denies
+    "deny;api:auth:refresh;userId=user-id"  // Prevent access token from refreshing
+  ]
+}
+```
+
+**Refresh Token (`rt+jwt`):**
+```json
+{
+  "sub": "user-id",
+  "name": "username",
+  "jti": "random-guid",
+  "sid": "session-id",            // Same session ID as access token
+  "iat": 1704844800,
+  "exp": 1705449600,
+  "rbac_version": "2",
+  "scope": [
+    "allow;api:auth:refresh;userId=user-id"  // ONLY permission
+  ]
+}
+```
+
+**API Key Token (`ak+jwt`) - NEW:**
+```json
+{
+  "sub": "user-id",
+  "name": "username",
+  "jti": "apikey-id",             // API key ID for revocation lookup
+  // NO "sid" - API keys are not session-based
+  "iat": 1704844800,
+  "exp": 1736380800,              // Optional, can be far future
+  "rbac_version": "2",
+  "roles": ["USER;roleUserId=user-id"],  // Same roles as user
+  "scope": [
+    "deny;api:auth:refresh;userId=user-id",
+    "deny;api:auth:api_keys:_read;userId=user-id",   // Denies list
+    "deny;api:auth:api_keys:_write;userId=user-id"   // Denies create, revoke
+  ]
+}
+```
+
+**Key Design Principle: Runtime Permission Resolution**
+
+Tokens do NOT embed all permissions. Instead:
+1. `roles` claim contains role codes with inline parameters
+2. `scope` claim contains only direct grants and explicit denies
+3. At request time, `IPermissionService.HasPermissionAsync` resolves role scopes from the database
+4. This allows role changes to take effect immediately without token regeneration
+
 ## Architecture
 
 ```
@@ -50,7 +114,7 @@ All three token types go through the **same validation pipeline**:
      → No additional checks
      
      typ: ak+jwt (API Key)
-     → Extract keyId → DB lookup (IsRevoked? Expired?)
+     → Extract jti → DB lookup (IsRevoked? Expired?)
      → Update LastUsedAt
      
      typ: rt+jwt (Refresh Token)
@@ -58,8 +122,8 @@ All three token types go through the **same validation pipeline**:
      → Reject if used on any other endpoint
 
 2. CREATE API KEY:
-   → Generate JWT with typ: ak+jwt and keyId claim
-   → Store metadata in DB (id, userId, name, expiresAt)
+   → Generate JWT with typ: ak+jwt (jti = API key ID)
+   → Store metadata in DB (id=jti, userId, name, expiresAt)
    → Return JWT to user (shown once)
 
 3. REVOKE API KEY:
@@ -93,7 +157,7 @@ All three token types go through the **same validation pipeline**:
           ▼                    ▼                    │
     ┌───────────┐        ┌───────────┐              │
     │ Session   │        │ DB Lookup │         Only valid
-    │ Validation│        │ (keyId)   │         for /refresh
+    │ Validation│        │ (jti)     │         for /refresh
     │ (optional)│        │           │         endpoint
     └─────┬─────┘        └─────┬─────┘              │
           │                    │                    ▼
@@ -169,7 +233,7 @@ public interface IApiKeyRepository
 }
 ```
 
-Note: No `GetByKeyHashAsync` - we look up by `keyId` (embedded in JWT), not by hashing the key.
+Note: No `GetByKeyHashAsync` - we look up by `jti` claim (standard JWT ID, RFC 7519), not by hashing the key.
 No `DeleteAsync` - we use soft delete via `IsRevoked` flag.
 
 ### 2.2 Create Unified Token Validation Service Interface (Orchestrator)
@@ -265,7 +329,7 @@ public interface IApiKeyService
     Task<bool> RevokeAsync(string userId, string id, CancellationToken ct = default);
     
     /// <summary>Validates an API key JWT. Returns metadata if valid, null if revoked/expired/not found.</summary>
-    Task<ApiKey?> ValidateApiKeyAsync(string keyId, CancellationToken ct = default);
+    Task<ApiKey?> ValidateApiKeyAsync(string jti, CancellationToken ct = default);
     
     /// <summary>Updates LastUsedAt timestamp.</summary>
     Task UpdateLastUsedAsync(string id, CancellationToken ct = default);
@@ -330,16 +394,17 @@ public class TokenValidationService(
                 
             case TokenType.ApiKey:
                 // Check revocation status in DB via IApiKeyService
-                var keyId = principal.FindFirst(JwtClaimTypes.KeyId)?.Value;
-                if (string.IsNullOrEmpty(keyId))
-                    return TokenValidationResult.Failure("API key token is missing keyId claim");
+                // jti (JWT ID, RFC 7519) is used as the API key identifier
+                var apiKeyId = principal.FindFirst(JwtClaimTypes.TokenId)?.Value;
+                if (string.IsNullOrEmpty(apiKeyId))
+                    return TokenValidationResult.Failure("API key token is missing jti claim");
                 
-                var apiKey = await _apiKeyService.ValidateApiKeyAsync(keyId, ct);
+                var apiKey = await _apiKeyService.ValidateApiKeyAsync(apiKeyId, ct);
                 if (apiKey == null)
                     return TokenValidationResult.Failure("API key has been revoked or not found");
                 
                 // Fire-and-forget last used update
-                _ = _apiKeyService.UpdateLastUsedAsync(keyId, ct);
+                _ = _apiKeyService.UpdateLastUsedAsync(apiKeyId, ct);
                 break;
         }
         
@@ -358,16 +423,95 @@ public class TokenValidationService(
 
 **File:** `src/Application/Identity/Services/ApiKeyService.cs`
 
-- Inject `IApiKeyRepository` and `ITokenProvider`
-- `CreateAsync`: Generate key ID → Create JWT via `ITokenProvider.GenerateApiKeyTokenAsync` → Store metadata
+- Inject `IApiKeyRepository`, `IUserAuthorizationService`, and `IPermissionService`
+- `CreateAsync`: Generate key ID → Create JWT with `jti = keyId` → Store metadata
 - `ValidateApiKeyAsync`: Check `IsRevoked == false` and `ExpiresAt` not passed
 - Enforce max 100 keys per user in `CreateAsync`
+
+### 2.6 Update ITokenProvider Interface (Required for Custom `jti`)
+
+**File:** `src/Application/Authorization/Interfaces/Infrastructure/ITokenProvider.cs`
+
+Add optional `tokenId` parameter to allow specifying a custom `jti` for API keys:
+
+```csharp
+Task<string> GenerateTokenWithScopesAsync(
+    string userId,
+    string? username,
+    IEnumerable<string> scopes,
+    IEnumerable<Claim>? additionalClaims = null,
+    DateTimeOffset? expiration = null,
+    Domain.Identity.Enums.TokenType tokenType = Domain.Identity.Enums.TokenType.Access,
+    string? tokenId = null,  // NEW: Optional custom jti (used for API keys)
+    CancellationToken cancellationToken = default);
+```
+
+**Rationale:** API keys need their database ID to match the JWT's `jti` claim for revocation lookup. By default, `jti` is a random GUID, but for API keys we want `jti = ApiKey.Id`.
+
+### 2.7 Update IPermissionService Interface
+
+**File:** `src/Application/Authorization/Interfaces/IPermissionService.cs`
+
+Add optional `tokenId` parameter to `GenerateTokenWithScopeAsync`:
+
+```csharp
+Task<string> GenerateTokenWithScopeAsync(
+    string userId,
+    string? username,
+    IEnumerable<ScopeDirective> scopeDirectives,
+    IEnumerable<Claim>? additionalClaims = null,
+    DateTimeOffset? expiration = null,
+    TokenType tokenType = TokenType.Access,
+    string? tokenId = null,  // NEW: Optional custom jti
+    CancellationToken cancellationToken = default);
+```
 
 ---
 
 ## Phase 3: Infrastructure Layer
 
-### 3.1 EF Core Configuration
+### 3.1 Update IJwtTokenService Interface (Infrastructure Internal)
+
+**File:** `src/Infrastructure.Identity/Interfaces/IJwtTokenService.cs`
+
+Add optional `tokenId` parameter:
+
+```csharp
+Task<string> GenerateToken(
+    string userId,
+    string username,
+    IEnumerable<string>? scopes = null,
+    IEnumerable<Claim>? additionalClaims = null,
+    DateTimeOffset? expiration = null,
+    TokenType tokenType = TokenType.Access,
+    string? tokenId = null,  // NEW: Optional custom jti
+    CancellationToken cancellationToken = default);
+```
+
+### 3.2 Update JwtTokenService Implementation
+
+**File:** `src/Infrastructure.Identity/Services/JwtTokenService.cs`
+
+Update `GenerateToken` to use custom `tokenId` if provided:
+
+```csharp
+// In GenerateToken method:
+var claims = new List<Claim>
+{
+    new(JwtClaimTypes.Subject, userId),
+    new(JwtClaimTypes.Name, username),
+    new(JwtClaimTypes.TokenId, tokenId ?? Guid.NewGuid().ToString()),  // Use custom or generate
+    // ...
+};
+```
+
+### 3.3 Update TokenProviderAdapter
+
+**File:** `src/Infrastructure.Identity/Services/TokenProviderAdapter.cs` (or wherever `ITokenProvider` is implemented)
+
+Pass through the `tokenId` parameter to `IJwtTokenService.GenerateToken`.
+
+### 3.4 EF Core Configuration
 
 **File:** `src/Infrastructure.EFCore.Identity/Configurations/ApiKeyConfiguration.cs`
 
@@ -377,15 +521,15 @@ public class TokenValidationService(
 
 Note: No unique index on key hash - we don't store the key, just metadata.
 
-### 3.2 Repository Implementation
+### 3.5 Repository Implementation
 
 **File:** `src/Infrastructure.EFCore.Identity/Services/EFCoreApiKeyRepository.cs`
 
-### 3.3 Add to DbContext
+### 3.6 Add to DbContext
 
 **File:** `src/Infrastructure.EFCore.Identity/...` (add `DbSet<ApiKeyModel>`)
 
-### 3.4 DI Registration
+### 3.7 DI Registration
 
 Register `IApiKeyRepository` and `IApiKeyService` in service collection.
 
@@ -654,52 +798,82 @@ if (session is null || !session.IsValid)
 
 ### API Key JWT Structure
 
-The API key JWT is **identical to an access token** with three differences:
+The API key JWT is **identical to an access token** with two key differences:
 1. `typ` header is `ak+jwt` (not `at+jwt`)
-2. Contains `keyId` claim for revocation lookup
-3. Scopes **exclude** `api:auth:refresh` and `api:auth:api_keys:*`
+2. Uses `jti` for revocation lookup (not `sid`)
 
-**Example JWT Claims:**
+**Note:** API keys do NOT have `sid` (session ID) since they are independent of login sessions.
+
+**Token Identification Strategy:**
+
+| Token Type | `typ` Header | Revocation Claim | DB Lookup Key |
+|------------|--------------|------------------|---------------|
+| Access | `at+jwt` | `sid` (Session ID) | Session.Id |
+| Refresh | `rt+jwt` | `sid` (Session ID) | Session.Id |
+| API Key | `ak+jwt` | `jti` (JWT ID) | ApiKey.Id |
+
+> **Why `jti` for API keys?** RFC 7519 defines `jti` (JWT ID) as the unique identifier for a JWT. Since API keys are independent tokens (not tied to sessions), we use `jti` directly as the database ID. Access/refresh tokens share a session, so they use `sid` instead.
+
+**Example API Key JWT Claims:**
 
 ```json
 {
-  // Standard JWT claims
+  // Standard JWT claims (RFC 7519)
   "iss": "https://your-app.com",
   "aud": "https://your-app.com",
   "sub": "user-abc-123",              // userId (owner)
+  "name": "john.doe@example.com",     // username
+  "jti": "apikey-xyz-789",            // API key ID for revocation lookup
   "iat": 1704844800,
   "exp": 1736380800,                  // Optional (null = very far future)
   
-  // Custom claims (same as access token)
-  "name": "john.doe@example.com",
+  // RBAC version for claim resolution
   "rbac_version": "2",
-  "keyId": "key-xyz-789",             // API key ID for revocation lookup
   
-  // Scopes - SAME as access token EXCEPT:
-  // - NO "api:auth:refresh" (cannot refresh)
-  // - NO "api:auth:api_keys:*" (cannot manage API keys via API key)
-  "scope": [
-    "allow;api:auth:me",
-    "allow;api:auth:logout",
-    "allow;api:auth:sessions:_read;userId=user-abc-123",
-    "allow;api:iam:users:_read;userId=user-abc-123",
-    // ... all user's other permissions
+  // Roles with inline parameters (resolved at runtime from DB)
+  // Format: "ROLE_CODE;param1=value1;param2=value2"
+  "roles": [
+    "USER;roleUserId=user-abc-123",
+    "ADMIN"
   ],
   
-  // Roles (if user has any)
-  "roles": ["admin", "trader"]
+  // Scope contains ONLY:
+  // 1. Direct permission grants (not role-derived)
+  // 2. Explicit deny for api:auth:refresh
+  // 3. Explicit deny for api:auth:api_keys using _read/_write wildcards
+  // Role-derived scopes are resolved at runtime via IPermissionService
+  "scope": [
+    "allow;api:custom:feature",              // Direct grant example
+    "deny;api:auth:refresh;userId=user-abc-123",
+    "deny;api:auth:api_keys:_read;userId=user-abc-123",   // Denies list (RLeaf)
+    "deny;api:auth:api_keys:_write;userId=user-abc-123"   // Denies create, revoke (WLeafs)
+  ]
 }
 ```
+
+**Runtime Permission Resolution:**
+
+Unlike static scope tokens, permission checks work as follows:
+1. `RequiredPermissionAttribute` intercepts the request
+2. Calls `IPermissionService.HasPermissionAsync(principal, permission)`
+3. `ResolveScopeDirectivesAsync` extracts role codes from `roles` claim
+4. Looks up current role definitions from database
+5. Expands role scope templates with inline parameters
+6. Evaluates combined scopes (direct + role-derived) against requested permission
+
+This design allows role permission changes to take effect immediately without token regeneration.
 
 **Key Restrictions:**
 
 | Permission | Access Token | API Key |
 |------------|--------------|---------|
-| `api:auth:refresh` | ✅ Yes | ❌ No (cannot refresh) |
-| `api:auth:api_keys:list` | ✅ Yes | ❌ No (cannot list keys) |
-| `api:auth:api_keys:create` | ✅ Yes | ❌ No (cannot create keys) |
-| `api:auth:api_keys:revoke` | ✅ Yes | ❌ No (cannot revoke keys) |
-| All other permissions | ✅ Yes | ✅ Yes (mirrors user) |
+| `api:auth:refresh` | ❌ Denied | ❌ Denied (explicit deny) |
+| `api:auth:api_keys:list` | ✅ Yes | ❌ No (explicit deny) |
+| `api:auth:api_keys:create` | ✅ Yes | ❌ No (explicit deny) |
+| `api:auth:api_keys:revoke` | ✅ Yes | ❌ No (explicit deny) |
+| All other permissions | ✅ Yes | ✅ Yes (mirrors user's roles) |
+
+> **Note:** Access tokens also have an explicit deny for `api:auth:refresh` to prevent access tokens from being used for refresh operations. Only refresh tokens (`rt+jwt`) have the allow directive for refresh.
 
 ---
 
@@ -742,7 +916,7 @@ Add section for API key management with:
 ## Security Considerations
 
 1. **JWT shown once:** The JWT is only returned at creation time, never again
-2. **No key storage:** We don't store the JWT - only metadata (revocation check via keyId claim)
+2. **No key storage:** We don't store the JWT - only metadata (revocation check via `jti` claim)
 3. **Instant revocation:** Set `IsRevoked = true` → JWT rejected on next use despite valid signature
 4. **Same auth header:** Uses standard `Authorization: Bearer <jwt>` - no special handling needed
 5. **Permission mirroring:** Keys inherit user's current permissions (resolved at request time)
