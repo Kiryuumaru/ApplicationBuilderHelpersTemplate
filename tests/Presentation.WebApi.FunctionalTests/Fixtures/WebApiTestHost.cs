@@ -42,30 +42,42 @@ public class WebApiTestHost : IAsyncDisposable
         _output.WriteLine($"[HOST] Starting WebApi on {BaseUrl}...");
         _output.WriteLine($"[HOST] AppContext.BaseDirectory: {AppContext.BaseDirectory}");
 
-        // Find the WebApi executable - it should be built already
-        var exePath = Path.GetFullPath(Path.Combine(
+        // Find the WebApi output directory
+        var webApiOutputDir = Path.GetFullPath(Path.Combine(
             AppContext.BaseDirectory,
             "..", "..", "..", "..", "..",
-            "src", "Presentation.WebApi", "bin", "Debug", "net10.0", "Presentation.WebApi.exe"));
+            "src", "Presentation.WebApi", "bin", "Debug", "net10.0"));
 
-        _output.WriteLine($"[HOST] Computed exe path: {exePath}");
+        _output.WriteLine($"[HOST] WebApi output dir: {webApiOutputDir}");
+
+        if (!Directory.Exists(webApiOutputDir))
+        {
+            throw new DirectoryNotFoundException($"WebApi output directory not found at {webApiOutputDir}. Build the WebApi project first.");
+        }
+
+        // Find the executable dynamically by looking for .runtimeconfig.json files
+        // The main application executable has a matching .runtimeconfig.json (dependency dlls do not)
+        // File is like "sampleapp.runtimeconfig.json", we need to extract "sampleapp"
+        var exePath = Directory.GetFiles(webApiOutputDir, "*.runtimeconfig.json")
+            .Select(rc => Path.GetFileName(rc).Replace(".runtimeconfig.json", ""))
+            .Select(name => Path.Combine(webApiOutputDir, name + ".exe"))
+            .FirstOrDefault(File.Exists);
 
         // Fallback to dll if exe doesn't exist (Linux/macOS)
-        if (!File.Exists(exePath))
+        if (exePath == null)
         {
-            exePath = Path.GetFullPath(Path.Combine(
-                AppContext.BaseDirectory,
-                "..", "..", "..", "..", "..",
-                "src", "Presentation.WebApi", "bin", "Debug", "net10.0", "Presentation.WebApi.dll"));
-            _output.WriteLine($"[HOST] Exe not found, trying DLL: {exePath}");
+            exePath = Directory.GetFiles(webApiOutputDir, "*.runtimeconfig.json")
+                .Select(rc => Path.GetFileName(rc).Replace(".runtimeconfig.json", ""))
+                .Select(name => Path.Combine(webApiOutputDir, name + ".dll"))
+                .FirstOrDefault(File.Exists);
+            _output.WriteLine($"[HOST] No .exe found, trying DLL: {exePath}");
         }
 
         _output.WriteLine($"[HOST] Using executable: {exePath}");
-        _output.WriteLine($"[HOST] File exists: {File.Exists(exePath)}");
 
-        if (!File.Exists(exePath))
+        if (exePath == null || !File.Exists(exePath))
         {
-            throw new FileNotFoundException($"WebApi executable not found at {exePath}. Build the WebApi project first.");
+            throw new FileNotFoundException($"WebApi executable not found in {webApiOutputDir}. Build the WebApi project first.");
         }
 
         var isExe = exePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
