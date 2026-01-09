@@ -46,6 +46,7 @@ internal static class IdentityServiceCollectionExtensions
         services.AddScoped<ITokenValidationService, TokenValidationService>();
         
         services.AddScoped<IAnonymousUserCleanupService, AnonymousUserCleanupService>();
+        services.AddScoped<IApiKeyCleanupService, ApiKeyCleanupService>();
 
         // OAuth service - using mock implementation by default
         // Replace with real implementation when configuring actual OAuth providers

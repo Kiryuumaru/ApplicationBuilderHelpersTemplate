@@ -1,12 +1,12 @@
 # Auth API
 
-> **Controller:** `AuthController`  
+> **Controllers:** Multiple slice-based controllers  
 > **Base Path:** `/api/v1/auth`  
 > **Authentication:** Public (login/register) or Bearer Token
 
 ## Overview
 
-Authentication endpoints for user login, registration, token management, and password operations.
+Authentication endpoints for user login, registration, token management, password operations, 2FA, passkeys, sessions, and API keys.
 
 ---
 
@@ -205,7 +205,97 @@ Reset password using a reset token.
 - Scope: Only `allow;api:auth:refresh;userId={userId}` permission
 - Cannot access `[RequiredPermission]` endpoints (lacks permissions)
 
+### API Key Token
+- Configurable expiration (or never)
+- Used for programmatic/bot access
+- Mirrors user permissions with explicit deny on refresh and api-key management
+- JWT `typ` header: `ak+jwt`
+
 Access tokens are prevented from being used as refresh tokens by including an explicit `deny;api:auth:refresh;userId={userId}` directive in the access token scope.
+
+---
+
+## API Keys
+
+### `GET /api/v1/auth/users/{userId}/api-keys`
+
+List user's API keys (excludes revoked keys).
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "items": [
+    {
+      "id": "api-key-guid",
+      "name": "Trading Bot",
+      "createdAt": "2026-01-09T00:00:00Z",
+      "expiresAt": "2027-01-01T00:00:00Z",
+      "lastUsedAt": "2026-01-09T12:00:00Z"
+    }
+  ]
+}
+```
+
+---
+
+### `POST /api/v1/auth/users/{userId}/api-keys`
+
+Create a new API key.
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Request Body:**
+```json
+{
+  "name": "Trading Bot",
+  "expiresAt": "2027-01-01T00:00:00Z"
+}
+```
+
+> `expiresAt` is optional. If omitted or null, the key never expires.
+
+**Response:** `201 Created`
+```json
+{
+  "id": "api-key-guid",
+  "name": "Trading Bot",
+  "key": "eyJhbGc...",
+  "createdAt": "2026-01-09T00:00:00Z",
+  "expiresAt": "2027-01-01T00:00:00Z"
+}
+```
+
+> ⚠️ **Important:** The `key` field is only returned once at creation. Store it securely.
+
+**Errors:**
+- `401 Unauthorized` - Not authenticated
+- `403 Forbidden` - Cannot create API keys using API key authentication
+
+---
+
+### `DELETE /api/v1/auth/users/{userId}/api-keys/{id}`
+
+Revoke an API key.
+
+**Headers:**
+```
+Authorization: Bearer {accessToken}
+```
+
+**Response:** `204 No Content`
+
+**Errors:**
+- `401 Unauthorized` - Not authenticated
+- `403 Forbidden` - Cannot manage API keys using API key authentication
+- `404 Not Found` - API key not found
 
 ---
 
@@ -213,4 +303,4 @@ Access tokens are prevented from being used as refresh tokens by including an ex
 
 See [features/authentication.md](../features/authentication.md#test-coverage) for comprehensive test coverage details.
 
-**Summary:** 308 authentication tests covering login, registration, tokens, passwords, passkeys, 2FA, sessions, OAuth, and security.
+**Summary:** 330+ authentication tests covering login, registration, tokens, passwords, passkeys, 2FA, sessions, OAuth, API keys, and security.

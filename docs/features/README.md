@@ -6,8 +6,8 @@ This directory contains detailed documentation for implemented features in this 
 
 | Document | Description | Tests |
 |----------|-------------|-------|
-| [Authentication](authentication.md) | JWT auth, login, register, 2FA, passkeys, sessions, anonymous (guest) mode | 308 |
-| [User Management](user-management.md) | User CRUD, roles, permissions | 55 |
+| [Authentication](authentication.md) | JWT auth, login, register, 2FA, passkeys, sessions, API keys, anonymous (guest) mode | 330+ |
+| [User Management](user-management.md) | User CRUD, roles, permissions | 70+ |
 
 ## Architecture
 
@@ -23,5 +23,5 @@ This directory contains detailed documentation for implemented features in this 
 | Domain.UnitTests | 46 |
 | Application.UnitTests | 67 |
 | Application.IntegrationTests | 20 |
-| Presentation.WebApi.FunctionalTests | 378 |
-| **Total** | **511** |
+| Presentation.WebApi.FunctionalTests | 455 |
+| **Total** | **588** |

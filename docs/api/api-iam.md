@@ -1,7 +1,7 @@
 ````markdown
 # IAM API
 
-> **Controller:** `IamController`  
+> **Controllers:** `IamUsersController`, `IamRolesController`, `IamPermissionsController`  
 > **Base Path:** `/api/v1/iam`  
 > **Authentication:** Bearer Token (all endpoints require authentication)
 
@@ -455,6 +455,6 @@ Tests are located in `tests/Presentation.WebApi.FunctionalTests/Iam/`:
 | `CustomRoleManagementTests.cs` | Custom role CRUD |
 | `IamSecurityTests.cs` | Security boundary tests |
 
-**Total: 55 IAM tests**
+**Total: 70+ IAM tests**
 
 ````

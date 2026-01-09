@@ -10,13 +10,13 @@ User management endpoints for admin and self-service operations. Role-based acce
 
 | Method | Endpoint | Auth | Admin | Description |
 |--------|----------|------|-------|-------------|
-| GET | `/api/v1/users` | ✅ | ✅ | List all users |
-| GET | `/api/v1/users/{id}` | ✅ | - | Get user by ID |
-| PUT | `/api/v1/users/{id}` | ✅ | - | Update user |
-| DELETE | `/api/v1/users/{id}` | ✅ | ✅ | Delete user |
-| POST | `/api/v1/users/{id}/roles` | ✅ | ✅ | Assign role |
-| DELETE | `/api/v1/users/{id}/roles/{roleId}` | ✅ | ✅ | Remove role |
-| GET | `/api/v1/users/{id}/permissions` | ✅ | - | Get effective permissions |
+| GET | `/api/v1/iam/users` | ✅ | ✅ | List all users |
+| GET | `/api/v1/iam/users/{id}` | ✅ | - | Get user by ID |
+| PUT | `/api/v1/iam/users/{id}` | ✅ | - | Update user |
+| DELETE | `/api/v1/iam/users/{id}` | ✅ | ✅ | Delete user |
+| POST | `/api/v1/iam/users/{id}/roles` | ✅ | ✅ | Assign role |
+| DELETE | `/api/v1/iam/users/{id}/roles/{roleId}` | ✅ | ✅ | Remove role |
+| GET | `/api/v1/iam/users/{id}/permissions` | ✅ | - | Get effective permissions |
 
 ## Request/Response Examples
 
@@ -24,7 +24,7 @@ User management endpoints for admin and self-service operations. Role-based acce
 
 **Request:**
 ```
-GET /api/v1/users
+GET /api/v1/iam/users
 Authorization: Bearer {admin-token}
 ```
 
@@ -55,7 +55,7 @@ Authorization: Bearer {admin-token}
 
 **Request:**
 ```json
-PUT /api/v1/users/{id}
+PUT /api/v1/iam/users/{id}
 {
   "email": "newemail@example.com"
 }
@@ -67,7 +67,7 @@ Users can only update their own profile unless they have admin role.
 
 **Request:**
 ```json
-POST /api/v1/users/{id}/roles
+POST /api/v1/iam/users/{id}/roles
 {
   "roleId": "admin"
 }
@@ -77,7 +77,7 @@ POST /api/v1/users/{id}/roles
 
 **Request:**
 ```
-GET /api/v1/users/{id}/permissions
+GET /api/v1/iam/users/{id}/permissions
 ```
 
 **Response:**
