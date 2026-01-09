@@ -39,7 +39,7 @@ This template provides a solid foundation for building web applications with:
 │                   WebApi (REST + SignalR) │ WebApp (Blazor)             │
 │  ┌───────────────────────────────────────────────────────────────────┐  │
 │  │                          INFRASTRUCTURE                           │  │
-│  │   EFCore │ EFCore.Identity │ EFCore.LocalStore │ Passkeys │ Serilog│  │
+│  │ EFCore │ EFCore.Identity │ EFCore.LocalStore │ Passkeys │ Serilog │  │
 │  │  ┌─────────────────────────────────────────────────────────────┐  │  │
 │  │  │                        APPLICATION                          │  │  │
 │  │  │       Authorization │ Identity │ Configuration │ Logger     │  │  │
