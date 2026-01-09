@@ -12,6 +12,14 @@
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 	</PropertyGroup>
 
+	<PropertyGroup>
+		<Copyright>Copyright (C) 2025 Sample</Copyright>
+		<Company>Sample Company</Company>
+		<AssemblyTitle>Application Builder Helpers Template</AssemblyTitle>
+		<AssemblyName>sampleapp</AssemblyName>
+		<Description>A clean architecture application template for building .NET applications with authentication, authorization, and user management out of the box. Built with .NET 10 and Clean Architecture principles.</Description>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<PackageReference Include="Asp.Versioning.Mvc" Version="8.1.1" />
 		<PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.1" />
