@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <RunConfiguration>
+    <!-- Milliseconds. Hard-stop for a whole 'dotnet test' session. -->
+    <TestSessionTimeout>300000</TestSessionTimeout>
+
+    <!-- Milliseconds. Best-effort per-test-case timeout (supported by vstest). -->
+    <TestCaseTimeout>300000</TestCaseTimeout>
+  </RunConfiguration>
+</RunSettings>
