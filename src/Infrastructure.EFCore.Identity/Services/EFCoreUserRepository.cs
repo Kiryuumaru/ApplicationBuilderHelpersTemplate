@@ -174,7 +174,7 @@ internal sealed class EFCoreUserRepository(IDbContextFactory<EFCoreDbContext> co
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         
         var abandonedUsers = await context.Set<User>()
-            .Where(u => u.IsAnonymous && u.LastLoginAt < cutoffDate)
+            .Where(u => u.IsAnonymous == true && u.LastLoginAt != null && u.LastLoginAt < cutoffDate)
             .ToListAsync(cancellationToken);
 
         context.Set<User>().RemoveRange(abandonedUsers);

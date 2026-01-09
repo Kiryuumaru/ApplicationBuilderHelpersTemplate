@@ -73,11 +73,16 @@ internal sealed class EFCoreApiKeyRepository(IDbContextFactory<EFCoreDbContext> 
     {
         await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
 
-        var keysToDelete = await context.Set<ApiKeyEntity>()
-            .Where(k =>
-                (k.ExpiresAt.HasValue && k.ExpiresAt.Value < expiredBefore) ||
-                (k.IsRevoked && k.RevokedAt.HasValue && k.RevokedAt.Value < revokedBefore))
+        // Query expired keys and revoked keys separately to avoid complex expression translation issues
+        var expiredKeys = await context.Set<ApiKeyEntity>()
+            .Where(k => k.ExpiresAt != null && k.ExpiresAt < expiredBefore)
             .ToListAsync(cancellationToken);
+        
+        var revokedKeys = await context.Set<ApiKeyEntity>()
+            .Where(k => k.IsRevoked && k.RevokedAt != null && k.RevokedAt < revokedBefore)
+            .ToListAsync(cancellationToken);
+        
+        var keysToDelete = expiredKeys.Union(revokedKeys).ToList();
 
         if (keysToDelete.Count == 0)
         {

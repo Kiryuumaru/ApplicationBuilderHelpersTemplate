@@ -53,9 +53,38 @@ public class IdentityEntityConfiguration : IEFCoreEntityConfiguration
         entity.HasIndex(u => u.NormalizedUserName).IsUnique();
         entity.HasIndex(u => u.NormalizedEmail);
 
-        // Map login tracking fields for cleanup queries
-        entity.Property(u => u.LastLoginAt);
-        entity.Property(u => u.LastFailedLoginAt);
+        // Map login tracking fields for cleanup queries - store as Unix milliseconds for LINQ translation
+        entity.Property(u => u.LastLoginAt)
+            .HasConversion(
+                v => v.HasValue ? v.Value.ToUnixTimeMilliseconds() : (long?)null,
+                v => v.HasValue ? DateTimeOffset.FromUnixTimeMilliseconds(v.Value) : null);
+        entity.Property(u => u.LastFailedLoginAt)
+            .HasConversion(
+                v => v.HasValue ? v.Value.ToUnixTimeMilliseconds() : (long?)null,
+                v => v.HasValue ? DateTimeOffset.FromUnixTimeMilliseconds(v.Value) : null);
+        
+        // Map anonymous user fields for cleanup queries
+        entity.Property(u => u.IsAnonymous);
+        entity.Property(u => u.LinkedAt)
+            .HasConversion(
+                v => v.HasValue ? v.Value.ToUnixTimeMilliseconds() : (long?)null,
+                v => v.HasValue ? DateTimeOffset.FromUnixTimeMilliseconds(v.Value) : null);
+        
+        // Map lockout field
+        entity.Property(u => u.LockoutEnd)
+            .HasConversion(
+                v => v.HasValue ? v.Value.ToUnixTimeMilliseconds() : (long?)null,
+                v => v.HasValue ? DateTimeOffset.FromUnixTimeMilliseconds(v.Value) : null);
+        
+        // Map audit fields from AuditableEntity base class
+        entity.Property(u => u.Created)
+            .HasConversion(
+                v => v.ToUnixTimeMilliseconds(),
+                v => DateTimeOffset.FromUnixTimeMilliseconds(v));
+        entity.Property(u => u.LastModified)
+            .HasConversion(
+                v => v.ToUnixTimeMilliseconds(),
+                v => DateTimeOffset.FromUnixTimeMilliseconds(v));
         
         // Ignore navigation properties - we'll store them in separate tables
         entity.Ignore(u => u.PermissionGrants);
@@ -107,6 +136,10 @@ public class IdentityEntityConfiguration : IEFCoreEntityConfiguration
             .IsRequired();
         entity.Property(ul => ul.ProviderDisplayName).HasMaxLength(256);
         entity.Property(ul => ul.Email).HasMaxLength(256);
+        entity.Property(ul => ul.LinkedAt)
+            .HasConversion(
+                v => v.ToUnixTimeMilliseconds(),
+                v => DateTimeOffset.FromUnixTimeMilliseconds(v));
 
         entity.HasIndex(ul => ul.UserId);
     }
@@ -125,6 +158,10 @@ public class IdentityEntityConfiguration : IEFCoreEntityConfiguration
         entity.Property(up => up.CredentialId).IsRequired();
         entity.Property(up => up.PublicKey);
         entity.Property(up => up.Name).HasMaxLength(256);
+        entity.Property(up => up.CreatedAt)
+            .HasConversion(
+                v => v.ToUnixTimeMilliseconds(),
+                v => DateTimeOffset.FromUnixTimeMilliseconds(v));
         entity.Property(up => up.SignCount);
         entity.Property(up => up.Transports);
         entity.Property(up => up.AttestationObject);
@@ -150,8 +187,16 @@ public class IdentityEntityConfiguration : IEFCoreEntityConfiguration
         entity.Property(c => c.Type).IsRequired();
         entity.Property(c => c.OptionsJson).IsRequired();
         entity.Property(c => c.CredentialName).HasMaxLength(256);  // Optional, for registration
-        entity.Property(c => c.CreatedAt).IsRequired();
-        entity.Property(c => c.ExpiresAt).IsRequired();
+        entity.Property(c => c.CreatedAt)
+            .HasConversion(
+                v => v.ToUnixTimeMilliseconds(),
+                v => DateTimeOffset.FromUnixTimeMilliseconds(v))
+            .IsRequired();
+        entity.Property(c => c.ExpiresAt)
+            .HasConversion(
+                v => v.ToUnixTimeMilliseconds(),
+                v => DateTimeOffset.FromUnixTimeMilliseconds(v))
+            .IsRequired();
 
         entity.HasIndex(c => c.ExpiresAt);  // For cleanup queries
     }
@@ -178,9 +223,25 @@ public class IdentityEntityConfiguration : IEFCoreEntityConfiguration
             .HasConversion(id => id.ToString(), str => Guid.Parse(str))
             .IsRequired();
         entity.Property(c => c.CredentialType).IsRequired().HasMaxLength(50);
-        entity.Property(c => c.RegisteredAt).IsRequired();
+        entity.Property(c => c.RegisteredAt)
+            .HasConversion(
+                v => v.ToUnixTimeMilliseconds(),
+                v => DateTimeOffset.FromUnixTimeMilliseconds(v))
+            .IsRequired();
+        entity.Property(c => c.LastUsedAt)
+            .HasConversion(
+                v => v.HasValue ? v.Value.ToUnixTimeMilliseconds() : (long?)null,
+                v => v.HasValue ? DateTimeOffset.FromUnixTimeMilliseconds(v.Value) : null);
         entity.Property(c => c.UserHandle).IsRequired();
         entity.Property(c => c.AttestationFormat).IsRequired().HasMaxLength(50);
+        entity.Property(c => c.CreatedAt)
+            .HasConversion(
+                v => v.HasValue ? v.Value.ToUnixTimeMilliseconds() : (long?)null,
+                v => v.HasValue ? DateTimeOffset.FromUnixTimeMilliseconds(v.Value) : null);
+        entity.Property(c => c.UpdatedAt)
+            .HasConversion(
+                v => v.HasValue ? v.Value.ToUnixTimeMilliseconds() : (long?)null,
+                v => v.HasValue ? DateTimeOffset.FromUnixTimeMilliseconds(v.Value) : null);
 
         entity.HasIndex(c => c.UserId);
         entity.HasIndex(c => c.CredentialId);
@@ -202,6 +263,10 @@ public class IdentityEntityConfiguration : IEFCoreEntityConfiguration
             .HasConversion(id => id.ToString(), str => Guid.Parse(str))
             .IsRequired();
         entity.Property(ura => ura.ParameterValuesJson).HasMaxLength(4000);
+        entity.Property(ura => ura.AssignedAt)
+            .HasConversion(
+                v => v.ToUnixTimeMilliseconds(),
+                v => DateTimeOffset.FromUnixTimeMilliseconds(v));
 
         entity.HasIndex(ura => ura.UserId);
         entity.HasIndex(ura => ura.RoleId);
@@ -220,7 +285,11 @@ public class IdentityEntityConfiguration : IEFCoreEntityConfiguration
             .IsRequired();
         entity.Property(upg => upg.PermissionIdentifier).IsRequired().HasMaxLength(512);
         entity.Property(upg => upg.Description).HasMaxLength(1000);
-        entity.Property(upg => upg.GrantedAt).IsRequired();
+        entity.Property(upg => upg.GrantedAt)
+            .HasConversion(
+                v => v.ToUnixTimeMilliseconds(),
+                v => DateTimeOffset.FromUnixTimeMilliseconds(v))
+            .IsRequired();
         entity.Property(upg => upg.GrantedBy).HasMaxLength(256);
 
         entity.HasIndex(upg => upg.UserId);
@@ -244,10 +313,26 @@ public class IdentityEntityConfiguration : IEFCoreEntityConfiguration
         entity.Property(s => s.DeviceName).HasMaxLength(256);
         entity.Property(s => s.UserAgent).HasMaxLength(512);
         entity.Property(s => s.IpAddress).HasMaxLength(64);
-        entity.Property(s => s.CreatedAt).IsRequired();
-        entity.Property(s => s.LastUsedAt).IsRequired();
-        entity.Property(s => s.ExpiresAt).IsRequired();
+        entity.Property(s => s.CreatedAt)
+            .HasConversion(
+                v => v.ToUnixTimeMilliseconds(),
+                v => DateTimeOffset.FromUnixTimeMilliseconds(v))
+            .IsRequired();
+        entity.Property(s => s.LastUsedAt)
+            .HasConversion(
+                v => v.ToUnixTimeMilliseconds(),
+                v => DateTimeOffset.FromUnixTimeMilliseconds(v))
+            .IsRequired();
+        entity.Property(s => s.ExpiresAt)
+            .HasConversion(
+                v => v.ToUnixTimeMilliseconds(),
+                v => DateTimeOffset.FromUnixTimeMilliseconds(v))
+            .IsRequired();
         entity.Property(s => s.IsRevoked).IsRequired();
+        entity.Property(s => s.RevokedAt)
+            .HasConversion(
+                v => v.HasValue ? v.Value.ToUnixTimeMilliseconds() : (long?)null,
+                v => v.HasValue ? DateTimeOffset.FromUnixTimeMilliseconds(v.Value) : null);
 
         entity.HasIndex(s => s.UserId);
         entity.HasIndex(s => s.ExpiresAt);  // For cleanup queries
@@ -269,11 +354,24 @@ public class IdentityEntityConfiguration : IEFCoreEntityConfiguration
             .HasConversion(id => id.ToString(), str => Guid.Parse(str))
             .IsRequired();
         entity.Property(k => k.Name).IsRequired().HasMaxLength(100);
-        entity.Property(k => k.CreatedAt).IsRequired();
-        entity.Property(k => k.ExpiresAt);
-        entity.Property(k => k.LastUsedAt);
+        entity.Property(k => k.CreatedAt)
+            .HasConversion(
+                v => v.ToUnixTimeMilliseconds(),
+                v => DateTimeOffset.FromUnixTimeMilliseconds(v))
+            .IsRequired();
+        entity.Property(k => k.ExpiresAt)
+            .HasConversion(
+                v => v.HasValue ? v.Value.ToUnixTimeMilliseconds() : (long?)null,
+                v => v.HasValue ? DateTimeOffset.FromUnixTimeMilliseconds(v.Value) : null);
+        entity.Property(k => k.LastUsedAt)
+            .HasConversion(
+                v => v.HasValue ? v.Value.ToUnixTimeMilliseconds() : (long?)null,
+                v => v.HasValue ? DateTimeOffset.FromUnixTimeMilliseconds(v.Value) : null);
         entity.Property(k => k.IsRevoked).IsRequired();
-        entity.Property(k => k.RevokedAt);
+        entity.Property(k => k.RevokedAt)
+            .HasConversion(
+                v => v.HasValue ? v.Value.ToUnixTimeMilliseconds() : (long?)null,
+                v => v.HasValue ? DateTimeOffset.FromUnixTimeMilliseconds(v.Value) : null);
 
         entity.HasIndex(k => k.UserId);
         entity.HasIndex(k => new { k.UserId, k.IsRevoked });  // For active API keys query
