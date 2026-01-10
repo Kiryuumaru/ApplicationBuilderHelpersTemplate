@@ -1,18 +1,16 @@
 using AbsolutePathHelpers;
-using Application.Abstractions.Application;
 using Application.AppEnvironment.Services;
-using Application.Server.Authorization.Extensions;
 using Application.Common.Extensions;
 using Application.Common.Interfaces;
+using Application.Common.Interfaces.Application;
 using Application.Common.Services;
-using Application.Configuration.Extensions;
+using Application.Server.Authorization.Extensions;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Attributes;
 using Asp.Versioning;
 using Domain.Authorization.Constants;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
@@ -20,7 +18,6 @@ using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -67,13 +64,12 @@ internal class MainCommand : Build.BaseCommand<WebApplicationBuilder>
         });
 
         services.AddHealthChecks()
-            .AddCheck("self", () => HealthCheckResult.Healthy(), ["live"]);
+            .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy(), ["live"]);
 
         services.AddServiceDiscovery();
 
         services.ConfigureHttpClientDefaults(http =>
         {
-            // Turn on service discovery by default
             http.AddServiceDiscovery();
         });
 
@@ -164,10 +160,11 @@ internal class MainCommand : Build.BaseCommand<WebApplicationBuilder>
 
         app.UseExceptionHandler();
 
+        // Health check endpoints
         if (app.Environment.IsDevelopment())
         {
             app.MapHealthChecks("/health");
-            app.MapHealthChecks("/alive", new HealthCheckOptions
+            app.MapHealthChecks("/alive", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
             {
                 Predicate = r => r.Tags.Contains("live")
             });

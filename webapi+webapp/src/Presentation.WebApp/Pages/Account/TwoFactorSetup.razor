@@ -1,0 +1,375 @@
+@page "/account/two-factor"
+@attribute [Authorize]
+@inject NavigationManager Navigation
+@inject ITwoFactorClient TwoFactorClient
+@inject IAuthStateProvider AuthStateProvider
+@inject IJSRuntime JS
+@implements IDisposable
+
+<PageTitle>Two-Factor Authentication</PageTitle>
+
+<div class="mb-4">
+    <nav class="flex" aria-label="Breadcrumb">
+        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+            <li class="inline-flex items-center">
+                <a href="account/profile" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-primary-600 dark:text-gray-400 dark:hover:text-white">
+                    Profile
+                </a>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
+                    </svg>
+                    <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2 dark:text-gray-400">Two-Factor Authentication</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+</div>
+
+<div class="max-w-2xl">
+    <Card Title="Two-Factor Authentication">
+        <p class="text-gray-500 dark:text-gray-400 mb-6">
+            Two-factor authentication adds an extra layer of security to your account. 
+            When enabled, you'll need to enter a code from your authenticator app in addition to your password.
+        </p>
+        
+        @if (!_isEnabled)
+        {
+            <div class="space-y-6">
+                <div class="p-4 bg-gray-50 rounded-lg dark:bg-gray-700">
+                    <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-2">Step 1: Install an authenticator app</h4>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        Download and install an authenticator app like Google Authenticator, Microsoft Authenticator, or Authy on your mobile device.
+                    </p>
+                </div>
+                
+                <div class="p-4 bg-gray-50 rounded-lg dark:bg-gray-700">
+                    <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-2">Step 2: Scan QR code</h4>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                        Scan the QR code below with your authenticator app.
+                    </p>
+                    
+                    @if (_setupInfo != null)
+                    {
+                        <div class="flex justify-center mb-4">
+                            <div id="qrcode" class="w-48 h-48"></div>
+                        </div>
+                        
+                        <p class="text-sm text-gray-500 dark:text-gray-400 text-center">
+                            Or enter this code manually: <code class="bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded">@_setupInfo.FormattedSharedKey</code>
+                        </p>
+                    }
+                    else if (_isLoadingSetup)
+                    {
+                        <div class="flex justify-center mb-4">
+                            <div class="w-48 h-48 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
+                                <svg class="animate-spin h-8 w-8 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="flex justify-center mb-4">
+                            <div class="w-48 h-48 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
+                                <span class="text-gray-500 dark:text-gray-400 text-sm">Failed to load QR code</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-center">
+                            <Button Size="Button.ButtonSize.Small" OnClick="LoadSetupInfo">Retry</Button>
+                        </div>
+                    }
+                </div>
+                
+                <div class="p-4 bg-gray-50 rounded-lg dark:bg-gray-700">
+                    <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-2">Step 3: Verify code</h4>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                        Enter the 6-digit code from your authenticator app to complete setup.
+                    </p>
+                    
+                    @if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <Alert Type="Alert.AlertType.Error" Message="@_errorMessage" Dismissible="true" OnDismissed="() => _errorMessage = null" />
+                    }
+                    
+                    <div class="flex space-x-2">
+                        <TextInput Id="code" 
+                                   Type="text" 
+                                   Placeholder="000000" 
+                                   @bind-Value="_verificationCode"
+                                   WrapperClass="flex-grow mb-0" />
+                        <Button OnClick="EnableTwoFactor" Loading="_isLoading" LoadingText="Verifying...">
+                            Enable
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <Alert Type="Alert.AlertType.Success" Title="Enabled" Message="Two-factor authentication is enabled for your account." />
+            
+            <div class="mt-6">
+                <h4 class="text-sm font-medium text-gray-900 dark:text-white mb-2">Recovery codes</h4>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                    Save these recovery codes in a safe place. You can use them to access your account if you lose access to your authenticator app.
+                </p>
+                
+                @if (_recoveryCodes.Any())
+                {
+                    <div class="grid grid-cols-2 gap-2 p-4 bg-gray-50 rounded-lg dark:bg-gray-700 font-mono text-sm">
+                        @foreach (var recoveryCode in _recoveryCodes)
+                        {
+                            <span>@recoveryCode</span>
+                        }
+                    </div>
+                    
+                    <div class="flex justify-between mt-4">
+                        <Button Size="Button.ButtonSize.Small" Color="Button.ButtonColor.Gray" OnClick="RegenerateRecoveryCodes" Loading="_isRegenerating" LoadingText="Regenerating...">
+                            Regenerate Codes
+                        </Button>
+                        <Button Variant="Button.ButtonVariant.Danger" OnClick="ShowDisableModal">
+                            Disable Two-Factor
+                        </Button>
+                    </div>
+                }
+                else
+                {
+                    <div class="p-4 bg-gray-50 rounded-lg dark:bg-gray-700 text-center">
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">Recovery codes are not visible after initial setup.</p>
+                        <Button Size="Button.ButtonSize.Small" OnClick="RegenerateRecoveryCodes" Loading="_isRegenerating" LoadingText="Regenerating...">
+                            Generate New Codes
+                        </Button>
+                    </div>
+                    
+                    <div class="flex justify-end mt-4">
+                        <Button Variant="Button.ButtonVariant.Danger" OnClick="ShowDisableModal">
+                            Disable Two-Factor
+                        </Button>
+                    </div>
+                }
+            </div>
+        }
+    </Card>
+</div>
+
+@* Disable 2FA Modal *@
+@if (_showDisableModal)
+{
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @onclick="HideDisableModal">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4" @onclick:stopPropagation>
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white">Disable Two-Factor Authentication</h3>
+            </div>
+            <div class="p-4 space-y-4">
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                    Enter your password to confirm disabling two-factor authentication. This will make your account less secure.
+                </p>
+                
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <Alert Type="Alert.AlertType.Error" Message="@_errorMessage" Dismissible="true" OnDismissed="() => _errorMessage = null" />
+                }
+                
+                <TextInput Id="disablePassword" 
+                           Type="password" 
+                           Label="Password" 
+                           Placeholder="••••••••" 
+                           @bind-Value="_disablePassword"
+                           Required="true" />
+            </div>
+            <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-2">
+                <Button Type="button" Color="Button.ButtonColor.Gray" OnClick="HideDisableModal">Cancel</Button>
+                <Button Type="button" Color="Button.ButtonColor.Red" OnClick="DisableTwoFactor" Loading="_isLoading" LoadingText="Disabling...">
+                    Disable 2FA
+                </Button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private AuthState _authState = AuthState.Anonymous;
+    private TwoFactorSetupInfo? _setupInfo;
+    private List<string> _recoveryCodes = new();
+    private bool _isEnabled;
+    private bool _isLoading;
+    private bool _isLoadingSetup = true;
+    private bool _isRegenerating;
+    private bool _showDisableModal;
+    private string? _verificationCode;
+    private string? _disablePassword;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _authState = AuthStateProvider.CurrentState;
+        AuthStateProvider.OnStateChanged += HandleAuthStateChanged;
+        
+        // Check if 2FA is already enabled from auth state
+        _isEnabled = _authState.TwoFactorEnabled;
+        
+        if (!_isEnabled)
+        {
+            await LoadSetupInfo();
+        }
+        else
+        {
+            _isLoadingSetup = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_setupInfo != null && !_isEnabled)
+        {
+            // Generate QR code using JavaScript
+            await JS.InvokeVoidAsync("generateQrCode", "qrcode", _setupInfo.AuthenticatorUri);
+        }
+    }
+
+    private void HandleAuthStateChanged()
+    {
+        _authState = AuthStateProvider.CurrentState;
+        _isEnabled = _authState.TwoFactorEnabled;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadSetupInfo()
+    {
+        if (_authState.UserId == Guid.Empty) return;
+        
+        _isLoadingSetup = true;
+        try
+        {
+            _setupInfo = await TwoFactorClient.GetSetupInfoAsync(_authState.UserId);
+        }
+        catch
+        {
+            _setupInfo = null;
+        }
+        finally
+        {
+            _isLoadingSetup = false;
+        }
+    }
+
+    private async Task EnableTwoFactor()
+    {
+        if (string.IsNullOrEmpty(_verificationCode) || _verificationCode.Length != 6)
+        {
+            _errorMessage = "Please enter a valid 6-digit code";
+            return;
+        }
+
+        if (_authState.UserId == Guid.Empty)
+        {
+            _errorMessage = "User not authenticated";
+            return;
+        }
+
+        _errorMessage = null;
+        _isLoading = true;
+
+        try
+        {
+            var result = await TwoFactorClient.EnableAsync(_authState.UserId, _verificationCode);
+            
+            if (result.Success)
+            {
+                _isEnabled = true;
+                _recoveryCodes = result.RecoveryCodes;
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage ?? "Failed to enable 2FA";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to enable 2FA: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task RegenerateRecoveryCodes()
+    {
+        if (_authState.UserId == Guid.Empty) return;
+        
+        _isRegenerating = true;
+        try
+        {
+            _recoveryCodes = await TwoFactorClient.GenerateRecoveryCodesAsync(_authState.UserId);
+        }
+        catch
+        {
+            // Handle error
+        }
+        finally
+        {
+            _isRegenerating = false;
+        }
+    }
+
+    private void ShowDisableModal()
+    {
+        _disablePassword = null;
+        _showDisableModal = true;
+    }
+
+    private void HideDisableModal()
+    {
+        _showDisableModal = false;
+    }
+
+    private async Task DisableTwoFactor()
+    {
+        if (string.IsNullOrEmpty(_disablePassword))
+        {
+            _errorMessage = "Password is required to disable 2FA";
+            return;
+        }
+
+        if (_authState.UserId == Guid.Empty) return;
+        
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            var success = await TwoFactorClient.DisableAsync(_authState.UserId, _disablePassword);
+            
+            if (success)
+            {
+                _isEnabled = false;
+                _recoveryCodes.Clear();
+                _showDisableModal = false;
+                await LoadSetupInfo();
+            }
+            else
+            {
+                _errorMessage = "Failed to disable 2FA. Please check your password.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to disable 2FA: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        AuthStateProvider.OnStateChanged -= HandleAuthStateChanged;
+    }
+}

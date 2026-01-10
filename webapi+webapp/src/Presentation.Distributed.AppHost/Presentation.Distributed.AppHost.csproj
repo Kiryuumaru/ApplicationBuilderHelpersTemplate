@@ -1,0 +1,25 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.1.0">
+
+<PropertyGroup>
+<LangVersion>14</LangVersion>
+<TargetFramework>net10.0</TargetFramework>
+<Nullable>enable</Nullable>
+<ImplicitUsings>enable</ImplicitUsings>
+<OutputType>Exe</OutputType>
+<UserSecretsId>f5e31e56-7a8e-4a5c-9b3d-1e2f3a4b5c6d</UserSecretsId>
+</PropertyGroup>
+
+<PropertyGroup>
+<Copyright>Copyright (C) 2025 Sample</Copyright>
+<Company>Sample Company</Company>
+<AssemblyTitle>Application Builder Helpers Template AppHost</AssemblyTitle>
+<AssemblyName>sampleapp.apphost</AssemblyName>
+<Description>Aspire AppHost orchestrator for Application Builder Helpers Template.</Description>
+</PropertyGroup>
+
+<ItemGroup>
+<ProjectReference Include="..\Presentation.WebApi\Presentation.WebApi.csproj" />
+<ProjectReference Include="..\Presentation.WebApp\Presentation.WebApp.csproj" />
+</ItemGroup>
+
+</Project>

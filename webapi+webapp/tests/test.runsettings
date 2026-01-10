@@ -1,10 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RunSettings>
   <RunConfiguration>
-    <!-- Milliseconds. Hard-stop for a whole 'dotnet test' session. -->
+    <!-- Hard timeout for the entire test session (5 minutes) -->
     <TestSessionTimeout>300000</TestSessionTimeout>
-
-    <!-- Milliseconds. Best-effort per-test-case timeout (supported by vstest). -->
-    <TestCaseTimeout>300000</TestCaseTimeout>
+    
+    <!-- Run tests in parallel -->
+    <MaxCpuCount>0</MaxCpuCount>
+    
+    <!-- Blame mode helps identify hanging tests -->
+    <CollectDumpOnTestSessionHang>true</CollectDumpOnTestSessionHang>
+    <TestSessionHangTimeout>180000</TestSessionHangTimeout>
   </RunConfiguration>
+  
+  <!-- xUnit specific settings -->
+  <xUnit>
+    <MaxParallelThreads>0</MaxParallelThreads>
+    <ParallelizeAssembly>true</ParallelizeAssembly>
+    <ParallelizeTestCollections>true</ParallelizeTestCollections>
+  </xUnit>
 </RunSettings>

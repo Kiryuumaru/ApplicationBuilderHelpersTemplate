@@ -1,0 +1,119 @@
+using System.Net.Http.Json;
+using Application.Client.Authentication.Interfaces;
+using Application.Client.Authentication.Models;
+using Application.Client.Json;
+
+namespace Application.Client.Authentication.Services;
+
+/// <summary>
+/// HTTP client for two-factor authentication endpoints.
+/// </summary>
+public class TwoFactorClient : ITwoFactorClient
+{
+    private readonly HttpClient _httpClient;
+
+    public TwoFactorClient(HttpClient httpClient)
+    {
+        _httpClient = httpClient;
+    }
+
+    public async Task<TwoFactorSetupInfo?> GetSetupInfoAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"api/v1/auth/users/{userId}/2fa/setup", cancellationToken);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync(
+                    AppJsonSerializerContext.Default.TwoFactorSetupInfo,
+                    cancellationToken);
+            }
+
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public async Task<EnableTwoFactorResult> EnableAsync(Guid userId, string verificationCode, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var request = new EnableTwoFactorRequest
+            {
+                VerificationCode = verificationCode
+            };
+
+            var response = await _httpClient.PostAsJsonAsync(
+                $"api/v1/auth/users/{userId}/2fa/enable",
+                request,
+                AppJsonSerializerContext.Default.EnableTwoFactorRequest,
+                cancellationToken);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync(
+                    AppJsonSerializerContext.Default.EnableTwoFactorResponse,
+                    cancellationToken);
+                return EnableTwoFactorResult.Succeeded(result?.RecoveryCodes ?? new List<string>());
+            }
+
+            var error = await response.Content.ReadFromJsonAsync(
+                AppJsonSerializerContext.Default.ErrorResponse,
+                cancellationToken);
+            return EnableTwoFactorResult.Failed(error?.Message ?? "Failed to enable 2FA");
+        }
+        catch (Exception ex)
+        {
+            return EnableTwoFactorResult.Failed($"Network error: {ex.Message}");
+        }
+    }
+
+    public async Task<bool> DisableAsync(Guid userId, string password, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var request = new DisableTwoFactorRequest
+            {
+                Password = password
+            };
+
+            var response = await _httpClient.PostAsJsonAsync(
+                $"api/v1/auth/users/{userId}/2fa/disable",
+                request,
+                AppJsonSerializerContext.Default.DisableTwoFactorRequest,
+                cancellationToken);
+            
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public async Task<List<string>> GenerateRecoveryCodesAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsync($"api/v1/auth/users/{userId}/2fa/recovery-codes", null, cancellationToken);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync(
+                    AppJsonSerializerContext.Default.RecoveryCodesResponse,
+                    cancellationToken);
+                return result?.RecoveryCodes ?? new List<string>();
+            }
+
+            return new List<string>();
+        }
+        catch
+        {
+            return new List<string>();
+        }
+    }
+}

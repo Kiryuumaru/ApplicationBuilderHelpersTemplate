@@ -1,0 +1,213 @@
+@page "/account/profile"
+@attribute [Authorize]
+@inject IAuthStateProvider AuthStateProvider
+@inject IUsersClient UsersClient
+
+<PageTitle>Profile</PageTitle>
+
+<div class="mb-4">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Profile</h1>
+    <p class="text-gray-600 dark:text-gray-400">Manage your account information</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div class="lg:col-span-1">
+        <Card>
+            <div class="flex flex-col items-center">
+                <div class="w-24 h-24 rounded-full bg-primary-600 flex items-center justify-center text-white text-3xl font-bold mb-4">
+                    @GetUserInitial()
+                </div>
+                <h5 class="mb-1 text-xl font-medium text-gray-900 dark:text-white">@_authState.Username</h5>
+                <span class="text-sm text-gray-500 dark:text-gray-400">@_authState.Email</span>
+                
+                @if (_authState.Roles.Any())
+                {
+                    <div class="flex mt-4 space-x-2">
+                        @foreach (var role in _authState.Roles)
+                        {
+                            <span class="bg-primary-100 text-primary-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-primary-900 dark:text-primary-300">
+                                @role
+                            </span>
+                        }
+                    </div>
+                }
+            </div>
+        </Card>
+    </div>
+    
+    <div class="lg:col-span-2">
+        <Card Title="Account Information">
+            @if (!string.IsNullOrEmpty(_successMessage))
+            {
+                <Alert Type="Alert.AlertType.Success" Message="@_successMessage" Dismissible="true" OnDismissed="() => _successMessage = null" />
+            }
+            
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <Alert Type="Alert.AlertType.Error" Message="@_errorMessage" Dismissible="true" OnDismissed="() => _errorMessage = null" />
+            }
+            
+            <EditForm Model="_model" OnValidSubmit="HandleSave" FormName="profile">
+                <DataAnnotationsValidator />
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <TextInput Id="username" 
+                               Type="text" 
+                               Label="Username" 
+                               @bind-Value="_model.Username"
+                               Required="true" />
+                    
+                    <TextInput Id="email" 
+                               Type="email" 
+                               Label="Email" 
+                               @bind-Value="_model.Email"
+                               Required="true" />
+                </div>
+                
+                <div class="flex justify-end mt-4">
+                    <Button Type="submit" Loading="_isLoading" LoadingText="Saving...">
+                        Save Changes
+                    </Button>
+                </div>
+            </EditForm>
+        </Card>
+        
+        <Card Title="Security" class="mt-4">
+            <div class="space-y-4">
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg dark:bg-gray-700">
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-900 dark:text-white">Password</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Change your password</p>
+                    </div>
+                    <a href="account/change-password" class="text-primary-600 hover:underline dark:text-primary-500">
+                        Change
+                    </a>
+                </div>
+                
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg dark:bg-gray-700">
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-900 dark:text-white">Two-Factor Authentication</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            @if (_authState.TwoFactorEnabled)
+                            {
+                                <span class="text-green-600 dark:text-green-400">Enabled</span>
+                            }
+                            else
+                            {
+                                <span>Add an extra layer of security</span>
+                            }
+                        </p>
+                    </div>
+                    <a href="account/two-factor" class="text-primary-600 hover:underline dark:text-primary-500">
+                        Configure
+                    </a>
+                </div>
+                
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg dark:bg-gray-700">
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-900 dark:text-white">Active Sessions</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Manage your login sessions</p>
+                    </div>
+                    <a href="account/sessions" class="text-primary-600 hover:underline dark:text-primary-500">
+                        Manage
+                    </a>
+                </div>
+                
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg dark:bg-gray-700">
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-900 dark:text-white">API Keys</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Manage programmatic access</p>
+                    </div>
+                    <a href="account/api-keys" class="text-primary-600 hover:underline dark:text-primary-500">
+                        Manage
+                    </a>
+                </div>
+            </div>
+        </Card>
+    </div>
+</div>
+
+@code {
+    private AuthState _authState = AuthState.Anonymous;
+    private ProfileModel _model = new();
+    private bool _isLoading;
+    private string? _successMessage;
+    private string? _errorMessage;
+
+    protected override void OnInitialized()
+    {
+        _authState = AuthStateProvider.CurrentState;
+        _model.Username = _authState.Username;
+        _model.Email = _authState.Email;
+        
+        AuthStateProvider.OnStateChanged += HandleAuthStateChanged;
+    }
+
+    private void HandleAuthStateChanged()
+    {
+        _authState = AuthStateProvider.CurrentState;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private string GetUserInitial()
+    {
+        if (!string.IsNullOrEmpty(_authState.Username))
+            return _authState.Username[0].ToString().ToUpper();
+        if (!string.IsNullOrEmpty(_authState.Email))
+            return _authState.Email[0].ToString().ToUpper();
+        return "U";
+    }
+
+    private async Task HandleSave()
+    {
+        _errorMessage = null;
+        _successMessage = null;
+        _isLoading = true;
+
+        try
+        {
+            if (_authState.UserId == Guid.Empty)
+            {
+                _errorMessage = "User not authenticated";
+                return;
+            }
+
+            var result = await UsersClient.UpdateUserAsync(_authState.UserId, new Application.Client.Iam.Models.UpdateUserRequest
+            {
+                Email = _model.Email
+            });
+
+            if (result != null)
+            {
+                _successMessage = "Profile updated successfully";
+            }
+            else
+            {
+                _errorMessage = "Failed to update profile";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to update profile: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        AuthStateProvider.OnStateChanged -= HandleAuthStateChanged;
+    }
+
+    private class ProfileModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Username is required")]
+        public string? Username { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Email is required")]
+        [System.ComponentModel.DataAnnotations.EmailAddress(ErrorMessage = "Invalid email address")]
+        public string? Email { get; set; }
+    }
+}

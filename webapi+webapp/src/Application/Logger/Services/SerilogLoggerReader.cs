@@ -1,6 +1,6 @@
 using AbsolutePathHelpers;
+using Application.Common.Configuration.Extensions;
 using Application.Common.Extensions;
-using Application.Configuration.Extensions;
 using Application.Logger.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Serilog;
