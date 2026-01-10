@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Application.Abstractions.Application;
+using Application.Common.Interfaces.Application;
 using Application.Server.Authorization.Models;
 using Application.Server.Identity.Extensions;
 using Application.Server.Identity.Interfaces;
