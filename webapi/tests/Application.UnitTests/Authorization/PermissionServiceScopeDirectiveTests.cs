@@ -1,12 +1,9 @@
 using Application.Authorization.Interfaces;
-using Application.Authorization.Interfaces.Infrastructure;
 using Application.Authorization.Models;
 using Application.Authorization.Services;
 using Application.UnitTests.Authorization.Fakes;
 using Domain.Authorization.Constants;
-using Infrastructure.Identity.Interfaces;
 using Infrastructure.Identity.Services;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using TokenClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 

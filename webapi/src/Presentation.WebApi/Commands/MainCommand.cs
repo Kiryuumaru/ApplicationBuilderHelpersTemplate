@@ -1,36 +1,17 @@
-using AbsolutePathHelpers;
-using Application.Abstractions.Application;
-using Application.AppEnvironment.Services;
-using Application.Authorization.Extensions;
-using Application.Common.Extensions;
 using Application.Common.Interfaces;
+using Application.Common.Interfaces.Application;
 using Application.Common.Services;
-using Application.Configuration.Extensions;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Attributes;
 using Asp.Versioning;
-using Domain.Authorization.Constants;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http.Features;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ApiExplorer;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Presentation.WebApi.Filters;
 using Scalar.AspNetCore;
 using System.Reflection;
-using System.Text;
-using System.Threading;
 
 namespace Presentation.WebApi.Commands;
 

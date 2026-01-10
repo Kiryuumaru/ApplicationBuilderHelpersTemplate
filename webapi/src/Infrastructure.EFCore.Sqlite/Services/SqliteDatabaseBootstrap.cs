@@ -1,5 +1,4 @@
 using Infrastructure.EFCore.Interfaces;
-using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.EFCore.Sqlite.Services;
 

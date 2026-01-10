@@ -2,7 +2,6 @@ using Application.Authorization.Models;
 using Infrastructure.Identity.Services;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
 using System.Security.Claims;
 using TokenClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 

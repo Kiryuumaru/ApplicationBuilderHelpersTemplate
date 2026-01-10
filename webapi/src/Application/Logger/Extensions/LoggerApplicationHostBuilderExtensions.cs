@@ -1,4 +1,4 @@
-using Application.Configuration.Extensions;
+using Application.Common.Configuration.Extensions;
 using Application.Logger.Enrichers;
 using Application.Logger.Interfaces;
 using Application.Logger.Services;
@@ -6,12 +6,9 @@ using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using OpenTelemetry;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
-using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Serilog;
 using Serilog.Events;

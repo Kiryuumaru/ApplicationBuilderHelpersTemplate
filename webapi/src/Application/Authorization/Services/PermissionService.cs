@@ -1,13 +1,7 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
 using System.Security.Claims;
-using System.Threading;
-using System.Threading.Tasks;
 using Domain.Authorization.Constants;
 using Domain.Shared.Constants;
-using Domain.Shared.Exceptions;
 using Application.Authorization.Interfaces;
 using Application.Authorization.Interfaces.Infrastructure;
 using Domain.Authorization.Enums;

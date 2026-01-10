@@ -1,4 +1,3 @@
-using Domain.Authorization.Models;
 using Domain.Identity.Models;
 using Infrastructure.EFCore.Identity.Models;
 using Infrastructure.EFCore.Interfaces;

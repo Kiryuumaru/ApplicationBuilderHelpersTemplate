@@ -1,16 +1,11 @@
 using Application.Authorization.Interfaces;
-using Application.Authorization.Interfaces.Infrastructure;
 using Application.Identity.Interfaces;
 using Application.Identity.Interfaces.Infrastructure;
 using Application.Identity.Models;
-using Domain.Authorization.Constants;
-using Domain.Authorization.Models;
-using Domain.Identity.Constants;
 using Domain.Identity.Exceptions;
 using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
 using Domain.Shared.Exceptions;
-using System.Security.Claims;
 
 namespace Application.Identity.Services;
 

@@ -4,9 +4,6 @@ using Application.Authorization.Services;
 using Application.Identity.Interfaces;
 using Application.Identity.Interfaces.Infrastructure;
 using Application.Identity.Models;
-using Domain.Authorization.Models;
-using Domain.Authorization.ValueObjects;
-using Domain.Identity.Models;
 using Domain.Identity.ValueObjects;
 using Domain.Shared.Exceptions;
 

@@ -4,7 +4,6 @@ using Domain.Identity.Exceptions;
 using Fido2NetLib;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using System.Text.Json;
 

@@ -1,21 +1,14 @@
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using Application.Authorization.Interfaces;
 using Domain.Authorization.Exceptions;
 using Domain.Authorization.Constants;
 using Domain.Authorization.Models;
 using Domain.Shared.Constants;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using TokenClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 
 namespace Presentation.WebApi.Attributes;

@@ -2,7 +2,6 @@ using Application.Identity.Interfaces;
 using Application.Identity.Interfaces.Infrastructure;
 using Domain.Identity.Exceptions;
 using Domain.Identity.Interfaces;
-using Domain.Identity.Models;
 using Domain.Shared.Exceptions;
 
 namespace Application.Identity.Services;

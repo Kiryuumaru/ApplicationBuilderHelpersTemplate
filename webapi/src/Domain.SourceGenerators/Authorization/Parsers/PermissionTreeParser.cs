@@ -1,10 +1,7 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using Domain.SourceGenerators.Authorization.Models;
 using Domain.SourceGenerators.Utilities;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Domain.SourceGenerators.Authorization.Parsers;

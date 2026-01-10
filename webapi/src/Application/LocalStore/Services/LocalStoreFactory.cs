@@ -1,7 +1,3 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-using Application.LocalStore.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Application.LocalStore.Interfaces;
 using Application.LocalStore.Common;

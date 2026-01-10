@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using System;
 
 namespace Presentation.WebApi.Attributes;
 

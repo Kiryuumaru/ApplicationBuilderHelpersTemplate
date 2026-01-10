@@ -1,4 +1,4 @@
-namespace Application.Abstractions.Application;
+namespace Application.Common.Interfaces.Application;
 
 /// <summary>
 /// Defines constants for application metadata and configuration.

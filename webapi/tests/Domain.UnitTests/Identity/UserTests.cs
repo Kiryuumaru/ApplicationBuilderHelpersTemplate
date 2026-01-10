@@ -1,4 +1,3 @@
-using System.Linq;
 using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;
 using Domain.Identity.Exceptions;

@@ -1,23 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Application.Abstractions.Application;
 using Application.Authorization.Models;
 using Application.Identity.Extensions;
 using Application.Identity.Interfaces;
 using Application.Identity.Models;
 using Domain.Authorization.Constants;
-using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;
 using Domain.Identity.Enums;
-using Domain.Identity.Models;
-using Domain.Identity.ValueObjects;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Xunit;
 using RolesConstants = Domain.Authorization.Constants.Roles;
 using AuthenticationException = Domain.Identity.Exceptions.AuthenticationException;
 using Infrastructure.EFCore.Extensions;
@@ -25,6 +14,7 @@ using Infrastructure.EFCore.Identity.Extensions;
 using Infrastructure.Identity.Extensions;
 using Infrastructure.EFCore.Sqlite.Extensions;
 using Application.Authorization.Interfaces;
+using Application.Common.Interfaces.Application;
 
 namespace Application.IntegrationTests.Identity;
 

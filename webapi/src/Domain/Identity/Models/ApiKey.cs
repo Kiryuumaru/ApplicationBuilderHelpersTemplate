@@ -1,5 +1,3 @@
-using System;
-
 namespace Domain.Identity.Models;
 
 /// <summary>

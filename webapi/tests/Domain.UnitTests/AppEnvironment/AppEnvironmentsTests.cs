@@ -1,4 +1,3 @@
-using System;
 using Domain.AppEnvironment.Constants;
 
 namespace Domain.UnitTests.AppEnvironment;

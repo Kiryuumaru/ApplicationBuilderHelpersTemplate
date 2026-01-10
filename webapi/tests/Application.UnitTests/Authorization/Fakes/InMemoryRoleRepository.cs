@@ -1,9 +1,4 @@
 using System.Collections.Concurrent;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Application.Authorization.Interfaces.Infrastructure;
 using Domain.Authorization.Models;
 

@@ -2,9 +2,6 @@ using Application.LocalStore.Interfaces;
 using Application.LocalStore.Services;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Application.UnitTests.LocalStore;
 

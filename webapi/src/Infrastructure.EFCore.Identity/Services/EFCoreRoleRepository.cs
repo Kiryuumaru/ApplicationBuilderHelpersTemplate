@@ -2,7 +2,6 @@ using System.Text.Json;
 using Application.Authorization.Interfaces.Infrastructure;
 using Domain.Authorization.Exceptions;
 using Domain.Authorization.Models;
-using Domain.Authorization.ValueObjects;
 using Infrastructure.EFCore.Extensions;
 using Infrastructure.EFCore.Identity.Models;
 using Microsoft.EntityFrameworkCore;

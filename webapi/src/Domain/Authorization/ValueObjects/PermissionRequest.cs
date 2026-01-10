@@ -1,5 +1,3 @@
-using Domain.Shared.Models;
-
 namespace Domain.Authorization.ValueObjects;
 
 /// <summary>

@@ -1,9 +1,7 @@
 using AbsolutePathHelpers;
-using Application.Logger.Extensions;
 using Application.NativeCmd.Exceptions;
 using CliWrap;
 using CliWrap.EventStream;
-using Microsoft.Extensions.Logging;
 using System.Runtime.InteropServices;
 using System.Text;
 

@@ -2,12 +2,10 @@ using System.Security.Claims;
 using Application.Authorization.Interfaces.Infrastructure;
 using Application.Authorization.Services;
 using Application.Identity.Interfaces;
-using Application.Identity.Models;
 using Application.Identity.Services;
 using Application.UnitTests.Authorization.Fakes;
 using Domain.Authorization.Constants;
 using NSubstitute;
-using Xunit;
 using TokenClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 
 namespace Application.UnitTests.Authorization;

@@ -1,7 +1,6 @@
 using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
 using Domain.Identity.Services;
-using Domain.Identity.ValueObjects;
 
 namespace Domain.UnitTests.Identity;
 

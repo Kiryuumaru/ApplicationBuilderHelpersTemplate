@@ -1,5 +1,4 @@
 using System.Net;
-using Presentation.WebApi.FunctionalTests.Fixtures;
 
 namespace Presentation.WebApi.FunctionalTests.Bootstrap;
 

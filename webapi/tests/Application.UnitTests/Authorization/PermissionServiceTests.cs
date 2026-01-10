@@ -2,7 +2,6 @@ using Application.Authorization.Interfaces.Infrastructure;
 using Application.Authorization.Models;
 using Application.Authorization.Services;
 using Application.UnitTests.Authorization.Fakes;
-using System.Linq;
 using System.Security.Claims;
 
 namespace Application.UnitTests.Authorization;

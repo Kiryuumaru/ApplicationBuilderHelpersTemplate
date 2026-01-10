@@ -3,13 +3,7 @@ using Application.Authorization.Interfaces;
 using Application.Authorization.Interfaces.Application;
 using Application.Logger.Extensions;
 using DisposableHelpers.Attributes;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Application.Authorization.Services;
 

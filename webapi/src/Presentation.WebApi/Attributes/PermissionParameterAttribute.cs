@@ -1,5 +1,3 @@
-using System;
-
 namespace Presentation.WebApi.Attributes;
 
 /// <summary>

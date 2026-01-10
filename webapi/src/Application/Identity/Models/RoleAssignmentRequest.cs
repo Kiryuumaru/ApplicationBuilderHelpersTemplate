@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace Application.Identity.Models;
 
 public sealed record RoleAssignmentRequest(

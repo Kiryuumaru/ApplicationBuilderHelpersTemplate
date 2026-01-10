@@ -1,4 +1,3 @@
-using Nuke.Common;
 using Nuke.Common.IO;
 using Nuke.Common.Tooling;
 using Nuke.Common.Tools.DotNet;
@@ -7,7 +6,6 @@ using NukeBuildHelpers.Common.Attributes;
 using NukeBuildHelpers.Entry;
 using NukeBuildHelpers.Entry.Extensions;
 using NukeBuildHelpers.Runner.Abstraction;
-using Serilog;
 using System.Linq;
 
 partial class Build : BaseNukeBuildHelpers

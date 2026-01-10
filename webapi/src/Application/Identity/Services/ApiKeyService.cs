@@ -5,7 +5,6 @@ using Application.Identity.Interfaces.Infrastructure;
 using Application.Identity.Models;
 using Domain.Authorization.Constants;
 using Domain.Authorization.ValueObjects;
-using Domain.Identity.Constants;
 using Domain.Identity.Models;
 using TokenClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 using TokenType = Domain.Identity.Enums.TokenType;

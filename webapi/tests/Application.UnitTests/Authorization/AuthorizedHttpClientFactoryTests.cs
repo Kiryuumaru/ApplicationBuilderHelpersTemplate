@@ -2,9 +2,7 @@ using Application.Authorization.Interfaces;
 using Application.Authorization.Services;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
-using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Security.Claims;
 
 namespace Application.UnitTests.Authorization;

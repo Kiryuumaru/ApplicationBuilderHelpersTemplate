@@ -1,14 +1,12 @@
 using System.IdentityModel.Tokens.Jwt;
 using Application.Identity.Enums;
 using Application.Identity.Interfaces;
-using Domain.Identity.Constants;
 using Infrastructure.Identity.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
-using JwtClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 
 namespace Infrastructure.Identity.ConfigureOptions;
 

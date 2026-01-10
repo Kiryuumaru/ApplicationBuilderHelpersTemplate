@@ -1,5 +1,4 @@
 using Domain.Identity.Enums;
-using System.Collections.Generic;
 
 namespace Application.Identity.Models;
 

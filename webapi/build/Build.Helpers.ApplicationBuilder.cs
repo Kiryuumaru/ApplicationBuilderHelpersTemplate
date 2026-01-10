@@ -1,6 +1,6 @@
-﻿using Application.Abstractions.Application;
+﻿using Application.Common.Configuration.Extensions;
 using Application.Common.Extensions;
-using Application.Configuration.Extensions;
+using Application.Common.Interfaces.Application;
 using Application.Logger.Extensions;
 using Application.NativeCmd.Extensions;
 using ApplicationBuilderHelpers;
@@ -17,7 +17,6 @@ using Presentation.Commands;
 using Semver;
 using Serilog;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json.Nodes;

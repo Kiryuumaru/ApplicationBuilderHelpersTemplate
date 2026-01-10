@@ -7,9 +7,6 @@ using CliWrap;
 using CliWrap.EventStream;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Text;
 
 namespace Application.NativeCmd.Services;
 

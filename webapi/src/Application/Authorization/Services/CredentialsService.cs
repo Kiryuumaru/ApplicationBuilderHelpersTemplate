@@ -1,10 +1,8 @@
 using Application.AppEnvironment.Services;
 using Application.Authorization.Extensions;
-using Application.Authorization.Interfaces;
 using Application.Authorization.Models;
 using Domain.Shared.Extensions;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 
 
 namespace Application.Authorization.Services;

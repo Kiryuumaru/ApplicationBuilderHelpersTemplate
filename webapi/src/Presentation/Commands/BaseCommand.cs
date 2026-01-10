@@ -1,8 +1,8 @@
 using AbsolutePathHelpers;
-using Application.Abstractions.Application;
 using Application.AppEnvironment.Services;
 using Application.Authorization.Extensions;
-using Application.Configuration.Extensions;
+using Application.Common.Configuration.Extensions;
+using Application.Common.Interfaces.Application;
 using Application.Logger.Extensions;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Attributes;
