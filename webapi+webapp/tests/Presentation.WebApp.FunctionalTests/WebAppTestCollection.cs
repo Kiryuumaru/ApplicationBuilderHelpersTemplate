@@ -1,11 +1,11 @@
 namespace Presentation.WebApp.FunctionalTests;
 
 /// <summary>
-/// Test collection that shares WebApi, WebApp hosts and Playwright browser.
-/// Tests run in parallel with isolated browser contexts per test.
+/// Test collection for WebApp functional tests.
+/// Tests run in parallel - each test class manages its own hosts with random ports.
 /// </summary>
 [CollectionDefinition(Name)]
-public class WebAppTestCollection : ICollectionFixture<SharedTestHosts>
+public class WebAppTestCollection
 {
     public const string Name = "WebApp Integration Tests";
 }

@@ -3,7 +3,6 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using Presentation.WebApi.FunctionalTests.Fixtures;
 
 namespace Presentation.WebApi.FunctionalTests.Auth;
 
@@ -11,20 +10,12 @@ namespace Presentation.WebApi.FunctionalTests.Auth;
 /// Functional tests for Password Management API endpoints.
 /// Tests change password, forgot password, reset password, and security edge cases.
 /// </summary>
-[Collection(WebApiTestCollection.Name)]
-public class PasswordApiTests
+public class PasswordApiTests : WebApiTestBase
 {
-    private readonly ITestOutputHelper _output;
-    private readonly SharedWebApiHost _sharedHost;
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
-
-    private const string TestPassword = "TestPassword123!";
     private const string NewPassword = "NewPassword456!";
 
-    public PasswordApiTests(SharedWebApiHost sharedHost, ITestOutputHelper output)
+    public PasswordApiTests(ITestOutputHelper output) : base(output)
     {
-        _sharedHost = sharedHost;
-        _output = output;
     }
 
     #region Change Password Tests
@@ -40,7 +31,7 @@ public class PasswordApiTests
         using var request = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/auth/users/{userId}/identity/password");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         request.Content = JsonContent.Create(changePasswordRequest);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
@@ -59,10 +50,10 @@ public class PasswordApiTests
         using var request = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/auth/users/{userId}/identity/password");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         request.Content = JsonContent.Create(changePasswordRequest);
-        await _sharedHost.Host.HttpClient.SendAsync(request);
+        await HttpClient.SendAsync(request);
 
         // Try to login with old password
-        var loginOldResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login",
+        var loginOldResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/login",
             new { Username = username, Password = TestPassword });
 
         Assert.Equal(HttpStatusCode.Unauthorized, loginOldResponse.StatusCode);
@@ -82,10 +73,10 @@ public class PasswordApiTests
         using var request = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/auth/users/{userId}/identity/password");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         request.Content = JsonContent.Create(changePasswordRequest);
-        await _sharedHost.Host.HttpClient.SendAsync(request);
+        await HttpClient.SendAsync(request);
 
         // Login with new password
-        var loginNewResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login",
+        var loginNewResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/login",
             new { Username = username, Password = NewPassword });
 
         Assert.Equal(HttpStatusCode.OK, loginNewResponse.StatusCode);
@@ -102,7 +93,7 @@ public class PasswordApiTests
         using var request = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/auth/users/{userId}/identity/password");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         request.Content = JsonContent.Create(changePasswordRequest);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -118,7 +109,7 @@ public class PasswordApiTests
         using var request = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/auth/users/{userId}/identity/password");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         request.Content = JsonContent.Create(changePasswordRequest);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -128,7 +119,7 @@ public class PasswordApiTests
     {
         var randomUserId = Guid.NewGuid();
         var changePasswordRequest = new { CurrentPassword = TestPassword, NewPassword = NewPassword };
-        var response = await _sharedHost.Host.HttpClient.PutAsJsonAsync($"/api/v1/auth/users/{randomUserId}/identity/password", changePasswordRequest);
+        var response = await HttpClient.PutAsJsonAsync($"/api/v1/auth/users/{randomUserId}/identity/password", changePasswordRequest);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -146,10 +137,10 @@ public class PasswordApiTests
         using var request = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/auth/users/{userId}/identity/password");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         request.Content = JsonContent.Create(changePasswordRequest);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         // Some systems prevent reusing same password, others allow it
-        _output.WriteLine($"Same password change returned: {(int)response.StatusCode}");
+        Output.WriteLine($"Same password change returned: {(int)response.StatusCode}");
         Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
     }
 
@@ -164,7 +155,7 @@ public class PasswordApiTests
         await RegisterUserAsync(username);
 
         var forgotRequest = new { Email = $"{username}@example.com" };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/forgot-password", forgotRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/forgot-password", forgotRequest);
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
@@ -174,7 +165,7 @@ public class PasswordApiTests
     {
         // Security: Should not reveal whether email exists
         var forgotRequest = new { Email = $"nonexistent_{Guid.NewGuid():N}@example.com" };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/forgot-password", forgotRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/forgot-password", forgotRequest);
 
         // Always returns success to prevent email enumeration
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
@@ -184,7 +175,7 @@ public class PasswordApiTests
     public async Task ForgotPassword_WithInvalidEmailFormat_Returns400()
     {
         var forgotRequest = new { Email = "not-an-email" };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/forgot-password", forgotRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/forgot-password", forgotRequest);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -193,7 +184,7 @@ public class PasswordApiTests
     public async Task ForgotPassword_WithEmptyEmail_Returns400()
     {
         var forgotRequest = new { Email = "" };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/forgot-password", forgotRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/forgot-password", forgotRequest);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -214,7 +205,7 @@ public class PasswordApiTests
             Token = "invalid-token",
             NewPassword = NewPassword
         };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/reset-password", resetRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/reset-password", resetRequest);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -228,7 +219,7 @@ public class PasswordApiTests
             Token = "some-token",
             NewPassword = NewPassword
         };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/reset-password", resetRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/reset-password", resetRequest);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -245,7 +236,7 @@ public class PasswordApiTests
             Token = "some-token",
             NewPassword = "123"
         };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/reset-password", resetRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/reset-password", resetRequest);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -253,7 +244,7 @@ public class PasswordApiTests
     [Fact]
     public async Task ResetPassword_WithMalformedRequest_Returns400()
     {
-        var response = await _sharedHost.Host.HttpClient.PostAsync(
+        var response = await HttpClient.PostAsync(
             "/api/v1/auth/reset-password",
             new StringContent("{}", Encoding.UTF8, "application/json"));
 
@@ -279,7 +270,7 @@ public class PasswordApiTests
         for (int i = 0; i < 3; i++)
         {
             var sw = System.Diagnostics.Stopwatch.StartNew();
-            await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/forgot-password", new { Email = realEmail });
+            await HttpClient.PostAsJsonAsync("/api/v1/auth/forgot-password", new { Email = realEmail });
             sw.Stop();
             realTimes.Add(sw.ElapsedMilliseconds);
         }
@@ -289,7 +280,7 @@ public class PasswordApiTests
         for (int i = 0; i < 3; i++)
         {
             var sw = System.Diagnostics.Stopwatch.StartNew();
-            await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/forgot-password", new { Email = fakeEmail });
+            await HttpClient.PostAsJsonAsync("/api/v1/auth/forgot-password", new { Email = fakeEmail });
             sw.Stop();
             fakeTimes.Add(sw.ElapsedMilliseconds);
         }
@@ -297,7 +288,7 @@ public class PasswordApiTests
         var realAvg = realTimes.Average();
         var fakeAvg = fakeTimes.Average();
 
-        _output.WriteLine($"Real email avg: {realAvg}ms, Fake email avg: {fakeAvg}ms");
+        Output.WriteLine($"Real email avg: {realAvg}ms, Fake email avg: {fakeAvg}ms");
 
         // Times should be similar to prevent timing-based enumeration
         var difference = Math.Abs(realAvg - fakeAvg);
@@ -321,7 +312,7 @@ public class PasswordApiTests
             Token = maliciousToken,
             NewPassword = NewPassword
         };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/reset-password", resetRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/reset-password", resetRequest);
 
         // Should handle gracefully, not crash
         Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
@@ -346,11 +337,11 @@ public class PasswordApiTests
             using var request = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/auth/users/{userId}/identity/password");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
             request.Content = JsonContent.Create(new { CurrentPassword = $"Wrong{i}!", NewPassword = NewPassword });
-            await _sharedHost.Host.HttpClient.SendAsync(request);
+            await HttpClient.SendAsync(request);
         }
 
         // Account should still work for login (not locked out via password change failures)
-        var loginResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login",
+        var loginResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/login",
             new { Username = username, Password = TestPassword });
 
         Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
@@ -374,7 +365,7 @@ public class PasswordApiTests
         using var request = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/auth/users/{userId}/identity/password");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         request.Content = JsonContent.Create(changePasswordRequest);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
@@ -394,7 +385,7 @@ public class PasswordApiTests
         using var request = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/auth/users/{userId}/identity/password");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         request.Content = JsonContent.Create(changePasswordRequest);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         var content = await response.Content.ReadAsStringAsync();
 
@@ -410,9 +401,9 @@ public class PasswordApiTests
         var realUsername = $"leak_real_{Guid.NewGuid():N}";
         await RegisterUserAsync(realUsername);
 
-        var realResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/forgot-password",
+        var realResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/forgot-password",
             new { Email = $"{realUsername}@example.com" });
-        var fakeResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/forgot-password",
+        var fakeResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/forgot-password",
             new { Email = $"fake_{Guid.NewGuid():N}@example.com" });
 
         // Both should return the same status code
@@ -433,7 +424,7 @@ public class PasswordApiTests
         var userId = authResult1!.User.Id;
 
         // Login again to create another session
-        var loginResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login",
+        var loginResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/login",
             new { Username = username, Password = TestPassword });
         var content = await loginResponse.Content.ReadAsStringAsync();
         var authResult2 = JsonSerializer.Deserialize<AuthResponse>(content, JsonOptions);
@@ -443,14 +434,14 @@ public class PasswordApiTests
         using var changeRequest = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/auth/users/{userId}/identity/password");
         changeRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult1.AccessToken);
         changeRequest.Content = JsonContent.Create(new { CurrentPassword = TestPassword, NewPassword = NewPassword });
-        await _sharedHost.Host.HttpClient.SendAsync(changeRequest);
+        await HttpClient.SendAsync(changeRequest);
 
         // Check if second session's refresh token still works
-        var refreshResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/refresh",
+        var refreshResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/refresh",
             new { RefreshToken = authResult2!.RefreshToken });
 
         // Document the behavior - some systems invalidate all sessions on password change
-        _output.WriteLine($"Other session after password change: {(int)refreshResponse.StatusCode}");
+        Output.WriteLine($"Other session after password change: {(int)refreshResponse.StatusCode}");
     }
 
     #endregion
@@ -471,7 +462,7 @@ public class PasswordApiTests
             Password = TestPassword,
             ConfirmPassword = TestPassword
         };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
 
         if (!response.IsSuccessStatusCode) return null;
 
@@ -499,3 +490,9 @@ public class PasswordApiTests
 
     #endregion
 }
+
+
+
+
+
+

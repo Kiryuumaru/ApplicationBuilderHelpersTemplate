@@ -4,13 +4,9 @@ namespace Presentation.WebApp.FunctionalTests.Integration;
 /// Playwright functional tests for WebApi and WebApp integration.
 /// Tests that the WebApp correctly communicates with the WebApi.
 /// </summary>
-[Collection(WebAppTestCollection.Name)]
-public class ApiIntegrationTests : PlaywrightTestBase
+public class ApiIntegrationTests : WebAppTestBase
 {
-    private const string TestPassword = "TestPassword123!";
-
-    public ApiIntegrationTests(SharedTestHosts sharedHosts, ITestOutputHelper output)
-        : base(sharedHosts, output)
+    public ApiIntegrationTests(ITestOutputHelper output) : base(output)
     {
     }
 
@@ -18,7 +14,7 @@ public class ApiIntegrationTests : PlaywrightTestBase
     public async Task WebApi_HealthCheck_IsHealthy()
     {
         // Act - Call WebApi health endpoint directly
-        var response = await SharedHosts.WebApi.HttpClient.GetAsync("/health");
+        var response = await HttpClient.GetAsync("/health");
 
         // Assert
         Assert.True(response.IsSuccessStatusCode,

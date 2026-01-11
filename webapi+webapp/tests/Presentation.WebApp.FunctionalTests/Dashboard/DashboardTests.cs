@@ -4,13 +4,9 @@ namespace Presentation.WebApp.FunctionalTests.Dashboard;
 /// Playwright functional tests for the dashboard/home page.
 /// Tests dashboard display and statistics.
 /// </summary>
-[Collection(WebAppTestCollection.Name)]
-public class DashboardTests : PlaywrightTestBase
+public class DashboardTests : WebAppTestBase
 {
-    private const string TestPassword = "TestPassword123!";
-
-    public DashboardTests(SharedTestHosts sharedHosts, ITestOutputHelper output)
-        : base(sharedHosts, output)
+    public DashboardTests(ITestOutputHelper output) : base(output)
     {
     }
 

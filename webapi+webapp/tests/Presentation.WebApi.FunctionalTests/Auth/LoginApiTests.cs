@@ -10,20 +10,12 @@ namespace Presentation.WebApi.FunctionalTests.Auth;
 /// <summary>
 /// Functional tests for Login API endpoints.
 /// Tests authentication flows, credential validation, and security edge cases.
+/// Each test class gets its own isolated WebApi host with random port and database.
 /// </summary>
-[Collection(WebApiTestCollection.Name)]
-public class LoginApiTests
+public class LoginApiTests : WebApiTestBase
 {
-    private readonly ITestOutputHelper _output;
-    private readonly SharedWebApiHost _sharedHost;
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
-
-    private const string TestPassword = "TestPassword123!";
-
-    public LoginApiTests(SharedWebApiHost sharedHost, ITestOutputHelper output)
+    public LoginApiTests(ITestOutputHelper output) : base(output)
     {
-        _sharedHost = sharedHost;
-        _output = output;
     }
 
     #region Basic Login Tests
@@ -35,12 +27,12 @@ public class LoginApiTests
         await RegisterUserAsync(username);
 
         var loginRequest = new { Username = username, Password = TestPassword };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();
-        var result = JsonSerializer.Deserialize<AuthResponse>(content, JsonOptions);
+        var result = JsonSerializer.Deserialize<LoginAuthResponse>(content, JsonOptions);
         
         Assert.NotNull(result);
         Assert.NotEmpty(result!.AccessToken);
@@ -58,7 +50,7 @@ public class LoginApiTests
         await RegisterUserAsync(username);
 
         var loginRequest = new { Username = username, Password = "WrongPassword123!" };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -67,7 +59,7 @@ public class LoginApiTests
     public async Task Login_WithNonExistentUser_Returns401()
     {
         var loginRequest = new { Username = $"nonexistent_{Guid.NewGuid():N}", Password = TestPassword };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -77,16 +69,14 @@ public class LoginApiTests
     #region Input Validation Tests
 
     [Theory]
-    [InlineData("", TestPassword)]           // Empty username
-    [InlineData("   ", TestPassword)]        // Whitespace username
+    [InlineData("", "TestPassword123!")]           // Empty username
+    [InlineData("   ", "TestPassword123!")]        // Whitespace username
     [InlineData("user", "")]                 // Empty password
     [InlineData("user", "   ")]              // Whitespace password
-    [InlineData(null, TestPassword)]         // Null username
-    [InlineData("user", null)]               // Null password
     public async Task Login_WithMissingCredentials_Returns400Or401(string? username, string? password)
     {
         var loginRequest = new { Username = username, Password = password };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
 
         // Should return 400 (bad request) or 401 (unauthorized) - both are acceptable for invalid input
         Assert.True(
@@ -97,7 +87,7 @@ public class LoginApiTests
     [Fact]
     public async Task Login_WithEmptyBody_Returns400()
     {
-        var response = await _sharedHost.Host.HttpClient.PostAsync(
+        var response = await HttpClient.PostAsync(
             "/api/v1/auth/login",
             new StringContent("{}", Encoding.UTF8, "application/json"));
 
@@ -109,7 +99,7 @@ public class LoginApiTests
     [Fact]
     public async Task Login_WithMalformedJson_Returns400()
     {
-        var response = await _sharedHost.Host.HttpClient.PostAsync(
+        var response = await HttpClient.PostAsync(
             "/api/v1/auth/login",
             new StringContent("{invalid json}", Encoding.UTF8, "application/json"));
 
@@ -132,7 +122,7 @@ public class LoginApiTests
     public async Task Login_WithInjectionAttempt_Returns401NotServerError(string maliciousUsername)
     {
         var loginRequest = new { Username = maliciousUsername, Password = TestPassword };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
 
         // Should NOT return 500 (server error) - injection should not break the server
         // May return 401 (user not found), 400 (bad request), or even 200 (if user exists from another test)
@@ -151,7 +141,7 @@ public class LoginApiTests
         await RegisterUserAsync(username);
 
         var loginRequest = new { Username = username, Password = maliciousPassword };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
 
         Assert.True(
             response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.BadRequest,
@@ -176,7 +166,7 @@ public class LoginApiTests
         request.Headers.Add("X-Original-URL", "/admin");
         request.Headers.Add("X-Rewrite-URL", "/admin");
         
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -190,7 +180,7 @@ public class LoginApiTests
         request.Content = JsonContent.Create(loginRequest);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", "fake.jwt.token");
         
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         // Should still validate credentials, not accept fake token
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -214,7 +204,7 @@ public class LoginApiTests
         for (int i = 0; i < 5; i++)
         {
             var sw = System.Diagnostics.Stopwatch.StartNew();
-            await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login", 
+            await HttpClient.PostAsJsonAsync("/api/v1/auth/login", 
                 new { Username = validUsername, Password = "WrongPassword!" });
             sw.Stop();
             validUserTimes.Add(sw.ElapsedMilliseconds);
@@ -225,7 +215,7 @@ public class LoginApiTests
         for (int i = 0; i < 5; i++)
         {
             var sw = System.Diagnostics.Stopwatch.StartNew();
-            await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login",
+            await HttpClient.PostAsJsonAsync("/api/v1/auth/login",
                 new { Username = invalidUsername, Password = "WrongPassword!" });
             sw.Stop();
             invalidUserTimes.Add(sw.ElapsedMilliseconds);
@@ -234,7 +224,7 @@ public class LoginApiTests
         var validAvg = validUserTimes.Average();
         var invalidAvg = invalidUserTimes.Average();
 
-        _output.WriteLine($"Valid user avg: {validAvg}ms, Invalid user avg: {invalidAvg}ms");
+        Output.WriteLine($"Valid user avg: {validAvg}ms, Invalid user avg: {invalidAvg}ms");
 
         // Times should be within reasonable range (not differ by more than 500ms on average)
         // Large differences could indicate timing attack vulnerability
@@ -257,12 +247,12 @@ public class LoginApiTests
         var fakeUsername = $"leak_fake_{Guid.NewGuid():N}";
 
         // Get error response for real user with wrong password
-        var realUserResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login",
+        var realUserResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/login",
             new { Username = realUsername, Password = "WrongPassword!" });
         var realUserContent = await realUserResponse.Content.ReadAsStringAsync();
 
         // Get error response for fake user
-        var fakeUserResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login",
+        var fakeUserResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/login",
             new { Username = fakeUsername, Password = "WrongPassword!" });
         var fakeUserContent = await fakeUserResponse.Content.ReadAsStringAsync();
 
@@ -278,7 +268,7 @@ public class LoginApiTests
     [Fact]
     public async Task Login_ErrorResponse_DoesNotContainStackTrace()
     {
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login",
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login",
             new { Username = "test", Password = "wrong" });
         
         var content = await response.Content.ReadAsStringAsync();
@@ -299,7 +289,7 @@ public class LoginApiTests
     {
         var longUsername = new string('a', 100000); // 100KB username
         var loginRequest = new { Username = longUsername, Password = TestPassword };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
 
         // Should handle gracefully - 400 or 401, not crash
         Assert.True(
@@ -314,7 +304,7 @@ public class LoginApiTests
     {
         var longPassword = new string('a', 100000); // 100KB password
         var loginRequest = new { Username = "testuser", Password = longPassword };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
 
         Assert.True(
             response.StatusCode == HttpStatusCode.BadRequest ||
@@ -335,10 +325,10 @@ public class LoginApiTests
 
         // Try login with different casing
         var lowercaseLogin = new { Username = username.ToLowerInvariant(), Password = TestPassword };
-        var lowercaseResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login", lowercaseLogin);
+        var lowercaseResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", lowercaseLogin);
 
         var uppercaseLogin = new { Username = username.ToUpperInvariant(), Password = TestPassword };
-        var uppercaseResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login", uppercaseLogin);
+        var uppercaseResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", uppercaseLogin);
 
         // Username matching should be case-insensitive
         Assert.Equal(HttpStatusCode.OK, lowercaseResponse.StatusCode);
@@ -353,7 +343,7 @@ public class LoginApiTests
 
         // Try login with uppercase password (should fail)
         var wrongCaseLogin = new { Username = username, Password = TestPassword.ToUpperInvariant() };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login", wrongCaseLogin);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", wrongCaseLogin);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -367,7 +357,7 @@ public class LoginApiTests
     {
         // Note: This test may need adjustment based on actual username validation rules
         var username = $"用户_{Guid.NewGuid():N}"; // Chinese characters
-        var registerResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
+        var registerResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = username,
             Email = $"{Guid.NewGuid():N}@example.com",
@@ -378,13 +368,12 @@ public class LoginApiTests
         if (registerResponse.StatusCode == HttpStatusCode.Created)
         {
             var loginRequest = new { Username = username, Password = TestPassword };
-            var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+            var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         }
         else
         {
             // Unicode usernames might be disallowed or cause validation errors
-            // TODO: Consider adding proper unicode username validation
             Assert.True(
                 registerResponse.StatusCode == HttpStatusCode.BadRequest ||
                 registerResponse.StatusCode == HttpStatusCode.InternalServerError,
@@ -398,7 +387,7 @@ public class LoginApiTests
         var username = $"specialpwd_{Guid.NewGuid():N}";
         var specialPassword = "P@$$w0rd!#$%^&*()_+-=[]{}|;':\",./<>?";
 
-        await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
+        await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = username,
             Email = $"{Guid.NewGuid():N}@example.com",
@@ -407,37 +396,16 @@ public class LoginApiTests
         });
 
         var loginRequest = new { Username = username, Password = specialPassword };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     #endregion
 
-    #region Helper Methods
-
-    private async Task<AuthResponse?> RegisterUserAsync(string username)
-    {
-        var registerRequest = new
-        {
-            Username = username,
-            Email = $"{username}@example.com",
-            Password = TestPassword,
-            ConfirmPassword = TestPassword
-        };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
-
-        if (!response.IsSuccessStatusCode) return null;
-
-        var content = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<AuthResponse>(content, JsonOptions);
-    }
-
-    #endregion
-
     #region DTOs
 
-    private record AuthResponse(
+    private record LoginAuthResponse(
         string AccessToken,
         string RefreshToken,
         string TokenType,

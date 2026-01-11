@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Net;
+using System.Net.Sockets;
 
 namespace Presentation.WebApp.FunctionalTests.Fixtures;
 
@@ -13,18 +15,28 @@ public class WebAppTestHost : IAsyncDisposable
     private readonly string _webApiUrl;
     private Process? _process;
 
-    public string BaseUrl => $"http://localhost:{_port}";
+    // Use 127.0.0.1 instead of localhost to avoid IPv6/IPv4 resolution issues
+    // Python http.server binds to 127.0.0.1 explicitly
+    public string BaseUrl => $"http://127.0.0.1:{_port}";
 
     public WebAppTestHost(ITestOutputHelper output, string webApiUrl, int port = 0)
     {
         _output = output;
         _webApiUrl = webApiUrl;
-        _port = port == 0 ? GetRandomPort() : port;
+        _port = port == 0 ? GetAvailablePort() : port;
     }
 
-    private static int GetRandomPort()
+    /// <summary>
+    /// Gets an available port by binding to port 0 and letting the OS assign one.
+    /// This ensures no port collisions when running tests in parallel.
+    /// </summary>
+    private static int GetAvailablePort()
     {
-        return Random.Shared.Next(49152, 65535);
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        listener.Stop();
+        return port;
     }
 
     public async Task StartAsync(TimeSpan? timeout = null)
@@ -33,27 +45,43 @@ public class WebAppTestHost : IAsyncDisposable
 
         _output.WriteLine($"[WEBAPP] Starting WebApp on {BaseUrl}...");
 
+        // Blazor WASM build output structure:
+        // - bin/Release/net10.0/wwwroot/_framework/ contains compiled WASM assemblies
+        // - src/Presentation.WebApp/wwwroot/ contains static files (index.html, css/)
+        // We need to serve from bin output and copy source static files there
+        // NOTE: Using Release build to avoid Hot Reload module dependency issues
+        
         var webAppOutputDir = Path.GetFullPath(Path.Combine(
             AppContext.BaseDirectory,
             "..", "..", "..", "..", "..",
-            "src", "Presentation.WebApp", "bin", "Debug", "net10.0", "wwwroot"));
+            "src", "Presentation.WebApp", "bin", "Release", "net10.0", "wwwroot"));
+            
+        var webAppSourceDir = Path.GetFullPath(Path.Combine(
+            AppContext.BaseDirectory,
+            "..", "..", "..", "..", "..",
+            "src", "Presentation.WebApp", "wwwroot"));
 
-        _output.WriteLine($"[WEBAPP] Output dir: {webAppOutputDir}");
+        _output.WriteLine($"[WEBAPP] Output wwwroot dir: {webAppOutputDir}");
+        _output.WriteLine($"[WEBAPP] Source wwwroot dir: {webAppSourceDir}");
 
         if (!Directory.Exists(webAppOutputDir))
         {
-            // Try publish output for browser-wasm
-            webAppOutputDir = Path.GetFullPath(Path.Combine(
-                AppContext.BaseDirectory,
-                "..", "..", "..", "..", "..",
-                "src", "Presentation.WebApp", "bin", "Debug", "net10.0", "publish", "wwwroot"));
-
-            _output.WriteLine($"[WEBAPP] Trying publish dir: {webAppOutputDir}");
+            throw new DirectoryNotFoundException($"WebApp output directory not found at {webAppOutputDir}. Ensure Presentation.WebApp is built.");
         }
 
-        if (!Directory.Exists(webAppOutputDir))
+        if (!Directory.Exists(webAppSourceDir))
         {
-            throw new DirectoryNotFoundException($"WebApp output directory not found. Build and publish the WebApp project first.");
+            throw new DirectoryNotFoundException($"WebApp source directory not found at {webAppSourceDir}. Ensure Presentation.WebApp project exists.");
+        }
+
+        // Copy source static files (index.html, css/) to bin output if not already there
+        CopySourceFilesToOutput(webAppSourceDir, webAppOutputDir);
+
+        // Verify index.html exists in output
+        var indexHtml = Path.Combine(webAppOutputDir, "index.html");
+        if (!File.Exists(indexHtml))
+        {
+            throw new FileNotFoundException($"index.html not found at {indexHtml}");
         }
 
         // Use dotnet serve or a simple Python HTTP server as fallback
@@ -69,6 +97,30 @@ public class WebAppTestHost : IAsyncDisposable
         }
 
         _output.WriteLine("[WEBAPP] Started successfully");
+    }
+    
+    private void CopySourceFilesToOutput(string sourceDir, string outputDir)
+    {
+        // Copy all files from source wwwroot to output wwwroot (preserving directory structure)
+        // This copies index.html, css/, etc. but doesn't overwrite _framework/
+        foreach (var sourceFile in Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories))
+        {
+            var relativePath = Path.GetRelativePath(sourceDir, sourceFile);
+            var destFile = Path.Combine(outputDir, relativePath);
+            var destDir = Path.GetDirectoryName(destFile);
+            
+            if (destDir != null && !Directory.Exists(destDir))
+            {
+                Directory.CreateDirectory(destDir);
+            }
+            
+            // Only copy if source is newer or destination doesn't exist
+            if (!File.Exists(destFile) || File.GetLastWriteTimeUtc(sourceFile) > File.GetLastWriteTimeUtc(destFile))
+            {
+                File.Copy(sourceFile, destFile, overwrite: true);
+                _output.WriteLine($"[WEBAPP] Copied {relativePath}");
+            }
+        }
     }
 
     private async Task<bool> FindDotnetServeAsync()
@@ -104,10 +156,11 @@ public class WebAppTestHost : IAsyncDisposable
     {
         _output.WriteLine("[WEBAPP] Using dotnet-serve");
 
+        // SPA fallback: serve index.html for unknown routes (client-side routing)
         var startInfo = new ProcessStartInfo
         {
             FileName = "dotnet",
-            Arguments = $"serve -p {_port} -d \"{webRoot}\" --default-extensions:html",
+            Arguments = $"serve -p {_port} -d \"{webRoot}\" --default-extensions:html --fallback-file index.html",
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -124,7 +177,7 @@ public class WebAppTestHost : IAsyncDisposable
         var startInfo = new ProcessStartInfo
         {
             FileName = "python",
-            Arguments = $"-m http.server {_port}",
+            Arguments = $"-m http.server {_port} --bind 127.0.0.1",
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,

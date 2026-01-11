@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using Presentation.WebApi.FunctionalTests.Fixtures;
 
 namespace Presentation.WebApi.FunctionalTests.Auth;
 
@@ -9,20 +10,8 @@ namespace Presentation.WebApi.FunctionalTests.Auth;
 /// Functional tests for Registration API endpoints.
 /// Tests user registration, validation, and security edge cases.
 /// </summary>
-[Collection(WebApiTestCollection.Name)]
-public class RegisterApiTests
+public class RegisterApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 {
-    private readonly ITestOutputHelper _output;
-    private readonly SharedWebApiHost _sharedHost;
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
-
-    private const string TestPassword = "TestPassword123!";
-
-    public RegisterApiTests(SharedWebApiHost sharedHost, ITestOutputHelper output)
-    {
-        _sharedHost = sharedHost;
-        _output = output;
-    }
 
     #region Basic Registration Tests
 
@@ -38,7 +27,7 @@ public class RegisterApiTests
             Password = TestPassword,
             ConfirmPassword = TestPassword
         };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
@@ -58,7 +47,7 @@ public class RegisterApiTests
         var username = $"reg_dup_{Guid.NewGuid():N}";
 
         // First registration
-        await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
+        await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = username,
             Email = $"{username}@example.com",
@@ -67,7 +56,7 @@ public class RegisterApiTests
         });
 
         // Duplicate registration
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = username,
             Email = "different@example.com",
@@ -99,7 +88,7 @@ public class RegisterApiTests
             Password = weakPassword,
             ConfirmPassword = weakPassword
         };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -116,7 +105,7 @@ public class RegisterApiTests
             Password = TestPassword,
             ConfirmPassword = "DifferentPassword123!"
         };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -140,7 +129,7 @@ public class RegisterApiTests
             Password = TestPassword,
             ConfirmPassword = TestPassword
         };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -151,7 +140,7 @@ public class RegisterApiTests
         var email = $"dup_{Guid.NewGuid():N}@example.com";
 
         // First registration
-        await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
+        await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = $"reg_email1_{Guid.NewGuid():N}",
             Email = email,
@@ -160,7 +149,7 @@ public class RegisterApiTests
         });
 
         // Second registration with same email
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = $"reg_email2_{Guid.NewGuid():N}",
             Email = email,
@@ -191,7 +180,7 @@ public class RegisterApiTests
             Password = TestPassword,
             ConfirmPassword = TestPassword
         };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -199,7 +188,7 @@ public class RegisterApiTests
     [Fact]
     public async Task Register_WithEmptyBody_CreatesAnonymousUser()
     {
-        var response = await _sharedHost.Host.HttpClient.PostAsync(
+        var response = await HttpClient.PostAsync(
             "/api/v1/auth/register",
             new StringContent("{}", Encoding.UTF8, "application/json"));
 
@@ -217,7 +206,7 @@ public class RegisterApiTests
     [Fact]
     public async Task Register_WithMalformedJson_Returns400()
     {
-        var response = await _sharedHost.Host.HttpClient.PostAsync(
+        var response = await HttpClient.PostAsync(
             "/api/v1/auth/register",
             new StringContent("{invalid json}", Encoding.UTF8, "application/json"));
 
@@ -243,7 +232,7 @@ public class RegisterApiTests
             Password = TestPassword,
             ConfirmPassword = TestPassword
         };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
 
         // Should return 400 (bad request) or succeed (if special chars allowed)
         // Note: Currently the API returns 500 for some special chars in username, which should be fixed
@@ -267,7 +256,7 @@ public class RegisterApiTests
             Password = TestPassword,
             ConfirmPassword = TestPassword
         };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
 
         // Should handle gracefully
         Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
@@ -283,7 +272,7 @@ public class RegisterApiTests
         var username = $"reg_enum_{Guid.NewGuid():N}";
 
         // First registration
-        await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
+        await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = username,
             Email = $"{username}@example.com",
@@ -292,7 +281,7 @@ public class RegisterApiTests
         });
 
         // Duplicate registration
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = username,
             Email = "different@example.com",
@@ -323,7 +312,7 @@ public class RegisterApiTests
             Password = TestPassword,
             ConfirmPassword = TestPassword
         };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
 
         Assert.True(
             response.StatusCode == HttpStatusCode.BadRequest ||
@@ -343,7 +332,7 @@ public class RegisterApiTests
             Password = TestPassword,
             ConfirmPassword = TestPassword
         };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
 
         // Should either reject with 400/413 or succeed (if no length limit)
         // TODO: Consider adding email length validation
@@ -374,10 +363,10 @@ public class RegisterApiTests
             Password = TestPassword,
             ConfirmPassword = TestPassword
         };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
 
         // Either blocked (400/409) or allowed (201) - document which behavior is expected
-        _output.WriteLine($"Reserved username '{reservedUsername}' returned {(int)response.StatusCode}");
+        Output.WriteLine($"Reserved username '{reservedUsername}' returned {(int)response.StatusCode}");
         Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
     }
 
@@ -388,7 +377,7 @@ public class RegisterApiTests
     [Fact]
     public async Task Register_ErrorResponse_DoesNotContainStackTrace()
     {
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = "",
             Email = "",
@@ -408,7 +397,7 @@ public class RegisterApiTests
     {
         var username = $"reg_nopwd_{Guid.NewGuid():N}";
 
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = username,
             Email = $"{username}@example.com",
@@ -432,7 +421,7 @@ public class RegisterApiTests
         var baseUsername = $"CaseTest_{Guid.NewGuid():N}";
 
         // First registration
-        await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
+        await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = baseUsername,
             Email = $"case1_{Guid.NewGuid():N}@example.com",
@@ -441,7 +430,7 @@ public class RegisterApiTests
         });
 
         // Try to register with different casing
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = baseUsername.ToUpperInvariant(),
             Email = $"case2_{Guid.NewGuid():N}@example.com",
@@ -463,7 +452,7 @@ public class RegisterApiTests
         var baseEmail = $"Test{Guid.NewGuid():N}@Example.COM";
 
         // First registration
-        await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
+        await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = $"emailcase1_{Guid.NewGuid():N}",
             Email = baseEmail,
@@ -472,7 +461,7 @@ public class RegisterApiTests
         });
 
         // Try to register with different casing
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = $"emailcase2_{Guid.NewGuid():N}",
             Email = baseEmail.ToLowerInvariant(),
@@ -481,28 +470,9 @@ public class RegisterApiTests
         });
 
         // Depending on policy: either blocked (409) or allowed (201)
-        _output.WriteLine($"Email case sensitivity: {(int)response.StatusCode}");
+        Output.WriteLine($"Email case sensitivity: {(int)response.StatusCode}");
         Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
     }
-
-    #endregion
-
-    #region DTOs
-
-    private record AuthResponse(
-        string AccessToken,
-        string RefreshToken,
-        string TokenType,
-        int ExpiresIn,
-        UserInfoResponse User);
-
-    private record UserInfoResponse(
-        Guid Id,
-        string Username,
-        string? Email,
-        bool IsAnonymous,
-        IReadOnlyCollection<string> Roles,
-        IReadOnlyCollection<string> Permissions);
 
     #endregion
 }

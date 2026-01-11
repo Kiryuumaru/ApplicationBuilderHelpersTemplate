@@ -4,13 +4,9 @@ namespace Presentation.WebApp.FunctionalTests.Auth;
 /// Playwright functional tests for user registration flow.
 /// Tests the end-to-end registration experience through the Blazor WebApp.
 /// </summary>
-[Collection(WebAppTestCollection.Name)]
-public class RegisterTests : PlaywrightTestBase
+public class RegisterTests : WebAppTestBase
 {
-    private const string TestPassword = "TestPassword123!";
-
-    public RegisterTests(SharedTestHosts sharedHosts, ITestOutputHelper output)
-        : base(sharedHosts, output)
+    public RegisterTests(ITestOutputHelper output) : base(output)
     {
     }
 

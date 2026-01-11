@@ -4,13 +4,9 @@ namespace Presentation.WebApp.FunctionalTests.Components;
 /// Playwright functional tests for reusable UI components.
 /// Tests component behavior across the application.
 /// </summary>
-[Collection(WebAppTestCollection.Name)]
-public class ComponentTests : PlaywrightTestBase
+public class ComponentTests : WebAppTestBase
 {
-    private const string TestPassword = "TestPassword123!";
-
-    public ComponentTests(SharedTestHosts sharedHosts, ITestOutputHelper output)
-        : base(sharedHosts, output)
+    public ComponentTests(ITestOutputHelper output) : base(output)
     {
     }
 

@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Net;
+using System.Net.Sockets;
 
 namespace Presentation.WebApp.FunctionalTests.Fixtures;
 
@@ -18,13 +20,21 @@ public class WebApiTestHost : IAsyncDisposable
     public WebApiTestHost(ITestOutputHelper output, int port = 0)
     {
         _output = output;
-        _port = port == 0 ? GetRandomPort() : port;
+        _port = port == 0 ? GetAvailablePort() : port;
         _httpClient = new HttpClient { BaseAddress = new Uri(BaseUrl) };
     }
 
-    private static int GetRandomPort()
+    /// <summary>
+    /// Gets an available port by binding to port 0 and letting the OS assign one.
+    /// This ensures no port collisions when running tests in parallel.
+    /// </summary>
+    private static int GetAvailablePort()
     {
-        return Random.Shared.Next(49152, 65535);
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        listener.Stop();
+        return port;
     }
 
     public async Task StartAsync(TimeSpan? timeout = null)

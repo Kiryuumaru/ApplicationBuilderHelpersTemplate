@@ -4,13 +4,9 @@ namespace Presentation.WebApp.FunctionalTests.Admin;
 /// Playwright functional tests for permissions management page.
 /// Tests permission viewing and hierarchy display functionality.
 /// </summary>
-[Collection(WebAppTestCollection.Name)]
-public class PermissionsManagementTests : PlaywrightTestBase
+public class PermissionsManagementTests : WebAppTestBase
 {
-    private const string TestPassword = "TestPassword123!";
-
-    public PermissionsManagementTests(SharedTestHosts sharedHosts, ITestOutputHelper output)
-        : base(sharedHosts, output)
+    public PermissionsManagementTests(ITestOutputHelper output) : base(output)
     {
     }
 

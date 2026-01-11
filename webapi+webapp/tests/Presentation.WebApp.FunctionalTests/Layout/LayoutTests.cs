@@ -4,13 +4,9 @@ namespace Presentation.WebApp.FunctionalTests.Layout;
 /// Playwright functional tests for layout components.
 /// Tests main layout and auth layout rendering.
 /// </summary>
-[Collection(WebAppTestCollection.Name)]
-public class LayoutTests : PlaywrightTestBase
+public class LayoutTests : WebAppTestBase
 {
-    private const string TestPassword = "TestPassword123!";
-
-    public LayoutTests(SharedTestHosts sharedHosts, ITestOutputHelper output)
-        : base(sharedHosts, output)
+    public LayoutTests(ITestOutputHelper output) : base(output)
     {
     }
 

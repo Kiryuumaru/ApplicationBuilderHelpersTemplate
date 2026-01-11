@@ -4,13 +4,9 @@ namespace Presentation.WebApp.FunctionalTests.Account;
 /// Playwright functional tests for user profile page.
 /// Tests profile viewing and editing functionality.
 /// </summary>
-[Collection(WebAppTestCollection.Name)]
-public class ProfileTests : PlaywrightTestBase
+public class ProfileTests : WebAppTestBase
 {
-    private const string TestPassword = "TestPassword123!";
-
-    public ProfileTests(SharedTestHosts sharedHosts, ITestOutputHelper output)
-        : base(sharedHosts, output)
+    public ProfileTests(ITestOutputHelper output) : base(output)
     {
     }
 

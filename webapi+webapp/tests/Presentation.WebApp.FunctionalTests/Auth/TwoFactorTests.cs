@@ -4,13 +4,9 @@ namespace Presentation.WebApp.FunctionalTests.Auth;
 /// Playwright functional tests for two-factor authentication flow.
 /// Tests 2FA setup and verification through the Blazor WebApp.
 /// </summary>
-[Collection(WebAppTestCollection.Name)]
-public class TwoFactorTests : PlaywrightTestBase
+public class TwoFactorTests : WebAppTestBase
 {
-    private const string TestPassword = "TestPassword123!";
-
-    public TwoFactorTests(SharedTestHosts sharedHosts, ITestOutputHelper output)
-        : base(sharedHosts, output)
+    public TwoFactorTests(ITestOutputHelper output) : base(output)
     {
     }
 

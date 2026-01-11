@@ -2,7 +2,6 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Presentation.WebApi.FunctionalTests.Fixtures;
 
 namespace Presentation.WebApi.FunctionalTests.Iam;
 
@@ -10,22 +9,14 @@ namespace Presentation.WebApi.FunctionalTests.Iam;
 /// Functional tests for IAM Users API endpoints.
 /// Tests admin operations on users including CRUD and permissions.
 /// </summary>
-[Collection(WebApiTestCollection.Name)]
-public class UsersApiTests
+public class UsersApiTests : WebApiTestBase
 {
-    private readonly ITestOutputHelper _output;
-    private readonly SharedWebApiHost _sharedHost;
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
-
     // Use unique usernames per test run to avoid conflicts
     private readonly string _adminUsername = $"admin_{Guid.NewGuid():N}";
     private readonly string _testUsername = $"testuser_{Guid.NewGuid():N}";
-    private const string TestPassword = "TestPassword123!";
 
-    public UsersApiTests(SharedWebApiHost sharedHost, ITestOutputHelper output)
+    public UsersApiTests(ITestOutputHelper output) : base(output)
     {
-        _sharedHost = sharedHost;
-        _output = output;
     }
 
     #region List Users Tests
@@ -33,18 +24,18 @@ public class UsersApiTests
     [Fact]
     public async Task ListUsers_AsAdmin_ReturnsAllUsers()
     {
-        _output.WriteLine("[TEST] ListUsers_AsAdmin_ReturnsAllUsers");
+        Output.WriteLine("[TEST] ListUsers_AsAdmin_ReturnsAllUsers");
 
         // Register admin user (has _write permission)
         var adminAuth = await RegisterAndGetTokenAsync(_adminUsername);
         Assert.NotNull(adminAuth);
 
-        _output.WriteLine("[STEP] GET /api/v1/iam/users as admin...");
+        Output.WriteLine("[STEP] GET /api/v1/iam/users as admin...");
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/iam/users");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth!.AccessToken);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         // Regular users don't have _read permission at root level
         // So this should return 403 unless they're admin
@@ -58,38 +49,38 @@ public class UsersApiTests
         if (response.StatusCode == HttpStatusCode.OK)
         {
             var content = await response.Content.ReadAsStringAsync();
-            _output.WriteLine($"[RECEIVED] Body: {content}");
+            Output.WriteLine($"[RECEIVED] Body: {content}");
 
             var result = JsonSerializer.Deserialize<UserListResponse>(content, JsonOptions);
             Assert.NotNull(result);
             Assert.True(result!.Total >= 1, "Should have at least one user");
-            _output.WriteLine("[PASS] ListUsers returns users");
+            Output.WriteLine("[PASS] ListUsers returns users");
         }
         else
         {
-            _output.WriteLine("[PASS] ListUsers correctly denies access to non-admin");
+            Output.WriteLine("[PASS] ListUsers correctly denies access to non-admin");
         }
     }
 
     [Fact]
     public async Task ListUsers_AsRegularUser_Returns403()
     {
-        _output.WriteLine("[TEST] ListUsers_AsRegularUser_Returns403");
+        Output.WriteLine("[TEST] ListUsers_AsRegularUser_Returns403");
 
         // Register regular user
         var userAuth = await RegisterAndGetTokenAsync(_testUsername);
         Assert.NotNull(userAuth);
 
-        _output.WriteLine("[STEP] GET /api/v1/iam/users as regular user...");
+        Output.WriteLine("[STEP] GET /api/v1/iam/users as regular user...");
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/iam/users");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userAuth!.AccessToken);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         // Regular users should get 403 as they don't have _read permission at root level
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-        _output.WriteLine("[PASS] ListUsers returns 403 for regular user");
+        Output.WriteLine("[PASS] ListUsers returns 403 for regular user");
     }
 
     #endregion
@@ -99,48 +90,48 @@ public class UsersApiTests
     [Fact]
     public async Task GetUser_WithValidId_ReturnsUser()
     {
-        _output.WriteLine("[TEST] GetUser_WithValidId_ReturnsUser");
+        Output.WriteLine("[TEST] GetUser_WithValidId_ReturnsUser");
 
         // Register user and get their ID
         var userAuth = await RegisterAndGetTokenAsync(_testUsername);
         Assert.NotNull(userAuth);
         var userId = userAuth!.User!.Id;
 
-        _output.WriteLine($"[STEP] GET /api/v1/iam/users/{userId}...");
+        Output.WriteLine($"[STEP] GET /api/v1/iam/users/{userId}...");
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/iam/users/{userId}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userAuth.AccessToken);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();
-        _output.WriteLine($"[RECEIVED] Body: {content}");
+        Output.WriteLine($"[RECEIVED] Body: {content}");
 
         var result = JsonSerializer.Deserialize<UserResponse>(content, JsonOptions);
         Assert.NotNull(result);
         Assert.Equal(userId, result!.Id);
         Assert.Equal(_testUsername, result.Username);
 
-        _output.WriteLine("[PASS] GetUser returns correct user");
+        Output.WriteLine("[PASS] GetUser returns correct user");
     }
 
     [Fact]
     public async Task GetUser_WithInvalidId_Returns404()
     {
-        _output.WriteLine("[TEST] GetUser_WithInvalidId_Returns404");
+        Output.WriteLine("[TEST] GetUser_WithInvalidId_Returns404");
 
         var userAuth = await RegisterAndGetTokenAsync(_testUsername);
         Assert.NotNull(userAuth);
 
         var invalidId = Guid.NewGuid();
-        _output.WriteLine($"[STEP] GET /api/v1/iam/users/{invalidId}...");
+        Output.WriteLine($"[STEP] GET /api/v1/iam/users/{invalidId}...");
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/iam/users/{invalidId}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userAuth!.AccessToken);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         // Either 404 (not found) or 403 (no permission to access other users)
         Assert.True(
@@ -148,7 +139,7 @@ public class UsersApiTests
             response.StatusCode == HttpStatusCode.Forbidden,
             $"Expected 404 or 403, got {response.StatusCode}");
 
-        _output.WriteLine("[PASS] GetUser handles invalid ID correctly");
+        Output.WriteLine("[PASS] GetUser handles invalid ID correctly");
     }
 
     #endregion
@@ -158,7 +149,7 @@ public class UsersApiTests
     [Fact]
     public async Task UpdateUser_AsSelf_UpdatesOwnProfile()
     {
-        _output.WriteLine("[TEST] UpdateUser_AsSelf_UpdatesOwnProfile");
+        Output.WriteLine("[TEST] UpdateUser_AsSelf_UpdatesOwnProfile");
 
         var userAuth = await RegisterAndGetTokenAsync(_testUsername);
         Assert.NotNull(userAuth);
@@ -166,30 +157,30 @@ public class UsersApiTests
 
         var updateRequest = new { Email = "updated@example.com" };
 
-        _output.WriteLine($"[STEP] PUT /api/v1/iam/users/{userId}...");
+        Output.WriteLine($"[STEP] PUT /api/v1/iam/users/{userId}...");
         using var request = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/iam/users/{userId}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userAuth.AccessToken);
         request.Content = JsonContent.Create(updateRequest);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();
-        _output.WriteLine($"[RECEIVED] Body: {content}");
+        Output.WriteLine($"[RECEIVED] Body: {content}");
 
         var result = JsonSerializer.Deserialize<UserResponse>(content, JsonOptions);
         Assert.NotNull(result);
         Assert.Equal("updated@example.com", result!.Email);
 
-        _output.WriteLine("[PASS] User updated own profile");
+        Output.WriteLine("[PASS] User updated own profile");
     }
 
     [Fact]
     public async Task UpdateUser_AsOtherUser_Returns403()
     {
-        _output.WriteLine("[TEST] UpdateUser_AsOtherUser_Returns403");
+        Output.WriteLine("[TEST] UpdateUser_AsOtherUser_Returns403");
 
         // Create first user
         var user1Auth = await RegisterAndGetTokenAsync($"user1_{Guid.NewGuid():N}");
@@ -202,16 +193,16 @@ public class UsersApiTests
 
         var updateRequest = new { Email = "hacker@example.com" };
 
-        _output.WriteLine($"[STEP] PUT /api/v1/iam/users/{user2Id} as user1...");
+        Output.WriteLine($"[STEP] PUT /api/v1/iam/users/{user2Id} as user1...");
         using var request = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/iam/users/{user2Id}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user1Auth!.AccessToken);
         request.Content = JsonContent.Create(updateRequest);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-        _output.WriteLine("[PASS] Cannot update other user's profile");
+        Output.WriteLine("[PASS] Cannot update other user's profile");
     }
 
     #endregion
@@ -221,22 +212,22 @@ public class UsersApiTests
     [Fact]
     public async Task DeleteUser_AsSelf_Returns403()
     {
-        _output.WriteLine("[TEST] DeleteUser_AsSelf_Returns403");
+        Output.WriteLine("[TEST] DeleteUser_AsSelf_Returns403");
 
         var userAuth = await RegisterAndGetTokenAsync(_testUsername);
         Assert.NotNull(userAuth);
         var userId = userAuth!.User!.Id;
 
-        _output.WriteLine($"[STEP] DELETE /api/v1/iam/users/{userId}...");
+        Output.WriteLine($"[STEP] DELETE /api/v1/iam/users/{userId}...");
         using var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/iam/users/{userId}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userAuth.AccessToken);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         // Regular users can't delete (need _write), or they can't delete themselves
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-        _output.WriteLine("[PASS] Cannot delete own account via this endpoint");
+        Output.WriteLine("[PASS] Cannot delete own account via this endpoint");
     }
 
     #endregion
@@ -246,23 +237,23 @@ public class UsersApiTests
     [Fact]
     public async Task GetPermissions_ReturnsExpandedPermissions()
     {
-        _output.WriteLine("[TEST] GetPermissions_ReturnsExpandedPermissions");
+        Output.WriteLine("[TEST] GetPermissions_ReturnsExpandedPermissions");
 
         var userAuth = await RegisterAndGetTokenAsync(_testUsername);
         Assert.NotNull(userAuth);
         var userId = userAuth!.User!.Id;
 
-        _output.WriteLine($"[STEP] GET /api/v1/iam/users/{userId}/permissions...");
+        Output.WriteLine($"[STEP] GET /api/v1/iam/users/{userId}/permissions...");
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/iam/users/{userId}/permissions");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userAuth.AccessToken);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();
-        _output.WriteLine($"[RECEIVED] Body: {content}");
+        Output.WriteLine($"[RECEIVED] Body: {content}");
 
         var result = JsonSerializer.Deserialize<PermissionsResponse>(content, JsonOptions);
         Assert.NotNull(result);
@@ -270,8 +261,8 @@ public class UsersApiTests
         Assert.NotNull(result.Permissions);
         Assert.NotEmpty(result.Permissions);
 
-        _output.WriteLine($"[INFO] User has {result.Permissions.Count} permissions");
-        _output.WriteLine("[PASS] GetPermissions returns expanded permissions");
+        Output.WriteLine($"[INFO] User has {result.Permissions.Count} permissions");
+        Output.WriteLine("[PASS] GetPermissions returns expanded permissions");
     }
 
     #endregion
@@ -290,19 +281,19 @@ public class UsersApiTests
             Email = $"{username}@test.com"
         };
 
-        var registerResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
+        var registerResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
         
         if (registerResponse.StatusCode == HttpStatusCode.Conflict)
         {
             // User already exists, just login
             var loginReq = new { Username = username, Password = TestPassword };
-            registerResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginReq);
+            registerResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginReq);
         }
 
         if (!registerResponse.IsSuccessStatusCode)
         {
             var error = await registerResponse.Content.ReadAsStringAsync();
-            _output.WriteLine($"[ERROR] Registration failed: {error}");
+            Output.WriteLine($"[ERROR] Registration failed: {error}");
             return null;
         }
 
@@ -362,3 +353,9 @@ public class UsersApiTests
 
     #endregion
 }
+
+
+
+
+
+

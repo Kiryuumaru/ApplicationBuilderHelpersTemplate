@@ -2,7 +2,6 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Presentation.WebApi.FunctionalTests.Fixtures;
 
 namespace Presentation.WebApi.FunctionalTests.Iam;
 
@@ -10,21 +9,13 @@ namespace Presentation.WebApi.FunctionalTests.Iam;
 /// Functional tests for IAM Roles API endpoints.
 /// Tests role assignment and removal operations.
 /// </summary>
-[Collection(WebApiTestCollection.Name)]
-public class RolesApiTests
+public class RolesApiTests : WebApiTestBase
 {
-    private readonly ITestOutputHelper _output;
-    private readonly SharedWebApiHost _sharedHost;
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
-
     // Use unique usernames per test run to avoid conflicts
     private readonly string _testUsername = $"testuser_{Guid.NewGuid():N}";
-    private const string TestPassword = "TestPassword123!";
 
-    public RolesApiTests(SharedWebApiHost sharedHost, ITestOutputHelper output)
+    public RolesApiTests(ITestOutputHelper output) : base(output)
     {
-        _sharedHost = sharedHost;
-        _output = output;
     }
 
     #region Role Management Tests
@@ -32,7 +23,7 @@ public class RolesApiTests
     [Fact]
     public async Task AssignRole_AsRegularUser_Returns403()
     {
-        _output.WriteLine("[TEST] AssignRole_AsRegularUser_Returns403");
+        Output.WriteLine("[TEST] AssignRole_AsRegularUser_Returns403");
 
         var userAuth = await RegisterAndGetTokenAsync(_testUsername);
         Assert.NotNull(userAuth);
@@ -40,23 +31,23 @@ public class RolesApiTests
 
         var roleRequest = new { UserId = userId, RoleCode = "ADMIN" };
 
-        _output.WriteLine("[STEP] POST /api/v1/iam/roles/assign...");
+        Output.WriteLine("[STEP] POST /api/v1/iam/roles/assign...");
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/iam/roles/assign");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userAuth.AccessToken);
         request.Content = JsonContent.Create(roleRequest);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         // Regular users don't have iam:roles:assign permission
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-        _output.WriteLine("[PASS] Cannot assign roles without admin access");
+        Output.WriteLine("[PASS] Cannot assign roles without admin access");
     }
 
     [Fact]
     public async Task RemoveRole_AsRegularUser_Returns403()
     {
-        _output.WriteLine("[TEST] RemoveRole_AsRegularUser_Returns403");
+        Output.WriteLine("[TEST] RemoveRole_AsRegularUser_Returns403");
 
         var userAuth = await RegisterAndGetTokenAsync(_testUsername);
         Assert.NotNull(userAuth);
@@ -65,17 +56,17 @@ public class RolesApiTests
 
         var roleRequest = new { UserId = userId, RoleId = roleId };
 
-        _output.WriteLine("[STEP] POST /api/v1/iam/roles/remove...");
+        Output.WriteLine("[STEP] POST /api/v1/iam/roles/remove...");
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/iam/roles/remove");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userAuth.AccessToken);
         request.Content = JsonContent.Create(roleRequest);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         // Regular users don't have iam:roles:remove permission
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-        _output.WriteLine("[PASS] Cannot remove roles without admin access");
+        Output.WriteLine("[PASS] Cannot remove roles without admin access");
     }
 
     #endregion
@@ -94,19 +85,19 @@ public class RolesApiTests
             Email = $"{username}@test.com"
         };
 
-        var registerResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
+        var registerResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
         
         if (registerResponse.StatusCode == HttpStatusCode.Conflict)
         {
             // User already exists, just login
             var loginReq = new { Username = username, Password = TestPassword };
-            registerResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginReq);
+            registerResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginReq);
         }
 
         if (!registerResponse.IsSuccessStatusCode)
         {
             var error = await registerResponse.Content.ReadAsStringAsync();
-            _output.WriteLine($"[ERROR] Registration failed: {error}");
+            Output.WriteLine($"[ERROR] Registration failed: {error}");
             return null;
         }
 
@@ -138,3 +129,9 @@ public class RolesApiTests
 
     #endregion
 }
+
+
+
+
+
+

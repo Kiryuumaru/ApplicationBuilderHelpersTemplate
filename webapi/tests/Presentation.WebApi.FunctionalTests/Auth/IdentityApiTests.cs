@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Presentation.WebApi.FunctionalTests.Fixtures;
 
 namespace Presentation.WebApi.FunctionalTests.Auth;
 
@@ -9,58 +10,46 @@ namespace Presentation.WebApi.FunctionalTests.Auth;
 /// Functional tests for the Identity API endpoint.
 /// Tests GET /api/v1/auth/users/{userId}/identity for retrieving linked identities.
 /// </summary>
-[Collection(WebApiTestCollection.Name)]
-public class IdentityApiTests
+public class IdentityApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 {
-    private readonly ITestOutputHelper _output;
-    private readonly SharedWebApiHost _sharedHost;
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
-
-    private const string TestPassword = "TestPassword123!";
-
-    public IdentityApiTests(SharedWebApiHost sharedHost, ITestOutputHelper output)
-    {
-        _sharedHost = sharedHost;
-        _output = output;
-    }
 
     #region Get Identity Tests
 
     [Fact]
     public async Task GetIdentity_WithoutToken_Returns401()
     {
-        _output.WriteLine("[TEST] GetIdentity_WithoutToken_Returns401");
+        Output.WriteLine("[TEST] GetIdentity_WithoutToken_Returns401");
 
         var randomUserId = Guid.NewGuid();
-        _output.WriteLine($"[STEP] GET /api/v1/auth/users/{randomUserId}/identity without token...");
-        var response = await _sharedHost.Host.HttpClient.GetAsync($"/api/v1/auth/users/{randomUserId}/identity");
+        Output.WriteLine($"[STEP] GET /api/v1/auth/users/{randomUserId}/identity without token...");
+        var response = await HttpClient.GetAsync($"/api/v1/auth/users/{randomUserId}/identity");
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-        _output.WriteLine("[PASS] Returns 401 without authentication");
+        Output.WriteLine("[PASS] Returns 401 without authentication");
     }
 
     [Fact]
     public async Task GetIdentity_WithValidToken_ReturnsIdentityInfo()
     {
-        _output.WriteLine("[TEST] GetIdentity_WithValidToken_ReturnsIdentityInfo");
+        Output.WriteLine("[TEST] GetIdentity_WithValidToken_ReturnsIdentityInfo");
 
-        var authResult = await RegisterUniqueUserAsync();
+        var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
 
         var userId = authResult!.User.Id;
-        _output.WriteLine($"[STEP] GET /api/v1/auth/users/{userId}/identity...");
+        Output.WriteLine($"[STEP] GET /api/v1/auth/users/{userId}/identity...");
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/identity");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();
-        _output.WriteLine($"[RECEIVED] Body: {content}");
+        Output.WriteLine($"[RECEIVED] Body: {content}");
 
         var result = JsonSerializer.Deserialize<IdentitiesResponse>(content, JsonOptions);
         Assert.NotNull(result);
@@ -70,45 +59,45 @@ public class IdentityApiTests
         Assert.Empty(result.LinkedProviders);
         Assert.Empty(result.LinkedPasskeys);
 
-        _output.WriteLine("[PASS] GetIdentity returns correct identity info");
+        Output.WriteLine("[PASS] GetIdentity returns correct identity info");
     }
 
     [Fact]
     public async Task GetIdentity_ForOtherUser_Returns403()
     {
-        _output.WriteLine("[TEST] GetIdentity_ForOtherUser_Returns403");
+        Output.WriteLine("[TEST] GetIdentity_ForOtherUser_Returns403");
 
-        var user1 = await RegisterUniqueUserAsync();
-        var user2 = await RegisterUniqueUserAsync();
+        var user1 = await RegisterUserAsync();
+        var user2 = await RegisterUserAsync();
         Assert.NotNull(user1);
         Assert.NotNull(user2);
 
-        _output.WriteLine($"[STEP] GET /api/v1/auth/users/{user2!.User.Id}/identity with User1's token...");
+        Output.WriteLine($"[STEP] GET /api/v1/auth/users/{user2!.User.Id}/identity with User1's token...");
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{user2.User.Id}/identity");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user1!.AccessToken);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-        _output.WriteLine("[PASS] Returns 403 when accessing other user's identity");
+        Output.WriteLine("[PASS] Returns 403 when accessing other user's identity");
     }
 
     [Fact]
     public async Task GetIdentity_NonExistentUser_Returns404()
     {
-        _output.WriteLine("[TEST] GetIdentity_NonExistentUser_Returns404");
+        Output.WriteLine("[TEST] GetIdentity_NonExistentUser_Returns404");
 
-        var authResult = await RegisterUniqueUserAsync();
+        var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
 
         var nonExistentUserId = Guid.NewGuid();
-        _output.WriteLine($"[STEP] GET /api/v1/auth/users/{nonExistentUserId}/identity...");
+        Output.WriteLine($"[STEP] GET /api/v1/auth/users/{nonExistentUserId}/identity...");
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{nonExistentUserId}/identity");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult!.AccessToken);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         // Either 403 (no permission) or 404 (not found) depending on implementation
         Assert.True(
@@ -116,51 +105,51 @@ public class IdentityApiTests
             response.StatusCode == HttpStatusCode.NotFound,
             $"Expected 403 or 404, got {response.StatusCode}");
 
-        _output.WriteLine("[PASS] Returns 403 or 404 for non-existent user");
+        Output.WriteLine("[PASS] Returns 403 or 404 for non-existent user");
     }
 
     [Fact]
     public async Task GetIdentity_UserWithOAuth_ReturnsLinkedProviders()
     {
-        _output.WriteLine("[TEST] GetIdentity_UserWithOAuth_ReturnsLinkedProviders");
+        Output.WriteLine("[TEST] GetIdentity_UserWithOAuth_ReturnsLinkedProviders");
 
         // Create user via OAuth
         var authResult = await CreateUserViaOAuthAsync();
         Assert.NotNull(authResult);
 
         var userId = authResult!.User.Id;
-        _output.WriteLine($"[STEP] GET /api/v1/auth/users/{userId}/identity...");
+        Output.WriteLine($"[STEP] GET /api/v1/auth/users/{userId}/identity...");
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/identity");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();
-        _output.WriteLine($"[RECEIVED] Body: {content}");
+        Output.WriteLine($"[RECEIVED] Body: {content}");
 
         var result = JsonSerializer.Deserialize<IdentitiesResponse>(content, JsonOptions);
         Assert.NotNull(result);
         Assert.NotEmpty(result!.LinkedProviders);
         Assert.Contains(result.LinkedProviders, p => p.Provider.Equals("mock", StringComparison.OrdinalIgnoreCase));
 
-        _output.WriteLine("[PASS] GetIdentity returns linked OAuth providers");
+        Output.WriteLine("[PASS] GetIdentity returns linked OAuth providers");
     }
 
     [Fact]
     public async Task GetIdentity_EmailConfirmedStatus_Correct()
     {
-        _output.WriteLine("[TEST] GetIdentity_EmailConfirmedStatus_Correct");
+        Output.WriteLine("[TEST] GetIdentity_EmailConfirmedStatus_Correct");
 
-        var authResult = await RegisterUniqueUserAsync();
+        var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
 
         var userId = authResult!.User.Id;
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/identity");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -169,8 +158,8 @@ public class IdentityApiTests
         Assert.NotNull(result);
 
         // New users typically have unconfirmed email unless auto-confirmed
-        _output.WriteLine($"[INFO] EmailConfirmed: {result!.EmailConfirmed}");
-        _output.WriteLine("[PASS] EmailConfirmed status is returned");
+        Output.WriteLine($"[INFO] EmailConfirmed: {result!.EmailConfirmed}");
+        Output.WriteLine("[PASS] EmailConfirmed status is returned");
     }
 
     #endregion
@@ -180,7 +169,7 @@ public class IdentityApiTests
     [Fact]
     public async Task Journey_RegisterThenCheckIdentity()
     {
-        _output.WriteLine("[TEST] Journey_RegisterThenCheckIdentity");
+        Output.WriteLine("[TEST] Journey_RegisterThenCheckIdentity");
 
         var username = $"journey_{Guid.NewGuid():N}";
         var email = $"{username}@example.com";
@@ -193,7 +182,7 @@ public class IdentityApiTests
             Password = TestPassword,
             ConfirmPassword = TestPassword
         };
-        var registerResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
+        var registerResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
         Assert.Equal(HttpStatusCode.Created, registerResponse.StatusCode);
         var authResult = JsonSerializer.Deserialize<AuthResponse>(await registerResponse.Content.ReadAsStringAsync(), JsonOptions);
         Assert.NotNull(authResult);
@@ -203,7 +192,7 @@ public class IdentityApiTests
         // Step 2: Get identity
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/identity");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var identity = JsonSerializer.Deserialize<IdentitiesResponse>(await response.Content.ReadAsStringAsync(), JsonOptions);
@@ -216,13 +205,13 @@ public class IdentityApiTests
         Assert.Empty(identity.LinkedProviders);
         Assert.Empty(identity.LinkedPasskeys);
 
-        _output.WriteLine("[PASS] Journey: Register and check identity completed");
+        Output.WriteLine("[PASS] Journey: Register and check identity completed");
     }
 
     [Fact]
     public async Task Journey_OAuthUserLinksPasswordThenCheckIdentity()
     {
-        _output.WriteLine("[TEST] Journey_OAuthUserLinksPasswordThenCheckIdentity");
+        Output.WriteLine("[TEST] Journey_OAuthUserLinksPasswordThenCheckIdentity");
 
         // Step 1: Create user via OAuth (anonymous with OAuth)
         var authResult = await CreateUserViaOAuthAsync();
@@ -233,7 +222,7 @@ public class IdentityApiTests
         // Step 2: Check identity before linking password
         using var request1 = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/identity");
         request1.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
-        var response1 = await _sharedHost.Host.HttpClient.SendAsync(request1);
+        var response1 = await HttpClient.SendAsync(request1);
         Assert.Equal(HttpStatusCode.OK, response1.StatusCode);
 
         var identityBefore = JsonSerializer.Deserialize<IdentitiesResponse>(await response1.Content.ReadAsStringAsync(), JsonOptions);
@@ -253,14 +242,14 @@ public class IdentityApiTests
         using var linkHttpRequest = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/identity/password");
         linkHttpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         linkHttpRequest.Content = JsonContent.Create(linkRequest);
-        var linkResponse = await _sharedHost.Host.HttpClient.SendAsync(linkHttpRequest);
+        var linkResponse = await HttpClient.SendAsync(linkHttpRequest);
 
-        _output.WriteLine($"[INFO] Link password response: {(int)linkResponse.StatusCode} {linkResponse.StatusCode}");
+        Output.WriteLine($"[INFO] Link password response: {(int)linkResponse.StatusCode} {linkResponse.StatusCode}");
 
         // Step 4: Check identity after linking password
         using var request2 = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/identity");
         request2.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
-        var response2 = await _sharedHost.Host.HttpClient.SendAsync(request2);
+        var response2 = await HttpClient.SendAsync(request2);
         Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
 
         var identityAfter = JsonSerializer.Deserialize<IdentitiesResponse>(await response2.Content.ReadAsStringAsync(), JsonOptions);
@@ -272,16 +261,16 @@ public class IdentityApiTests
             Assert.False(identityAfter.IsAnonymous, "Should no longer be anonymous after linking");
         }
 
-        _output.WriteLine("[PASS] Journey: OAuth user links password completed");
+        Output.WriteLine("[PASS] Journey: OAuth user links password completed");
     }
 
     [Fact]
     public async Task Journey_TwoUsersHaveIndependentIdentities()
     {
-        _output.WriteLine("[TEST] Journey_TwoUsersHaveIndependentIdentities");
+        Output.WriteLine("[TEST] Journey_TwoUsersHaveIndependentIdentities");
 
         // Create two users
-        var user1 = await RegisterUniqueUserAsync();
+        var user1 = await RegisterUserAsync();
         var user2 = await CreateUserViaOAuthAsync();
         Assert.NotNull(user1);
         Assert.NotNull(user2);
@@ -289,14 +278,14 @@ public class IdentityApiTests
         // Get user1's identity
         using var request1 = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{user1!.User.Id}/identity");
         request1.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user1.AccessToken);
-        var response1 = await _sharedHost.Host.HttpClient.SendAsync(request1);
+        var response1 = await HttpClient.SendAsync(request1);
         Assert.Equal(HttpStatusCode.OK, response1.StatusCode);
         var identity1 = JsonSerializer.Deserialize<IdentitiesResponse>(await response1.Content.ReadAsStringAsync(), JsonOptions);
 
         // Get user2's identity
         using var request2 = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{user2!.User.Id}/identity");
         request2.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user2.AccessToken);
-        var response2 = await _sharedHost.Host.HttpClient.SendAsync(request2);
+        var response2 = await HttpClient.SendAsync(request2);
         Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
         var identity2 = JsonSerializer.Deserialize<IdentitiesResponse>(await response2.Content.ReadAsStringAsync(), JsonOptions);
 
@@ -311,44 +300,21 @@ public class IdentityApiTests
         Assert.False(identity2!.HasPassword);
         Assert.NotEmpty(identity2.LinkedProviders);
 
-        _output.WriteLine("[PASS] Two users have independent identities");
+        Output.WriteLine("[PASS] Two users have independent identities");
     }
 
     #endregion
 
     #region Helper Methods
 
-    private async Task<AuthResponse?> RegisterUniqueUserAsync()
-    {
-        var username = $"identity_{Guid.NewGuid():N}";
-        var registerRequest = new
-        {
-            Username = username,
-            Email = $"{username}@example.com",
-            Password = TestPassword,
-            ConfirmPassword = TestPassword
-        };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            var errorContent = await response.Content.ReadAsStringAsync();
-            _output.WriteLine($"[ERROR] Registration failed: {errorContent}");
-            return null;
-        }
-
-        var content = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<AuthResponse>(content, JsonOptions);
-    }
-
     private async Task<AuthResponse?> CreateUserViaOAuthAsync()
     {
         // Initiate OAuth
         var initiateRequest = new { Provider = "mock", RedirectUri = "https://localhost/callback" };
-        var initiateResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/external/mock", initiateRequest);
+        var initiateResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/external/mock", initiateRequest);
         if (!initiateResponse.IsSuccessStatusCode)
         {
-            _output.WriteLine($"[ERROR] OAuth initiate failed: {await initiateResponse.Content.ReadAsStringAsync()}");
+            Output.WriteLine($"[ERROR] OAuth initiate failed: {await initiateResponse.Content.ReadAsStringAsync()}");
             return null;
         }
 
@@ -366,11 +332,11 @@ public class IdentityApiTests
             State = initiateResult.State,
             RedirectUri = "https://localhost/callback"
         };
-        var callbackResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/external/callback", callbackRequest);
+        var callbackResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/external/callback", callbackRequest);
 
         if (!callbackResponse.IsSuccessStatusCode)
         {
-            _output.WriteLine($"[ERROR] OAuth callback failed: {await callbackResponse.Content.ReadAsStringAsync()}");
+            Output.WriteLine($"[ERROR] OAuth callback failed: {await callbackResponse.Content.ReadAsStringAsync()}");
             return null;
         }
 
@@ -381,20 +347,6 @@ public class IdentityApiTests
     #endregion
 
     #region Response DTOs
-
-    private record AuthResponse(
-        string AccessToken,
-        string RefreshToken,
-        string TokenType,
-        int ExpiresIn,
-        UserInfoResponse User);
-
-    private record UserInfoResponse(
-        Guid Id,
-        string Username,
-        string? Email,
-        IReadOnlyCollection<string> Roles,
-        IReadOnlyCollection<string> Permissions);
 
     private record IdentitiesResponse
     {

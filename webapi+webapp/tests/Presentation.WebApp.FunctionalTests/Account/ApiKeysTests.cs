@@ -4,13 +4,9 @@ namespace Presentation.WebApp.FunctionalTests.Account;
 /// Playwright functional tests for API keys management page.
 /// Tests API key creation, viewing, and revocation functionality.
 /// </summary>
-[Collection(WebAppTestCollection.Name)]
-public class ApiKeysTests : PlaywrightTestBase
+public class ApiKeysTests : WebAppTestBase
 {
-    private const string TestPassword = "TestPassword123!";
-
-    public ApiKeysTests(SharedTestHosts sharedHosts, ITestOutputHelper output)
-        : base(sharedHosts, output)
+    public ApiKeysTests(ITestOutputHelper output) : base(output)
     {
     }
 

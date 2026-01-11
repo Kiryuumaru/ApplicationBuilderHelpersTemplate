@@ -6,6 +6,8 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<IsPackable>false</IsPackable>
+		<!-- Integration tests share database state - run sequentially -->
+		<xUnitParallelizeTestCollections>false</xUnitParallelizeTestCollections>
 	</PropertyGroup>
 
 	<ItemGroup>

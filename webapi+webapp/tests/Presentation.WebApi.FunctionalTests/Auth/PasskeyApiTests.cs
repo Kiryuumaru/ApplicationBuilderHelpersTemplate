@@ -3,27 +3,16 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using Presentation.WebApi.FunctionalTests.Fixtures;
-
 namespace Presentation.WebApi.FunctionalTests.Auth;
 
 /// <summary>
 /// Functional tests for Passkey (WebAuthn) API endpoints.
 /// Tests passkey registration, authentication, and management.
 /// </summary>
-[Collection(WebApiTestCollection.Name)]
-public class PasskeyApiTests
+public class PasskeyApiTests : WebApiTestBase
 {
-    private readonly ITestOutputHelper _output;
-    private readonly SharedWebApiHost _sharedHost;
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
-
-    private const string TestPassword = "TestPassword123!";
-
-    public PasskeyApiTests(SharedWebApiHost sharedHost, ITestOutputHelper output)
+    public PasskeyApiTests(ITestOutputHelper output) : base(output)
     {
-        _sharedHost = sharedHost;
-        _output = output;
     }
 
     #region Passkey Creation Options Tests
@@ -39,7 +28,7 @@ public class PasskeyApiTests
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/identity/passkeys/options");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         request.Content = JsonContent.Create(requestBody);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -53,7 +42,7 @@ public class PasskeyApiTests
     {
         var randomUserId = Guid.NewGuid();
         var requestBody = new { CredentialName = "Test Passkey" };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync($"/api/v1/auth/users/{randomUserId}/identity/passkeys/options", requestBody);
+        var response = await HttpClient.PostAsJsonAsync($"/api/v1/auth/users/{randomUserId}/identity/passkeys/options", requestBody);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -69,7 +58,7 @@ public class PasskeyApiTests
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/identity/passkeys/options");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         request.Content = JsonContent.Create(requestBody);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         // Depending on validation rules
         Assert.True(
@@ -85,7 +74,7 @@ public class PasskeyApiTests
     public async Task PasskeyLoginOptions_ReturnsOptions()
     {
         var requestBody = new { Username = (string?)null };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login/passkey/options", requestBody);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login/passkey/options", requestBody);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -100,7 +89,7 @@ public class PasskeyApiTests
         await RegisterUserAsync(username);
 
         var requestBody = new { Username = username };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login/passkey/options", requestBody);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login/passkey/options", requestBody);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -110,7 +99,7 @@ public class PasskeyApiTests
     {
         // Security: Should not reveal if user exists
         var requestBody = new { Username = $"nonexistent_{Guid.NewGuid():N}" };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login/passkey/options", requestBody);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login/passkey/options", requestBody);
 
         // Should still return options (don't reveal user existence)
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -125,7 +114,7 @@ public class PasskeyApiTests
     {
         var randomUserId = Guid.NewGuid();
         var requestBody = new { ChallengeId = Guid.NewGuid(), AttestationResponseJson = "{}" };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync($"/api/v1/auth/users/{randomUserId}/identity/passkeys", requestBody);
+        var response = await HttpClient.PostAsJsonAsync($"/api/v1/auth/users/{randomUserId}/identity/passkeys", requestBody);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -141,7 +130,7 @@ public class PasskeyApiTests
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/identity/passkeys");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         request.Content = JsonContent.Create(requestBody);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -157,7 +146,7 @@ public class PasskeyApiTests
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/identity/passkeys");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         request.Content = JsonContent.Create(requestBody);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -170,7 +159,7 @@ public class PasskeyApiTests
     public async Task PasskeyLogin_WithInvalidChallengeId_Returns400()
     {
         var requestBody = new { ChallengeId = Guid.NewGuid(), AssertionResponseJson = "{}" };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login/passkey", requestBody);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login/passkey", requestBody);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -179,7 +168,7 @@ public class PasskeyApiTests
     public async Task PasskeyLogin_WithEmptyChallengeId_Returns400()
     {
         var requestBody = new { ChallengeId = Guid.Empty, AssertionResponseJson = "{}" };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login/passkey", requestBody);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login/passkey", requestBody);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -188,7 +177,7 @@ public class PasskeyApiTests
     public async Task PasskeyLogin_WithMalformedAssertionJson_Returns400Or500()
     {
         // First get a valid challenge
-        var optionsResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync(
+        var optionsResponse = await HttpClient.PostAsJsonAsync(
             "/api/v1/auth/login/passkey/options",
             new { Username = (string?)null });
         var optionsContent = await optionsResponse.Content.ReadAsStringAsync();
@@ -197,7 +186,7 @@ public class PasskeyApiTests
         if (options?.ChallengeId != null)
         {
             var requestBody = new { ChallengeId = options.ChallengeId, AssertionResponseJson = "not valid json" };
-            var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login/passkey", requestBody);
+            var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login/passkey", requestBody);
 
             // TODO: Should return 400, currently returns 500 due to JSON parsing
             Assert.True(
@@ -220,7 +209,7 @@ public class PasskeyApiTests
         var userId = authResult!.User.Id;
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/identity/passkeys");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -232,7 +221,7 @@ public class PasskeyApiTests
     public async Task PasskeyList_WithoutToken_Returns401()
     {
         var randomUserId = Guid.NewGuid();
-        var response = await _sharedHost.Host.HttpClient.GetAsync($"/api/v1/auth/users/{randomUserId}/identity/passkeys");
+        var response = await HttpClient.GetAsync($"/api/v1/auth/users/{randomUserId}/identity/passkeys");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -245,7 +234,7 @@ public class PasskeyApiTests
     public async Task PasskeyDelete_WithoutToken_Returns401()
     {
         var randomUserId = Guid.NewGuid();
-        var response = await _sharedHost.Host.HttpClient.DeleteAsync($"/api/v1/auth/users/{randomUserId}/identity/passkeys/{Guid.NewGuid()}");
+        var response = await HttpClient.DeleteAsync($"/api/v1/auth/users/{randomUserId}/identity/passkeys/{Guid.NewGuid()}");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -259,7 +248,7 @@ public class PasskeyApiTests
         var userId = authResult!.User.Id;
         using var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{userId}/identity/passkeys/{Guid.NewGuid()}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -272,7 +261,7 @@ public class PasskeyApiTests
     public async Task PasskeyLogin_ChallengeCannotBeReused()
     {
         // Get a challenge
-        var optionsResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync(
+        var optionsResponse = await HttpClient.PostAsJsonAsync(
             "/api/v1/auth/login/passkey/options",
             new { Username = (string?)null });
         var optionsContent = await optionsResponse.Content.ReadAsStringAsync();
@@ -282,10 +271,10 @@ public class PasskeyApiTests
         {
             // First attempt
             var requestBody = new { ChallengeId = options.ChallengeId, AssertionResponseJson = "{}" };
-            await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login/passkey", requestBody);
+            await HttpClient.PostAsJsonAsync("/api/v1/auth/login/passkey", requestBody);
 
             // Second attempt with same challenge should fail
-            var response2 = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login/passkey", requestBody);
+            var response2 = await HttpClient.PostAsJsonAsync("/api/v1/auth/login/passkey", requestBody);
 
             // TODO: Should return 400 for challenge reuse, currently may return 500
             Assert.True(
@@ -307,7 +296,7 @@ public class PasskeyApiTests
         using var optionsRequest = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/identity/passkeys/options");
         optionsRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         optionsRequest.Content = JsonContent.Create(new { CredentialName = "Test" });
-        var optionsResponse = await _sharedHost.Host.HttpClient.SendAsync(optionsRequest);
+        var optionsResponse = await HttpClient.SendAsync(optionsRequest);
         var optionsContent = await optionsResponse.Content.ReadAsStringAsync();
         var options = JsonSerializer.Deserialize<PasskeyOptionsResponse>(optionsContent, JsonOptions);
 
@@ -317,13 +306,13 @@ public class PasskeyApiTests
             using var request1 = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/identity/passkeys");
             request1.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
             request1.Content = JsonContent.Create(new { ChallengeId = options.ChallengeId, AttestationResponseJson = "{}" });
-            await _sharedHost.Host.HttpClient.SendAsync(request1);
+            await HttpClient.SendAsync(request1);
 
             // Second attempt with same challenge should fail
             using var request2 = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/identity/passkeys");
             request2.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
             request2.Content = JsonContent.Create(new { ChallengeId = options.ChallengeId, AttestationResponseJson = "{}" });
-            var response2 = await _sharedHost.Host.HttpClient.SendAsync(request2);
+            var response2 = await HttpClient.SendAsync(request2);
 
             // TODO: Should return 400 for challenge reuse, currently may return 500
             Assert.True(
@@ -351,7 +340,7 @@ public class PasskeyApiTests
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/identity/passkeys/options");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         request.Content = JsonContent.Create(requestBody);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
     }
@@ -369,7 +358,7 @@ public class PasskeyApiTests
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/identity/passkeys");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         request.Content = JsonContent.Create(requestBody);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
     }
@@ -393,7 +382,7 @@ public class PasskeyApiTests
         // but with an ID that could belong to user1
         using var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{user2Id}/identity/passkeys/{Guid.NewGuid()}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user2.AccessToken);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         // Should return 404 (not found for this user) not 403 (forbidden) which would leak existence
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -415,7 +404,7 @@ public class PasskeyApiTests
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/identity/passkeys");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         request.Content = JsonContent.Create(requestBody);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         // Should handle gracefully
         Assert.True(
@@ -436,7 +425,7 @@ public class PasskeyApiTests
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/identity/passkeys/options");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         request.Content = JsonContent.Create(requestBody);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
     }
@@ -459,7 +448,7 @@ public class PasskeyApiTests
             Password = TestPassword,
             ConfirmPassword = TestPassword
         };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
 
         if (!response.IsSuccessStatusCode) return null;
 
@@ -491,3 +480,6 @@ public class PasskeyApiTests
 
     #endregion
 }
+
+
+

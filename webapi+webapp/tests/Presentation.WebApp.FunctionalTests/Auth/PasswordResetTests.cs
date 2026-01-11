@@ -4,14 +4,11 @@ namespace Presentation.WebApp.FunctionalTests.Auth;
 /// Playwright functional tests for forgot/reset password flow.
 /// Tests password recovery functionality through the Blazor WebApp.
 /// </summary>
-[Collection(WebAppTestCollection.Name)]
-public class PasswordResetTests : PlaywrightTestBase
+public class PasswordResetTests : WebAppTestBase
 {
-    private const string TestPassword = "TestPassword123!";
     private const string NewPassword = "NewPassword456!";
 
-    public PasswordResetTests(SharedTestHosts sharedHosts, ITestOutputHelper output)
-        : base(sharedHosts, output)
+    public PasswordResetTests(ITestOutputHelper output) : base(output)
     {
     }
 

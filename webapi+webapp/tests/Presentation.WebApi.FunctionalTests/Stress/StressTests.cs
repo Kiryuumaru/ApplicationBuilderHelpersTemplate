@@ -4,27 +4,16 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Presentation.WebApi.FunctionalTests.Fixtures;
-
 namespace Presentation.WebApi.FunctionalTests.Stress;
 
 /// <summary>
 /// Stress tests for concurrent operations, race conditions, and system stability under load.
 /// These tests verify the system behaves correctly when many users perform operations simultaneously.
 /// </summary>
-[Collection(WebApiTestCollection.Name)]
-public class StressTests
+public class StressTests : WebApiTestBase
 {
-    private readonly ITestOutputHelper _output;
-    private readonly SharedWebApiHost _sharedHost;
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
-
-    private const string TestPassword = "TestPassword123!";
-
-    public StressTests(SharedWebApiHost sharedHost, ITestOutputHelper output)
+    public StressTests(ITestOutputHelper output) : base(output)
     {
-        _sharedHost = sharedHost;
-        _output = output;
     }
 
     #region Concurrent Authentication Tests
@@ -32,12 +21,12 @@ public class StressTests
     [Fact]
     public async Task ConcurrentLogins_50Users_AllSucceed()
     {
-        _output.WriteLine("[TEST] ConcurrentLogins_50Users_AllSucceed");
+        Output.WriteLine("[TEST] ConcurrentLogins_50Users_AllSucceed");
 
         const int userCount = 50;
 
         // Pre-register users concurrently
-        _output.WriteLine($"[STEP] Concurrently registering {userCount} users...");
+        Output.WriteLine($"[STEP] Concurrently registering {userCount} users...");
         var usernames = Enumerable.Range(0, userCount)
             .Select(_ => $"stress_login_{Guid.NewGuid():N}")
             .ToList();
@@ -48,7 +37,7 @@ public class StressTests
         Assert.True(registrations.All(r => r != null), "All registrations should succeed");
         var users = usernames.Zip(registrations, (name, auth) => (Username: name, Token: auth!.AccessToken)).ToList();
 
-        _output.WriteLine($"[STEP] Starting concurrent logins for {userCount} users...");
+        Output.WriteLine($"[STEP] Starting concurrent logins for {userCount} users...");
         var sw = Stopwatch.StartNew();
 
         // Login all users concurrently
@@ -56,45 +45,45 @@ public class StressTests
         var results = await Task.WhenAll(loginTasks);
 
         sw.Stop();
-        _output.WriteLine($"[INFO] {userCount} concurrent logins completed in {sw.ElapsedMilliseconds}ms");
+        Output.WriteLine($"[INFO] {userCount} concurrent logins completed in {sw.ElapsedMilliseconds}ms");
 
         var successCount = results.Count(r => r != null);
-        _output.WriteLine($"[INFO] Success rate: {successCount}/{userCount}");
+        Output.WriteLine($"[INFO] Success rate: {successCount}/{userCount}");
 
         Assert.Equal(userCount, successCount);
-        _output.WriteLine("[PASS] All concurrent logins succeeded");
+        Output.WriteLine("[PASS] All concurrent logins succeeded");
     }
 
     [Fact]
     public async Task ConcurrentRegistrations_30Users_AllSucceed()
     {
-        _output.WriteLine("[TEST] ConcurrentRegistrations_30Users_AllSucceed");
+        Output.WriteLine("[TEST] ConcurrentRegistrations_30Users_AllSucceed");
 
         const int userCount = 30;
         var usernames = Enumerable.Range(0, userCount)
             .Select(_ => $"stress_reg_{Guid.NewGuid():N}")
             .ToList();
 
-        _output.WriteLine($"[STEP] Starting concurrent registrations for {userCount} users...");
+        Output.WriteLine($"[STEP] Starting concurrent registrations for {userCount} users...");
         var sw = Stopwatch.StartNew();
 
         var registerTasks = usernames.Select(RegisterUserAsync).ToArray();
         var results = await Task.WhenAll(registerTasks);
 
         sw.Stop();
-        _output.WriteLine($"[INFO] {userCount} concurrent registrations completed in {sw.ElapsedMilliseconds}ms");
+        Output.WriteLine($"[INFO] {userCount} concurrent registrations completed in {sw.ElapsedMilliseconds}ms");
 
         var successCount = results.Count(r => r != null);
-        _output.WriteLine($"[INFO] Success rate: {successCount}/{userCount}");
+        Output.WriteLine($"[INFO] Success rate: {successCount}/{userCount}");
 
         Assert.Equal(userCount, successCount);
-        _output.WriteLine("[PASS] All concurrent registrations succeeded");
+        Output.WriteLine("[PASS] All concurrent registrations succeeded");
     }
 
     [Fact]
     public async Task ConcurrentTokenRefresh_20Sessions_AllSucceed()
     {
-        _output.WriteLine("[TEST] ConcurrentTokenRefresh_20Sessions_AllSucceed");
+        Output.WriteLine("[TEST] ConcurrentTokenRefresh_20Sessions_AllSucceed");
 
         const int sessionCount = 20;
         var username = $"stress_refresh_{Guid.NewGuid():N}";
@@ -104,7 +93,7 @@ public class StressTests
         Assert.NotNull(initialAuth);
 
         // Create multiple sessions concurrently
-        _output.WriteLine($"[STEP] Concurrently creating {sessionCount - 1} additional sessions...");
+        Output.WriteLine($"[STEP] Concurrently creating {sessionCount - 1} additional sessions...");
         var additionalLoginTasks = Enumerable.Range(1, sessionCount - 1)
             .Select(_ => LoginUserAsync(username))
             .ToArray();
@@ -114,20 +103,20 @@ public class StressTests
         var sessions = new List<AuthResponse> { initialAuth! };
         sessions.AddRange(additionalSessions!);
 
-        _output.WriteLine($"[STEP] Starting concurrent token refresh for {sessionCount} sessions...");
+        Output.WriteLine($"[STEP] Starting concurrent token refresh for {sessionCount} sessions...");
         var sw = Stopwatch.StartNew();
 
         var refreshTasks = sessions.Select(s => RefreshTokenAsync(s.RefreshToken)).ToArray();
         var results = await Task.WhenAll(refreshTasks);
 
         sw.Stop();
-        _output.WriteLine($"[INFO] {sessionCount} concurrent refreshes completed in {sw.ElapsedMilliseconds}ms");
+        Output.WriteLine($"[INFO] {sessionCount} concurrent refreshes completed in {sw.ElapsedMilliseconds}ms");
 
         var successCount = results.Count(r => r != null);
-        _output.WriteLine($"[INFO] Success rate: {successCount}/{sessionCount}");
+        Output.WriteLine($"[INFO] Success rate: {successCount}/{sessionCount}");
 
         Assert.Equal(sessionCount, successCount);
-        _output.WriteLine("[PASS] All concurrent token refreshes succeeded");
+        Output.WriteLine("[PASS] All concurrent token refreshes succeeded");
     }
 
     #endregion
@@ -137,7 +126,7 @@ public class StressTests
     [Fact]
     public async Task UserAccessWhilePermissionsChange_HandledGracefully()
     {
-        _output.WriteLine("[TEST] UserAccessWhilePermissionsChange_HandledGracefully");
+        Output.WriteLine("[TEST] UserAccessWhilePermissionsChange_HandledGracefully");
 
         // Create admin and regular user
         var adminAuth = await CreateAdminAsync();
@@ -154,7 +143,7 @@ public class StressTests
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 
-        _output.WriteLine($"[STEP] Starting {iterations} parallel permission changes and access attempts...");
+        Output.WriteLine($"[STEP] Starting {iterations} parallel permission changes and access attempts...");
 
         // Run access attempts and permission changes in parallel
         var accessTask = Task.Run(async () =>
@@ -165,7 +154,7 @@ public class StressTests
                 {
                     using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                    var response = await _sharedHost.Host.HttpClient.SendAsync(request, cts.Token);
+                    var response = await HttpClient.SendAsync(request, cts.Token);
                     accessResults.Add(response.StatusCode);
                     await Task.Delay(50, cts.Token);
                 }
@@ -192,7 +181,7 @@ public class StressTests
                     using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth!.AccessToken);
                     request.Content = JsonContent.Create(body);
-                    var response = await _sharedHost.Host.HttpClient.SendAsync(request, cts.Token);
+                    var response = await HttpClient.SendAsync(request, cts.Token);
 
                     permChangeResults.Add(response.IsSuccessStatusCode || response.StatusCode == HttpStatusCode.NotFound);
                     await Task.Delay(100, cts.Token);
@@ -203,19 +192,19 @@ public class StressTests
 
         await Task.WhenAll(accessTask, permTask);
 
-        _output.WriteLine($"[INFO] Access attempts: {accessResults.Count}, Permission changes: {permChangeResults.Count}");
-        _output.WriteLine($"[INFO] Access OK: {accessResults.Count(r => r == HttpStatusCode.OK)}");
-        _output.WriteLine($"[INFO] Permission changes succeeded: {permChangeResults.Count(r => r)}");
+        Output.WriteLine($"[INFO] Access attempts: {accessResults.Count}, Permission changes: {permChangeResults.Count}");
+        Output.WriteLine($"[INFO] Access OK: {accessResults.Count(r => r == HttpStatusCode.OK)}");
+        Output.WriteLine($"[INFO] Permission changes succeeded: {permChangeResults.Count(r => r)}");
 
         // All /auth/me requests should succeed (permission changes don't affect /auth/me)
         Assert.True(accessResults.All(r => r == HttpStatusCode.OK), "All access attempts should succeed");
-        _output.WriteLine("[PASS] System handled concurrent access and permission changes gracefully");
+        Output.WriteLine("[PASS] System handled concurrent access and permission changes gracefully");
     }
 
     [Fact]
     public async Task RoleAssignmentWhileUserActive_HandledGracefully()
     {
-        _output.WriteLine("[TEST] RoleAssignmentWhileUserActive_HandledGracefully");
+        Output.WriteLine("[TEST] RoleAssignmentWhileUserActive_HandledGracefully");
 
         var adminAuth = await CreateAdminAsync();
         var userAuth = await RegisterUserAsync($"stress_role_{Guid.NewGuid():N}");
@@ -226,7 +215,7 @@ public class StressTests
         const int iterations = 10;
         var results = new ConcurrentBag<(string Op, HttpStatusCode Status)>();
 
-        _output.WriteLine($"[STEP] Running {iterations} role assignment/removal cycles while user accesses API...");
+        Output.WriteLine($"[STEP] Running {iterations} role assignment/removal cycles while user accesses API...");
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 
@@ -239,7 +228,7 @@ public class StressTests
                 {
                     using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userAuth.AccessToken);
-                    var response = await _sharedHost.Host.HttpClient.SendAsync(request, cts.Token);
+                    var response = await HttpClient.SendAsync(request, cts.Token);
                     results.Add(("UserAccess", response.StatusCode));
                     await Task.Delay(100, cts.Token);
                 }
@@ -263,7 +252,7 @@ public class StressTests
                         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/iam/roles/assign");
                         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth!.AccessToken);
                         request.Content = JsonContent.Create(assignBody);
-                        var response = await _sharedHost.Host.HttpClient.SendAsync(request, cts.Token);
+                        var response = await HttpClient.SendAsync(request, cts.Token);
                         results.Add(("RoleAssign", response.StatusCode));
                     }
 
@@ -276,13 +265,13 @@ public class StressTests
         await Task.WhenAll(userTask, adminTask);
 
         var userAccessResults = results.Where(r => r.Op == "UserAccess").ToList();
-        _output.WriteLine($"[INFO] User access attempts: {userAccessResults.Count}, OK: {userAccessResults.Count(r => r.Status == HttpStatusCode.OK)}");
+        Output.WriteLine($"[INFO] User access attempts: {userAccessResults.Count}, OK: {userAccessResults.Count(r => r.Status == HttpStatusCode.OK)}");
 
         // User should always be able to access /auth/me regardless of role changes
         Assert.True(userAccessResults.All(r => r.Status == HttpStatusCode.OK),
             "User should maintain access during role changes");
 
-        _output.WriteLine("[PASS] System handled role assignment while user active");
+        Output.WriteLine("[PASS] System handled role assignment while user active");
     }
 
     #endregion
@@ -292,7 +281,7 @@ public class StressTests
     [Fact]
     public async Task ConcurrentRoleAssignment_SameUser_NoCorruption()
     {
-        _output.WriteLine("[TEST] ConcurrentRoleAssignment_SameUser_NoCorruption");
+        Output.WriteLine("[TEST] ConcurrentRoleAssignment_SameUser_NoCorruption");
 
         var adminAuth = await CreateAdminAsync();
         var userAuth = await RegisterUserAsync($"stress_race_{Guid.NewGuid():N}");
@@ -302,7 +291,7 @@ public class StressTests
         var userId = userAuth!.User.Id;
         const int concurrentAssignments = 10;
 
-        _output.WriteLine($"[STEP] Attempting {concurrentAssignments} concurrent role assignments...");
+        Output.WriteLine($"[STEP] Attempting {concurrentAssignments} concurrent role assignments...");
 
         // Try to assign the same role multiple times concurrently
         var assignTasks = Enumerable.Range(0, concurrentAssignments).Select(async _ =>
@@ -311,13 +300,13 @@ public class StressTests
             using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/iam/roles/assign");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth!.AccessToken);
             request.Content = JsonContent.Create(assignBody);
-            return await _sharedHost.Host.HttpClient.SendAsync(request);
+            return await HttpClient.SendAsync(request);
         }).ToArray();
 
         var results = await Task.WhenAll(assignTasks);
 
         var statusCodes = results.Select(r => r.StatusCode).ToList();
-        _output.WriteLine($"[INFO] Results: {string.Join(", ", statusCodes.Select(s => (int)s))}");
+        Output.WriteLine($"[INFO] Results: {string.Join(", ", statusCodes.Select(s => (int)s))}");
 
         // At least one should succeed, others may succeed or return conflict/error
         // The important thing is no 500 errors
@@ -326,16 +315,16 @@ public class StressTests
         // Verify user state is consistent after concurrent operations
         using var verifyRequest = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/iam/users/{userId}");
         verifyRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth!.AccessToken);
-        var verifyResponse = await _sharedHost.Host.HttpClient.SendAsync(verifyRequest);
+        var verifyResponse = await HttpClient.SendAsync(verifyRequest);
 
         Assert.Equal(HttpStatusCode.OK, verifyResponse.StatusCode);
-        _output.WriteLine("[PASS] No data corruption from concurrent role assignments");
+        Output.WriteLine("[PASS] No data corruption from concurrent role assignments");
     }
 
     [Fact]
     public async Task ConcurrentPermissionGrant_SameUserSamePermission_NoCorruption()
     {
-        _output.WriteLine("[TEST] ConcurrentPermissionGrant_SameUserSamePermission_NoCorruption");
+        Output.WriteLine("[TEST] ConcurrentPermissionGrant_SameUserSamePermission_NoCorruption");
 
         var adminAuth = await CreateAdminAsync();
         var userAuth = await RegisterUserAsync($"stress_perm_race_{Guid.NewGuid():N}");
@@ -346,7 +335,7 @@ public class StressTests
         const int concurrentGrants = 15;
         var permissionId = $"api:test:race:{Guid.NewGuid():N}";
 
-        _output.WriteLine($"[STEP] Attempting {concurrentGrants} concurrent grants of the same permission...");
+        Output.WriteLine($"[STEP] Attempting {concurrentGrants} concurrent grants of the same permission...");
 
         var grantTasks = Enumerable.Range(0, concurrentGrants).Select(async _ =>
         {
@@ -359,31 +348,31 @@ public class StressTests
             using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/iam/permissions/grant");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth!.AccessToken);
             request.Content = JsonContent.Create(grantBody);
-            return await _sharedHost.Host.HttpClient.SendAsync(request);
+            return await HttpClient.SendAsync(request);
         }).ToArray();
 
         var results = await Task.WhenAll(grantTasks);
         var statusCodes = results.Select(r => r.StatusCode).ToList();
 
-        _output.WriteLine($"[INFO] Results: {string.Join(", ", statusCodes.Select(s => (int)s))}");
-        _output.WriteLine($"[INFO] 204 NoContent: {statusCodes.Count(s => s == HttpStatusCode.NoContent)}");
-        _output.WriteLine($"[INFO] 409 Conflict: {statusCodes.Count(s => s == HttpStatusCode.Conflict)}");
+        Output.WriteLine($"[INFO] Results: {string.Join(", ", statusCodes.Select(s => (int)s))}");
+        Output.WriteLine($"[INFO] 204 NoContent: {statusCodes.Count(s => s == HttpStatusCode.NoContent)}");
+        Output.WriteLine($"[INFO] 409 Conflict: {statusCodes.Count(s => s == HttpStatusCode.Conflict)}");
 
         Assert.DoesNotContain(HttpStatusCode.InternalServerError, statusCodes);
 
         // Verify permission was granted exactly once
         using var verifyRequest = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/iam/users/{userId}/permissions");
         verifyRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth!.AccessToken);
-        var verifyResponse = await _sharedHost.Host.HttpClient.SendAsync(verifyRequest);
+        var verifyResponse = await HttpClient.SendAsync(verifyRequest);
         Assert.Equal(HttpStatusCode.OK, verifyResponse.StatusCode);
 
-        _output.WriteLine("[PASS] No corruption from concurrent permission grants");
+        Output.WriteLine("[PASS] No corruption from concurrent permission grants");
     }
 
     [Fact]
     public async Task ConcurrentRoleCreation_SameName_OnlyOneSucceeds()
     {
-        _output.WriteLine("[TEST] ConcurrentRoleCreation_SameName_OnlyOneSucceeds");
+        Output.WriteLine("[TEST] ConcurrentRoleCreation_SameName_OnlyOneSucceeds");
 
         var adminAuth = await CreateAdminAsync();
         Assert.NotNull(adminAuth);
@@ -391,7 +380,7 @@ public class StressTests
         var roleCode = $"RACE_ROLE_{Guid.NewGuid():N}".ToUpperInvariant()[..20];
         const int concurrentCreations = 10;
 
-        _output.WriteLine($"[STEP] Attempting {concurrentCreations} concurrent role creations with same code: {roleCode}");
+        Output.WriteLine($"[STEP] Attempting {concurrentCreations} concurrent role creations with same code: {roleCode}");
 
         var createTasks = Enumerable.Range(0, concurrentCreations).Select(async i =>
         {
@@ -404,31 +393,31 @@ public class StressTests
             using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/iam/roles");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth!.AccessToken);
             request.Content = JsonContent.Create(createBody);
-            return await _sharedHost.Host.HttpClient.SendAsync(request);
+            return await HttpClient.SendAsync(request);
         }).ToArray();
 
         var results = await Task.WhenAll(createTasks);
         var statusCodes = results.Select(r => r.StatusCode).ToList();
 
-        _output.WriteLine($"[INFO] Results: {string.Join(", ", statusCodes.Select(s => (int)s))}");
+        Output.WriteLine($"[INFO] Results: {string.Join(", ", statusCodes.Select(s => (int)s))}");
 
         var successCount = statusCodes.Count(s => s == HttpStatusCode.Created);
         var conflictCount = statusCodes.Count(s => s == HttpStatusCode.Conflict);
         var serverErrorCount = statusCodes.Count(s => s == HttpStatusCode.InternalServerError);
 
-        _output.WriteLine($"[INFO] Created: {successCount}, Conflicts: {conflictCount}, 500 Errors: {serverErrorCount}");
+        Output.WriteLine($"[INFO] Created: {successCount}, Conflicts: {conflictCount}, 500 Errors: {serverErrorCount}");
 
         // Note: This test documents current behavior. Ideally 500s should be 409s.
         // The test verifies at least one succeeds and no data corruption occurs.
         Assert.True(successCount >= 1, "At least one creation should succeed");
 
-        _output.WriteLine("[PASS] Duplicate role creation handled (note: 500 errors indicate missing conflict handling)");
+        Output.WriteLine("[PASS] Duplicate role creation handled (note: 500 errors indicate missing conflict handling)");
     }
 
     [Fact]
     public async Task ConcurrentUserUpdate_SameUser_LastWriteWins()
     {
-        _output.WriteLine("[TEST] ConcurrentUserUpdate_SameUser_LastWriteWins");
+        Output.WriteLine("[TEST] ConcurrentUserUpdate_SameUser_LastWriteWins");
 
         var adminAuth = await CreateAdminAsync();
         var userAuth = await RegisterUserAsync($"stress_update_{Guid.NewGuid():N}");
@@ -438,7 +427,7 @@ public class StressTests
         var userId = userAuth!.User.Id;
         const int concurrentUpdates = 20;
 
-        _output.WriteLine($"[STEP] Attempting {concurrentUpdates} concurrent user updates...");
+        Output.WriteLine($"[STEP] Attempting {concurrentUpdates} concurrent user updates...");
 
         var updateTasks = Enumerable.Range(0, concurrentUpdates).Select(async i =>
         {
@@ -446,70 +435,70 @@ public class StressTests
             using var request = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/iam/users/{userId}");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth!.AccessToken);
             request.Content = JsonContent.Create(updateBody);
-            return await _sharedHost.Host.HttpClient.SendAsync(request);
+            return await HttpClient.SendAsync(request);
         }).ToArray();
 
         var results = await Task.WhenAll(updateTasks);
         var statusCodes = results.Select(r => r.StatusCode).ToList();
 
-        _output.WriteLine($"[INFO] Results: {string.Join(", ", statusCodes.Select(s => (int)s))}");
-        _output.WriteLine($"[INFO] Success (200): {statusCodes.Count(s => s == HttpStatusCode.OK)}");
+        Output.WriteLine($"[INFO] Results: {string.Join(", ", statusCodes.Select(s => (int)s))}");
+        Output.WriteLine($"[INFO] Success (200): {statusCodes.Count(s => s == HttpStatusCode.OK)}");
 
         Assert.DoesNotContain(HttpStatusCode.InternalServerError, statusCodes);
 
         // Verify user is in consistent state
         using var verifyRequest = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/iam/users/{userId}");
         verifyRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth!.AccessToken);
-        var verifyResponse = await _sharedHost.Host.HttpClient.SendAsync(verifyRequest);
+        var verifyResponse = await HttpClient.SendAsync(verifyRequest);
         Assert.Equal(HttpStatusCode.OK, verifyResponse.StatusCode);
 
         var content = await verifyResponse.Content.ReadAsStringAsync();
         Assert.Contains("@race.test", content);
 
-        _output.WriteLine("[PASS] Concurrent user updates handled without corruption");
+        Output.WriteLine("[PASS] Concurrent user updates handled without corruption");
     }
 
     [Fact]
     public async Task ConcurrentTokenRefresh_SameRefreshToken_OnlyOneSucceeds()
     {
-        _output.WriteLine("[TEST] ConcurrentTokenRefresh_SameRefreshToken_OnlyOneSucceeds");
+        Output.WriteLine("[TEST] ConcurrentTokenRefresh_SameRefreshToken_OnlyOneSucceeds");
 
         var userAuth = await RegisterUserWithRetryAsync("stress_double_refresh");
 
         var refreshToken = userAuth.RefreshToken;
         const int concurrentRefreshes = 10;
 
-        _output.WriteLine($"[STEP] Attempting {concurrentRefreshes} concurrent refreshes with same token...");
+        Output.WriteLine($"[STEP] Attempting {concurrentRefreshes} concurrent refreshes with same token...");
 
         var refreshTasks = Enumerable.Range(0, concurrentRefreshes).Select(async _ =>
         {
             var refreshBody = new { RefreshToken = refreshToken };
             using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/refresh");
             request.Content = JsonContent.Create(refreshBody);
-            return await _sharedHost.Host.HttpClient.SendAsync(request);
+            return await HttpClient.SendAsync(request);
         }).ToArray();
 
         var results = await Task.WhenAll(refreshTasks);
         var statusCodes = results.Select(r => r.StatusCode).ToList();
 
-        _output.WriteLine($"[INFO] Results: {string.Join(", ", statusCodes.Select(s => (int)s))}");
+        Output.WriteLine($"[INFO] Results: {string.Join(", ", statusCodes.Select(s => (int)s))}");
 
         var successCount = statusCodes.Count(s => s == HttpStatusCode.OK);
         var unauthorizedCount = statusCodes.Count(s => s == HttpStatusCode.Unauthorized);
 
-        _output.WriteLine($"[INFO] Success: {successCount}, Unauthorized: {unauthorizedCount}");
+        Output.WriteLine($"[INFO] Success: {successCount}, Unauthorized: {unauthorizedCount}");
 
         Assert.DoesNotContain(HttpStatusCode.InternalServerError, statusCodes);
 
         // With refresh token rotation, only one should succeed or all may succeed
         // depending on implementation (some allow reuse within a grace period)
-        _output.WriteLine("[PASS] Concurrent refresh token usage handled correctly");
+        Output.WriteLine("[PASS] Concurrent refresh token usage handled correctly");
     }
 
     [Fact]
     public async Task ConcurrentLogout_MultipleSessions_AllHandled()
     {
-        _output.WriteLine("[TEST] ConcurrentLogout_MultipleSessions_AllHandled");
+        Output.WriteLine("[TEST] ConcurrentLogout_MultipleSessions_AllHandled");
 
         var username = $"stress_logout_{Guid.NewGuid():N}";
         var auth = await RegisterUserAsync(username);
@@ -519,7 +508,7 @@ public class StressTests
         const int sessionCount = 8;
         var sessions = new List<AuthResponse> { auth! };
 
-        _output.WriteLine($"[STEP] Creating {sessionCount - 1} additional sessions...");
+        Output.WriteLine($"[STEP] Creating {sessionCount - 1} additional sessions...");
         for (int i = 1; i < sessionCount; i++)
         {
             var loginAuth = await LoginUserAsync(username);
@@ -527,19 +516,19 @@ public class StressTests
             sessions.Add(loginAuth!);
         }
 
-        _output.WriteLine($"[STEP] Concurrently logging out all {sessionCount} sessions...");
+        Output.WriteLine($"[STEP] Concurrently logging out all {sessionCount} sessions...");
 
         var logoutTasks = sessions.Select(async s =>
         {
             using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/logout");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", s.AccessToken);
-            return await _sharedHost.Host.HttpClient.SendAsync(request);
+            return await HttpClient.SendAsync(request);
         }).ToArray();
 
         var results = await Task.WhenAll(logoutTasks);
         var statusCodes = results.Select(r => r.StatusCode).ToList();
 
-        _output.WriteLine($"[INFO] Results: {string.Join(", ", statusCodes.Select(s => (int)s))}");
+        Output.WriteLine($"[INFO] Results: {string.Join(", ", statusCodes.Select(s => (int)s))}");
 
         Assert.DoesNotContain(HttpStatusCode.InternalServerError, statusCodes);
 
@@ -548,13 +537,13 @@ public class StressTests
         Assert.True(statusCodes.All(s => validStatuses.Contains(s)),
             "All logouts should complete without server errors");
 
-        _output.WriteLine("[PASS] Concurrent logouts handled correctly");
+        Output.WriteLine("[PASS] Concurrent logouts handled correctly");
     }
 
     [Fact]
     public async Task ConcurrentPasswordChange_SameUser_OnlyOneSucceeds()
     {
-        _output.WriteLine("[TEST] ConcurrentPasswordChange_SameUser_OnlyOneSucceeds");
+        Output.WriteLine("[TEST] ConcurrentPasswordChange_SameUser_OnlyOneSucceeds");
 
         var username = $"stress_pwd_{Guid.NewGuid():N}";
         var userAuth = await RegisterUserAsync(username);
@@ -564,7 +553,7 @@ public class StressTests
         var accessToken = userAuth.AccessToken;
         const int concurrentChanges = 10;
 
-        _output.WriteLine($"[STEP] Attempting {concurrentChanges} concurrent password changes...");
+        Output.WriteLine($"[STEP] Attempting {concurrentChanges} concurrent password changes...");
 
         // Use the user's own token to change their password
         var changeTasks = Enumerable.Range(0, concurrentChanges).Select(async i =>
@@ -578,19 +567,19 @@ public class StressTests
             using var request = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/auth/users/{userId}/identity/password");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
             request.Content = JsonContent.Create(changeBody);
-            return await _sharedHost.Host.HttpClient.SendAsync(request);
+            return await HttpClient.SendAsync(request);
         }).ToArray();
 
         var results = await Task.WhenAll(changeTasks);
         var statusCodes = results.Select(r => r.StatusCode).ToList();
 
-        _output.WriteLine($"[INFO] Results: {string.Join(", ", statusCodes.Select(s => (int)s))}");
+        Output.WriteLine($"[INFO] Results: {string.Join(", ", statusCodes.Select(s => (int)s))}");
 
         var successCount = statusCodes.Count(s => s == HttpStatusCode.NoContent || s == HttpStatusCode.OK);
         var badRequestCount = statusCodes.Count(s => s == HttpStatusCode.BadRequest);
         var unauthorizedCount = statusCodes.Count(s => s == HttpStatusCode.Unauthorized);
 
-        _output.WriteLine($"[INFO] Success: {successCount}, BadRequest: {badRequestCount}, Unauthorized: {unauthorizedCount}");
+        Output.WriteLine($"[INFO] Success: {successCount}, BadRequest: {badRequestCount}, Unauthorized: {unauthorizedCount}");
 
         Assert.DoesNotContain(HttpStatusCode.InternalServerError, statusCodes);
 
@@ -599,13 +588,13 @@ public class StressTests
         Assert.True(successCount >= 1 || badRequestCount > 0 || unauthorizedCount > 0,
             "Password change requests should complete without server errors");
 
-        _output.WriteLine("[PASS] Concurrent password changes handled correctly");
+        Output.WriteLine("[PASS] Concurrent password changes handled correctly");
     }
 
     [Fact]
     public async Task TokenUseWhileSessionRevoked_HandledGracefully()
     {
-        _output.WriteLine("[TEST] TokenUseWhileSessionRevoked_HandledGracefully");
+        Output.WriteLine("[TEST] TokenUseWhileSessionRevoked_HandledGracefully");
 
         var userAuth = await RegisterUserWithRetryAsync("stress_token_revoke");
 
@@ -615,7 +604,7 @@ public class StressTests
         // Get session ID
         using var listRequest = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/sessions");
         listRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-        var listResponse = await _sharedHost.Host.HttpClient.SendAsync(listRequest);
+        var listResponse = await HttpClient.SendAsync(listRequest);
         var listContent = await listResponse.Content.ReadAsStringAsync();
         var sessionList = JsonSerializer.Deserialize<SessionListResponse>(listContent, JsonOptions);
         var sessionId = sessionList!.Items.First().Id;
@@ -625,7 +614,7 @@ public class StressTests
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
 
-        _output.WriteLine($"[STEP] Racing token usage against session revocation...");
+        Output.WriteLine($"[STEP] Racing token usage against session revocation...");
 
         // Task 1: Keep using the token
         var useTask = Task.Run(async () =>
@@ -636,7 +625,7 @@ public class StressTests
                 {
                     using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                    var response = await _sharedHost.Host.HttpClient.SendAsync(request, cts.Token);
+                    var response = await HttpClient.SendAsync(request, cts.Token);
                     results.Add(("Use", response.StatusCode));
                     await Task.Delay(25, cts.Token);
                 }
@@ -654,7 +643,7 @@ public class StressTests
                     var refreshBody = new { RefreshToken = userAuth.RefreshToken };
                     using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/refresh");
                     request.Content = JsonContent.Create(refreshBody);
-                    var response = await _sharedHost.Host.HttpClient.SendAsync(request, cts.Token);
+                    var response = await HttpClient.SendAsync(request, cts.Token);
                     results.Add(("Refresh", response.StatusCode));
                     await Task.Delay(50, cts.Token);
                 }
@@ -671,7 +660,7 @@ public class StressTests
                 using var request = new HttpRequestMessage(HttpMethod.Delete,
                     $"/api/v1/auth/users/{userId}/sessions/{sessionId}");
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-                var response = await _sharedHost.Host.HttpClient.SendAsync(request, cts.Token);
+                var response = await HttpClient.SendAsync(request, cts.Token);
                 results.Add(("Revoke", response.StatusCode));
             }
             catch (OperationCanceledException) { }
@@ -683,23 +672,23 @@ public class StressTests
         var refreshResults = results.Where(r => r.Op == "Refresh").ToList();
         var revokeResults = results.Where(r => r.Op == "Revoke").ToList();
 
-        _output.WriteLine($"[INFO] Token uses: {useResults.Count} (OK: {useResults.Count(r => r.Status == HttpStatusCode.OK)}, 401: {useResults.Count(r => r.Status == HttpStatusCode.Unauthorized)})");
-        _output.WriteLine($"[INFO] Refreshes: {refreshResults.Count} (OK: {refreshResults.Count(r => r.Status == HttpStatusCode.OK)}, 401: {refreshResults.Count(r => r.Status == HttpStatusCode.Unauthorized)})");
-        _output.WriteLine($"[INFO] Revokes: {revokeResults.Count}");
+        Output.WriteLine($"[INFO] Token uses: {useResults.Count} (OK: {useResults.Count(r => r.Status == HttpStatusCode.OK)}, 401: {useResults.Count(r => r.Status == HttpStatusCode.Unauthorized)})");
+        Output.WriteLine($"[INFO] Refreshes: {refreshResults.Count} (OK: {refreshResults.Count(r => r.Status == HttpStatusCode.OK)}, 401: {refreshResults.Count(r => r.Status == HttpStatusCode.Unauthorized)})");
+        Output.WriteLine($"[INFO] Revokes: {revokeResults.Count}");
 
         Assert.DoesNotContain(HttpStatusCode.InternalServerError, results.Select(r => r.Status));
-        _output.WriteLine("[PASS] Token use during revocation handled gracefully");
+        Output.WriteLine("[PASS] Token use during revocation handled gracefully");
     }
 
     [Fact]
     public async Task ConcurrentRegistration_SameUsername_OnlyOneSucceeds()
     {
-        _output.WriteLine("[TEST] ConcurrentRegistration_SameUsername_OnlyOneSucceeds");
+        Output.WriteLine("[TEST] ConcurrentRegistration_SameUsername_OnlyOneSucceeds");
 
         var username = $"race_user_{Guid.NewGuid():N}";
         const int concurrentRegistrations = 15;
 
-        _output.WriteLine($"[STEP] Attempting {concurrentRegistrations} concurrent registrations with username: {username}");
+        Output.WriteLine($"[STEP] Attempting {concurrentRegistrations} concurrent registrations with username: {username}");
 
         var registerTasks = Enumerable.Range(0, concurrentRegistrations).Select(async i =>
         {
@@ -712,29 +701,29 @@ public class StressTests
             };
             using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/register");
             request.Content = JsonContent.Create(registerBody);
-            return await _sharedHost.Host.HttpClient.SendAsync(request);
+            return await HttpClient.SendAsync(request);
         }).ToArray();
 
         var results = await Task.WhenAll(registerTasks);
         var statusCodes = results.Select(r => r.StatusCode).ToList();
 
-        _output.WriteLine($"[INFO] Results: {string.Join(", ", statusCodes.Select(s => (int)s))}");
+        Output.WriteLine($"[INFO] Results: {string.Join(", ", statusCodes.Select(s => (int)s))}");
 
         var successCount = statusCodes.Count(s => s == HttpStatusCode.Created);
         var conflictCount = statusCodes.Count(s => s == HttpStatusCode.Conflict || s == HttpStatusCode.BadRequest);
 
-        _output.WriteLine($"[INFO] Created: {successCount}, Conflicts/BadRequest: {conflictCount}");
+        Output.WriteLine($"[INFO] Created: {successCount}, Conflicts/BadRequest: {conflictCount}");
 
         Assert.DoesNotContain(HttpStatusCode.InternalServerError, statusCodes);
         Assert.Equal(1, successCount);
 
-        _output.WriteLine("[PASS] Duplicate username registration prevented correctly");
+        Output.WriteLine("[PASS] Duplicate username registration prevented correctly");
     }
 
     [Fact]
     public async Task ConcurrentRoleAssignAndRemove_SameUserSameRole_Consistent()
     {
-        _output.WriteLine("[TEST] ConcurrentRoleAssignAndRemove_SameUserSameRole_Consistent");
+        Output.WriteLine("[TEST] ConcurrentRoleAssignAndRemove_SameUserSameRole_Consistent");
 
         var adminAuth = await CreateAdminAsync();
         Assert.NotNull(adminAuth);
@@ -748,7 +737,7 @@ public class StressTests
         using var createRoleRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/iam/roles");
         createRoleRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth.AccessToken);
         createRoleRequest.Content = JsonContent.Create(createRoleBody);
-        var createRoleResponse = await _sharedHost.Host.HttpClient.SendAsync(createRoleRequest);
+        var createRoleResponse = await HttpClient.SendAsync(createRoleRequest);
         Assert.Equal(HttpStatusCode.Created, createRoleResponse.StatusCode);
 
         var roleContent = await createRoleResponse.Content.ReadAsStringAsync();
@@ -759,12 +748,12 @@ public class StressTests
         using var initialAssignRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/iam/roles/assign");
         initialAssignRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth.AccessToken);
         initialAssignRequest.Content = JsonContent.Create(assignBody);
-        await _sharedHost.Host.HttpClient.SendAsync(initialAssignRequest);
+        await HttpClient.SendAsync(initialAssignRequest);
 
         const int iterations = 10;
         var results = new ConcurrentBag<(string Op, HttpStatusCode Status)>();
 
-        _output.WriteLine($"[STEP] Racing {iterations} assign/remove operations...");
+        Output.WriteLine($"[STEP] Racing {iterations} assign/remove operations...");
 
         // Race assign and remove operations
         var tasks = Enumerable.Range(0, iterations * 2).Select(async i =>
@@ -776,7 +765,7 @@ public class StressTests
                 using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/iam/roles/assign");
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth.AccessToken);
                 request.Content = JsonContent.Create(body);
-                var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+                var response = await HttpClient.SendAsync(request);
                 results.Add(("Assign", response.StatusCode));
             }
             else
@@ -786,7 +775,7 @@ public class StressTests
                 using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/iam/roles/remove");
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth.AccessToken);
                 request.Content = JsonContent.Create(body);
-                var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+                var response = await HttpClient.SendAsync(request);
                 results.Add(("Remove", response.StatusCode));
             }
         }).ToArray();
@@ -796,24 +785,24 @@ public class StressTests
         var assigns = results.Where(r => r.Op == "Assign").ToList();
         var removes = results.Where(r => r.Op == "Remove").ToList();
 
-        _output.WriteLine($"[INFO] Assigns: {assigns.Count} (Success: {assigns.Count(r => r.Status == HttpStatusCode.NoContent || r.Status == HttpStatusCode.OK)})");
-        _output.WriteLine($"[INFO] Removes: {removes.Count} (Success: {removes.Count(r => r.Status == HttpStatusCode.NoContent || r.Status == HttpStatusCode.OK)})");
+        Output.WriteLine($"[INFO] Assigns: {assigns.Count} (Success: {assigns.Count(r => r.Status == HttpStatusCode.NoContent || r.Status == HttpStatusCode.OK)})");
+        Output.WriteLine($"[INFO] Removes: {removes.Count} (Success: {removes.Count(r => r.Status == HttpStatusCode.NoContent || r.Status == HttpStatusCode.OK)})");
 
         Assert.DoesNotContain(HttpStatusCode.InternalServerError, results.Select(r => r.Status));
 
         // Verify user state is consistent
         using var verifyRequest = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/iam/users/{userId}");
         verifyRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth.AccessToken);
-        var verifyResponse = await _sharedHost.Host.HttpClient.SendAsync(verifyRequest);
+        var verifyResponse = await HttpClient.SendAsync(verifyRequest);
         Assert.Equal(HttpStatusCode.OK, verifyResponse.StatusCode);
 
-        _output.WriteLine("[PASS] Concurrent assign/remove handled without corruption");
+        Output.WriteLine("[PASS] Concurrent assign/remove handled without corruption");
     }
 
     [Fact]
     public async Task ConcurrentSessionRevocation_SameUser_AllHandled()
     {
-        _output.WriteLine("[TEST] ConcurrentSessionRevocation_SameUser_AllHandled");
+        Output.WriteLine("[TEST] ConcurrentSessionRevocation_SameUser_AllHandled");
 
         var username = $"stress_revoke_{Guid.NewGuid():N}";
         var initialAuth = await RegisterUserAsync(username);
@@ -821,7 +810,7 @@ public class StressTests
 
         // Create multiple sessions concurrently
         const int sessionCount = 10;
-        _output.WriteLine($"[STEP] Concurrently creating {sessionCount - 1} additional sessions...");
+        Output.WriteLine($"[STEP] Concurrently creating {sessionCount - 1} additional sessions...");
         var additionalLoginTasks = Enumerable.Range(1, sessionCount - 1)
             .Select(_ => LoginUserAsync(username))
             .ToArray();
@@ -836,15 +825,15 @@ public class StressTests
         // Get all session IDs
         using var listRequest = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/sessions");
         listRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", initialAuth.AccessToken);
-        var listResponse = await _sharedHost.Host.HttpClient.SendAsync(listRequest);
+        var listResponse = await HttpClient.SendAsync(listRequest);
         var listContent = await listResponse.Content.ReadAsStringAsync();
         var sessionList = JsonSerializer.Deserialize<SessionListResponse>(listContent, JsonOptions);
 
         Assert.NotNull(sessionList?.Items);
-        _output.WriteLine($"[INFO] Created {sessionList!.Items.Count} sessions");
+        Output.WriteLine($"[INFO] Created {sessionList!.Items.Count} sessions");
 
         // Concurrently revoke all sessions using different session tokens
-        _output.WriteLine("[STEP] Concurrently revoking all sessions...");
+        Output.WriteLine("[STEP] Concurrently revoking all sessions...");
 
         var revokeTasks = sessionList.Items.Select(async (s, index) =>
         {
@@ -853,13 +842,13 @@ public class StressTests
             using var request = new HttpRequestMessage(HttpMethod.Delete,
                 $"/api/v1/auth/users/{userId}/sessions/{s.Id}");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", sessions[tokenIndex].AccessToken);
-            return await _sharedHost.Host.HttpClient.SendAsync(request);
+            return await HttpClient.SendAsync(request);
         }).ToArray();
 
         var results = await Task.WhenAll(revokeTasks);
 
         var statusCodes = results.Select(r => r.StatusCode).ToList();
-        _output.WriteLine($"[INFO] Revocation results: {string.Join(", ", statusCodes.Select(s => (int)s))}");
+        Output.WriteLine($"[INFO] Revocation results: {string.Join(", ", statusCodes.Select(s => (int)s))}");
 
         // Should not have any 500 errors
         Assert.DoesNotContain(HttpStatusCode.InternalServerError, statusCodes);
@@ -869,7 +858,7 @@ public class StressTests
         Assert.True(statusCodes.All(s => validStatuses.Contains(s)),
             "All revocations should complete without server errors");
 
-        _output.WriteLine("[PASS] Concurrent session revocations handled correctly");
+        Output.WriteLine("[PASS] Concurrent session revocations handled correctly");
     }
 
     #endregion
@@ -879,13 +868,13 @@ public class StressTests
     [Fact]
     public async Task HighFrequencyMeEndpoint_100Requests_AllSucceed()
     {
-        _output.WriteLine("[TEST] HighFrequencyMeEndpoint_100Requests_AllSucceed");
+        Output.WriteLine("[TEST] HighFrequencyMeEndpoint_100Requests_AllSucceed");
 
         var userAuth = await RegisterUserAsync($"stress_me_{Guid.NewGuid():N}");
         Assert.NotNull(userAuth);
 
         const int requestCount = 100;
-        _output.WriteLine($"[STEP] Sending {requestCount} concurrent requests to /auth/me...");
+        Output.WriteLine($"[STEP] Sending {requestCount} concurrent requests to /auth/me...");
 
         var sw = Stopwatch.StartNew();
 
@@ -893,7 +882,7 @@ public class StressTests
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userAuth!.AccessToken);
-            return await _sharedHost.Host.HttpClient.SendAsync(request);
+            return await HttpClient.SendAsync(request);
         }).ToArray();
 
         var results = await Task.WhenAll(tasks);
@@ -901,25 +890,25 @@ public class StressTests
         sw.Stop();
         var successCount = results.Count(r => r.StatusCode == HttpStatusCode.OK);
 
-        _output.WriteLine($"[INFO] {requestCount} requests completed in {sw.ElapsedMilliseconds}ms");
-        _output.WriteLine($"[INFO] Success rate: {successCount}/{requestCount}");
-        _output.WriteLine($"[INFO] Avg response time: {sw.ElapsedMilliseconds / requestCount}ms");
+        Output.WriteLine($"[INFO] {requestCount} requests completed in {sw.ElapsedMilliseconds}ms");
+        Output.WriteLine($"[INFO] Success rate: {successCount}/{requestCount}");
+        Output.WriteLine($"[INFO] Avg response time: {sw.ElapsedMilliseconds / requestCount}ms");
 
         Assert.Equal(requestCount, successCount);
-        _output.WriteLine("[PASS] All high-frequency requests succeeded");
+        Output.WriteLine("[PASS] All high-frequency requests succeeded");
     }
 
     [Fact]
     public async Task MixedReadWriteOperations_NoDeadlocks()
     {
-        _output.WriteLine("[TEST] MixedReadWriteOperations_NoDeadlocks");
+        Output.WriteLine("[TEST] MixedReadWriteOperations_NoDeadlocks");
 
         var adminAuth = await CreateAdminAsync();
         Assert.NotNull(adminAuth);
 
         // Create several users concurrently
         const int userCount = 10;
-        _output.WriteLine($"[STEP] Concurrently creating {userCount} users...");
+        Output.WriteLine($"[STEP] Concurrently creating {userCount} users...");
         var usernames = Enumerable.Range(0, userCount)
             .Select(_ => $"stress_mixed_{Guid.NewGuid():N}")
             .ToList();
@@ -930,7 +919,7 @@ public class StressTests
         Assert.True(registrations.All(r => r != null), "All user registrations should succeed");
         var users = registrations.Select(r => r!).ToList();
 
-        _output.WriteLine($"[STEP] Running mixed read/write operations on {userCount} users...");
+        Output.WriteLine($"[STEP] Running mixed read/write operations on {userCount} users...");
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         var results = new ConcurrentBag<(string Op, HttpStatusCode Status)>();
@@ -948,7 +937,7 @@ public class StressTests
                     {
                         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
                         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user.AccessToken);
-                        var response = await _sharedHost.Host.HttpClient.SendAsync(request, cts.Token);
+                        var response = await HttpClient.SendAsync(request, cts.Token);
                         results.Add(("Read", response.StatusCode));
                         await Task.Delay(50, cts.Token);
                     }
@@ -969,7 +958,7 @@ public class StressTests
                     using var request = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/iam/users/{user.User.Id}");
                     request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth!.AccessToken);
                     request.Content = JsonContent.Create(updateBody);
-                    var response = await _sharedHost.Host.HttpClient.SendAsync(request, cts.Token);
+                    var response = await HttpClient.SendAsync(request, cts.Token);
                     results.Add(("Write", response.StatusCode));
                     await Task.Delay(100, cts.Token);
                 }
@@ -982,8 +971,8 @@ public class StressTests
         var reads = results.Where(r => r.Op == "Read").ToList();
         var writes = results.Where(r => r.Op == "Write").ToList();
 
-        _output.WriteLine($"[INFO] Reads: {reads.Count} (OK: {reads.Count(r => r.Status == HttpStatusCode.OK)})");
-        _output.WriteLine($"[INFO] Writes: {writes.Count} (OK: {writes.Count(r => r.Status == HttpStatusCode.OK)})");
+        Output.WriteLine($"[INFO] Reads: {reads.Count} (OK: {reads.Count(r => r.Status == HttpStatusCode.OK)})");
+        Output.WriteLine($"[INFO] Writes: {writes.Count} (OK: {writes.Count(r => r.Status == HttpStatusCode.OK)})");
 
         // No 500 errors
         Assert.DoesNotContain(HttpStatusCode.InternalServerError, results.Select(r => r.Status));
@@ -991,7 +980,7 @@ public class StressTests
         // All reads should succeed
         Assert.True(reads.All(r => r.Status == HttpStatusCode.OK), "All reads should succeed");
 
-        _output.WriteLine("[PASS] No deadlocks detected in mixed read/write operations");
+        Output.WriteLine("[PASS] No deadlocks detected in mixed read/write operations");
     }
 
     #endregion
@@ -1008,7 +997,7 @@ public class StressTests
             Email = $"{username}@stress.test"
         };
 
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
 
         if (!response.IsSuccessStatusCode)
             return null;
@@ -1036,7 +1025,7 @@ public class StressTests
     private async Task<AuthResponse?> LoginUserAsync(string username)
     {
         var loginRequest = new { Username = username, Password = TestPassword };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
 
         if (!response.IsSuccessStatusCode)
             return null;
@@ -1048,7 +1037,7 @@ public class StressTests
     private async Task<AuthResponse?> RefreshTokenAsync(string refreshToken)
     {
         var refreshRequest = new { RefreshToken = refreshToken };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", refreshRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", refreshRequest);
 
         if (!response.IsSuccessStatusCode)
             return null;
@@ -1067,7 +1056,7 @@ public class StressTests
             Email = $"{username}@stress.test"
         };
 
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/devtools/create-admin", createRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/devtools/create-admin", createRequest);
 
         if (!response.IsSuccessStatusCode)
             return null;
@@ -1109,3 +1098,6 @@ public class StressTests
 
     #endregion
 }
+
+
+

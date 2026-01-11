@@ -1,47 +1,108 @@
 using Microsoft.Playwright;
+using Presentation.WebApp.FunctionalTests.Fixtures;
+using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace Presentation.WebApp.FunctionalTests;
 
 /// <summary>
-/// Base class for Playwright tests with common utilities.
-/// Default test timeout is 60 seconds for all Playwright operations.
+/// Base class for WebApp functional tests with parallel execution support.
+/// Each test class gets its own isolated WebApi host, WebApp host, and browser context.
+/// Uses random ports to avoid collisions during parallel test execution.
 /// </summary>
-public abstract class PlaywrightTestBase : IAsyncLifetime
+public abstract class WebAppTestBase : IAsyncLifetime
 {
     /// <summary>
     /// Default timeout for Playwright operations in milliseconds (60 seconds).
     /// </summary>
     protected const int DefaultTimeoutMs = 60_000;
 
-    protected readonly SharedTestHosts SharedHosts;
-    protected readonly ITestOutputHelper Output;
-
+    private WebApiTestHost? _webApiHost;
+    private WebAppTestHost? _webAppHost;
     private IBrowserContext? _context;
     private IPage? _page;
 
-    protected IBrowserContext Context => _context ?? throw new InvalidOperationException("Context not initialized");
-    protected IPage Page => _page ?? throw new InvalidOperationException("Page not initialized");
-    protected string WebApiUrl => SharedHosts.WebApiUrl;
-    protected string WebAppUrl => SharedHosts.WebAppUrl;
+    /// <summary>
+    /// Test output helper for logging.
+    /// </summary>
+    protected readonly ITestOutputHelper Output;
 
-    protected PlaywrightTestBase(SharedTestHosts sharedHosts, ITestOutputHelper output)
+    /// <summary>
+    /// Static shared Playwright fixture (browser instances are expensive, can be shared).
+    /// </summary>
+    private static readonly Lazy<Task<PlaywrightFixture>> SharedPlaywright = new(CreatePlaywrightAsync);
+
+    /// <summary>
+    /// HTTP client for direct API calls (bypassing the browser).
+    /// </summary>
+    protected HttpClient HttpClient => _webApiHost?.HttpClient ?? throw new InvalidOperationException("WebApi host not initialized");
+
+    /// <summary>
+    /// Base URL for the WebApi server.
+    /// </summary>
+    protected string WebApiUrl => _webApiHost?.BaseUrl ?? throw new InvalidOperationException("WebApi host not initialized");
+
+    /// <summary>
+    /// Base URL for the WebApp server.
+    /// </summary>
+    protected string WebAppUrl => _webAppHost?.BaseUrl ?? throw new InvalidOperationException("WebApp host not initialized");
+
+    /// <summary>
+    /// The browser context for this test class.
+    /// </summary>
+    protected IBrowserContext Context => _context ?? throw new InvalidOperationException("Browser context not initialized");
+
+    /// <summary>
+    /// The browser page for this test class.
+    /// </summary>
+    protected IPage Page => _page ?? throw new InvalidOperationException("Page not initialized");
+
+    /// <summary>
+    /// JSON serialization options with case-insensitive property names.
+    /// </summary>
+    protected static JsonSerializerOptions JsonOptions { get; } = new() { PropertyNameCaseInsensitive = true };
+
+    /// <summary>
+    /// Standard test password used across tests.
+    /// </summary>
+    protected const string TestPassword = "TestPassword123!";
+
+    protected WebAppTestBase(ITestOutputHelper output)
     {
-        SharedHosts = sharedHosts;
         Output = output;
     }
 
-    public async Task InitializeAsync()
+    private static async Task<PlaywrightFixture> CreatePlaywrightAsync()
     {
-        Output.WriteLine($"[TEST] Creating browser context...");
+        var fixture = new PlaywrightFixture();
+        await fixture.InitializeAsync();
+        return fixture;
+    }
 
-        _context = await SharedHosts.Playwright.CreateContextAsync();
+    public virtual async Task InitializeAsync()
+    {
+        Output.WriteLine("[TEST] Initializing test hosts...");
+
+        // Start WebApi host with random port
+        _webApiHost = new WebApiTestHost(Output);
+        await _webApiHost.StartAsync(TimeSpan.FromSeconds(60));
+        Output.WriteLine($"[TEST] WebApi started at {_webApiHost.BaseUrl}");
+
+        // Start WebApp host with random port, connected to our WebApi
+        _webAppHost = new WebAppTestHost(Output, _webApiHost.BaseUrl);
+        await _webAppHost.StartAsync(TimeSpan.FromSeconds(60));
+        Output.WriteLine($"[TEST] WebApp started at {_webAppHost.BaseUrl}");
+
+        // Get shared Playwright instance and create isolated context
+        var playwright = await SharedPlaywright.Value;
+        _context = await playwright.CreateContextAsync();
         _page = await _context.NewPageAsync();
 
-        // Set default timeout for all Playwright operations
+        // Set default timeouts
         _page.SetDefaultTimeout(DefaultTimeoutMs);
         _page.SetDefaultNavigationTimeout(DefaultTimeoutMs);
 
-        // Log console messages from the page
+        // Log browser console messages
         _page.Console += (_, msg) =>
         {
             Output.WriteLine($"[BROWSER] {msg.Type}: {msg.Text}");
@@ -53,12 +114,12 @@ public abstract class PlaywrightTestBase : IAsyncLifetime
             Output.WriteLine($"[BROWSER ERROR] {error}");
         };
 
-        Output.WriteLine($"[TEST] Browser context created with {DefaultTimeoutMs}ms timeout");
+        Output.WriteLine("[TEST] Browser context created");
     }
 
-    public async Task DisposeAsync()
+    public virtual async Task DisposeAsync()
     {
-        Output.WriteLine($"[TEST] Disposing browser context...");
+        Output.WriteLine("[TEST] Disposing test resources...");
 
         if (_page != null)
         {
@@ -70,7 +131,17 @@ public abstract class PlaywrightTestBase : IAsyncLifetime
             await _context.CloseAsync();
         }
 
-        Output.WriteLine($"[TEST] Browser context disposed");
+        if (_webAppHost != null)
+        {
+            await _webAppHost.DisposeAsync();
+        }
+
+        if (_webApiHost != null)
+        {
+            await _webApiHost.DisposeAsync();
+        }
+
+        Output.WriteLine("[TEST] Test resources disposed");
     }
 
     #region Navigation Helpers
@@ -145,16 +216,17 @@ public abstract class PlaywrightTestBase : IAsyncLifetime
 
         Output.WriteLine($"[TEST] Registering user: {username}");
 
-        // Fill in registration form
-        await Page.FillAsync("input[name='username'], input[placeholder*='username' i]", username);
-        await Page.FillAsync("input[name='email'], input[type='email']", email);
-        await Page.FillAsync("input[name='password'], input[type='password']:first-of-type", password);
+        // Fill in registration form (using actual IDs from Register.razor)
+        await Page.FillAsync("input#username", username);
+        await Page.FillAsync("input#email", email);
+        await Page.FillAsync("input#password", password);
+        await Page.FillAsync("input#confirmPassword", password);
 
-        // Look for confirm password field
-        var confirmPasswordField = await Page.QuerySelectorAsync("input[name='confirmPassword'], input[type='password']:nth-of-type(2)");
-        if (confirmPasswordField != null)
+        // Accept terms checkbox
+        var termsCheckbox = await Page.QuerySelectorAsync("input#terms");
+        if (termsCheckbox != null)
         {
-            await confirmPasswordField.FillAsync(password);
+            await termsCheckbox.CheckAsync();
         }
 
         // Submit the form
@@ -175,15 +247,15 @@ public abstract class PlaywrightTestBase : IAsyncLifetime
     /// <summary>
     /// Login with credentials via the WebApp UI.
     /// </summary>
-    protected async Task<bool> LoginAsync(string username, string password)
+    protected async Task<bool> LoginAsync(string email, string password)
     {
         await GoToLoginAsync();
 
-        Output.WriteLine($"[TEST] Logging in as: {username}");
+        Output.WriteLine($"[TEST] Logging in as: {email}");
 
-        // Fill in login form
-        await Page.FillAsync("input[name='username'], input[placeholder*='username' i]", username);
-        await Page.FillAsync("input[name='password'], input[type='password']", password);
+        // Fill in login form (page uses email, not username)
+        await Page.FillAsync("input#email, input[type='email']", email);
+        await Page.FillAsync("input#password, input[type='password']", password);
 
         // Submit the form
         await Page.ClickAsync("button[type='submit']");
@@ -201,13 +273,47 @@ public abstract class PlaywrightTestBase : IAsyncLifetime
     }
 
     /// <summary>
+    /// Register and login a new user, returning authentication tokens.
+    /// </summary>
+    protected async Task<(string AccessToken, string RefreshToken)?> RegisterAndLoginViaApiAsync(string? username = null)
+    {
+        username ??= $"testuser_{Guid.NewGuid():N}";
+        var email = $"{username}@example.com";
+
+        // Register via API
+        var registerRequest = new
+        {
+            Username = username,
+            Email = email,
+            Password = TestPassword,
+            ConfirmPassword = TestPassword
+        };
+        var registerResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
+        if (!registerResponse.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        // Login via API
+        var loginRequest = new { Username = username, Password = TestPassword };
+        var loginResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        if (!loginResponse.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        var content = await loginResponse.Content.ReadAsStringAsync();
+        var authResponse = JsonSerializer.Deserialize<AuthResponse>(content, JsonOptions);
+        return (authResponse!.AccessToken, authResponse.RefreshToken);
+    }
+
+    /// <summary>
     /// Logout via the WebApp UI.
     /// </summary>
     protected async Task LogoutAsync()
     {
         Output.WriteLine("[TEST] Logging out...");
 
-        // Look for logout button or link
         var logoutButton = await Page.QuerySelectorAsync("button:has-text('Logout'), a:has-text('Logout'), [data-testid='logout']");
 
         if (logoutButton != null)
@@ -217,7 +323,6 @@ public abstract class PlaywrightTestBase : IAsyncLifetime
         }
         else
         {
-            // Navigate to logout URL if button not found
             await Page.GotoAsync($"{WebAppUrl}/auth/logout");
         }
 
@@ -231,7 +336,6 @@ public abstract class PlaywrightTestBase : IAsyncLifetime
     /// </summary>
     protected async Task<bool> IsAuthenticatedAsync()
     {
-        // Look for common authenticated indicators
         var logoutButton = await Page.QuerySelectorAsync("button:has-text('Logout'), a:has-text('Logout')");
         var userMenu = await Page.QuerySelectorAsync("[data-testid='user-menu'], .user-menu, .user-profile");
 
@@ -289,6 +393,16 @@ public abstract class PlaywrightTestBase : IAsyncLifetime
     {
         Assert.DoesNotContain(path, Page.Url, StringComparison.OrdinalIgnoreCase);
     }
+
+    #endregion
+
+    #region DTOs
+
+    private record AuthResponse(
+        string AccessToken,
+        string RefreshToken,
+        string TokenType,
+        int ExpiresIn);
 
     #endregion
 }

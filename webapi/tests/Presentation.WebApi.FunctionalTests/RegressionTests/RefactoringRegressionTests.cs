@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Presentation.WebApi.FunctionalTests.Fixtures;
 
 namespace Presentation.WebApi.FunctionalTests.RegressionTests;
 
@@ -8,19 +9,12 @@ namespace Presentation.WebApi.FunctionalTests.RegressionTests;
 /// Regression tests to verify all issues documented in WHAT_YOU_DID_WRONG_FOUND_BY_DEV.md are fixed.
 /// Each test corresponds to a specific issue number from the document.
 /// </summary>
-[Collection(WebApiTestCollection.Name)]
-public class RefactoringRegressionTests
+public class RefactoringRegressionTests : WebApiTestBase
 {
-    private readonly ITestOutputHelper _output;
-    private readonly SharedWebApiHost _sharedHost;
-    private HttpClient Client => _sharedHost.Host.HttpClient;
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
-    private const string TestPassword = "TestPassword123!";
+    private HttpClient Client => HttpClient;
 
-    public RefactoringRegressionTests(SharedWebApiHost sharedHost, ITestOutputHelper output)
+    public RefactoringRegressionTests(ITestOutputHelper output) : base(output)
     {
-        _sharedHost = sharedHost;
-        _output = output;
     }
 
     #region Issue #2: LinkPassword Validation - Password Already Linked
@@ -46,7 +40,7 @@ public class RefactoringRegressionTests
         });
         
         var regContent = await registerResponse.Content.ReadAsStringAsync();
-        _output.WriteLine($"Register response: {regContent}");
+        Output.WriteLine($"Register response: {regContent}");
         Assert.Equal(HttpStatusCode.Created, registerResponse.StatusCode);
 
         var registerResult = JsonSerializer.Deserialize<AuthResponse>(regContent, JsonOptions);
@@ -65,7 +59,7 @@ public class RefactoringRegressionTests
         Client.DefaultRequestHeaders.Authorization = null;
 
         var linkContent = await linkResponse.Content.ReadAsStringAsync();
-        _output.WriteLine($"LinkPassword response (status={linkResponse.StatusCode}): {linkContent}");
+        Output.WriteLine($"LinkPassword response (status={linkResponse.StatusCode}): {linkContent}");
 
         // Assert - Should return 400 Bad Request because user already has a password
         Assert.Equal(HttpStatusCode.BadRequest, linkResponse.StatusCode);
@@ -102,7 +96,7 @@ public class RefactoringRegressionTests
         });
 
         var content = await loginResponse.Content.ReadAsStringAsync();
-        _output.WriteLine($"Login response: {content}");
+        Output.WriteLine($"Login response: {content}");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
@@ -112,13 +106,13 @@ public class RefactoringRegressionTests
         Assert.NotNull(loginResult!.User);
         Assert.NotNull(loginResult.User!.Permissions);
         
-        _output.WriteLine($"Permissions count: {loginResult.User.Permissions.Length}");
+        Output.WriteLine($"Permissions count: {loginResult.User.Permissions.Count}");
         foreach (var perm in loginResult.User.Permissions)
         {
-            _output.WriteLine($"  Permission: {perm}");
+            Output.WriteLine($"  Permission: {perm}");
         }
 
-        Assert.True(loginResult.User.Permissions.Length > 0, 
+        Assert.True(loginResult.User.Permissions.Count > 0, 
             "Permissions array should NOT be empty - user should have at least USER role permissions");
     }
 
@@ -142,7 +136,7 @@ public class RefactoringRegressionTests
         });
 
         var content = await registerResponse.Content.ReadAsStringAsync();
-        _output.WriteLine($"Register response: {content}");
+        Output.WriteLine($"Register response: {content}");
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, registerResponse.StatusCode);
@@ -152,9 +146,9 @@ public class RefactoringRegressionTests
         Assert.NotNull(result!.User);
         Assert.NotNull(result.User!.Permissions);
         
-        _output.WriteLine($"Permissions count: {result.User.Permissions.Length}");
+        Output.WriteLine($"Permissions count: {result.User.Permissions.Count}");
 
-        Assert.True(result.User.Permissions.Length > 0,
+        Assert.True(result.User.Permissions.Count > 0,
             "Permissions array should NOT be empty after registration");
     }
 
@@ -186,7 +180,7 @@ public class RefactoringRegressionTests
         });
 
         var content = await refreshResponse.Content.ReadAsStringAsync();
-        _output.WriteLine($"Refresh response: {content}");
+        Output.WriteLine($"Refresh response: {content}");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, refreshResponse.StatusCode);
@@ -195,7 +189,7 @@ public class RefactoringRegressionTests
         Assert.NotNull(result);
         Assert.NotNull(result!.User);
         Assert.NotNull(result.User!.Permissions);
-        Assert.True(result.User.Permissions.Length > 0,
+        Assert.True(result.User.Permissions.Count > 0,
             "Permissions array should NOT be empty after refresh");
     }
 
@@ -241,8 +235,8 @@ public class RefactoringRegressionTests
 
         // Assert - Should be rejected (401 Unauthorized)
         var errorContent = await theftAttemptResponse.Content.ReadAsStringAsync();
-        _output.WriteLine($"Theft attempt status: {theftAttemptResponse.StatusCode}");
-        _output.WriteLine($"Theft attempt response: {errorContent}");
+        Output.WriteLine($"Theft attempt status: {theftAttemptResponse.StatusCode}");
+        Output.WriteLine($"Theft attempt response: {errorContent}");
 
         Assert.Equal(HttpStatusCode.Unauthorized, theftAttemptResponse.StatusCode);
     }
@@ -294,7 +288,7 @@ public class RefactoringRegressionTests
         });
 
         // Assert - Session should be revoked, so even new token fails
-        _output.WriteLine($"New token attempt status: {newTokenAttemptResponse.StatusCode}");
+        Output.WriteLine($"New token attempt status: {newTokenAttemptResponse.StatusCode}");
         Assert.Equal(HttpStatusCode.Unauthorized, newTokenAttemptResponse.StatusCode);
     }
 
@@ -333,12 +327,12 @@ public class RefactoringRegressionTests
         Client.DefaultRequestHeaders.Authorization = null;
 
         var sessionsContent = await sessionsResponse.Content.ReadAsStringAsync();
-        _output.WriteLine($"Sessions response: {sessionsContent}");
+        Output.WriteLine($"Sessions response: {sessionsContent}");
         Assert.Equal(HttpStatusCode.OK, sessionsResponse.StatusCode);
 
         var sessionsResult = JsonSerializer.Deserialize<SessionsResponse>(sessionsContent, JsonOptions);
         
-        _output.WriteLine($"Sessions count after register: {sessionsResult?.Items?.Length ?? 0}");
+        Output.WriteLine($"Sessions count after register: {sessionsResult?.Items?.Length ?? 0}");
 
         // Assert - Should be exactly 1 session
         Assert.Single(sessionsResult!.Items!);
@@ -390,7 +384,7 @@ public class RefactoringRegressionTests
         var sessionsContent = await sessionsResponse.Content.ReadAsStringAsync();
         var sessionsResult = JsonSerializer.Deserialize<SessionsResponse>(sessionsContent, JsonOptions);
 
-        _output.WriteLine($"Sessions count after 1 register + 3 logins: {sessionsResult?.Items?.Length ?? 0}");
+        Output.WriteLine($"Sessions count after 1 register + 3 logins: {sessionsResult?.Items?.Length ?? 0}");
 
         // Assert - Should be exactly 4 sessions (1 register + 3 logins)
         Assert.Equal(4, sessionsResult!.Items!.Length);
@@ -433,7 +427,7 @@ public class RefactoringRegressionTests
 
         // Assert
         var userContent = await userResponse.Content.ReadAsStringAsync();
-        _output.WriteLine($"User response: {userContent}");
+        Output.WriteLine($"User response: {userContent}");
         Assert.Equal(HttpStatusCode.OK, userResponse.StatusCode);
 
         var userResult = JsonSerializer.Deserialize<JsonElement>(userContent, JsonOptions);
@@ -443,10 +437,10 @@ public class RefactoringRegressionTests
             "User should have 'roleIds' property");
 
         var roleIdsArray = roleIds.EnumerateArray().ToList();
-        _output.WriteLine($"RoleIds count: {roleIdsArray.Count}");
+        Output.WriteLine($"RoleIds count: {roleIdsArray.Count}");
         foreach (var roleId in roleIdsArray)
         {
-            _output.WriteLine($"  RoleId: {roleId}");
+            Output.WriteLine($"  RoleId: {roleId}");
         }
 
         Assert.True(roleIdsArray.Count >= 1, "User should have at least the USER role assigned");
@@ -482,7 +476,7 @@ public class RefactoringRegressionTests
 
         // Assert
         var permContent = await permResponse.Content.ReadAsStringAsync();
-        _output.WriteLine($"Permissions response: {permContent}");
+        Output.WriteLine($"Permissions response: {permContent}");
         Assert.Equal(HttpStatusCode.OK, permResponse.StatusCode);
 
         var permResult = JsonSerializer.Deserialize<JsonElement>(permContent, JsonOptions);
@@ -491,10 +485,10 @@ public class RefactoringRegressionTests
             "Response should have 'permissions' property");
 
         var permissionsArray = permissions.EnumerateArray().ToList();
-        _output.WriteLine($"Effective permissions count: {permissionsArray.Count}");
+        Output.WriteLine($"Effective permissions count: {permissionsArray.Count}");
         foreach (var perm in permissionsArray)
         {
-            _output.WriteLine($"  Permission: {perm}");
+            Output.WriteLine($"  Permission: {perm}");
         }
 
         // User should have permissions from the USER role
@@ -536,7 +530,7 @@ public class RefactoringRegressionTests
 
         // Assert
         var userContent = await userResponse.Content.ReadAsStringAsync();
-        _output.WriteLine($"User response: {userContent}");
+        Output.WriteLine($"User response: {userContent}");
         Assert.Equal(HttpStatusCode.OK, userResponse.StatusCode);
 
         var userResult = JsonSerializer.Deserialize<JsonElement>(userContent, JsonOptions);
@@ -545,7 +539,7 @@ public class RefactoringRegressionTests
         if (userResult.TryGetProperty("roleIds", out var roleIds))
         {
             var roleIdsArray = roleIds.EnumerateArray().ToList();
-            _output.WriteLine($"User roleIds count: {roleIdsArray.Count}");
+            Output.WriteLine($"User roleIds count: {roleIdsArray.Count}");
             Assert.True(roleIdsArray.Count > 0, "User should have at least the USER role");
         }
     }
@@ -582,7 +576,7 @@ public class RefactoringRegressionTests
 
         // Assert
         var meContent = await meResponse.Content.ReadAsStringAsync();
-        _output.WriteLine($"/me response: {meContent}");
+        Output.WriteLine($"/me response: {meContent}");
         Assert.Equal(HttpStatusCode.OK, meResponse.StatusCode);
 
         var meResult = JsonSerializer.Deserialize<JsonElement>(meContent, JsonOptions);
@@ -631,7 +625,7 @@ public class RefactoringRegressionTests
 
         // Assert
         var changeContent = await changeResponse.Content.ReadAsStringAsync();
-        _output.WriteLine($"Change password status: {changeResponse.StatusCode}, content: {changeContent}");
+        Output.WriteLine($"Change password status: {changeResponse.StatusCode}, content: {changeContent}");
         Assert.Equal(HttpStatusCode.NoContent, changeResponse.StatusCode);
 
         // Verify can login with new password
@@ -686,7 +680,7 @@ public class RefactoringRegressionTests
             RefreshToken = refreshToken
         });
 
-        _output.WriteLine($"Refresh after logout status: {refreshResponse.StatusCode}");
+        Output.WriteLine($"Refresh after logout status: {refreshResponse.StatusCode}");
         Assert.Equal(HttpStatusCode.Unauthorized, refreshResponse.StatusCode);
     }
 

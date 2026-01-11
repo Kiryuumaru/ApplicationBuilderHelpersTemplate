@@ -4,13 +4,9 @@ namespace Presentation.WebApp.FunctionalTests.Admin;
 /// Playwright functional tests for user management page.
 /// Tests admin user management functionality through the Blazor WebApp.
 /// </summary>
-[Collection(WebAppTestCollection.Name)]
-public class UsersManagementTests : PlaywrightTestBase
+public class UsersManagementTests : WebAppTestBase
 {
-    private const string TestPassword = "TestPassword123!";
-
-    public UsersManagementTests(SharedTestHosts sharedHosts, ITestOutputHelper output)
-        : base(sharedHosts, output)
+    public UsersManagementTests(ITestOutputHelper output) : base(output)
     {
     }
 

@@ -4,11 +4,9 @@ namespace Presentation.WebApp.FunctionalTests.Navigation;
 /// Playwright functional tests for basic navigation.
 /// Tests that pages load correctly and navigation works.
 /// </summary>
-[Collection(WebAppTestCollection.Name)]
-public class BasicNavigationTests : PlaywrightTestBase
+public class BasicNavigationTests : WebAppTestBase
 {
-    public BasicNavigationTests(SharedTestHosts sharedHosts, ITestOutputHelper output)
-        : base(sharedHosts, output)
+    public BasicNavigationTests(ITestOutputHelper output) : base(output)
     {
     }
 

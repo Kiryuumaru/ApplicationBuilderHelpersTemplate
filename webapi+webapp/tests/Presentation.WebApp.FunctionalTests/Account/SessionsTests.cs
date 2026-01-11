@@ -4,13 +4,9 @@ namespace Presentation.WebApp.FunctionalTests.Account;
 /// Playwright functional tests for sessions management page.
 /// Tests session viewing and revocation functionality.
 /// </summary>
-[Collection(WebAppTestCollection.Name)]
-public class SessionsTests : PlaywrightTestBase
+public class SessionsTests : WebAppTestBase
 {
-    private const string TestPassword = "TestPassword123!";
-
-    public SessionsTests(SharedTestHosts sharedHosts, ITestOutputHelper output)
-        : base(sharedHosts, output)
+    public SessionsTests(ITestOutputHelper output) : base(output)
     {
     }
 

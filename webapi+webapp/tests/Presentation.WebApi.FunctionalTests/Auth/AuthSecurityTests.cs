@@ -3,27 +3,16 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using Presentation.WebApi.FunctionalTests.Fixtures;
-
 namespace Presentation.WebApi.FunctionalTests.Auth;
 
 /// <summary>
 /// Cross-cutting security tests for Authentication API.
 /// Tests JWT security, header manipulation, and common attack vectors.
 /// </summary>
-[Collection(WebApiTestCollection.Name)]
-public class AuthSecurityTests
+public class AuthSecurityTests : WebApiTestBase
 {
-    private readonly ITestOutputHelper _output;
-    private readonly SharedWebApiHost _sharedHost;
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
-
-    private const string TestPassword = "TestPassword123!";
-
-    public AuthSecurityTests(SharedWebApiHost sharedHost, ITestOutputHelper output)
+    public AuthSecurityTests(ITestOutputHelper output) : base(output)
     {
-        _sharedHost = sharedHost;
-        _output = output;
     }
 
     #region JWT Security Tests
@@ -40,7 +29,7 @@ public class AuthSecurityTests
 
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", noneToken);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -62,7 +51,7 @@ public class AuthSecurityTests
 
             using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", modifiedToken);
-            var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+            var response = await HttpClient.SendAsync(request);
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
@@ -82,7 +71,7 @@ public class AuthSecurityTests
 
             using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", modifiedToken);
-            var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+            var response = await HttpClient.SendAsync(request);
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
@@ -101,7 +90,7 @@ public class AuthSecurityTests
 
             using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", noSignatureToken);
-            var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+            var response = await HttpClient.SendAsync(request);
 
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
@@ -120,7 +109,7 @@ public class AuthSecurityTests
         {
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", malformedToken);
         }
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -134,7 +123,7 @@ public class AuthSecurityTests
 
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", foreignJwt);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -152,10 +141,10 @@ public class AuthSecurityTests
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
         request.Headers.TryAddWithoutValidation("Authorization", $"Bearer {authResult!.AccessToken}");
         request.Headers.TryAddWithoutValidation("Authorization", "Bearer invalid.token.here");
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         // Should either use first valid token or reject ambiguous request
-        _output.WriteLine($"Multiple auth headers response: {(int)response.StatusCode}");
+        Output.WriteLine($"Multiple auth headers response: {(int)response.StatusCode}");
         Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
     }
 
@@ -165,7 +154,7 @@ public class AuthSecurityTests
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
         request.Headers.Add("X-Forwarded-For", "127.0.0.1");
         request.Headers.Add("X-Real-IP", "127.0.0.1");
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         // Should still require authentication
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -180,7 +169,7 @@ public class AuthSecurityTests
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult!.AccessToken);
         request.Headers.Host = "evil.attacker.com";
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         // Should either work (ignoring Host) or reject
         Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
@@ -193,7 +182,7 @@ public class AuthSecurityTests
         request.Headers.Add("X-Original-URL", "/admin");
         request.Headers.Add("X-Rewrite-URL", "/admin");
         request.Headers.Add("X-Original-Host", "admin.internal");
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -206,7 +195,7 @@ public class AuthSecurityTests
     public async Task Login_WithWrongContentType_Returns400Or415()
     {
         var loginData = "Username=test&Password=test";
-        var response = await _sharedHost.Host.HttpClient.PostAsync(
+        var response = await HttpClient.PostAsync(
             "/api/v1/auth/login",
             new StringContent(loginData, Encoding.UTF8, "application/x-www-form-urlencoded"));
 
@@ -221,7 +210,7 @@ public class AuthSecurityTests
     public async Task Login_WithXmlContentType_Returns400Or415()
     {
         var xmlData = "<login><username>test</username><password>test</password></login>";
-        var response = await _sharedHost.Host.HttpClient.PostAsync(
+        var response = await HttpClient.PostAsync(
             "/api/v1/auth/login",
             new StringContent(xmlData, Encoding.UTF8, "application/xml"));
 
@@ -249,7 +238,7 @@ public class AuthSecurityTests
         {
             request.Content = JsonContent.Create(new { Username = "test", Password = "test" });
         }
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         Assert.True(
             response.StatusCode == HttpStatusCode.MethodNotAllowed ||
@@ -274,7 +263,7 @@ public class AuthSecurityTests
 
         using var request = new HttpRequestMessage(HttpMethod.Get, path);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult!.AccessToken);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         var content = await response.Content.ReadAsStringAsync();
 
@@ -298,7 +287,7 @@ public class AuthSecurityTests
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult!.AccessToken);
         // Try to inject headers via CRLF
         request.Headers.TryAddWithoutValidation("X-Custom", "value\r\nX-Injected: malicious");
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         // Should handle gracefully
         Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
@@ -317,7 +306,7 @@ public class AuthSecurityTests
         // Try username with unicode lookalikes
         var unicodeUsername = "аdmin"; // 'а' is Cyrillic, not Latin 'a'
         var loginRequest = new { Username = unicodeUsername, Password = TestPassword };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
 
         // Should not find a user (unless unicode normalization is applied)
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -327,7 +316,7 @@ public class AuthSecurityTests
     public async Task Login_WithNullByteInjection_DoesNotBypass()
     {
         var loginRequest = new { Username = "admin\x00ignore", Password = TestPassword };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
 
         Assert.True(
             response.StatusCode == HttpStatusCode.Unauthorized ||
@@ -342,16 +331,16 @@ public class AuthSecurityTests
     [Fact]
     public async Task Response_HasSecurityHeaders()
     {
-        var response = await _sharedHost.Host.HttpClient.GetAsync("/api/v1/auth/me");
+        var response = await HttpClient.GetAsync("/api/v1/auth/me");
 
         // Check for common security headers (availability depends on configuration)
         var headers = response.Headers;
 
         // Document what headers are present
-        _output.WriteLine("Response headers:");
+        Output.WriteLine("Response headers:");
         foreach (var header in headers)
         {
-            _output.WriteLine($"  {header.Key}: {string.Join(", ", header.Value)}");
+            Output.WriteLine($"  {header.Key}: {string.Join(", ", header.Value)}");
         }
 
         // Verify no sensitive server info leaked
@@ -371,12 +360,12 @@ public class AuthSecurityTests
 
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult!.AccessToken);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
         // Auth responses should have no-cache directives
         if (response.Headers.CacheControl != null)
         {
-            _output.WriteLine($"Cache-Control: {response.Headers.CacheControl}");
+            Output.WriteLine($"Cache-Control: {response.Headers.CacheControl}");
         }
     }
 
@@ -388,7 +377,7 @@ public class AuthSecurityTests
     public async Task ErrorResponse_DoesNotLeakStackTrace()
     {
         // Send malformed request that might cause error
-        var response = await _sharedHost.Host.HttpClient.PostAsync(
+        var response = await HttpClient.PostAsync(
             "/api/v1/auth/login",
             new StringContent("{malformed json", Encoding.UTF8, "application/json"));
 
@@ -405,7 +394,7 @@ public class AuthSecurityTests
     public async Task ErrorResponse_DoesNotLeakDatabaseInfo()
     {
         var loginRequest = new { Username = "'; DROP TABLE Users;--", Password = "test" };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
 
         var content = await response.Content.ReadAsStringAsync();
 
@@ -419,7 +408,7 @@ public class AuthSecurityTests
     [Fact]
     public async Task ErrorResponse_DoesNotLeakFilePaths()
     {
-        var response = await _sharedHost.Host.HttpClient.PostAsync(
+        var response = await HttpClient.PostAsync(
             "/api/v1/auth/login",
             new StringContent("{bad}", Encoding.UTF8, "application/json"));
 
@@ -444,7 +433,7 @@ public class AuthSecurityTests
 
         // Login again
         var loginRequest = new { Username = username, Password = TestPassword };
-        var loginResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        var loginResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
         var content = await loginResponse.Content.ReadAsStringAsync();
         var newAuthResult = JsonSerializer.Deserialize<AuthResponse>(content, JsonOptions);
 
@@ -466,7 +455,7 @@ public class AuthSecurityTests
 
         var loginRequest = new { Username = username, Password = TestPassword };
         var tasks = Enumerable.Range(0, 10)
-            .Select(_ => _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest))
+            .Select(_ => HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest))
             .ToList();
 
         var responses = await Task.WhenAll(tasks);
@@ -494,7 +483,7 @@ public class AuthSecurityTests
         };
 
         var tasks = Enumerable.Range(0, 5)
-            .Select(_ => _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest))
+            .Select(_ => HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest))
             .ToList();
 
         var responses = await Task.WhenAll(tasks);
@@ -530,7 +519,7 @@ public class AuthSecurityTests
             Password = TestPassword,
             ConfirmPassword = TestPassword
         };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
 
         if (!response.IsSuccessStatusCode) return null;
 
@@ -558,3 +547,6 @@ public class AuthSecurityTests
 
     #endregion
 }
+
+
+

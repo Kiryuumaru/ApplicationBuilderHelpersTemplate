@@ -4,14 +4,11 @@ namespace Presentation.WebApp.FunctionalTests.Account;
 /// Playwright functional tests for change password page.
 /// Tests password change functionality through the Blazor WebApp.
 /// </summary>
-[Collection(WebAppTestCollection.Name)]
-public class ChangePasswordTests : PlaywrightTestBase
+public class ChangePasswordTests : WebAppTestBase
 {
-    private const string TestPassword = "TestPassword123!";
     private const string NewPassword = "NewPassword456!";
 
-    public ChangePasswordTests(SharedTestHosts sharedHosts, ITestOutputHelper output)
-        : base(sharedHosts, output)
+    public ChangePasswordTests(ITestOutputHelper output) : base(output)
     {
     }
 

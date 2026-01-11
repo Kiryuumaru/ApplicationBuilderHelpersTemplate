@@ -7,6 +7,8 @@
 		<Nullable>enable</Nullable>
 		<IsPackable>false</IsPackable>
 		<IsTestProject>true</IsTestProject>
+		<!-- Functional tests share browser/server state - run sequentially -->
+		<xUnitParallelizeTestCollections>false</xUnitParallelizeTestCollections>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -30,10 +32,6 @@
 	<ItemGroup>
 		<Using Include="Xunit" />
 		<Using Include="Xunit.Abstractions" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
 </Project>

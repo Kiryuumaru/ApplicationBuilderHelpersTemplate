@@ -1,6 +1,15 @@
 <Project>
-  <!-- Apply global VSTest settings to *all* test projects so a hung test run fails fast. -->
-  <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
-    <RunSettingsFilePath>$(MSBuildThisFileDirectory)test.runsettings</RunSettingsFilePath>
+  <!-- Apply global VSTest settings to all test projects.
+       This file is in the tests/ folder so it only applies to test projects. -->
+  <PropertyGroup>
+    <!-- Run test assemblies in parallel (0 = use all available CPUs) -->
+    <VSTestMaxCpuCount>0</VSTestMaxCpuCount>
+    
+    <!-- Enable blame-hang to detect and terminate individual tests that hang -->
+    <VSTestBlameHang>true</VSTestBlameHang>
+    <VSTestBlameHangTimeout>2min</VSTestBlameHangTimeout>
+    
+    <!-- xUnit: Run test collections in parallel by default (override in .csproj for integration/functional tests) -->
+    <xUnitParallelizeTestCollections>true</xUnitParallelizeTestCollections>
   </PropertyGroup>
 </Project>

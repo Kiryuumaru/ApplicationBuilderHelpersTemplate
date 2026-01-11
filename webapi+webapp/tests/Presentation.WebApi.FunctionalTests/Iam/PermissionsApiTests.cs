@@ -2,7 +2,6 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Presentation.WebApi.FunctionalTests.Fixtures;
 
 namespace Presentation.WebApi.FunctionalTests.Iam;
 
@@ -10,21 +9,13 @@ namespace Presentation.WebApi.FunctionalTests.Iam;
 /// Functional tests for IAM Permissions API endpoints.
 /// Tests permission grant and revoke operations.
 /// </summary>
-[Collection(WebApiTestCollection.Name)]
-public class PermissionsApiTests
+public class PermissionsApiTests : WebApiTestBase
 {
-    private readonly ITestOutputHelper _output;
-    private readonly SharedWebApiHost _sharedHost;
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
-
     // Use unique usernames per test run to avoid conflicts
     private readonly string _testUsername = $"testuser_{Guid.NewGuid():N}";
-    private const string TestPassword = "TestPassword123!";
 
-    public PermissionsApiTests(SharedWebApiHost sharedHost, ITestOutputHelper output)
+    public PermissionsApiTests(ITestOutputHelper output) : base(output)
     {
-        _sharedHost = sharedHost;
-        _output = output;
     }
 
     #region Permission Grant/Revoke Tests
@@ -32,7 +23,7 @@ public class PermissionsApiTests
     [Fact]
     public async Task GrantPermission_AsRegularUser_Returns403()
     {
-        _output.WriteLine("[TEST] GrantPermission_AsRegularUser_Returns403");
+        Output.WriteLine("[TEST] GrantPermission_AsRegularUser_Returns403");
 
         var userAuth = await RegisterAndGetTokenAsync(_testUsername);
         Assert.NotNull(userAuth);
@@ -40,23 +31,23 @@ public class PermissionsApiTests
 
         var grantRequest = new { UserId = userId, PermissionIdentifier = "api:iam:users:read", Description = "Test grant" };
 
-        _output.WriteLine("[STEP] POST /api/v1/iam/permissions/grant...");
+        Output.WriteLine("[STEP] POST /api/v1/iam/permissions/grant...");
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/iam/permissions/grant");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userAuth.AccessToken);
         request.Content = JsonContent.Create(grantRequest);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         // Regular users don't have iam:permissions:grant permission
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-        _output.WriteLine("[PASS] Cannot grant permissions without admin access");
+        Output.WriteLine("[PASS] Cannot grant permissions without admin access");
     }
 
     [Fact]
     public async Task RevokePermission_AsRegularUser_Returns403()
     {
-        _output.WriteLine("[TEST] RevokePermission_AsRegularUser_Returns403");
+        Output.WriteLine("[TEST] RevokePermission_AsRegularUser_Returns403");
 
         var userAuth = await RegisterAndGetTokenAsync(_testUsername);
         Assert.NotNull(userAuth);
@@ -64,17 +55,17 @@ public class PermissionsApiTests
 
         var revokeRequest = new { UserId = userId, PermissionIdentifier = "api:iam:users:read" };
 
-        _output.WriteLine("[STEP] POST /api/v1/iam/permissions/revoke...");
+        Output.WriteLine("[STEP] POST /api/v1/iam/permissions/revoke...");
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/iam/permissions/revoke");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userAuth.AccessToken);
         request.Content = JsonContent.Create(revokeRequest);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         // Regular users don't have iam:permissions:revoke permission
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-        _output.WriteLine("[PASS] Cannot revoke permissions without admin access");
+        Output.WriteLine("[PASS] Cannot revoke permissions without admin access");
     }
 
     #endregion
@@ -93,19 +84,19 @@ public class PermissionsApiTests
             Email = $"{username}@test.com"
         };
 
-        var registerResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
+        var registerResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
         
         if (registerResponse.StatusCode == HttpStatusCode.Conflict)
         {
             // User already exists, just login
             var loginReq = new { Username = username, Password = TestPassword };
-            registerResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginReq);
+            registerResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginReq);
         }
 
         if (!registerResponse.IsSuccessStatusCode)
         {
             var error = await registerResponse.Content.ReadAsStringAsync();
-            _output.WriteLine($"[ERROR] Registration failed: {error}");
+            Output.WriteLine($"[ERROR] Registration failed: {error}");
             return null;
         }
 
@@ -137,3 +128,9 @@ public class PermissionsApiTests
 
     #endregion
 }
+
+
+
+
+
+

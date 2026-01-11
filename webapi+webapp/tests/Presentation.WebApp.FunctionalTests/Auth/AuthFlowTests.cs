@@ -4,13 +4,9 @@ namespace Presentation.WebApp.FunctionalTests.Auth;
 /// Playwright functional tests for the complete authentication flow.
 /// Tests register -> login -> authenticated access -> logout cycle.
 /// </summary>
-[Collection(WebAppTestCollection.Name)]
-public class AuthFlowTests : PlaywrightTestBase
+public class AuthFlowTests : WebAppTestBase
 {
-    private const string TestPassword = "TestPassword123!";
-
-    public AuthFlowTests(SharedTestHosts sharedHosts, ITestOutputHelper output)
-        : base(sharedHosts, output)
+    public AuthFlowTests(ITestOutputHelper output) : base(output)
     {
     }
 

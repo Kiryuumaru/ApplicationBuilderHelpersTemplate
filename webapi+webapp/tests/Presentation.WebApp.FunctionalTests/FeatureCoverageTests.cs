@@ -5,13 +5,9 @@ namespace Presentation.WebApp.FunctionalTests;
 /// frontend implementations in the WebApp.
 /// This serves as both documentation and validation of feature parity.
 /// </summary>
-[Collection(WebAppTestCollection.Name)]
-public class FeatureCoverageTests : PlaywrightTestBase
+public class FeatureCoverageTests : WebAppTestBase
 {
-    private const string TestPassword = "TestPassword123!";
-
-    public FeatureCoverageTests(SharedTestHosts sharedHosts, ITestOutputHelper output)
-        : base(sharedHosts, output)
+    public FeatureCoverageTests(ITestOutputHelper output) : base(output)
     {
     }
 

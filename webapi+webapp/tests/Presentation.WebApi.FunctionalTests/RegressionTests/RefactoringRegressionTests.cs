@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Presentation.WebApi.FunctionalTests.Fixtures;
 
 namespace Presentation.WebApi.FunctionalTests.RegressionTests;
 
@@ -9,19 +8,10 @@ namespace Presentation.WebApi.FunctionalTests.RegressionTests;
 /// Regression tests to verify all issues documented in WHAT_YOU_DID_WRONG_FOUND_BY_DEV.md are fixed.
 /// Each test corresponds to a specific issue number from the document.
 /// </summary>
-[Collection(WebApiTestCollection.Name)]
-public class RefactoringRegressionTests
+public class RefactoringRegressionTests : WebApiTestBase
 {
-    private readonly ITestOutputHelper _output;
-    private readonly SharedWebApiHost _sharedHost;
-    private HttpClient Client => _sharedHost.Host.HttpClient;
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
-    private const string TestPassword = "TestPassword123!";
-
-    public RefactoringRegressionTests(SharedWebApiHost sharedHost, ITestOutputHelper output)
+    public RefactoringRegressionTests(ITestOutputHelper output) : base(output)
     {
-        _sharedHost = sharedHost;
-        _output = output;
     }
 
     #region Issue #2: LinkPassword Validation - Password Already Linked
@@ -38,7 +28,7 @@ public class RefactoringRegressionTests
         var username = $"issue2_haspass_{Guid.NewGuid():N}";
         var email = $"{username}@example.com";
 
-        var registerResponse = await Client.PostAsJsonAsync("/api/v1/auth/register", new
+        var registerResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = username,
             Email = email,
@@ -47,7 +37,7 @@ public class RefactoringRegressionTests
         });
         
         var regContent = await registerResponse.Content.ReadAsStringAsync();
-        _output.WriteLine($"Register response: {regContent}");
+        Output.WriteLine($"Register response: {regContent}");
         Assert.Equal(HttpStatusCode.Created, registerResponse.StatusCode);
 
         var registerResult = JsonSerializer.Deserialize<AuthResponse>(regContent, JsonOptions);
@@ -56,17 +46,17 @@ public class RefactoringRegressionTests
 
         // Act - Try to link a password using the LinkPassword endpoint
         // This endpoint requires username, password, confirmPassword (it's for converting anonymous users)
-        Client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
-        var linkResponse = await Client.PostAsJsonAsync($"/api/v1/auth/users/{userId}/identity/password", new
+        HttpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+        var linkResponse = await HttpClient.PostAsJsonAsync($"/api/v1/auth/users/{userId}/identity/password", new
         {
             Username = username,
             Password = "Another@Pass456!",
             ConfirmPassword = "Another@Pass456!"
         });
-        Client.DefaultRequestHeaders.Authorization = null;
+        HttpClient.DefaultRequestHeaders.Authorization = null;
 
         var linkContent = await linkResponse.Content.ReadAsStringAsync();
-        _output.WriteLine($"LinkPassword response (status={linkResponse.StatusCode}): {linkContent}");
+        Output.WriteLine($"LinkPassword response (status={linkResponse.StatusCode}): {linkContent}");
 
         // Assert - Should return 400 Bad Request because user already has a password
         Assert.Equal(HttpStatusCode.BadRequest, linkResponse.StatusCode);
@@ -87,7 +77,7 @@ public class RefactoringRegressionTests
         var username = $"issue3_perms_{Guid.NewGuid():N}";
         var email = $"{username}@example.com";
 
-        await Client.PostAsJsonAsync("/api/v1/auth/register", new
+        await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = username,
             Email = email,
@@ -96,14 +86,14 @@ public class RefactoringRegressionTests
         });
 
         // Act - Login
-        var loginResponse = await Client.PostAsJsonAsync("/api/v1/auth/login", new
+        var loginResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", new
         {
             Username = username,
             Password = TestPassword
         });
 
         var content = await loginResponse.Content.ReadAsStringAsync();
-        _output.WriteLine($"Login response: {content}");
+        Output.WriteLine($"Login response: {content}");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
@@ -113,10 +103,10 @@ public class RefactoringRegressionTests
         Assert.NotNull(loginResult!.User);
         Assert.NotNull(loginResult.User!.Permissions);
         
-        _output.WriteLine($"Permissions count: {loginResult.User.Permissions.Length}");
+        Output.WriteLine($"Permissions count: {loginResult.User.Permissions.Length}");
         foreach (var perm in loginResult.User.Permissions)
         {
-            _output.WriteLine($"  Permission: {perm}");
+            Output.WriteLine($"  Permission: {perm}");
         }
 
         Assert.True(loginResult.User.Permissions.Length > 0, 
@@ -134,7 +124,7 @@ public class RefactoringRegressionTests
         var email = $"{username}@example.com";
 
         // Act
-        var registerResponse = await Client.PostAsJsonAsync("/api/v1/auth/register", new
+        var registerResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = username,
             Email = email,
@@ -143,7 +133,7 @@ public class RefactoringRegressionTests
         });
 
         var content = await registerResponse.Content.ReadAsStringAsync();
-        _output.WriteLine($"Register response: {content}");
+        Output.WriteLine($"Register response: {content}");
 
         // Assert
         Assert.Equal(HttpStatusCode.Created, registerResponse.StatusCode);
@@ -153,7 +143,7 @@ public class RefactoringRegressionTests
         Assert.NotNull(result!.User);
         Assert.NotNull(result.User!.Permissions);
         
-        _output.WriteLine($"Permissions count: {result.User.Permissions.Length}");
+        Output.WriteLine($"Permissions count: {result.User.Permissions.Length}");
 
         Assert.True(result.User.Permissions.Length > 0,
             "Permissions array should NOT be empty after registration");
@@ -169,7 +159,7 @@ public class RefactoringRegressionTests
         var username = $"issue3_refresh_{Guid.NewGuid():N}";
         var email = $"{username}@example.com";
 
-        var registerResponse = await Client.PostAsJsonAsync("/api/v1/auth/register", new
+        var registerResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = username,
             Email = email,
@@ -181,13 +171,13 @@ public class RefactoringRegressionTests
         var refreshToken = registerResult!.RefreshToken;
 
         // Act
-        var refreshResponse = await Client.PostAsJsonAsync("/api/v1/auth/refresh", new
+        var refreshResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", new
         {
             RefreshToken = refreshToken
         });
 
         var content = await refreshResponse.Content.ReadAsStringAsync();
-        _output.WriteLine($"Refresh response: {content}");
+        Output.WriteLine($"Refresh response: {content}");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, refreshResponse.StatusCode);
@@ -215,7 +205,7 @@ public class RefactoringRegressionTests
         var username = $"issue5_theft_{Guid.NewGuid():N}";
         var email = $"{username}@example.com";
 
-        var registerResponse = await Client.PostAsJsonAsync("/api/v1/auth/register", new
+        var registerResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = username,
             Email = email,
@@ -227,7 +217,7 @@ public class RefactoringRegressionTests
         var originalRefreshToken = registerResult!.RefreshToken;
 
         // First refresh - get new tokens (this should invalidate the original)
-        var firstRefreshResponse = await Client.PostAsJsonAsync("/api/v1/auth/refresh", new
+        var firstRefreshResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", new
         {
             RefreshToken = originalRefreshToken
         });
@@ -235,15 +225,15 @@ public class RefactoringRegressionTests
 
         // Act - Try to use the ORIGINAL (old) refresh token again
         // This simulates an attacker trying to use a stolen token
-        var theftAttemptResponse = await Client.PostAsJsonAsync("/api/v1/auth/refresh", new
+        var theftAttemptResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", new
         {
             RefreshToken = originalRefreshToken
         });
 
         // Assert - Should be rejected (401 Unauthorized)
         var errorContent = await theftAttemptResponse.Content.ReadAsStringAsync();
-        _output.WriteLine($"Theft attempt status: {theftAttemptResponse.StatusCode}");
-        _output.WriteLine($"Theft attempt response: {errorContent}");
+        Output.WriteLine($"Theft attempt status: {theftAttemptResponse.StatusCode}");
+        Output.WriteLine($"Theft attempt response: {errorContent}");
 
         Assert.Equal(HttpStatusCode.Unauthorized, theftAttemptResponse.StatusCode);
     }
@@ -259,7 +249,7 @@ public class RefactoringRegressionTests
         var username = $"issue5_revoke_{Guid.NewGuid():N}";
         var email = $"{username}@example.com";
 
-        var registerResponse = await Client.PostAsJsonAsync("/api/v1/auth/register", new
+        var registerResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = username,
             Email = email,
@@ -271,7 +261,7 @@ public class RefactoringRegressionTests
         var originalRefreshToken = registerResult!.RefreshToken;
 
         // Legitimate user refreshes first
-        var firstRefreshResponse = await Client.PostAsJsonAsync("/api/v1/auth/refresh", new
+        var firstRefreshResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", new
         {
             RefreshToken = originalRefreshToken
         });
@@ -281,7 +271,7 @@ public class RefactoringRegressionTests
         var newRefreshToken = firstRefreshResult!.RefreshToken;
 
         // Attacker tries to use old token (triggers theft detection)
-        var theftAttemptResponse = await Client.PostAsJsonAsync("/api/v1/auth/refresh", new
+        var theftAttemptResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", new
         {
             RefreshToken = originalRefreshToken
         });
@@ -289,13 +279,13 @@ public class RefactoringRegressionTests
 
         // Act - Now try the NEW refresh token
         // If theft detection revoked the session, this should also fail
-        var newTokenAttemptResponse = await Client.PostAsJsonAsync("/api/v1/auth/refresh", new
+        var newTokenAttemptResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", new
         {
             RefreshToken = newRefreshToken
         });
 
         // Assert - Session should be revoked, so even new token fails
-        _output.WriteLine($"New token attempt status: {newTokenAttemptResponse.StatusCode}");
+        Output.WriteLine($"New token attempt status: {newTokenAttemptResponse.StatusCode}");
         Assert.Equal(HttpStatusCode.Unauthorized, newTokenAttemptResponse.StatusCode);
     }
 
@@ -314,7 +304,7 @@ public class RefactoringRegressionTests
         var email = $"{username}@example.com";
 
         // Act - Register
-        var registerResponse = await Client.PostAsJsonAsync("/api/v1/auth/register", new
+        var registerResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = username,
             Email = email,
@@ -329,17 +319,17 @@ public class RefactoringRegressionTests
         var accessToken = registerResult.AccessToken;
 
         // Get sessions count
-        Client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
-        var sessionsResponse = await Client.GetAsync($"/api/v1/auth/users/{userId}/sessions");
-        Client.DefaultRequestHeaders.Authorization = null;
+        HttpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+        var sessionsResponse = await HttpClient.GetAsync($"/api/v1/auth/users/{userId}/sessions");
+        HttpClient.DefaultRequestHeaders.Authorization = null;
 
         var sessionsContent = await sessionsResponse.Content.ReadAsStringAsync();
-        _output.WriteLine($"Sessions response: {sessionsContent}");
+        Output.WriteLine($"Sessions response: {sessionsContent}");
         Assert.Equal(HttpStatusCode.OK, sessionsResponse.StatusCode);
 
         var sessionsResult = JsonSerializer.Deserialize<SessionsResponse>(sessionsContent, JsonOptions);
         
-        _output.WriteLine($"Sessions count after register: {sessionsResult?.Items?.Length ?? 0}");
+        Output.WriteLine($"Sessions count after register: {sessionsResult?.Items?.Length ?? 0}");
 
         // Assert - Should be exactly 1 session
         Assert.Single(sessionsResult!.Items!);
@@ -355,7 +345,7 @@ public class RefactoringRegressionTests
         var username = $"issue6_multi_{Guid.NewGuid():N}";
         var email = $"{username}@example.com";
 
-        var registerResponse = await Client.PostAsJsonAsync("/api/v1/auth/register", new
+        var registerResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = username,
             Email = email,
@@ -370,7 +360,7 @@ public class RefactoringRegressionTests
         // Act - Login 3 more times (4 total sessions including registration)
         for (int i = 0; i < 3; i++)
         {
-            var loginResponse = await Client.PostAsJsonAsync("/api/v1/auth/login", new
+            var loginResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", new
             {
                 Username = username,
                 Password = TestPassword
@@ -382,16 +372,16 @@ public class RefactoringRegressionTests
         }
 
         // Get sessions count
-        Client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", lastAccessToken);
-        var sessionsResponse = await Client.GetAsync($"/api/v1/auth/users/{userId}/sessions");
-        Client.DefaultRequestHeaders.Authorization = null;
+        HttpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", lastAccessToken);
+        var sessionsResponse = await HttpClient.GetAsync($"/api/v1/auth/users/{userId}/sessions");
+        HttpClient.DefaultRequestHeaders.Authorization = null;
 
         Assert.Equal(HttpStatusCode.OK, sessionsResponse.StatusCode);
 
         var sessionsContent = await sessionsResponse.Content.ReadAsStringAsync();
         var sessionsResult = JsonSerializer.Deserialize<SessionsResponse>(sessionsContent, JsonOptions);
 
-        _output.WriteLine($"Sessions count after 1 register + 3 logins: {sessionsResult?.Items?.Length ?? 0}");
+        Output.WriteLine($"Sessions count after 1 register + 3 logins: {sessionsResult?.Items?.Length ?? 0}");
 
         // Assert - Should be exactly 4 sessions (1 register + 3 logins)
         Assert.Equal(4, sessionsResult!.Items!.Length);
@@ -413,7 +403,7 @@ public class RefactoringRegressionTests
         var username = $"issue7_role_{Guid.NewGuid():N}";
         var email = $"{username}@example.com";
 
-        var registerResponse = await Client.PostAsJsonAsync("/api/v1/auth/register", new
+        var registerResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = username,
             Email = email,
@@ -428,13 +418,13 @@ public class RefactoringRegressionTests
         var accessToken = registerResult.AccessToken;
 
         // Act - Get user details
-        Client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
-        var userResponse = await Client.GetAsync($"/api/v1/iam/users/{userId}");
-        Client.DefaultRequestHeaders.Authorization = null;
+        HttpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+        var userResponse = await HttpClient.GetAsync($"/api/v1/iam/users/{userId}");
+        HttpClient.DefaultRequestHeaders.Authorization = null;
 
         // Assert
         var userContent = await userResponse.Content.ReadAsStringAsync();
-        _output.WriteLine($"User response: {userContent}");
+        Output.WriteLine($"User response: {userContent}");
         Assert.Equal(HttpStatusCode.OK, userResponse.StatusCode);
 
         var userResult = JsonSerializer.Deserialize<JsonElement>(userContent, JsonOptions);
@@ -444,10 +434,10 @@ public class RefactoringRegressionTests
             "User should have 'roleIds' property");
 
         var roleIdsArray = roleIds.EnumerateArray().ToList();
-        _output.WriteLine($"RoleIds count: {roleIdsArray.Count}");
+        Output.WriteLine($"RoleIds count: {roleIdsArray.Count}");
         foreach (var roleId in roleIdsArray)
         {
-            _output.WriteLine($"  RoleId: {roleId}");
+            Output.WriteLine($"  RoleId: {roleId}");
         }
 
         Assert.True(roleIdsArray.Count >= 1, "User should have at least the USER role assigned");
@@ -464,7 +454,7 @@ public class RefactoringRegressionTests
         var username = $"issue7_perm_{Guid.NewGuid():N}";
         var email = $"{username}@example.com";
 
-        var registerResponse = await Client.PostAsJsonAsync("/api/v1/auth/register", new
+        var registerResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = username,
             Email = email,
@@ -477,13 +467,13 @@ public class RefactoringRegressionTests
         var accessToken = registerResult.AccessToken;
 
         // Act - Get user permissions
-        Client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
-        var permResponse = await Client.GetAsync($"/api/v1/iam/users/{userId}/permissions");
-        Client.DefaultRequestHeaders.Authorization = null;
+        HttpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+        var permResponse = await HttpClient.GetAsync($"/api/v1/iam/users/{userId}/permissions");
+        HttpClient.DefaultRequestHeaders.Authorization = null;
 
         // Assert
         var permContent = await permResponse.Content.ReadAsStringAsync();
-        _output.WriteLine($"Permissions response: {permContent}");
+        Output.WriteLine($"Permissions response: {permContent}");
         Assert.Equal(HttpStatusCode.OK, permResponse.StatusCode);
 
         var permResult = JsonSerializer.Deserialize<JsonElement>(permContent, JsonOptions);
@@ -492,10 +482,10 @@ public class RefactoringRegressionTests
             "Response should have 'permissions' property");
 
         var permissionsArray = permissions.EnumerateArray().ToList();
-        _output.WriteLine($"Effective permissions count: {permissionsArray.Count}");
+        Output.WriteLine($"Effective permissions count: {permissionsArray.Count}");
         foreach (var perm in permissionsArray)
         {
-            _output.WriteLine($"  Permission: {perm}");
+            Output.WriteLine($"  Permission: {perm}");
         }
 
         // User should have permissions from the USER role
@@ -518,7 +508,7 @@ public class RefactoringRegressionTests
         var username = $"issue8_static_{Guid.NewGuid():N}";
         var email = $"{username}@example.com";
 
-        var registerResponse = await Client.PostAsJsonAsync("/api/v1/auth/register", new
+        var registerResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = username,
             Email = email,
@@ -531,13 +521,13 @@ public class RefactoringRegressionTests
         var accessToken = registerResult.AccessToken;
 
         // Act - Get user which includes roleIds
-        Client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
-        var userResponse = await Client.GetAsync($"/api/v1/iam/users/{userId}");
-        Client.DefaultRequestHeaders.Authorization = null;
+        HttpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+        var userResponse = await HttpClient.GetAsync($"/api/v1/iam/users/{userId}");
+        HttpClient.DefaultRequestHeaders.Authorization = null;
 
         // Assert
         var userContent = await userResponse.Content.ReadAsStringAsync();
-        _output.WriteLine($"User response: {userContent}");
+        Output.WriteLine($"User response: {userContent}");
         Assert.Equal(HttpStatusCode.OK, userResponse.StatusCode);
 
         var userResult = JsonSerializer.Deserialize<JsonElement>(userContent, JsonOptions);
@@ -546,7 +536,7 @@ public class RefactoringRegressionTests
         if (userResult.TryGetProperty("roleIds", out var roleIds))
         {
             var roleIdsArray = roleIds.EnumerateArray().ToList();
-            _output.WriteLine($"User roleIds count: {roleIdsArray.Count}");
+            Output.WriteLine($"User roleIds count: {roleIdsArray.Count}");
             Assert.True(roleIdsArray.Count > 0, "User should have at least the USER role");
         }
     }
@@ -565,7 +555,7 @@ public class RefactoringRegressionTests
         var username = $"me_test_{Guid.NewGuid():N}";
         var email = $"{username}@example.com";
 
-        var registerResponse = await Client.PostAsJsonAsync("/api/v1/auth/register", new
+        var registerResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = username,
             Email = email,
@@ -577,13 +567,13 @@ public class RefactoringRegressionTests
         var accessToken = registerResult!.AccessToken;
 
         // Act
-        Client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
-        var meResponse = await Client.GetAsync("/api/v1/auth/me");
-        Client.DefaultRequestHeaders.Authorization = null;
+        HttpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+        var meResponse = await HttpClient.GetAsync("/api/v1/auth/me");
+        HttpClient.DefaultRequestHeaders.Authorization = null;
 
         // Assert
         var meContent = await meResponse.Content.ReadAsStringAsync();
-        _output.WriteLine($"/me response: {meContent}");
+        Output.WriteLine($"/me response: {meContent}");
         Assert.Equal(HttpStatusCode.OK, meResponse.StatusCode);
 
         var meResult = JsonSerializer.Deserialize<JsonElement>(meContent, JsonOptions);
@@ -609,7 +599,7 @@ public class RefactoringRegressionTests
         var email = $"{username}@example.com";
         var newPassword = "NewSecure@Pass456!";
 
-        var registerResponse = await Client.PostAsJsonAsync("/api/v1/auth/register", new
+        var registerResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = username,
             Email = email,
@@ -622,21 +612,21 @@ public class RefactoringRegressionTests
         var accessToken = registerResult.AccessToken;
 
         // Act - Change password
-        Client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
-        var changeResponse = await Client.PutAsJsonAsync($"/api/v1/auth/users/{userId}/identity/password", new
+        HttpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+        var changeResponse = await HttpClient.PutAsJsonAsync($"/api/v1/auth/users/{userId}/identity/password", new
         {
             CurrentPassword = TestPassword,
             NewPassword = newPassword
         });
-        Client.DefaultRequestHeaders.Authorization = null;
+        HttpClient.DefaultRequestHeaders.Authorization = null;
 
         // Assert
         var changeContent = await changeResponse.Content.ReadAsStringAsync();
-        _output.WriteLine($"Change password status: {changeResponse.StatusCode}, content: {changeContent}");
+        Output.WriteLine($"Change password status: {changeResponse.StatusCode}, content: {changeContent}");
         Assert.Equal(HttpStatusCode.NoContent, changeResponse.StatusCode);
 
         // Verify can login with new password
-        var loginResponse = await Client.PostAsJsonAsync("/api/v1/auth/login", new
+        var loginResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", new
         {
             Username = username,
             Password = newPassword
@@ -644,7 +634,7 @@ public class RefactoringRegressionTests
         Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
 
         // Verify cannot login with old password
-        var oldLoginResponse = await Client.PostAsJsonAsync("/api/v1/auth/login", new
+        var oldLoginResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", new
         {
             Username = username,
             Password = TestPassword
@@ -662,7 +652,7 @@ public class RefactoringRegressionTests
         var username = $"logout_{Guid.NewGuid():N}";
         var email = $"{username}@example.com";
 
-        var registerResponse = await Client.PostAsJsonAsync("/api/v1/auth/register", new
+        var registerResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
         {
             Username = username,
             Email = email,
@@ -675,19 +665,19 @@ public class RefactoringRegressionTests
         var refreshToken = registerResult.RefreshToken;
 
         // Act - Logout
-        Client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
-        var logoutResponse = await Client.PostAsync("/api/v1/auth/logout", null);
-        Client.DefaultRequestHeaders.Authorization = null;
+        HttpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+        var logoutResponse = await HttpClient.PostAsync("/api/v1/auth/logout", null);
+        HttpClient.DefaultRequestHeaders.Authorization = null;
 
         Assert.Equal(HttpStatusCode.NoContent, logoutResponse.StatusCode);
 
         // Assert - Refresh token should no longer work
-        var refreshResponse = await Client.PostAsJsonAsync("/api/v1/auth/refresh", new
+        var refreshResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", new
         {
             RefreshToken = refreshToken
         });
 
-        _output.WriteLine($"Refresh after logout status: {refreshResponse.StatusCode}");
+        Output.WriteLine($"Refresh after logout status: {refreshResponse.StatusCode}");
         Assert.Equal(HttpStatusCode.Unauthorized, refreshResponse.StatusCode);
     }
 
@@ -725,4 +715,10 @@ public class SessionInfo
     public string? DeviceName { get; set; }
     public DateTime CreatedAt { get; set; }
 }
+
+
+
+
+
+
 

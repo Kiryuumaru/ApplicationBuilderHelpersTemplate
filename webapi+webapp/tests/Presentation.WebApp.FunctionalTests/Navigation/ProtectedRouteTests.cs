@@ -4,13 +4,9 @@ namespace Presentation.WebApp.FunctionalTests.Navigation;
 /// Playwright functional tests for protected route access.
 /// Tests that unauthenticated users are redirected and authenticated users have access.
 /// </summary>
-[Collection(WebAppTestCollection.Name)]
-public class ProtectedRouteTests : PlaywrightTestBase
+public class ProtectedRouteTests : WebAppTestBase
 {
-    private const string TestPassword = "TestPassword123!";
-
-    public ProtectedRouteTests(SharedTestHosts sharedHosts, ITestOutputHelper output)
-        : base(sharedHosts, output)
+    public ProtectedRouteTests(ITestOutputHelper output) : base(output)
     {
     }
 

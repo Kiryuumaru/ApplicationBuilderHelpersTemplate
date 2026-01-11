@@ -2,27 +2,16 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Presentation.WebApi.FunctionalTests.Fixtures;
-
 namespace Presentation.WebApi.FunctionalTests.Auth;
 
 /// <summary>
 /// Functional tests for OAuth/External Login API endpoints.
 /// Tests external login providers, linking, and unlinking.
 /// </summary>
-[Collection(WebApiTestCollection.Name)]
-public class OAuthApiTests
+public class OAuthApiTests : WebApiTestBase
 {
-    private readonly ITestOutputHelper _output;
-    private readonly SharedWebApiHost _sharedHost;
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
-
-    private const string TestPassword = "TestPassword123!";
-
-    public OAuthApiTests(SharedWebApiHost sharedHost, ITestOutputHelper output)
+    public OAuthApiTests(ITestOutputHelper output) : base(output)
     {
-        _sharedHost = sharedHost;
-        _output = output;
     }
 
     #region Get Providers Tests
@@ -30,17 +19,17 @@ public class OAuthApiTests
     [Fact]
     public async Task GetProviders_ReturnsAvailableProviders()
     {
-        _output.WriteLine("[TEST] GetProviders_ReturnsAvailableProviders");
+        Output.WriteLine("[TEST] GetProviders_ReturnsAvailableProviders");
 
-        _output.WriteLine("[STEP] GET /api/v1/auth/external/providers...");
-        var response = await _sharedHost.Host.HttpClient.GetAsync("/api/v1/auth/external/providers");
+        Output.WriteLine("[STEP] GET /api/v1/auth/external/providers...");
+        var response = await HttpClient.GetAsync("/api/v1/auth/external/providers");
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();
-        _output.WriteLine($"[RECEIVED] Body: {content}");
+        Output.WriteLine($"[RECEIVED] Body: {content}");
 
         var result = JsonSerializer.Deserialize<OAuthProvidersResponse>(content, JsonOptions);
         Assert.NotNull(result);
@@ -51,22 +40,22 @@ public class OAuthApiTests
         Assert.NotNull(mockProvider);
         Assert.True(mockProvider!.IsEnabled, "Mock provider should be enabled by default");
 
-        _output.WriteLine("[PASS] Get providers returned available providers with Mock enabled");
+        Output.WriteLine("[PASS] Get providers returned available providers with Mock enabled");
     }
 
     [Fact]
     public async Task GetProviders_NoAuthRequired()
     {
-        _output.WriteLine("[TEST] GetProviders_NoAuthRequired");
+        Output.WriteLine("[TEST] GetProviders_NoAuthRequired");
 
         // This endpoint should be accessible without authentication
-        _output.WriteLine("[STEP] GET /api/v1/auth/external/providers without token...");
-        var response = await _sharedHost.Host.HttpClient.GetAsync("/api/v1/auth/external/providers");
+        Output.WriteLine("[STEP] GET /api/v1/auth/external/providers without token...");
+        var response = await HttpClient.GetAsync("/api/v1/auth/external/providers");
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        _output.WriteLine("[PASS] Get providers accessible without authentication");
+        Output.WriteLine("[PASS] Get providers accessible without authentication");
     }
 
     #endregion
@@ -76,59 +65,59 @@ public class OAuthApiTests
     [Fact]
     public async Task InitiateOAuth_WithMockProvider_ReturnsAuthorizationUrl()
     {
-        _output.WriteLine("[TEST] InitiateOAuth_WithMockProvider_ReturnsAuthorizationUrl");
+        Output.WriteLine("[TEST] InitiateOAuth_WithMockProvider_ReturnsAuthorizationUrl");
 
         var request = new OAuthLoginRequest("mock", "https://localhost/callback");
 
-        _output.WriteLine("[STEP] POST /api/v1/auth/external/mock...");
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/external/mock", request);
+        Output.WriteLine("[STEP] POST /api/v1/auth/external/mock...");
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/external/mock", request);
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();
-        _output.WriteLine($"[RECEIVED] Body: {content}");
+        Output.WriteLine($"[RECEIVED] Body: {content}");
 
         var result = JsonSerializer.Deserialize<OAuthAuthorizationResponse>(content, JsonOptions);
         Assert.NotNull(result);
         Assert.NotEmpty(result!.AuthorizationUrl);
         Assert.NotEmpty(result.State);
 
-        _output.WriteLine("[PASS] Initiate OAuth returned authorization URL with state");
+        Output.WriteLine("[PASS] Initiate OAuth returned authorization URL with state");
     }
 
     [Fact]
     public async Task InitiateOAuth_WithInvalidProvider_Returns400()
     {
-        _output.WriteLine("[TEST] InitiateOAuth_WithInvalidProvider_Returns400");
+        Output.WriteLine("[TEST] InitiateOAuth_WithInvalidProvider_Returns400");
 
         var request = new OAuthLoginRequest("invalidprovider", "https://localhost/callback");
 
-        _output.WriteLine("[STEP] POST /api/v1/auth/external/invalidprovider...");
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/external/invalidprovider", request);
+        Output.WriteLine("[STEP] POST /api/v1/auth/external/invalidprovider...");
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/external/invalidprovider", request);
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        _output.WriteLine("[PASS] Returns 400 for invalid provider");
+        Output.WriteLine("[PASS] Returns 400 for invalid provider");
     }
 
     [Fact]
     public async Task InitiateOAuth_WithDisabledProvider_Returns400()
     {
-        _output.WriteLine("[TEST] InitiateOAuth_WithDisabledProvider_Returns400");
+        Output.WriteLine("[TEST] InitiateOAuth_WithDisabledProvider_Returns400");
 
         var request = new OAuthLoginRequest("google", "https://localhost/callback");
 
         // Google is not configured, so it should be disabled
-        _output.WriteLine("[STEP] POST /api/v1/auth/external/google...");
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/external/google", request);
+        Output.WriteLine("[STEP] POST /api/v1/auth/external/google...");
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/external/google", request);
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        _output.WriteLine("[PASS] Returns 400 for disabled provider");
+        Output.WriteLine("[PASS] Returns 400 for disabled provider");
     }
 
     #endregion
@@ -138,11 +127,11 @@ public class OAuthApiTests
     [Fact]
     public async Task OAuthCallback_WithMockProvider_CreatesNewUserAndSession()
     {
-        _output.WriteLine("[TEST] OAuthCallback_WithMockProvider_CreatesNewUserAndSession");
+        Output.WriteLine("[TEST] OAuthCallback_WithMockProvider_CreatesNewUserAndSession");
 
         // First, initiate OAuth to get a state
         var initiateRequest = new OAuthLoginRequest("mock", "https://localhost/callback");
-        var initiateResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/external/mock", initiateRequest);
+        var initiateResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/external/mock", initiateRequest);
         Assert.Equal(HttpStatusCode.OK, initiateResponse.StatusCode);
         var initiateContent = await initiateResponse.Content.ReadAsStringAsync();
         var initiateResult = JsonSerializer.Deserialize<OAuthAuthorizationResponse>(initiateContent, JsonOptions);
@@ -155,16 +144,16 @@ public class OAuthApiTests
             State: initiateResult!.State,
             RedirectUri: "https://localhost/callback");
 
-        _output.WriteLine("[STEP] POST /api/v1/auth/external/callback...");
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/external/callback", callbackRequest);
+        Output.WriteLine("[STEP] POST /api/v1/auth/external/callback...");
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/external/callback", callbackRequest);
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         // Should return 201 Created with tokens for new user
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();
-        _output.WriteLine($"[RECEIVED] Body: {content}");
+        Output.WriteLine($"[RECEIVED] Body: {content}");
 
         var result = JsonSerializer.Deserialize<AuthResponse>(content, JsonOptions);
         Assert.NotNull(result);
@@ -172,13 +161,13 @@ public class OAuthApiTests
         Assert.NotEmpty(result.RefreshToken);
         Assert.NotNull(result.User);
 
-        _output.WriteLine("[PASS] OAuth callback created new user with session");
+        Output.WriteLine("[PASS] OAuth callback created new user with session");
     }
 
     [Fact]
     public async Task OAuthCallback_WithEmptyState_Returns400()
     {
-        _output.WriteLine("[TEST] OAuthCallback_WithEmptyState_Returns400");
+        Output.WriteLine("[TEST] OAuthCallback_WithEmptyState_Returns400");
 
         var callbackRequest = new OAuthCallbackRequest(
             Provider: "mock",
@@ -186,16 +175,16 @@ public class OAuthApiTests
             State: "", // Empty state should fail validation
             RedirectUri: "https://localhost/callback");
 
-        _output.WriteLine("[STEP] POST /api/v1/auth/external/callback with empty state...");
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/external/callback", callbackRequest);
+        Output.WriteLine("[STEP] POST /api/v1/auth/external/callback with empty state...");
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/external/callback", callbackRequest);
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         // Empty state should fail validation (400 or 401)
         Assert.True(
             response.StatusCode == HttpStatusCode.BadRequest || response.StatusCode == HttpStatusCode.Unauthorized,
             $"Expected 400 or 401, got {response.StatusCode}");
-        _output.WriteLine("[PASS] Returns error for empty state");
+        Output.WriteLine("[PASS] Returns error for empty state");
     }
 
     #endregion
@@ -205,45 +194,45 @@ public class OAuthApiTests
     [Fact]
     public async Task GetExternalLogins_WithoutAuth_Returns401()
     {
-        _output.WriteLine("[TEST] GetExternalLogins_WithoutAuth_Returns401");
+        Output.WriteLine("[TEST] GetExternalLogins_WithoutAuth_Returns401");
 
         var randomUserId = Guid.NewGuid();
-        _output.WriteLine($"[STEP] GET /api/v1/auth/users/{randomUserId}/identity/external without token...");
-        var response = await _sharedHost.Host.HttpClient.GetAsync($"/api/v1/auth/users/{randomUserId}/identity/external");
+        Output.WriteLine($"[STEP] GET /api/v1/auth/users/{randomUserId}/identity/external without token...");
+        var response = await HttpClient.GetAsync($"/api/v1/auth/users/{randomUserId}/identity/external");
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-        _output.WriteLine("[PASS] Returns 401 without authentication");
+        Output.WriteLine("[PASS] Returns 401 without authentication");
     }
 
     [Fact]
     public async Task GetExternalLogins_WithAuth_ReturnsEmptyListForNewUser()
     {
-        _output.WriteLine("[TEST] GetExternalLogins_WithAuth_ReturnsEmptyListForNewUser");
+        Output.WriteLine("[TEST] GetExternalLogins_WithAuth_ReturnsEmptyListForNewUser");
 
         // Register a new user with password (no external logins)
         var authResult = await RegisterUniqueUserAsync();
         Assert.NotNull(authResult);
 
         var userId = authResult!.User.Id;
-        _output.WriteLine($"[STEP] GET /api/v1/auth/users/{userId}/identity/external...");
+        Output.WriteLine($"[STEP] GET /api/v1/auth/users/{userId}/identity/external...");
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/identity/external");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         var content = await response.Content.ReadAsStringAsync();
-        _output.WriteLine($"[RECEIVED] Body: {content}");
+        Output.WriteLine($"[RECEIVED] Body: {content}");
 
         var result = JsonSerializer.Deserialize<ExternalLoginsResponse>(content, JsonOptions);
         Assert.NotNull(result);
         Assert.Empty(result!.Logins);
 
-        _output.WriteLine("[PASS] Returns empty list for user with no external logins");
+        Output.WriteLine("[PASS] Returns empty list for user with no external logins");
     }
 
     #endregion
@@ -253,36 +242,36 @@ public class OAuthApiTests
     [Fact]
     public async Task UnlinkExternalLogin_WithoutAuth_Returns401()
     {
-        _output.WriteLine("[TEST] UnlinkExternalLogin_WithoutAuth_Returns401");
+        Output.WriteLine("[TEST] UnlinkExternalLogin_WithoutAuth_Returns401");
 
         var randomUserId = Guid.NewGuid();
-        _output.WriteLine($"[STEP] DELETE /api/v1/auth/users/{randomUserId}/identity/external/mock without token...");
-        var response = await _sharedHost.Host.HttpClient.DeleteAsync($"/api/v1/auth/users/{randomUserId}/identity/external/mock");
+        Output.WriteLine($"[STEP] DELETE /api/v1/auth/users/{randomUserId}/identity/external/mock without token...");
+        var response = await HttpClient.DeleteAsync($"/api/v1/auth/users/{randomUserId}/identity/external/mock");
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-        _output.WriteLine("[PASS] Returns 401 without authentication");
+        Output.WriteLine("[PASS] Returns 401 without authentication");
     }
 
     [Fact]
     public async Task UnlinkExternalLogin_NonExistentProvider_Returns404()
     {
-        _output.WriteLine("[TEST] UnlinkExternalLogin_NonExistentProvider_Returns404");
+        Output.WriteLine("[TEST] UnlinkExternalLogin_NonExistentProvider_Returns404");
 
         var authResult = await RegisterUniqueUserAsync();
         Assert.NotNull(authResult);
 
         var userId = authResult!.User.Id;
-        _output.WriteLine($"[STEP] DELETE /api/v1/auth/users/{userId}/identity/external/mock (user has no external logins)...");
+        Output.WriteLine($"[STEP] DELETE /api/v1/auth/users/{userId}/identity/external/mock (user has no external logins)...");
         using var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{userId}/identity/external/mock");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
+        var response = await HttpClient.SendAsync(request);
 
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-        _output.WriteLine("[PASS] Returns 404 for non-existent external login");
+        Output.WriteLine("[PASS] Returns 404 for non-existent external login");
     }
 
     #endregion
@@ -304,12 +293,12 @@ public class OAuthApiTests
             Password = TestPassword,
             ConfirmPassword = TestPassword
         };
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
 
         if (!response.IsSuccessStatusCode)
         {
             var errorContent = await response.Content.ReadAsStringAsync();
-            _output.WriteLine($"[ERROR] Registration failed: {errorContent}");
+            Output.WriteLine($"[ERROR] Registration failed: {errorContent}");
             return null;
         }
 
@@ -351,3 +340,6 @@ public class OAuthApiTests
 
     #endregion
 }
+
+
+

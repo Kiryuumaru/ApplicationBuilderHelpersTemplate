@@ -4,13 +4,9 @@ namespace Presentation.WebApp.FunctionalTests.Account;
 /// Playwright functional tests for two-factor authentication setup page.
 /// Tests 2FA enabling, disabling, and recovery code functionality.
 /// </summary>
-[Collection(WebAppTestCollection.Name)]
-public class TwoFactorAuthTests : PlaywrightTestBase
+public class TwoFactorAuthTests : WebAppTestBase
 {
-    private const string TestPassword = "TestPassword123!";
-
-    public TwoFactorAuthTests(SharedTestHosts sharedHosts, ITestOutputHelper output)
-        : base(sharedHosts, output)
+    public TwoFactorAuthTests(ITestOutputHelper output) : base(output)
     {
     }
 

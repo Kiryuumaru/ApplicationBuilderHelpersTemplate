@@ -4,13 +4,9 @@ namespace Presentation.WebApp.FunctionalTests.Auth;
 /// Playwright functional tests for user login flow.
 /// Tests the end-to-end login experience through the Blazor WebApp.
 /// </summary>
-[Collection(WebAppTestCollection.Name)]
-public class LoginTests : PlaywrightTestBase
+public class LoginTests : WebAppTestBase
 {
-    private const string TestPassword = "TestPassword123!";
-
-    public LoginTests(SharedTestHosts sharedHosts, ITestOutputHelper output)
-        : base(sharedHosts, output)
+    public LoginTests(ITestOutputHelper output) : base(output)
     {
     }
 
@@ -20,12 +16,12 @@ public class LoginTests : PlaywrightTestBase
         // Act
         await GoToLoginAsync();
 
-        // Assert - Verify form elements exist
-        var usernameInput = await Page.QuerySelectorAsync("input[name='username'], input[placeholder*='username' i]");
-        var passwordInput = await Page.QuerySelectorAsync("input[name='password'], input[type='password']");
+        // Assert - Verify form elements exist (page uses email, not username)
+        var emailInput = await Page.QuerySelectorAsync("input#email, input[type='email']");
+        var passwordInput = await Page.QuerySelectorAsync("input#password, input[type='password']");
         var submitButton = await Page.QuerySelectorAsync("button[type='submit']");
 
-        Assert.NotNull(usernameInput);
+        Assert.NotNull(emailInput);
         Assert.NotNull(passwordInput);
         Assert.NotNull(submitButton);
     }
@@ -50,8 +46,8 @@ public class LoginTests : PlaywrightTestBase
 
         await RegisterUserAsync(username, email, TestPassword);
 
-        // Act - Now login
-        var success = await LoginAsync(username, TestPassword);
+        // Act - Now login (using email, not username)
+        var success = await LoginAsync(email, TestPassword);
 
         // Assert
         Assert.True(success, "Login should succeed with valid credentials");
@@ -67,10 +63,10 @@ public class LoginTests : PlaywrightTestBase
 
         await RegisterUserAsync(username, email, TestPassword);
 
-        // Act - Try to login with wrong password
+        // Act - Try to login with wrong password (using email, not username)
         await GoToLoginAsync();
-        await Page.FillAsync("input[name='username'], input[placeholder*='username' i]", username);
-        await Page.FillAsync("input[name='password'], input[type='password']", "WrongPassword123!");
+        await Page.FillAsync("input#email, input[type='email']", email);
+        await Page.FillAsync("input#password, input[type='password']", "WrongPassword123!");
         await Page.ClickAsync("button[type='submit']");
 
         await Task.Delay(1000);
@@ -89,12 +85,12 @@ public class LoginTests : PlaywrightTestBase
     public async Task Login_WithNonExistentUser_StaysOnLoginPage()
     {
         // Arrange
-        var username = $"nonexistent_{Guid.NewGuid():N}".Substring(0, 20);
+        var email = $"nonexistent_{Guid.NewGuid():N}@test.example.com";
 
-        // Act
+        // Act (using email, not username)
         await GoToLoginAsync();
-        await Page.FillAsync("input[name='username'], input[placeholder*='username' i]", username);
-        await Page.FillAsync("input[name='password'], input[type='password']", TestPassword);
+        await Page.FillAsync("input#email, input[type='email']", email);
+        await Page.FillAsync("input#password, input[type='password']", TestPassword);
         await Page.ClickAsync("button[type='submit']");
 
         await Task.Delay(1000);

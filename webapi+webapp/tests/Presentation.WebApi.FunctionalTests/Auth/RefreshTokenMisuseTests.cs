@@ -2,8 +2,6 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Presentation.WebApi.FunctionalTests.Fixtures;
-
 namespace Presentation.WebApi.FunctionalTests.Auth;
 
 /// <summary>
@@ -13,25 +11,16 @@ namespace Presentation.WebApi.FunctionalTests.Auth;
 /// - Cross-user header confusion at /auth/refresh (Authorization header vs refresh token in body)
 /// - Using refresh tokens as bearer tokens on other protected endpoints
 /// </summary>
-[Collection(WebApiTestCollection.Name)]
-public class RefreshTokenMisuseTests
+public class RefreshTokenMisuseTests : WebApiTestBase
 {
-    private readonly ITestOutputHelper _output;
-    private readonly SharedWebApiHost _sharedHost;
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
-
-    private const string TestPassword = "TestPassword123!";
-
-    public RefreshTokenMisuseTests(SharedWebApiHost sharedHost, ITestOutputHelper output)
+    public RefreshTokenMisuseTests(ITestOutputHelper output) : base(output)
     {
-        _sharedHost = sharedHost;
-        _output = output;
     }
 
     [Fact]
     public async Task Refresh_WithBodyTokenOfUserA_AndAuthorizationHeaderOfUserB_IssuesTokensForUserA()
     {
-        _output.WriteLine("[TEST] Refresh_WithBodyTokenOfUserA_AndAuthorizationHeaderOfUserB_IssuesTokensForUserA");
+        Output.WriteLine("[TEST] Refresh_WithBodyTokenOfUserA_AndAuthorizationHeaderOfUserB_IssuesTokensForUserA");
 
         // Arrange: two distinct users
         var userA = await RegisterUniqueUserAsync();
@@ -46,12 +35,12 @@ public class RefreshTokenMisuseTests
         refreshReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userB!.AccessToken);
         refreshReq.Content = JsonContent.Create(new { RefreshToken = userA.RefreshToken });
 
-        var refreshResp = await _sharedHost.Host.HttpClient.SendAsync(refreshReq);
-        _output.WriteLine($"[RECEIVED] Refresh status: {(int)refreshResp.StatusCode} {refreshResp.StatusCode}");
+        var refreshResp = await HttpClient.SendAsync(refreshReq);
+        Output.WriteLine($"[RECEIVED] Refresh status: {(int)refreshResp.StatusCode} {refreshResp.StatusCode}");
         Assert.Equal(HttpStatusCode.OK, refreshResp.StatusCode);
 
         var refreshContent = await refreshResp.Content.ReadAsStringAsync();
-        var refreshed = JsonSerializer.Deserialize<AuthResponse>(refreshContent, JsonOptions);
+        var refreshed = JsonSerializer.Deserialize<LocalAuthResponse>(refreshContent, JsonOptions);
         Assert.NotNull(refreshed);
         Assert.False(string.IsNullOrWhiteSpace(refreshed!.AccessToken));
 
@@ -59,8 +48,8 @@ public class RefreshTokenMisuseTests
         using var meReq = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
         meReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", refreshed.AccessToken);
 
-        var meResp = await _sharedHost.Host.HttpClient.SendAsync(meReq);
-        _output.WriteLine($"[RECEIVED] /me status: {(int)meResp.StatusCode} {meResp.StatusCode}");
+        var meResp = await HttpClient.SendAsync(meReq);
+        Output.WriteLine($"[RECEIVED] /me status: {(int)meResp.StatusCode} {meResp.StatusCode}");
         Assert.Equal(HttpStatusCode.OK, meResp.StatusCode);
 
         var meContent = await meResp.Content.ReadAsStringAsync();
@@ -68,13 +57,13 @@ public class RefreshTokenMisuseTests
         Assert.NotNull(me);
         Assert.Equal(userA.User!.Id, me!.Id);
 
-        _output.WriteLine("[PASS] Refresh uses body token identity, not Authorization header");
+        Output.WriteLine("[PASS] Refresh uses body token identity, not Authorization header");
     }
 
     [Fact]
     public async Task RefreshToken_AsBearerToken_CannotAccessUserSessions_Returns403()
     {
-        _output.WriteLine("[TEST] RefreshToken_AsBearerToken_CannotAccessUserSessions_Returns403");
+        Output.WriteLine("[TEST] RefreshToken_AsBearerToken_CannotAccessUserSessions_Returns403");
 
         var auth = await RegisterUniqueUserAsync();
         Assert.NotNull(auth);
@@ -84,14 +73,14 @@ public class RefreshTokenMisuseTests
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{auth.User!.Id}/sessions");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", auth.RefreshToken);
 
-        var response = await _sharedHost.Host.HttpClient.SendAsync(request);
-        _output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
+        var response = await HttpClient.SendAsync(request);
+        Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
-        _output.WriteLine("[PASS] Refresh token cannot be used as bearer token for sessions");
+        Output.WriteLine("[PASS] Refresh token cannot be used as bearer token for sessions");
     }
 
-    private async Task<AuthResponse?> RegisterUniqueUserAsync()
+    private async Task<LocalAuthResponse?> RegisterUniqueUserAsync()
     {
         var username = $"user_{Guid.NewGuid():N}";
 
@@ -103,7 +92,7 @@ public class RefreshTokenMisuseTests
             Email = $"{username}@test.com"
         };
 
-        var registerResponse = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
+        var registerResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
 
         if (registerResponse.StatusCode == HttpStatusCode.Conflict)
         {
@@ -113,31 +102,31 @@ public class RefreshTokenMisuseTests
         if (!registerResponse.IsSuccessStatusCode)
         {
             var error = await registerResponse.Content.ReadAsStringAsync();
-            _output.WriteLine($"[ERROR] Registration failed: {error}");
+            Output.WriteLine($"[ERROR] Registration failed: {error}");
             return null;
         }
 
         var content = await registerResponse.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<AuthResponse>(content, JsonOptions);
+        return JsonSerializer.Deserialize<LocalAuthResponse>(content, JsonOptions);
     }
 
-    private async Task<AuthResponse?> LoginAsync(string username, string password)
+    private new async Task<LocalAuthResponse?> LoginAsync(string username, string password)
     {
         var loginRequest = new { Username = username, Password = password };
 
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
         if (!response.IsSuccessStatusCode)
         {
             var error = await response.Content.ReadAsStringAsync();
-            _output.WriteLine($"[ERROR] Login failed: {error}");
+            Output.WriteLine($"[ERROR] Login failed: {error}");
             return null;
         }
 
         var content = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<AuthResponse>(content, JsonOptions);
+        return JsonSerializer.Deserialize<LocalAuthResponse>(content, JsonOptions);
     }
 
-    private sealed class AuthResponse
+    private sealed class LocalAuthResponse
     {
         public string AccessToken { get; set; } = string.Empty;
         public string RefreshToken { get; set; } = string.Empty;
@@ -166,3 +155,6 @@ public class RefreshTokenMisuseTests
         public bool IsAnonymous { get; set; }
     }
 }
+
+
+

@@ -2,33 +2,22 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Presentation.WebApi.FunctionalTests.Fixtures;
-
 namespace Presentation.WebApi.FunctionalTests.Iam;
 
 /// <summary>
 /// Deliberately "messy" policy states that should still behave deterministically.
 /// These tests focus on mixed allow/deny across multiple roles and direct grants.
 /// </summary>
-[Collection(WebApiTestCollection.Name)]
-public class PermissionChaosTests
+public class PermissionChaosTests : WebApiTestBase
 {
-    private readonly ITestOutputHelper _output;
-    private readonly SharedWebApiHost _sharedHost;
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
-
-    private const string TestPassword = "TestPassword123!";
-
-    public PermissionChaosTests(SharedWebApiHost sharedHost, ITestOutputHelper output)
+    public PermissionChaosTests(ITestOutputHelper output) : base(output)
     {
-        _sharedHost = sharedHost;
-        _output = output;
     }
 
     [Fact]
     public async Task MixedRoles_AllowAndDeny_ForSamePermission_DenyWins()
     {
-        _output.WriteLine("[TEST] MixedRoles_AllowAndDeny_ForSamePermission_DenyWins");
+        Output.WriteLine("[TEST] MixedRoles_AllowAndDeny_ForSamePermission_DenyWins");
 
         var adminAuth = await CreateAdminUserAsync();
         Assert.NotNull(adminAuth);
@@ -66,8 +55,8 @@ public class PermissionChaosTests
         using (var allowReq = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/iam/users/{targetUserId}"))
         {
             allowReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userWithAllowRole!.AccessToken);
-            var allowResp = await _sharedHost.Host.HttpClient.SendAsync(allowReq);
-            _output.WriteLine($"[RECEIVED] With allow role: {(int)allowResp.StatusCode} {allowResp.StatusCode}");
+            var allowResp = await HttpClient.SendAsync(allowReq);
+            Output.WriteLine($"[RECEIVED] With allow role: {(int)allowResp.StatusCode} {allowResp.StatusCode}");
             Assert.Equal(HttpStatusCode.OK, allowResp.StatusCode);
         }
 
@@ -80,18 +69,18 @@ public class PermissionChaosTests
         using (var denyReq = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/iam/users/{targetUserId}"))
         {
             denyReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userWithAllowAndDenyRoles!.AccessToken);
-            var denyResp = await _sharedHost.Host.HttpClient.SendAsync(denyReq);
-            _output.WriteLine($"[RECEIVED] With allow+deny roles: {(int)denyResp.StatusCode} {denyResp.StatusCode}");
+            var denyResp = await HttpClient.SendAsync(denyReq);
+            Output.WriteLine($"[RECEIVED] With allow+deny roles: {(int)denyResp.StatusCode} {denyResp.StatusCode}");
             Assert.Equal(HttpStatusCode.Forbidden, denyResp.StatusCode);
         }
 
-        _output.WriteLine("[PASS] Deny role wins over allow role");
+        Output.WriteLine("[PASS] Deny role wins over allow role");
     }
 
     [Fact]
     public async Task RoleDeny_BeatsDirectAllow_ForSameEndpoint()
     {
-        _output.WriteLine("[TEST] RoleDeny_BeatsDirectAllow_ForSameEndpoint");
+        Output.WriteLine("[TEST] RoleDeny_BeatsDirectAllow_ForSameEndpoint");
 
         var adminAuth = await CreateAdminUserAsync();
         Assert.NotNull(adminAuth);
@@ -125,7 +114,7 @@ public class PermissionChaosTests
         {
             grantReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth!.AccessToken);
             grantReq.Content = JsonContent.Create(grantRequest);
-            var grantResp = await _sharedHost.Host.HttpClient.SendAsync(grantReq);
+            var grantResp = await HttpClient.SendAsync(grantReq);
             Assert.Equal(HttpStatusCode.NoContent, grantResp.StatusCode);
         }
 
@@ -135,8 +124,8 @@ public class PermissionChaosTests
         using (var allowReq = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/iam/users/{targetUserId}"))
         {
             allowReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userWithDirectAllow!.AccessToken);
-            var allowResp = await _sharedHost.Host.HttpClient.SendAsync(allowReq);
-            _output.WriteLine($"[RECEIVED] With direct allow: {(int)allowResp.StatusCode} {allowResp.StatusCode}");
+            var allowResp = await HttpClient.SendAsync(allowReq);
+            Output.WriteLine($"[RECEIVED] With direct allow: {(int)allowResp.StatusCode} {allowResp.StatusCode}");
             Assert.Equal(HttpStatusCode.OK, allowResp.StatusCode);
         }
 
@@ -149,15 +138,15 @@ public class PermissionChaosTests
         using (var denyReq = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/iam/users/{targetUserId}"))
         {
             denyReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userWithDirectAllowAndDenyRole!.AccessToken);
-            var denyResp = await _sharedHost.Host.HttpClient.SendAsync(denyReq);
-            _output.WriteLine($"[RECEIVED] With direct allow + deny role: {(int)denyResp.StatusCode} {denyResp.StatusCode}");
+            var denyResp = await HttpClient.SendAsync(denyReq);
+            Output.WriteLine($"[RECEIVED] With direct allow + deny role: {(int)denyResp.StatusCode} {denyResp.StatusCode}");
             Assert.Equal(HttpStatusCode.Forbidden, denyResp.StatusCode);
         }
 
-        _output.WriteLine("[PASS] Role deny beats direct allow");
+        Output.WriteLine("[PASS] Role deny beats direct allow");
     }
 
-    private async Task CreateRoleAsync(AuthResponse adminAuth, string code, string name, ScopeTemplateRequest[] scopeTemplates)
+    private async Task CreateRoleAsync(LocalAuthResponse adminAuth, string code, string name, ScopeTemplateRequest[] scopeTemplates)
     {
         var request = new
         {
@@ -171,12 +160,12 @@ public class PermissionChaosTests
         createReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth.AccessToken);
         createReq.Content = JsonContent.Create(request);
 
-        var resp = await _sharedHost.Host.HttpClient.SendAsync(createReq);
-        _output.WriteLine($"[RECEIVED] Create role {code}: {(int)resp.StatusCode} {resp.StatusCode}");
+        var resp = await HttpClient.SendAsync(createReq);
+        Output.WriteLine($"[RECEIVED] Create role {code}: {(int)resp.StatusCode} {resp.StatusCode}");
         Assert.Equal(HttpStatusCode.Created, resp.StatusCode);
     }
 
-    private async Task AssignRoleAsync(AuthResponse adminAuth, Guid userId, string roleCode)
+    private async Task AssignRoleAsync(LocalAuthResponse adminAuth, Guid userId, string roleCode)
     {
         var request = new { UserId = userId, RoleCode = roleCode };
 
@@ -184,12 +173,12 @@ public class PermissionChaosTests
         assignReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", adminAuth.AccessToken);
         assignReq.Content = JsonContent.Create(request);
 
-        var resp = await _sharedHost.Host.HttpClient.SendAsync(assignReq);
-        _output.WriteLine($"[RECEIVED] Assign role {roleCode}: {(int)resp.StatusCode} {resp.StatusCode}");
+        var resp = await HttpClient.SendAsync(assignReq);
+        Output.WriteLine($"[RECEIVED] Assign role {roleCode}: {(int)resp.StatusCode} {resp.StatusCode}");
         Assert.Equal(HttpStatusCode.NoContent, resp.StatusCode);
     }
 
-    private async Task<AuthResponse?> CreateAdminUserAsync()
+    private async Task<LocalAuthResponse?> CreateAdminUserAsync()
     {
         var username = $"admin_{Guid.NewGuid():N}";
 
@@ -200,20 +189,20 @@ public class PermissionChaosTests
             Password = TestPassword
         };
 
-        _output.WriteLine($"[HELPER] Creating admin user: {username}");
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/devtools/create-admin", createAdminRequest);
+        Output.WriteLine($"[HELPER] Creating admin user: {username}");
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/devtools/create-admin", createAdminRequest);
 
         if (!response.IsSuccessStatusCode)
         {
             var error = await response.Content.ReadAsStringAsync();
-            _output.WriteLine($"[ERROR] Create admin failed: {error}");
+            Output.WriteLine($"[ERROR] Create admin failed: {error}");
             return null;
         }
 
         return await LoginAsync(username, TestPassword);
     }
 
-    private async Task<AuthResponse?> RegisterAndGetTokenAsync()
+    private async Task<LocalAuthResponse?> RegisterAndGetTokenAsync()
     {
         var username = $"user_{Guid.NewGuid():N}";
 
@@ -225,36 +214,36 @@ public class PermissionChaosTests
             Email = $"{username}@test.com"
         };
 
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
 
         if (!response.IsSuccessStatusCode)
         {
             var error = await response.Content.ReadAsStringAsync();
-            _output.WriteLine($"[ERROR] Registration failed: {error}");
+            Output.WriteLine($"[ERROR] Registration failed: {error}");
             return null;
         }
 
         var content = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<AuthResponse>(content, JsonOptions);
+        return JsonSerializer.Deserialize<LocalAuthResponse>(content, JsonOptions);
     }
 
-    private async Task<AuthResponse?> LoginAsync(string username, string password)
+    private new async Task<LocalAuthResponse?> LoginAsync(string username, string password)
     {
         var loginRequest = new { Username = username, Password = password };
 
-        var response = await _sharedHost.Host.HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
         if (!response.IsSuccessStatusCode)
         {
             var error = await response.Content.ReadAsStringAsync();
-            _output.WriteLine($"[ERROR] Login failed: {error}");
+            Output.WriteLine($"[ERROR] Login failed: {error}");
             return null;
         }
 
         var content = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<AuthResponse>(content, JsonOptions);
+        return JsonSerializer.Deserialize<LocalAuthResponse>(content, JsonOptions);
     }
 
-    private sealed class AuthResponse
+    private sealed class LocalAuthResponse
     {
         public string AccessToken { get; set; } = string.Empty;
         public string RefreshToken { get; set; } = string.Empty;
@@ -275,3 +264,6 @@ public class PermissionChaosTests
 
     private sealed record ScopeTemplateRequest(string Type, string PermissionPath);
 }
+
+
+
