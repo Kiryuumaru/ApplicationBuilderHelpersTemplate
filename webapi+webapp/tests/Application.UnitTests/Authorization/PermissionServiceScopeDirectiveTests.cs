@@ -47,6 +47,7 @@ public class PermissionServiceScopeDirectiveTests
         Assert.Equal("allow;api:iam:users:_read;userId=abc123", directive);
     }
 
+#if DEBUG
     [Fact]
     public void Allow_WithMultipleParameters_ReturnsCorrectFormat()
     {
@@ -55,6 +56,7 @@ public class PermissionServiceScopeDirectiveTests
 
         Assert.Equal("allow;sec_ops_debug:v1:forensics:_read;tenantId=tenant-1", directive);
     }
+#endif
 
     [Fact]
     public void Deny_WithParameters_ReturnsCorrectFormat()
@@ -265,6 +267,7 @@ public class PermissionServiceScopeDirectiveTests
 
     #region Fine-Grained Access Tests
 
+#if DEBUG
     [Fact]
     public async Task MultiAccountAccess_OnlyAllowsSpecificTenants()
     {
@@ -283,6 +286,7 @@ public class PermissionServiceScopeDirectiveTests
         Assert.True(canAccessTenant2);
         Assert.False(canAccessTenant3); // Not granted
     }
+#endif
 
     [Fact]
     public async Task ServiceAccount_HasNoUserIdScope_AccessesAll()
@@ -323,6 +327,7 @@ public class PermissionServiceScopeDirectiveTests
         Assert.False(canUpdateUsers);
     }
 
+#if DEBUG
     [Fact]
     public async Task NestedResourceAccess_RequiresMatchingParameters()
     {
@@ -343,6 +348,7 @@ public class PermissionServiceScopeDirectiveTests
         var noParams = await service.HasPermissionAsync(principal, PermissionIds.SecOpsDebug.V1.Forensics.List.Permission, CancellationToken.None);
         Assert.False(noParams);
     }
+#endif
 
     #endregion
 
@@ -391,6 +397,7 @@ public class PermissionServiceScopeDirectiveTests
         Assert.False(canRead); // Deny should take precedence
     }
 
+#if DEBUG
     [Fact]
     public async Task GlobalAllowThenSpecificDeny_DenyBlocksSpecific()
     {
@@ -406,6 +413,7 @@ public class PermissionServiceScopeDirectiveTests
         Assert.True(canReadUsers);    // Allowed by global _read
         Assert.False(canReadForensics); // Explicitly denied
     }
+#endif
 
     #endregion
 

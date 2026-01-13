@@ -1,3 +1,5 @@
+using Presentation.WebApp.FunctionalTests.Fixtures;
+
 namespace Presentation.WebApp.FunctionalTests.Components;
 
 /// <summary>
@@ -6,7 +8,7 @@ namespace Presentation.WebApp.FunctionalTests.Components;
 /// </summary>
 public class ComponentTests : WebAppTestBase
 {
-    public ComponentTests(ITestOutputHelper output) : base(output)
+    public ComponentTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
     {
     }
 
@@ -184,7 +186,7 @@ public class ComponentTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act
         await GoToHomeAsync();
@@ -204,7 +206,7 @@ public class ComponentTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act
         await GoToHomeAsync();
@@ -242,7 +244,7 @@ public class ComponentTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act
         await GoToHomeAsync();

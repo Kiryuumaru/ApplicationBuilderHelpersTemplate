@@ -1,3 +1,5 @@
+using Presentation.WebApp.FunctionalTests.Fixtures;
+
 namespace Presentation.WebApp.FunctionalTests.Auth;
 
 /// <summary>
@@ -6,7 +8,7 @@ namespace Presentation.WebApp.FunctionalTests.Auth;
 /// </summary>
 public class TwoFactorTests : WebAppTestBase
 {
-    public TwoFactorTests(ITestOutputHelper output) : base(output)
+    public TwoFactorTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
     {
     }
 
@@ -33,7 +35,7 @@ public class TwoFactorTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to 2FA setup
         await Page.GotoAsync($"{WebAppUrl}/account/two-factor");
@@ -59,7 +61,7 @@ public class TwoFactorTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to 2FA setup
         await Page.GotoAsync($"{WebAppUrl}/account/two-factor");
@@ -82,7 +84,7 @@ public class TwoFactorTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to 2FA setup
         await Page.GotoAsync($"{WebAppUrl}/account/two-factor");
@@ -107,7 +109,7 @@ public class TwoFactorTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to profile
         await Page.GotoAsync($"{WebAppUrl}/account/profile");

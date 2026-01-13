@@ -1,3 +1,5 @@
+using Presentation.WebApp.FunctionalTests.Fixtures;
+
 namespace Presentation.WebApp.FunctionalTests.Admin;
 
 /// <summary>
@@ -6,7 +8,7 @@ namespace Presentation.WebApp.FunctionalTests.Admin;
 /// </summary>
 public class RolesManagementTests : WebAppTestBase
 {
-    public RolesManagementTests(ITestOutputHelper output) : base(output)
+    public RolesManagementTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
     {
     }
 
@@ -36,7 +38,7 @@ public class RolesManagementTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to roles page
         await Page.GotoAsync($"{WebAppUrl}/admin/roles");
@@ -65,7 +67,7 @@ public class RolesManagementTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to roles page
         await Page.GotoAsync($"{WebAppUrl}/admin/roles");
@@ -88,7 +90,7 @@ public class RolesManagementTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to roles page
         await Page.GotoAsync($"{WebAppUrl}/admin/roles");
@@ -115,7 +117,7 @@ public class RolesManagementTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to roles page
         await Page.GotoAsync($"{WebAppUrl}/admin/roles");
@@ -140,7 +142,7 @@ public class RolesManagementTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to roles page
         await Page.GotoAsync($"{WebAppUrl}/admin/roles");
@@ -167,7 +169,7 @@ public class RolesManagementTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to roles page
         await Page.GotoAsync($"{WebAppUrl}/admin/roles");
@@ -190,7 +192,7 @@ public class RolesManagementTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to roles page
         await Page.GotoAsync($"{WebAppUrl}/admin/roles");

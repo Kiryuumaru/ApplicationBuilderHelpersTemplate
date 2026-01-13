@@ -44,6 +44,29 @@ public class LoginApiTests : WebApiTestBase
     }
 
     [Fact]
+    public async Task Login_WithEmail_ReturnsJwtToken()
+    {
+        var username = $"login_email_{Guid.NewGuid():N}";
+        var email = $"{username}@test.example.com";
+        await RegisterUserAsync(username, email);
+
+        // Login with email instead of username
+        var loginRequest = new { Username = email, Password = TestPassword };
+        var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var content = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<LoginAuthResponse>(content, JsonOptions);
+        
+        Assert.NotNull(result);
+        Assert.NotEmpty(result!.AccessToken);
+        Assert.NotEmpty(result.RefreshToken);
+        Assert.NotNull(result.User);
+        Assert.Equal(username, result.User.Username);
+    }
+
+    [Fact]
     public async Task Login_WithInvalidPassword_Returns401()
     {
         var username = $"login_badpwd_{Guid.NewGuid():N}";

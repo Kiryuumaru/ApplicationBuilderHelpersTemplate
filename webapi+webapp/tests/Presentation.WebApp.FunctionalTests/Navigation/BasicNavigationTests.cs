@@ -1,3 +1,5 @@
+using Presentation.WebApp.FunctionalTests.Fixtures;
+
 namespace Presentation.WebApp.FunctionalTests.Navigation;
 
 /// <summary>
@@ -6,7 +8,7 @@ namespace Presentation.WebApp.FunctionalTests.Navigation;
 /// </summary>
 public class BasicNavigationTests : WebAppTestBase
 {
-    public BasicNavigationTests(ITestOutputHelper output) : base(output)
+    public BasicNavigationTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
     {
     }
 

@@ -1,3 +1,5 @@
+using Presentation.WebApp.FunctionalTests.Fixtures;
+
 namespace Presentation.WebApp.FunctionalTests.Account;
 
 /// <summary>
@@ -6,7 +8,7 @@ namespace Presentation.WebApp.FunctionalTests.Account;
 /// </summary>
 public class ApiKeysTests : WebAppTestBase
 {
-    public ApiKeysTests(ITestOutputHelper output) : base(output)
+    public ApiKeysTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
     {
     }
 
@@ -31,7 +33,7 @@ public class ApiKeysTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to API keys
         await Page.GotoAsync($"{WebAppUrl}/account/api-keys");
@@ -56,7 +58,7 @@ public class ApiKeysTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to API keys
         await Page.GotoAsync($"{WebAppUrl}/account/api-keys");
@@ -81,7 +83,7 @@ public class ApiKeysTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to API keys and open create form
         await Page.GotoAsync($"{WebAppUrl}/account/api-keys");
@@ -110,7 +112,7 @@ public class ApiKeysTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to API keys
         await Page.GotoAsync($"{WebAppUrl}/account/api-keys");
@@ -138,7 +140,7 @@ public class ApiKeysTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to API keys
         await Page.GotoAsync($"{WebAppUrl}/account/api-keys");
@@ -161,7 +163,7 @@ public class ApiKeysTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to API keys
         await Page.GotoAsync($"{WebAppUrl}/account/api-keys");
@@ -184,7 +186,7 @@ public class ApiKeysTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate via sidebar
         await GoToHomeAsync();
@@ -213,7 +215,7 @@ public class ApiKeysTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to API keys
         await Page.GotoAsync($"{WebAppUrl}/account/api-keys");

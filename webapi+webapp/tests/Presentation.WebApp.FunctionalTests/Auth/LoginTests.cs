@@ -1,3 +1,5 @@
+using Presentation.WebApp.FunctionalTests.Fixtures;
+
 namespace Presentation.WebApp.FunctionalTests.Auth;
 
 /// <summary>
@@ -6,7 +8,7 @@ namespace Presentation.WebApp.FunctionalTests.Auth;
 /// </summary>
 public class LoginTests : WebAppTestBase
 {
-    public LoginTests(ITestOutputHelper output) : base(output)
+    public LoginTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
     {
     }
 

@@ -1,3 +1,5 @@
+using Presentation.WebApp.FunctionalTests.Fixtures;
+
 namespace Presentation.WebApp.FunctionalTests.Admin;
 
 /// <summary>
@@ -6,7 +8,7 @@ namespace Presentation.WebApp.FunctionalTests.Admin;
 /// </summary>
 public class UsersManagementTests : WebAppTestBase
 {
-    public UsersManagementTests(ITestOutputHelper output) : base(output)
+    public UsersManagementTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
     {
     }
 
@@ -36,7 +38,7 @@ public class UsersManagementTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to users page
         await Page.GotoAsync($"{WebAppUrl}/admin/users");
@@ -65,7 +67,7 @@ public class UsersManagementTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to users page
         await Page.GotoAsync($"{WebAppUrl}/admin/users");
@@ -97,7 +99,7 @@ public class UsersManagementTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to users page
         await Page.GotoAsync($"{WebAppUrl}/admin/users");
@@ -120,7 +122,7 @@ public class UsersManagementTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to users page
         await Page.GotoAsync($"{WebAppUrl}/admin/users");
@@ -143,7 +145,7 @@ public class UsersManagementTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to users page
         await Page.GotoAsync($"{WebAppUrl}/admin/users");
@@ -181,7 +183,7 @@ public class UsersManagementTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to users page
         await Page.GotoAsync($"{WebAppUrl}/admin/users");

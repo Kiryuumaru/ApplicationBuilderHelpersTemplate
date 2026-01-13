@@ -7,18 +7,18 @@ namespace Presentation.WebApp.FunctionalTests;
 
 /// <summary>
 /// Base class for WebApp functional tests with parallel execution support.
-/// Each test class gets its own isolated WebApi host, WebApp host, and browser context.
-/// Uses random ports to avoid collisions during parallel test execution.
+/// Uses a shared WebApi + WebApp host via collection fixture for efficiency.
+/// Each test gets its own isolated browser context.
 /// </summary>
+[Collection(WebAppTestCollection.Name)]
 public abstract class WebAppTestBase : IAsyncLifetime
 {
     /// <summary>
-    /// Default timeout for Playwright operations in milliseconds (60 seconds).
+    /// Default timeout for Playwright operations in milliseconds (15 seconds).
     /// </summary>
-    protected const int DefaultTimeoutMs = 60_000;
+    protected const int DefaultTimeoutMs = 15_000;
 
-    private WebApiTestHost? _webApiHost;
-    private WebAppTestHost? _webAppHost;
+    private readonly SharedTestFixture _fixture;
     private IBrowserContext? _context;
     private IPage? _page;
 
@@ -28,24 +28,19 @@ public abstract class WebAppTestBase : IAsyncLifetime
     protected readonly ITestOutputHelper Output;
 
     /// <summary>
-    /// Static shared Playwright fixture (browser instances are expensive, can be shared).
-    /// </summary>
-    private static readonly Lazy<Task<PlaywrightFixture>> SharedPlaywright = new(CreatePlaywrightAsync);
-
-    /// <summary>
     /// HTTP client for direct API calls (bypassing the browser).
     /// </summary>
-    protected HttpClient HttpClient => _webApiHost?.HttpClient ?? throw new InvalidOperationException("WebApi host not initialized");
+    protected HttpClient HttpClient => _fixture.HttpClient;
 
     /// <summary>
     /// Base URL for the WebApi server.
     /// </summary>
-    protected string WebApiUrl => _webApiHost?.BaseUrl ?? throw new InvalidOperationException("WebApi host not initialized");
+    protected string WebApiUrl => _fixture.WebApiUrl;
 
     /// <summary>
     /// Base URL for the WebApp server.
     /// </summary>
-    protected string WebAppUrl => _webAppHost?.BaseUrl ?? throw new InvalidOperationException("WebApp host not initialized");
+    protected string WebAppUrl => _fixture.WebAppUrl;
 
     /// <summary>
     /// The browser context for this test class.
@@ -67,35 +62,18 @@ public abstract class WebAppTestBase : IAsyncLifetime
     /// </summary>
     protected const string TestPassword = "TestPassword123!";
 
-    protected WebAppTestBase(ITestOutputHelper output)
+    protected WebAppTestBase(SharedTestFixture fixture, ITestOutputHelper output)
     {
+        _fixture = fixture;
         Output = output;
-    }
-
-    private static async Task<PlaywrightFixture> CreatePlaywrightAsync()
-    {
-        var fixture = new PlaywrightFixture();
-        await fixture.InitializeAsync();
-        return fixture;
     }
 
     public virtual async Task InitializeAsync()
     {
-        Output.WriteLine("[TEST] Initializing test hosts...");
+        Output.WriteLine("[TEST] Creating browser context...");
 
-        // Start WebApi host with random port
-        _webApiHost = new WebApiTestHost(Output);
-        await _webApiHost.StartAsync(TimeSpan.FromSeconds(60));
-        Output.WriteLine($"[TEST] WebApi started at {_webApiHost.BaseUrl}");
-
-        // Start WebApp host with random port, connected to our WebApi
-        _webAppHost = new WebAppTestHost(Output, _webApiHost.BaseUrl);
-        await _webAppHost.StartAsync(TimeSpan.FromSeconds(60));
-        Output.WriteLine($"[TEST] WebApp started at {_webAppHost.BaseUrl}");
-
-        // Get shared Playwright instance and create isolated context
-        var playwright = await SharedPlaywright.Value;
-        _context = await playwright.CreateContextAsync();
+        // Create isolated browser context from shared fixture
+        _context = await _fixture.CreateContextAsync();
         _page = await _context.NewPageAsync();
 
         // Set default timeouts
@@ -114,12 +92,12 @@ public abstract class WebAppTestBase : IAsyncLifetime
             Output.WriteLine($"[BROWSER ERROR] {error}");
         };
 
-        Output.WriteLine("[TEST] Browser context created");
+        Output.WriteLine($"[TEST] Browser context ready. WebApp at {WebAppUrl}");
     }
 
     public virtual async Task DisposeAsync()
     {
-        Output.WriteLine("[TEST] Disposing test resources...");
+        Output.WriteLine("[TEST] Disposing browser context...");
 
         if (_page != null)
         {
@@ -131,17 +109,7 @@ public abstract class WebAppTestBase : IAsyncLifetime
             await _context.CloseAsync();
         }
 
-        if (_webAppHost != null)
-        {
-            await _webAppHost.DisposeAsync();
-        }
-
-        if (_webApiHost != null)
-        {
-            await _webApiHost.DisposeAsync();
-        }
-
-        Output.WriteLine("[TEST] Test resources disposed");
+        Output.WriteLine("[TEST] Browser context disposed");
     }
 
     #region Navigation Helpers
@@ -229,17 +197,38 @@ public abstract class WebAppTestBase : IAsyncLifetime
             await termsCheckbox.CheckAsync();
         }
 
-        // Submit the form
+        // Submit the form and wait for the API request to complete
+        Output.WriteLine("[TEST] Clicking submit button...");
         await Page.ClickAsync("button[type='submit']");
+        
+        // Wait for navigation away from register page using polling
+        // The HTTP request takes ~1.2s, then Blazor processes and navigates
+        Output.WriteLine("[TEST] Waiting for navigation after submit...");
+        var success = false;
+        var maxWaitMs = 20000; // 20 second max wait
+        var pollIntervalMs = 200;
+        var elapsed = 0;
+        
+        while (elapsed < maxWaitMs)
+        {
+            await Task.Delay(pollIntervalMs);
+            elapsed += pollIntervalMs;
+            
+            var currentUrl = Page.Url;
+            if (!currentUrl.Contains("/auth/register", StringComparison.OrdinalIgnoreCase))
+            {
+                Output.WriteLine($"[TEST] Navigation detected after {elapsed}ms. URL: {currentUrl}");
+                success = true;
+                break;
+            }
+        }
+        
+        if (!success)
+        {
+            Output.WriteLine($"[TEST] Navigation timeout after {elapsed}ms. Still on: {Page.Url}");
+        }
 
-        // Wait for navigation or response
-        await Task.Delay(1000);
-
-        // Check if we're redirected to login or home (success) or still on register (failure)
-        var currentUrl = Page.Url;
-        var success = !currentUrl.Contains("/auth/register", StringComparison.OrdinalIgnoreCase);
-
-        Output.WriteLine($"[TEST] Registration {(success ? "succeeded" : "failed")}. Current URL: {currentUrl}");
+        Output.WriteLine($"[TEST] Registration {(success ? "succeeded" : "failed")}. Current URL: {Page.Url}");
 
         return success;
     }
@@ -260,14 +249,34 @@ public abstract class WebAppTestBase : IAsyncLifetime
         // Submit the form
         await Page.ClickAsync("button[type='submit']");
 
-        // Wait for navigation or response
-        await Task.Delay(1000);
+        // Wait for navigation away from login page using polling
+        // The HTTP request takes ~500ms, then Blazor processes and navigates
+        Output.WriteLine("[TEST] Waiting for navigation after login...");
+        var success = false;
+        var maxWaitMs = 20000; // 20 second max wait
+        var pollIntervalMs = 200;
+        var elapsed = 0;
 
-        // Check if we're redirected away from login (success)
-        var currentUrl = Page.Url;
-        var success = !currentUrl.Contains("/auth/login", StringComparison.OrdinalIgnoreCase);
+        while (elapsed < maxWaitMs)
+        {
+            await Task.Delay(pollIntervalMs);
+            elapsed += pollIntervalMs;
 
-        Output.WriteLine($"[TEST] Login {(success ? "succeeded" : "failed")}. Current URL: {currentUrl}");
+            var currentUrl = Page.Url;
+            if (!currentUrl.Contains("/auth/login", StringComparison.OrdinalIgnoreCase))
+            {
+                Output.WriteLine($"[TEST] Navigation detected after {elapsed}ms. URL: {currentUrl}");
+                success = true;
+                break;
+            }
+        }
+
+        if (!success)
+        {
+            Output.WriteLine($"[TEST] Login timeout after {elapsed}ms. Still on: {Page.Url}");
+        }
+
+        Output.WriteLine($"[TEST] Login {(success ? "succeeded" : "failed")}. Current URL: {Page.Url}");
 
         return success;
     }

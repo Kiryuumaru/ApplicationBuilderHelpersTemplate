@@ -1,3 +1,5 @@
+using Presentation.WebApp.FunctionalTests.Fixtures;
+
 namespace Presentation.WebApp.FunctionalTests.Account;
 
 /// <summary>
@@ -8,7 +10,7 @@ public class ChangePasswordTests : WebAppTestBase
 {
     private const string NewPassword = "NewPassword456!";
 
-    public ChangePasswordTests(ITestOutputHelper output) : base(output)
+    public ChangePasswordTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
     {
     }
 
@@ -33,7 +35,7 @@ public class ChangePasswordTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to change password
         await Page.GotoAsync($"{WebAppUrl}/account/change-password");
@@ -61,7 +63,7 @@ public class ChangePasswordTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to change password
         await Page.GotoAsync($"{WebAppUrl}/account/change-password");
@@ -82,7 +84,7 @@ public class ChangePasswordTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to change password
         await Page.GotoAsync($"{WebAppUrl}/account/change-password");
@@ -104,7 +106,7 @@ public class ChangePasswordTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         await Page.GotoAsync($"{WebAppUrl}/account/change-password");
         await WaitForBlazorAsync();
@@ -138,7 +140,7 @@ public class ChangePasswordTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         await Page.GotoAsync($"{WebAppUrl}/account/change-password");
         await WaitForBlazorAsync();

@@ -32,9 +32,15 @@ public sealed class AuthenticationService(
     private readonly ITwoFactorService _twoFactorService = twoFactorService ?? throw new ArgumentNullException(nameof(twoFactorService));
     private readonly IUserTokenService _userTokenService = userTokenService ?? throw new ArgumentNullException(nameof(userTokenService));
 
-    public async Task<CredentialValidationResult> ValidateCredentialsAsync(string username, string password, CancellationToken cancellationToken)
+    public async Task<CredentialValidationResult> ValidateCredentialsAsync(string usernameOrEmail, string password, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.FindByUsernameAsync(username, cancellationToken).ConfigureAwait(false);
+        // Try username first, then fall back to email lookup
+        var user = await _userRepository.FindByUsernameAsync(usernameOrEmail, cancellationToken).ConfigureAwait(false);
+        if (user is null)
+        {
+            user = await _userRepository.FindByEmailAsync(usernameOrEmail, cancellationToken).ConfigureAwait(false);
+        }
+
         if (user is null)
         {
             return CredentialValidationResult.Failed("Invalid username or password.");

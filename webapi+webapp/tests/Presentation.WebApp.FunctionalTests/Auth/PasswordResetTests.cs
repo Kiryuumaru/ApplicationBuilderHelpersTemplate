@@ -1,3 +1,5 @@
+using Presentation.WebApp.FunctionalTests.Fixtures;
+
 namespace Presentation.WebApp.FunctionalTests.Auth;
 
 /// <summary>
@@ -8,7 +10,7 @@ public class PasswordResetTests : WebAppTestBase
 {
     private const string NewPassword = "NewPassword456!";
 
-    public PasswordResetTests(ITestOutputHelper output) : base(output)
+    public PasswordResetTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
     {
     }
 

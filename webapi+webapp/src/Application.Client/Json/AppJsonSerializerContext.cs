@@ -83,7 +83,7 @@ public sealed class ErrorResponse
 /// <summary>Login request DTO.</summary>
 public sealed class LoginRequest
 {
-    public string UsernameOrEmail { get; set; } = string.Empty;
+    public string Username { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
 }
 
@@ -93,6 +93,7 @@ public sealed class RegisterRequest
     public string Email { get; set; } = string.Empty;
     public string Username { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
+    public string ConfirmPassword { get; set; } = string.Empty;
 }
 
 /// <summary>Refresh token request DTO.</summary>

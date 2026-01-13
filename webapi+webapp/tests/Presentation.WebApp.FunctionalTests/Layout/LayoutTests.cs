@@ -1,3 +1,5 @@
+using Presentation.WebApp.FunctionalTests.Fixtures;
+
 namespace Presentation.WebApp.FunctionalTests.Layout;
 
 /// <summary>
@@ -6,7 +8,7 @@ namespace Presentation.WebApp.FunctionalTests.Layout;
 /// </summary>
 public class LayoutTests : WebAppTestBase
 {
-    public LayoutTests(ITestOutputHelper output) : base(output)
+    public LayoutTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
     {
     }
 
@@ -20,7 +22,7 @@ public class LayoutTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act
         await GoToHomeAsync();
@@ -40,7 +42,7 @@ public class LayoutTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act
         await GoToHomeAsync();
@@ -58,7 +60,7 @@ public class LayoutTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act
         await GoToHomeAsync();
@@ -80,7 +82,7 @@ public class LayoutTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act
         await GoToHomeAsync();
@@ -166,7 +168,7 @@ public class LayoutTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Set mobile viewport
         await Page.SetViewportSizeAsync(375, 667);
@@ -192,7 +194,7 @@ public class LayoutTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Set tablet viewport
         await Page.SetViewportSizeAsync(768, 1024);
@@ -214,7 +216,7 @@ public class LayoutTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Ensure desktop viewport
         await Page.SetViewportSizeAsync(1920, 1080);

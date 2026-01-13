@@ -1,3 +1,5 @@
+using Presentation.WebApp.FunctionalTests.Fixtures;
+
 namespace Presentation.WebApp.FunctionalTests;
 
 /// <summary>
@@ -7,7 +9,7 @@ namespace Presentation.WebApp.FunctionalTests;
 /// </summary>
 public class FeatureCoverageTests : WebAppTestBase
 {
-    public FeatureCoverageTests(ITestOutputHelper output) : base(output)
+    public FeatureCoverageTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
     {
     }
 
@@ -62,8 +64,9 @@ public class FeatureCoverageTests : WebAppTestBase
         // Frontend: Logout button in navigation
 
         var username = $"logout_test_{Guid.NewGuid():N}".Substring(0, 20);
-        await RegisterUserAsync(username, $"{username}@test.example.com", TestPassword);
-        await LoginAsync(username, TestPassword);
+        var email = $"{username}@test.example.com";
+        await RegisterUserAsync(username, email, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         await GoToHomeAsync();
         
@@ -84,8 +87,9 @@ public class FeatureCoverageTests : WebAppTestBase
         // This is automatically handled by the application
         // We verify by checking that a user can stay logged in
         var username = $"refresh_test_{Guid.NewGuid():N}".Substring(0, 20);
-        await RegisterUserAsync(username, $"{username}@test.example.com", TestPassword);
-        await LoginAsync(username, TestPassword);
+        var email = $"{username}@test.example.com";
+        await RegisterUserAsync(username, email, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         await GoToHomeAsync();
         var isAuthenticated = await IsAuthenticatedAsync();
@@ -100,8 +104,9 @@ public class FeatureCoverageTests : WebAppTestBase
         // Frontend: Profile page displays current user info
 
         var username = $"me_test_{Guid.NewGuid():N}".Substring(0, 20);
-        await RegisterUserAsync(username, $"{username}@test.example.com", TestPassword);
-        await LoginAsync(username, TestPassword);
+        var email = $"{username}@test.example.com";
+        await RegisterUserAsync(username, email, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         await Page.GotoAsync($"{WebAppUrl}/account/profile");
         await WaitForBlazorAsync();
@@ -125,8 +130,9 @@ public class FeatureCoverageTests : WebAppTestBase
         // Frontend: /account/change-password page
 
         var username = $"pwd_test_{Guid.NewGuid():N}".Substring(0, 20);
-        await RegisterUserAsync(username, $"{username}@test.example.com", TestPassword);
-        await LoginAsync(username, TestPassword);
+        var email = $"{username}@test.example.com";
+        await RegisterUserAsync(username, email, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         await Page.GotoAsync($"{WebAppUrl}/account/change-password");
         await WaitForBlazorAsync();
@@ -196,8 +202,9 @@ public class FeatureCoverageTests : WebAppTestBase
         // Frontend: /account/two-factor page
 
         var username = $"2fa_test_{Guid.NewGuid():N}".Substring(0, 20);
-        await RegisterUserAsync(username, $"{username}@test.example.com", TestPassword);
-        await LoginAsync(username, TestPassword);
+        var email = $"{username}@test.example.com";
+        await RegisterUserAsync(username, email, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         await Page.GotoAsync($"{WebAppUrl}/account/two-factor");
         await WaitForBlazorAsync();
@@ -222,8 +229,9 @@ public class FeatureCoverageTests : WebAppTestBase
         // Frontend: NOT IMPLEMENTED
 
         var username = $"sessions_test_{Guid.NewGuid():N}".Substring(0, 20);
-        await RegisterUserAsync(username, $"{username}@test.example.com", TestPassword);
-        await LoginAsync(username, TestPassword);
+        var email = $"{username}@test.example.com";
+        await RegisterUserAsync(username, email, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Check if sessions page exists
         await Page.GotoAsync($"{WebAppUrl}/account/sessions");
@@ -243,8 +251,9 @@ public class FeatureCoverageTests : WebAppTestBase
         // Frontend: NOT IMPLEMENTED
 
         var username = $"apikey_test_{Guid.NewGuid():N}".Substring(0, 20);
-        await RegisterUserAsync(username, $"{username}@test.example.com", TestPassword);
-        await LoginAsync(username, TestPassword);
+        var email = $"{username}@test.example.com";
+        await RegisterUserAsync(username, email, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         await Page.GotoAsync($"{WebAppUrl}/account/api-keys");
         await WaitForBlazorAsync();
@@ -261,8 +270,9 @@ public class FeatureCoverageTests : WebAppTestBase
         // Frontend: NOT IMPLEMENTED
 
         var username = $"passkey_test_{Guid.NewGuid():N}".Substring(0, 20);
-        await RegisterUserAsync(username, $"{username}@test.example.com", TestPassword);
-        await LoginAsync(username, TestPassword);
+        var email = $"{username}@test.example.com";
+        await RegisterUserAsync(username, email, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         await Page.GotoAsync($"{WebAppUrl}/account/passkeys");
         await WaitForBlazorAsync();
@@ -298,8 +308,9 @@ public class FeatureCoverageTests : WebAppTestBase
         // Frontend: /admin/users page (UI exists, uses mock data)
 
         var username = $"iam_users_{Guid.NewGuid():N}".Substring(0, 20);
-        await RegisterUserAsync(username, $"{username}@test.example.com", TestPassword);
-        await LoginAsync(username, TestPassword);
+        var email = $"{username}@test.example.com";
+        await RegisterUserAsync(username, email, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         await Page.GotoAsync($"{WebAppUrl}/admin/users");
         await WaitForBlazorAsync();
@@ -322,8 +333,9 @@ public class FeatureCoverageTests : WebAppTestBase
         // Frontend: /admin/roles page (UI exists, uses mock data)
 
         var username = $"iam_roles_{Guid.NewGuid():N}".Substring(0, 20);
-        await RegisterUserAsync(username, $"{username}@test.example.com", TestPassword);
-        await LoginAsync(username, TestPassword);
+        var email = $"{username}@test.example.com";
+        await RegisterUserAsync(username, email, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         await Page.GotoAsync($"{WebAppUrl}/admin/roles");
         await WaitForBlazorAsync();
@@ -346,8 +358,9 @@ public class FeatureCoverageTests : WebAppTestBase
         // Frontend: NOT IMPLEMENTED (no dedicated permissions page)
 
         var username = $"iam_perms_{Guid.NewGuid():N}".Substring(0, 20);
-        await RegisterUserAsync(username, $"{username}@test.example.com", TestPassword);
-        await LoginAsync(username, TestPassword);
+        var email = $"{username}@test.example.com";
+        await RegisterUserAsync(username, email, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         await Page.GotoAsync($"{WebAppUrl}/admin/permissions");
         await WaitForBlazorAsync();

@@ -1,3 +1,5 @@
+using Presentation.WebApp.FunctionalTests.Fixtures;
+
 namespace Presentation.WebApp.FunctionalTests.Auth;
 
 /// <summary>
@@ -6,7 +8,7 @@ namespace Presentation.WebApp.FunctionalTests.Auth;
 /// </summary>
 public class RegisterTests : WebAppTestBase
 {
-    public RegisterTests(ITestOutputHelper output) : base(output)
+    public RegisterTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
     {
     }
 
@@ -30,10 +32,10 @@ public class RegisterTests : WebAppTestBase
         // Act
         await GoToRegisterAsync();
 
-        // Assert - Verify form elements exist
-        var usernameInput = await Page.QuerySelectorAsync("input[name='username'], input[placeholder*='username' i]");
-        var emailInput = await Page.QuerySelectorAsync("input[name='email'], input[type='email']");
-        var passwordInput = await Page.QuerySelectorAsync("input[name='password'], input[type='password']");
+        // Assert - Verify form elements exist (using IDs from Register.razor)
+        var usernameInput = await Page.QuerySelectorAsync("input#username");
+        var emailInput = await Page.QuerySelectorAsync("input#email");
+        var passwordInput = await Page.QuerySelectorAsync("input#password");
         var submitButton = await Page.QuerySelectorAsync("button[type='submit']");
 
         Assert.NotNull(usernameInput);
@@ -60,16 +62,11 @@ public class RegisterTests : WebAppTestBase
         await GoToRegisterAsync();
         var username = $"reg_{Guid.NewGuid():N}".Substring(0, 20);
 
-        // Act - Use a weak password
-        await Page.FillAsync("input[name='username'], input[placeholder*='username' i]", username);
-        await Page.FillAsync("input[name='email'], input[type='email']", $"{username}@test.example.com");
-        await Page.FillAsync("input[name='password'], input[type='password']:first-of-type", "weak");
-
-        var confirmPasswordField = await Page.QuerySelectorAsync("input[name='confirmPassword'], input[type='password']:nth-of-type(2)");
-        if (confirmPasswordField != null)
-        {
-            await confirmPasswordField.FillAsync("weak");
-        }
+        // Act - Use a weak password (using IDs from Register.razor)
+        await Page.FillAsync("input#username", username);
+        await Page.FillAsync("input#email", $"{username}@test.example.com");
+        await Page.FillAsync("input#password", "weak");
+        await Page.FillAsync("input#confirmPassword", "weak");
 
         await Page.ClickAsync("button[type='submit']");
         await Task.Delay(1000);

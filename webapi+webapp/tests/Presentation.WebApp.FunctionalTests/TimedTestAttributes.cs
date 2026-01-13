@@ -1,15 +1,15 @@
 namespace Presentation.WebApp.FunctionalTests;
 
 /// <summary>
-/// A Fact attribute with a default 5-minute timeout.
-/// Use this instead of [Fact] for tests that should fail if they run longer than 5 minutes.
+/// A Fact attribute with a 30-second timeout.
+/// UI tests should complete quickly - if they don't, something is wrong.
 /// </summary>
 public class TimedFactAttribute : FactAttribute
 {
     /// <summary>
-    /// Default timeout of 5 minutes in milliseconds.
+    /// Default timeout of 30 seconds in milliseconds.
     /// </summary>
-    public const int DefaultTimeoutMs = 300_000;
+    public const int DefaultTimeoutMs = 30_000;
 
     public TimedFactAttribute()
     {
@@ -18,15 +18,14 @@ public class TimedFactAttribute : FactAttribute
 }
 
 /// <summary>
-/// A Theory attribute with a default 5-minute timeout.
-/// Use this instead of [Theory] for parameterized tests that should fail if they run longer than 5 minutes.
+/// A Theory attribute with a 30-second timeout.
 /// </summary>
 public class TimedTheoryAttribute : TheoryAttribute
 {
     /// <summary>
-    /// Default timeout of 5 minutes in milliseconds.
+    /// Default timeout of 30 seconds in milliseconds.
     /// </summary>
-    public const int DefaultTimeoutMs = 300_000;
+    public const int DefaultTimeoutMs = 30_000;
 
     public TimedTheoryAttribute()
     {

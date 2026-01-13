@@ -1,3 +1,5 @@
+using Presentation.WebApp.FunctionalTests.Fixtures;
+
 namespace Presentation.WebApp.FunctionalTests.Admin;
 
 /// <summary>
@@ -6,7 +8,7 @@ namespace Presentation.WebApp.FunctionalTests.Admin;
 /// </summary>
 public class PermissionsManagementTests : WebAppTestBase
 {
-    public PermissionsManagementTests(ITestOutputHelper output) : base(output)
+    public PermissionsManagementTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
     {
     }
 
@@ -36,7 +38,7 @@ public class PermissionsManagementTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to permissions page
         await Page.GotoAsync($"{WebAppUrl}/admin/permissions");
@@ -65,7 +67,7 @@ public class PermissionsManagementTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to permissions page
         await Page.GotoAsync($"{WebAppUrl}/admin/permissions");
@@ -91,7 +93,7 @@ public class PermissionsManagementTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to permissions page
         await Page.GotoAsync($"{WebAppUrl}/admin/permissions");
@@ -123,7 +125,7 @@ public class PermissionsManagementTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to permissions page
         await Page.GotoAsync($"{WebAppUrl}/admin/permissions");
@@ -154,7 +156,7 @@ public class PermissionsManagementTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to permissions page
         await Page.GotoAsync($"{WebAppUrl}/admin/permissions");
@@ -185,7 +187,7 @@ public class PermissionsManagementTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to permissions page
         await Page.GotoAsync($"{WebAppUrl}/admin/permissions");
@@ -220,7 +222,7 @@ public class PermissionsManagementTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate via sidebar
         await GoToHomeAsync();
@@ -249,7 +251,7 @@ public class PermissionsManagementTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to permissions page
         await Page.GotoAsync($"{WebAppUrl}/admin/permissions");
@@ -274,7 +276,7 @@ public class PermissionsManagementTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to permissions page
         await Page.GotoAsync($"{WebAppUrl}/admin/permissions");
@@ -305,7 +307,7 @@ public class PermissionsManagementTests : WebAppTestBase
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to permissions page
         await Page.GotoAsync($"{WebAppUrl}/admin/permissions");

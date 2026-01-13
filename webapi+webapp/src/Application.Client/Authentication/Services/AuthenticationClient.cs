@@ -23,12 +23,12 @@ public class AuthenticationClient : IAuthenticationClient
         {
             var request = new LoginRequest
             {
-                UsernameOrEmail = usernameOrEmail,
+                Username = usernameOrEmail,
                 Password = password
             };
 
             var response = await _httpClient.PostAsJsonAsync(
-                "api/auth/login",
+                "api/v1/auth/login",
                 request,
                 AppJsonSerializerContext.Default.LoginRequest,
                 cancellationToken);
@@ -72,11 +72,12 @@ public class AuthenticationClient : IAuthenticationClient
             {
                 Email = email,
                 Username = username,
-                Password = password
+                Password = password,
+                ConfirmPassword = password
             };
 
             var response = await _httpClient.PostAsJsonAsync(
-                "api/auth/register",
+                "api/v1/auth/register",
                 request,
                 AppJsonSerializerContext.Default.RegisterRequest,
                 cancellationToken);
@@ -113,7 +114,7 @@ public class AuthenticationClient : IAuthenticationClient
             };
 
             var response = await _httpClient.PostAsJsonAsync(
-                "api/auth/refresh",
+                "api/v1/auth/refresh",
                 request,
                 AppJsonSerializerContext.Default.RefreshTokenRequest,
                 cancellationToken);
@@ -141,7 +142,7 @@ public class AuthenticationClient : IAuthenticationClient
     {
         try
         {
-            await _httpClient.PostAsync("api/auth/logout", null, cancellationToken);
+            await _httpClient.PostAsync("api/v1/auth/logout", null, cancellationToken);
         }
         catch
         {
@@ -159,7 +160,7 @@ public class AuthenticationClient : IAuthenticationClient
             };
 
             var response = await _httpClient.PostAsJsonAsync(
-                "api/auth/forgot-password",
+                "api/v1/auth/forgot-password",
                 request,
                 AppJsonSerializerContext.Default.ForgotPasswordRequest,
                 cancellationToken);
@@ -184,7 +185,7 @@ public class AuthenticationClient : IAuthenticationClient
             };
 
             var response = await _httpClient.PostAsJsonAsync(
-                "api/auth/reset-password",
+                "api/v1/auth/reset-password",
                 request,
                 AppJsonSerializerContext.Default.ResetPasswordRequest,
                 cancellationToken);
@@ -208,7 +209,7 @@ public class AuthenticationClient : IAuthenticationClient
             };
 
             var response = await _httpClient.PostAsJsonAsync(
-                "api/auth/2fa/verify",
+                "api/v1/auth/2fa/verify",
                 request,
                 AppJsonSerializerContext.Default.TwoFactorVerifyRequest,
                 cancellationToken);

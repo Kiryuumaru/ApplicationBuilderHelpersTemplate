@@ -1,3 +1,5 @@
+using Presentation.WebApp.FunctionalTests.Fixtures;
+
 namespace Presentation.WebApp.FunctionalTests.Auth;
 
 /// <summary>
@@ -6,7 +8,7 @@ namespace Presentation.WebApp.FunctionalTests.Auth;
 /// </summary>
 public class AuthFlowTests : WebAppTestBase
 {
-    public AuthFlowTests(ITestOutputHelper output) : base(output)
+    public AuthFlowTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
     {
     }
 
@@ -24,7 +26,7 @@ public class AuthFlowTests : WebAppTestBase
 
         // Step 2: Login
         Output.WriteLine("Step 2: Login with new user");
-        var loginSuccess = await LoginAsync(username, TestPassword);
+        var loginSuccess = await LoginAsync(email, TestPassword);
         Assert.True(loginSuccess, "Login should succeed after registration");
 
         // Step 3: Verify authenticated state
@@ -57,7 +59,7 @@ public class AuthFlowTests : WebAppTestBase
 
         // Register and login
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(username, TestPassword);
+        await LoginAsync(email, TestPassword);
 
         // Act - Navigate to different pages
         await GoToHomeAsync();
@@ -90,10 +92,10 @@ public class AuthFlowTests : WebAppTestBase
         await RegisterUserAsync(username2, email2, TestPassword);
 
         // Act - Login as first user, then login as second user
-        await LoginAsync(username1, TestPassword);
+        await LoginAsync(email1, TestPassword);
         Output.WriteLine($"First login as {username1}");
 
-        await LoginAsync(username2, TestPassword);
+        await LoginAsync(email2, TestPassword);
         Output.WriteLine($"Second login as {username2}");
 
         // Assert - Should be logged in as second user

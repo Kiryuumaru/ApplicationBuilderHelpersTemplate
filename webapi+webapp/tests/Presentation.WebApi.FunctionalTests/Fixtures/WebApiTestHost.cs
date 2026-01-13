@@ -51,11 +51,16 @@ public class WebApiTestHost : IAsyncDisposable
         _output.WriteLine($"[HOST] Starting WebApi on {BaseUrl}...");
         _output.WriteLine($"[HOST] AppContext.BaseDirectory: {AppContext.BaseDirectory}");
 
+        // Detect configuration from current test output directory (contains Debug or Release)
+        var configuration = AppContext.BaseDirectory.Contains("Release", StringComparison.OrdinalIgnoreCase)
+            ? "Release"
+            : "Debug";
+
         // Find the WebApi output directory
         var webApiOutputDir = Path.GetFullPath(Path.Combine(
             AppContext.BaseDirectory,
             "..", "..", "..", "..", "..",
-            "src", "Presentation.WebApi", "bin", "Debug", "net10.0"));
+            "src", "Presentation.WebApi", "bin", configuration, "net10.0"));
 
         _output.WriteLine($"[HOST] WebApi output dir: {webApiOutputDir}");
 
