@@ -36,6 +36,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Application.Server\Application.Server.csproj" />
+		<ProjectReference Include="..\Infrastructure.OpenTelemetry\Infrastructure.OpenTelemetry.csproj" />
 		<ProjectReference Include="..\Presentation\Presentation.csproj" />
 		<ProjectReference Include="..\Infrastructure.EFCore\Infrastructure.EFCore.csproj" />
 		<ProjectReference Include="..\Infrastructure.EFCore.Server.Identity\Infrastructure.EFCore.Server.Identity.csproj" />

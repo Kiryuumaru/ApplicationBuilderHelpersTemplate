@@ -1,19 +1,21 @@
 using Application.Server;
 using Infrastructure.EFCore;
-using Infrastructure.EFCore.Server.Identity;
 using Infrastructure.EFCore.LocalStore;
+using Infrastructure.EFCore.Server.Identity;
 using Infrastructure.EFCore.Sqlite;
+using Infrastructure.OpenTelemetry;
 using Infrastructure.Server.Identity;
 using Infrastructure.Server.Passkeys;
 using Presentation.WebApi.Commands;
 
 return await ApplicationBuilderHelpers.ApplicationBuilder.Create()
-    .AddApplication<ApplicationServer>()
+    .AddApplication<ServerApplication>()
+    .AddApplication<OpenTelemetryInfrastructure>()
+    .AddApplication<IdentityInfrastructure>()
+    .AddApplication<PasskeysInfrastructure>()
     .AddApplication<EFCoreInfrastructure>()
     .AddApplication<EFCoreSqliteInfrastructure>()
-    .AddApplication<IdentityInfrastructure>()
     .AddApplication<EFCoreIdentityInfrastructure>()
     .AddApplication<EFCoreLocalStoreInfrastructure>()
-    .AddApplication<PasskeysInfrastructure>()
     .AddCommand<MainCommand>()
     .RunAsync(args);
