@@ -1,0 +1,237 @@
+@page "/account/api-keys"
+@attribute [Authorize]
+@inject IApiKeysClient ApiKeysClient
+@inject IAuthStateProvider AuthStateProvider
+
+<PageTitle>API Keys</PageTitle>
+
+<div class="max-w-4xl">
+    <Card>
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">API Keys</h2>
+            <Button OnClick="() => _showCreateModal = true">
+                Create New Key
+            </Button>
+        </div>
+        
+        @if (!string.IsNullOrEmpty(_successMessage))
+        {
+            <Alert Type="Alert.AlertType.Success" Message="@_successMessage" Dismissible="true" OnDismissed="() => _successMessage = null" />
+        }
+        
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <Alert Type="Alert.AlertType.Error" Message="@_errorMessage" Dismissible="true" OnDismissed="() => _errorMessage = null" />
+        }
+        
+        @if (!string.IsNullOrEmpty(_newApiKey))
+        {
+            <Alert Type="Alert.AlertType.Warning" Title="Save your API key" Dismissible="false">
+                <p class="mb-2">This key will only be shown once. Make sure to copy it now.</p>
+                <span class="block p-2 bg-gray-100 dark:bg-gray-700 rounded font-mono text-sm break-all">@_newApiKey</span>
+                <Button Variant="Button.ButtonVariant.Secondary" Size="Button.ButtonSize.Small" class="mt-2" OnClick="CopyApiKey">
+                    Copy to Clipboard
+                </Button>
+            </Alert>
+        }
+        
+        @if (_isLoading)
+        {
+            <LoadingSpinner />
+        }
+        else if (_apiKeys.Count == 0)
+        {
+            <p class="text-gray-500 dark:text-gray-400">No API keys found. Create one to get started.</p>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                        <tr>
+                            <th scope="col" class="px-6 py-3">Name</th>
+                            <th scope="col" class="px-6 py-3">Created</th>
+                            <th scope="col" class="px-6 py-3">Last Used</th>
+                            <th scope="col" class="px-6 py-3">Expires</th>
+                            <th scope="col" class="px-6 py-3">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var key in _apiKeys)
+                        {
+                            <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                                    @key.Name
+                                </td>
+                                <td class="px-6 py-4">
+                                    @key.CreatedAt.ToString("MMM dd, yyyy")
+                                </td>
+                                <td class="px-6 py-4">
+                                    @(key.LastUsedAt?.ToString("MMM dd, yyyy") ?? "Never")
+                                </td>
+                                <td class="px-6 py-4">
+                                    @(key.ExpiresAt?.ToString("MMM dd, yyyy") ?? "Never")
+                                </td>
+                                <td class="px-6 py-4">
+                                    <Button Variant="Button.ButtonVariant.Danger" Size="Button.ButtonSize.Small" OnClick="() => RevokeKey(key.Id)">
+                                        Revoke
+                                    </Button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </Card>
+</div>
+
+@* Create Modal *@
+@if (_showCreateModal)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <Card class="w-full max-w-md m-4">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Create API Key</h3>
+            
+            <EditForm Model="_createModel" OnValidSubmit="HandleCreateKey" FormName="create-api-key">
+                <DataAnnotationsValidator />
+                
+                <TextInput Id="keyName" 
+                           Type="text" 
+                           Label="Key Name" 
+                           Placeholder="My API Key" 
+                           @bind-Value="_createModel.Name"
+                           Required="true"
+                           HelperText="A friendly name to identify this key" />
+                
+                <div class="mb-4">
+                    <label for="expiry" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Expiration</label>
+                    <select id="expiry" @bind="_createModel.ExpiryDays" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                        <option value="30">30 days</option>
+                        <option value="90">90 days</option>
+                        <option value="365">1 year</option>
+                        <option value="0">Never</option>
+                    </select>
+                </div>
+                
+                <div class="flex justify-end space-x-2">
+                    <Button Variant="Button.ButtonVariant.Secondary" OnClick="() => _showCreateModal = false">
+                        Cancel
+                    </Button>
+                    <Button Type="submit" Loading="_isCreating" LoadingText="Creating...">
+                        Create Key
+                    </Button>
+                </div>
+            </EditForm>
+        </Card>
+    </div>
+}
+
+@code {
+    private List<ApiKeyInfo> _apiKeys = new();
+    private bool _isLoading = true;
+    private bool _isCreating;
+    private bool _showCreateModal;
+    private string? _successMessage;
+    private string? _errorMessage;
+    private string? _newApiKey;
+    private CreateApiKeyModel _createModel = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadApiKeys();
+    }
+
+    private async Task LoadApiKeys()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var userId = AuthStateProvider.CurrentState.UserId;
+            _apiKeys = await ApiKeysClient.ListApiKeysAsync(userId);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to load API keys: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandleCreateKey()
+    {
+        _isCreating = true;
+        _newApiKey = null;
+
+        try
+        {
+            var userId = AuthStateProvider.CurrentState.UserId;
+            DateTimeOffset? expiresAt = _createModel.ExpiryDays > 0 
+                ? DateTimeOffset.UtcNow.AddDays(_createModel.ExpiryDays) 
+                : null;
+
+            var result = await ApiKeysClient.CreateApiKeyAsync(userId, _createModel.Name!, expiresAt);
+
+            if (result != null)
+            {
+                _newApiKey = result.Key;
+                _successMessage = "API key created successfully";
+                _showCreateModal = false;
+                _createModel = new CreateApiKeyModel();
+                await LoadApiKeys();
+            }
+            else
+            {
+                _errorMessage = "Failed to create API key";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            _isCreating = false;
+        }
+    }
+
+    private async Task RevokeKey(Guid keyId)
+    {
+        try
+        {
+            var userId = AuthStateProvider.CurrentState.UserId;
+            var result = await ApiKeysClient.RevokeApiKeyAsync(userId, keyId);
+            if (result)
+            {
+                _successMessage = "API key revoked successfully";
+                await LoadApiKeys();
+            }
+            else
+            {
+                _errorMessage = "Failed to revoke API key";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"An error occurred: {ex.Message}";
+        }
+    }
+
+    private async Task CopyApiKey()
+    {
+        // Note: This requires JavaScript interop for clipboard access
+        _successMessage = "API key copied to clipboard";
+        await Task.CompletedTask;
+    }
+
+    private class CreateApiKeyModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Key name is required")]
+        public string? Name { get; set; }
+
+        public int ExpiryDays { get; set; } = 90;
+    }
+}

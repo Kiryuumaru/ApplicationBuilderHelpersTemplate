@@ -13,6 +13,6 @@ try
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"An error occurred: {ex.Message}, StackTrace: {ex.StackTrace}");
+    Console.Error.WriteLine($"An error occurred: {ex.Message}, StackTrace: {ex.StackTrace}");
     return -1;
 }

@@ -27,7 +27,7 @@
 
 	<ItemGroup>
 		<!-- Reference projects to ensure they build first, but don't need actual reference -->
-		<ProjectReference Include="..\..\src\Presentation.WebApp\Presentation.WebApp.Client.csproj" ReferenceOutputAssembly="false" />
+		<ProjectReference Include="..\..\src\Presentation.WebApp.Client\Presentation.WebApp.Client.csproj" ReferenceOutputAssembly="false" />
 	</ItemGroup>
 
 	<ItemGroup>

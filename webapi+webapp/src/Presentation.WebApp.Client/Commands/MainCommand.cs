@@ -1,4 +1,5 @@
 ﻿using Application.Client.Authentication.Interfaces.Infrastructure;
+using Application.Client.Common.Extensions;
 using Application.LocalStore.Interfaces.Infrastructure;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Attributes;
@@ -18,6 +19,13 @@ internal class MainCommand : Build.BaseCommand<WebAssemblyHostBuilderWrapper>
         var builder = new WebAssemblyHostBuilderWrapper(WebAssemblyHostBuilder.CreateDefault());
 
         return new ValueTask<WebAssemblyHostBuilderWrapper>(builder);
+    }
+
+    public override void AddConfigurations(ApplicationHostBuilder applicationBuilder, IConfiguration configuration)
+    {
+        base.AddConfigurations(applicationBuilder, configuration);
+
+        configuration.SetApiEndpoint(new Uri(((WebAssemblyHostBuilderWrapper)applicationBuilder.Builder).BaseAddress));
     }
 
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)

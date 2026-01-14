@@ -1,0 +1,105 @@
+@page "/account/profile"
+@attribute [Authorize]
+@inject IUserProfileClient ProfileClient
+@inject IAuthStateProvider AuthStateProvider
+
+<PageTitle>Profile</PageTitle>
+
+<div class="max-w-2xl">
+    <Card>
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Profile Information</h2>
+        
+        @if (!string.IsNullOrEmpty(_successMessage))
+        {
+            <Alert Type="Alert.AlertType.Success" Message="@_successMessage" Dismissible="true" OnDismissed="() => _successMessage = null" />
+        }
+        
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <Alert Type="Alert.AlertType.Error" Message="@_errorMessage" Dismissible="true" OnDismissed="() => _errorMessage = null" />
+        }
+        
+        @if (_isLoading)
+        {
+            <LoadingSpinner />
+        }
+        else if (_profile != null)
+        {
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">User ID</label>
+                    <p class="text-gray-900 dark:text-white font-mono text-sm">@_profile.Id</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
+                    <p class="text-gray-900 dark:text-white">@_profile.Username</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                    <p class="text-gray-900 dark:text-white">
+                        @(_profile.Email ?? "Not set")
+                    </p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Roles</label>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach (var role in _profile.Roles)
+                        {
+                            <span class="px-2 py-1 text-xs rounded-full bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-300">
+                                @role
+                            </span>
+                        }
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Two-Factor Authentication</label>
+                    <p class="text-gray-900 dark:text-white">
+                        @if (_profile.TwoFactorEnabled)
+                        {
+                            <span class="text-green-600 dark:text-green-400">Enabled</span>
+                        }
+                        else
+                        {
+                            <span class="text-yellow-600 dark:text-yellow-400">Disabled</span>
+                            <a href="account/two-factor" class="ml-2 text-primary-600 hover:underline dark:text-primary-500">Set up now</a>
+                        }
+                    </p>
+                </div>
+            </div>
+        }
+    </Card>
+</div>
+
+@code {
+    private UserProfile? _profile;
+    private bool _isLoading = true;
+    private string? _successMessage;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProfile();
+    }
+
+    private async Task LoadProfile()
+    {
+        _isLoading = true;
+
+        try
+        {
+            _profile = await ProfileClient.GetCurrentUserAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to load profile: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

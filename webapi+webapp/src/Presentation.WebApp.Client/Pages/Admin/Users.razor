@@ -1,0 +1,183 @@
+@page "/admin/users"
+@attribute [Authorize(Roles = "Admin")]
+@inject IUsersClient UsersClient
+@inject IRolesClient RolesClient
+
+<PageTitle>User Management</PageTitle>
+
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">User Management</h1>
+    </div>
+    
+    @if (!string.IsNullOrEmpty(_successMessage))
+    {
+        <Alert Type="Alert.AlertType.Success" Message="@_successMessage" Dismissible="true" OnDismissed="() => _successMessage = null" />
+    }
+    
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Type="Alert.AlertType.Error" Message="@_errorMessage" Dismissible="true" OnDismissed="() => _errorMessage = null" />
+    }
+    
+    <Card>
+        @if (_isLoading)
+        {
+            <LoadingSpinner />
+        }
+        else if (_users.Count == 0)
+        {
+            <p class="text-gray-500 dark:text-gray-400">No users found.</p>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                        <tr>
+                            <th scope="col" class="px-6 py-3">User</th>
+                            <th scope="col" class="px-6 py-3">Email</th>
+                            <th scope="col" class="px-6 py-3">2FA</th>
+                            <th scope="col" class="px-6 py-3">Status</th>
+                            <th scope="col" class="px-6 py-3">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in _users)
+                        {
+                            <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center">
+                                        <div class="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium mr-3">
+                                            @(user.Username?.FirstOrDefault().ToString().ToUpperInvariant() ?? "?")
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-gray-900 dark:text-white">@user.Username</p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 font-mono">@user.Id</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    @user.Email
+                                </td>
+                                <td class="px-6 py-4">
+                                    @if (user.TwoFactorEnabled)
+                                    {
+                                        <span class="text-green-500">✓</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-gray-400">-</span>
+                                    }
+                                </td>
+                                <td class="px-6 py-4">
+                                    @if (user.IsLockedOut)
+                                    {
+                                        <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
+                                            Locked
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                                            Active
+                                        </span>
+                                    }
+                                </td>
+                                <td class="px-6 py-4">
+                                    <Button Size="Button.ButtonSize.Small" Variant="Button.ButtonVariant.Secondary" OnClick="() => ViewUser(user)">
+                                        View
+                                    </Button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </Card>
+</div>
+
+@* View User Modal *@
+@if (_viewingUser != null)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <Card class="w-full max-w-lg m-4">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">User Details</h3>
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="text-sm font-medium text-gray-500 dark:text-gray-400">User ID</label>
+                    <p class="font-mono text-sm text-gray-900 dark:text-white">@_viewingUser.Id</p>
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Username</label>
+                    <p class="text-gray-900 dark:text-white">@_viewingUser.Username</p>
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Email</label>
+                    <p class="text-gray-900 dark:text-white">@_viewingUser.Email</p>
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Two-Factor Authentication</label>
+                    <p class="text-gray-900 dark:text-white">@(_viewingUser.TwoFactorEnabled ? "Enabled" : "Disabled")</p>
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Lockout Status</label>
+                    <p class="text-gray-900 dark:text-white">
+                        @if (_viewingUser.IsLockedOut)
+                        {
+                            <span class="text-red-600">Locked until @_viewingUser.LockoutEnd?.ToString("g")</span>
+                        }
+                        else
+                        {
+                            <span class="text-green-600">Not locked</span>
+                        }
+                    </p>
+                </div>
+            </div>
+            
+            <div class="flex justify-end mt-4">
+                <Button Variant="Button.ButtonVariant.Secondary" OnClick="() => _viewingUser = null">
+                    Close
+                </Button>
+            </div>
+        </Card>
+    </div>
+}
+
+@code {
+    private List<IamUser> _users = new();
+    private bool _isLoading = true;
+    private string? _successMessage;
+    private string? _errorMessage;
+    private IamUser? _viewingUser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        _isLoading = true;
+
+        try
+        {
+            _users = await UsersClient.ListUsersAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to load users: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void ViewUser(IamUser user)
+    {
+        _viewingUser = user;
+    }
+}

@@ -31,6 +31,8 @@ internal class WebAssemblyHostBuilderWrapper : IHostApplicationBuilder
 
     public IServiceCollection Services => WebAssemblyHostBuilder.Services;
 
+    public string BaseAddress => WebAssemblyHostBuilder.HostEnvironment.BaseAddress;
+
     public void ConfigureContainer<TContainerBuilder>(IServiceProviderFactory<TContainerBuilder> factory, Action<TContainerBuilder>? configure = null)
         where TContainerBuilder : notnull
         => WebAssemblyHostBuilder.ConfigureContainer(factory, configure);

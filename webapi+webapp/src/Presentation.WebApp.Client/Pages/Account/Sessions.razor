@@ -1,0 +1,160 @@
+@page "/account/sessions"
+@attribute [Authorize]
+@inject ISessionsClient SessionsClient
+@inject IAuthStateProvider AuthStateProvider
+
+<PageTitle>Active Sessions</PageTitle>
+
+<div class="max-w-4xl">
+    <Card>
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Active Sessions</h2>
+            <Button Variant="Button.ButtonVariant.Danger" OnClick="RevokeAllSessions" Loading="_isRevokingAll" LoadingText="Revoking...">
+                Revoke All Sessions
+            </Button>
+        </div>
+        
+        @if (!string.IsNullOrEmpty(_successMessage))
+        {
+            <Alert Type="Alert.AlertType.Success" Message="@_successMessage" Dismissible="true" OnDismissed="() => _successMessage = null" />
+        }
+        
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <Alert Type="Alert.AlertType.Error" Message="@_errorMessage" Dismissible="true" OnDismissed="() => _errorMessage = null" />
+        }
+        
+        @if (_isLoading)
+        {
+            <LoadingSpinner />
+        }
+        else if (_sessions.Count == 0)
+        {
+            <p class="text-gray-500 dark:text-gray-400">No active sessions found.</p>
+        }
+        else
+        {
+            <div class="space-y-4">
+                @foreach (var session in _sessions)
+                {
+                    <div class="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg @(session.IsCurrent ? "border-2 border-primary-500" : "")">
+                        <div class="flex items-center space-x-4">
+                            <div class="text-2xl">
+                                @GetDeviceIcon(session.UserAgent)
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-900 dark:text-white">
+                                    @(session.DeviceName ?? session.UserAgent ?? "Unknown Device")
+                                    @if (session.IsCurrent)
+                                    {
+                                        <span class="ml-2 text-xs bg-primary-100 text-primary-800 px-2 py-1 rounded-full dark:bg-primary-900 dark:text-primary-300">Current</span>
+                                    }
+                                </p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    Created @session.CreatedAt.ToString("MMM dd, yyyy HH:mm")
+                                </p>
+                                <p class="text-xs text-gray-400 dark:text-gray-500">
+                                    IP: @(session.IpAddress ?? "Unknown")
+                                </p>
+                            </div>
+                        </div>
+                        @if (!session.IsCurrent)
+                        {
+                            <Button Variant="Button.ButtonVariant.Secondary" Size="Button.ButtonSize.Small" OnClick="() => RevokeSession(session.Id)">
+                                Revoke
+                            </Button>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </Card>
+</div>
+
+@code {
+    private List<SessionInfo> _sessions = new();
+    private bool _isLoading = true;
+    private bool _isRevokingAll;
+    private string? _successMessage;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSessions();
+    }
+
+    private async Task LoadSessions()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var userId = AuthStateProvider.CurrentState.UserId;
+            _sessions = await SessionsClient.ListSessionsAsync(userId);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Failed to load sessions: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task RevokeSession(Guid sessionId)
+    {
+        try
+        {
+            var userId = AuthStateProvider.CurrentState.UserId;
+            var result = await SessionsClient.RevokeSessionAsync(userId, sessionId);
+            if (result)
+            {
+                _successMessage = "Session revoked successfully";
+                await LoadSessions();
+            }
+            else
+            {
+                _errorMessage = "Failed to revoke session";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"An error occurred: {ex.Message}";
+        }
+    }
+
+    private async Task RevokeAllSessions()
+    {
+        _isRevokingAll = true;
+
+        try
+        {
+            var userId = AuthStateProvider.CurrentState.UserId;
+            var revokedCount = await SessionsClient.RevokeAllSessionsAsync(userId);
+            _successMessage = $"Revoked {revokedCount} session(s) successfully";
+            await LoadSessions();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            _isRevokingAll = false;
+        }
+    }
+
+    private string GetDeviceIcon(string? userAgent)
+    {
+        if (string.IsNullOrEmpty(userAgent))
+            return "🖥️";
+            
+        var ua = userAgent.ToLowerInvariant();
+        if (ua.Contains("mobile") || ua.Contains("android") || ua.Contains("iphone"))
+            return "📱";
+        if (ua.Contains("tablet") || ua.Contains("ipad"))
+            return "📱";
+        return "💻";
+    }
+}
