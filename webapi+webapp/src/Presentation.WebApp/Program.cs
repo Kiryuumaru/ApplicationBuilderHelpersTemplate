@@ -1,3 +1,4 @@
+using Application.Client;
 using Application.Client.Authentication.Interfaces;
 using Application.Client.Authentication.Services;
 using Application.Client.Iam.Interfaces;
@@ -7,7 +8,13 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Presentation.WebApp;
+using Presentation.WebApp.Commands;
 using Presentation.WebApp.Services;
+
+//return await ApplicationBuilderHelpers.ApplicationBuilder.Create()
+//    .AddApplication<ClientApplication>()
+//    .AddCommand<MainCommand>()
+//    .RunAsync(args);
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");

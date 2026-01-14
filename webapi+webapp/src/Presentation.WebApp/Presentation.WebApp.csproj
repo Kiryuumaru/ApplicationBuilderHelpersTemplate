@@ -1,10 +1,15 @@
-<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
 	<PropertyGroup>
 		<LangVersion>14</LangVersion>
+		<GenerateBuildConstants>true</GenerateBuildConstants>
+		<BaseCommandType>Presentation.Commands.BaseCommand</BaseCommandType>
 		<TargetFramework>net10.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
+		<OutputType>Exe</OutputType>
+		<InvariantGlobalization>true</InvariantGlobalization>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 	</PropertyGroup>
 
 	<PropertyGroup>
@@ -25,6 +30,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Application.Client\Application.Client.csproj" />
+		<ProjectReference Include="..\Presentation\Presentation.csproj" />
 	</ItemGroup>
 
 </Project>
