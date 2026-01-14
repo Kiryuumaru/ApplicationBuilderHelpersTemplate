@@ -1,4 +1,4 @@
-using Application.LocalStore.Interfaces;
+using Application.LocalStore.Interfaces.Infrastructure;
 using Infrastructure.EFCore.Interfaces;
 using Infrastructure.EFCore.LocalStore.Configurations;
 using Infrastructure.EFCore.LocalStore.Services;

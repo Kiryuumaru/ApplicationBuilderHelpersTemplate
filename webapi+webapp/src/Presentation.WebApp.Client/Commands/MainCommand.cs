@@ -1,7 +1,11 @@
-﻿using ApplicationBuilderHelpers;
+﻿using Application.Client.Authentication.Interfaces.Infrastructure;
+using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Attributes;
+using Blazored.LocalStorage;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Presentation.WebApp.Client.Services;
 
 namespace Presentation.WebApp.Client.Commands;
 
@@ -10,8 +14,28 @@ internal class MainCommand : Build.BaseCommand<WebAssemblyHostBuilderWrapper>
 {
     protected override ValueTask<WebAssemblyHostBuilderWrapper> ApplicationBuilder(CancellationToken stoppingToken)
     {
+        Console.WriteLine("Creating WebAssembly Host Builder...");
         var builder = new WebAssemblyHostBuilderWrapper(WebAssemblyHostBuilder.CreateDefault());
 
         return new ValueTask<WebAssemblyHostBuilderWrapper>(builder);
+    }
+
+    protected override async ValueTask Run(ApplicationHost<WebAssemblyHostBuilderWrapper> applicationHost, CancellationTokenSource cancellationTokenSource)
+    {
+        Console.WriteLine("Starting WebAssembly Host...");
+        await base.Run(applicationHost, cancellationTokenSource);
+    }
+
+    public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
+    {
+        base.AddServices(applicationBuilder, services);
+
+        services.AddBlazoredLocalStorage();
+
+        services.AddScoped<ITokenStorage, LocalStorageTokenStorage>();
+
+        services.AddScoped<AuthenticationStateProvider, BlazorAuthStateProvider>();
+
+        services.AddAuthorizationCore();
     }
 }

@@ -185,8 +185,6 @@ internal class MainCommand : Build.BaseCommand<WebApplicationBuilder>
 
         var app = (WebApplication)host;
 
-        app.UseExceptionHandler();
-
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {

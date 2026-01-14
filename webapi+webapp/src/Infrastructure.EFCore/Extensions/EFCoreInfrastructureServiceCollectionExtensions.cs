@@ -1,4 +1,4 @@
-using Application.LocalStore.Interfaces;
+using Infrastructure.EFCore.Interfaces;
 using Infrastructure.EFCore.Services;
 using Infrastructure.EFCore.Workers;
 using Microsoft.Extensions.DependencyInjection;

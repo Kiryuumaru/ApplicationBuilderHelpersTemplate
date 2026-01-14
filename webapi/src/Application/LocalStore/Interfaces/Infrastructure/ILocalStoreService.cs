@@ -1,4 +1,4 @@
-namespace Application.LocalStore.Interfaces;
+namespace Application.LocalStore.Interfaces.Infrastructure;
 
 public interface ILocalStoreService : IDisposable
 {

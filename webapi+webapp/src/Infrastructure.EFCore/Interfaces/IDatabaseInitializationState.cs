@@ -1,4 +1,4 @@
-namespace Application.LocalStore.Interfaces;
+namespace Infrastructure.EFCore.Interfaces;
 
 public interface IDatabaseInitializationState
 {

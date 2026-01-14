@@ -65,11 +65,12 @@ public abstract class BaseCommand<[DynamicallyAccessedMembers(DynamicallyAccesse
 
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
     {
-        services.AddSingleton(ApplicationConstants);
+        base.AddServices(applicationBuilder, services);
+
+        services.AddSingleton(sp => ApplicationConstants);
+        services.AddScoped(sp => ApplicationConstants);
 
         services.Configure<ConsoleLifetimeOptions>(opts => opts.SuppressStatusMessages = true);
-
-        base.AddServices(applicationBuilder, services);
     }
 
     /// <inheritdoc/>

@@ -1,4 +1,5 @@
 using Application.LocalStore.Interfaces;
+using Application.LocalStore.Interfaces.Infrastructure;
 using Infrastructure.EFCore.Extensions;
 using Infrastructure.EFCore.LocalStore.Models;
 using Microsoft.EntityFrameworkCore;

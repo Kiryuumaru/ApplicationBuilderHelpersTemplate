@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Application.LocalStore.Interfaces;
 using Application.LocalStore.Common;
+using Application.LocalStore.Interfaces.Infrastructure;
 
 namespace Application.LocalStore.Services;
 
