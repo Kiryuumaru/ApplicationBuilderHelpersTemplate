@@ -364,6 +364,9 @@ FodyWeavers.xsd
 /output
 /.nuke/temp
 /creds.json
-/src/Presentation.WebApi/app.db
-/src/Presentation.WebApi/app.db-shm
-/src/Presentation.WebApi/app.db-wal
+/webapi/src/Presentation.WebApi/app.db
+/webapi/src/Presentation.WebApi/app.db-shm
+/webapi/src/Presentation.WebApi/app.db-wal
+/webapi+webapp/src/Presentation.WebApp/app.db
+/webapi+webapp/src/Presentation.WebApp/app.db-shm
+/webapi+webapp/src/Presentation.WebApp/app.db-wal
