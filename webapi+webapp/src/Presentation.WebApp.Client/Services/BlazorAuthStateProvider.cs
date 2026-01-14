@@ -5,10 +5,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 
 namespace Presentation.WebApp.Client.Services;
 
-/// <summary>
-/// Blazor AuthenticationStateProvider implementation that bridges IAuthStateProvider.
-/// </summary>
-public class BlazorAuthStateProvider : AuthenticationStateProvider
+internal class BlazorAuthStateProvider : AuthenticationStateProvider
 {
     private readonly IAuthStateProvider _authStateProvider;
 
