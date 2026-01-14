@@ -31,7 +31,7 @@ dotnet build
 dotnet test
 
 # Run WebApi
-dotnet run --project src/Presentation.WebApi
+dotnet run --project src/Presentation.WebApp
 ```
 
 ## API Base URL
@@ -62,7 +62,7 @@ Get tokens via:
 
 | Project | Tests |
 |---------|-------|
-| Presentation.WebApi.FunctionalTests | 588 |
+| Presentation.WebApp.FunctionalTests | 588 |
 | **Total** | **588** |
 
 ## Recent Changes (January 2026)

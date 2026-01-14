@@ -1,6 +1,6 @@
 using AbsolutePathHelpers;
 using Application.AppEnvironment.Services;
-using Application.Common.Configuration.Extensions;
+using Application.Common.Extensions;
 using Application.Common.Interfaces.Application;
 using Application.Logger.Extensions;
 using Application.Server.Authorization.Extensions;

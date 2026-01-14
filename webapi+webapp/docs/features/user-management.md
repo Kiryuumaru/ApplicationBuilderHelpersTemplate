@@ -128,7 +128,7 @@ auth.sessions._write              # Manage sessions
 
 ## Test Coverage
 
-Tests are located in `tests/Presentation.WebApi.FunctionalTests/Iam/`:
+Tests are located in `tests/Presentation.WebApp.FunctionalTests/Iam/`:
 
 - **UsersApiTests.cs** - User CRUD operations
 - **RolesApiTests.cs** - Role management

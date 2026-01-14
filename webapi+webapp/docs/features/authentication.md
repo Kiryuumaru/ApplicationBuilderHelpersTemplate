@@ -539,7 +539,7 @@ POST /api/v1/auth/login/2fa
 
 ## Test Coverage
 
-Tests are located in `tests/Presentation.WebApi.FunctionalTests/Auth/`:
+Tests are located in `tests/Presentation.WebApp.FunctionalTests/Auth/`:
 
 | Test File | Tests | Description |
 |-----------|-------|-------------|

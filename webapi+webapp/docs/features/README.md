@@ -23,5 +23,5 @@ This directory contains detailed documentation for implemented features in this 
 | Domain.UnitTests | 46 |
 | Application.UnitTests | 67 |
 | Application.IntegrationTests | 20 |
-| Presentation.WebApi.FunctionalTests | 455 |
+| Presentation.WebApp.FunctionalTests | 455 |
 | **Total** | **588** |

@@ -1,11 +1,15 @@
 using System.Diagnostics;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Sockets;
+using Microsoft.AspNetCore.SignalR.Client;
 
 namespace Presentation.WebApp.FunctionalTests.Fixtures;
 
 /// <summary>
 /// Test host that runs the WebApi application as a subprocess for functional testing.
+/// Since WebApi uses ApplicationBuilderHelpers CLI pattern, WebApplicationFactory doesn't work.
+/// Instead, we start the actual application and test against it via HTTP.
 /// </summary>
 public class WebApiTestHost : IAsyncDisposable
 {
@@ -37,41 +41,53 @@ public class WebApiTestHost : IAsyncDisposable
         return port;
     }
 
+    /// <summary>
+    /// Starts the WebApi application as a subprocess.
+    /// </summary>
     public async Task StartAsync(TimeSpan? timeout = null)
     {
         timeout ??= TimeSpan.FromSeconds(60);
 
-        _output.WriteLine($"[WEBAPI] Starting WebApi on {BaseUrl}...");
+        _output.WriteLine($"[HOST] Starting WebApi on {BaseUrl}...");
+        _output.WriteLine($"[HOST] AppContext.BaseDirectory: {AppContext.BaseDirectory}");
 
         // Detect configuration from current test output directory (contains Debug or Release)
         var configuration = AppContext.BaseDirectory.Contains("Release", StringComparison.OrdinalIgnoreCase)
             ? "Release"
             : "Debug";
 
+        // Find the WebApi output directory
         var webApiOutputDir = Path.GetFullPath(Path.Combine(
             AppContext.BaseDirectory,
             "..", "..", "..", "..", "..",
-            "src", "Presentation.WebApi", "bin", configuration, "net10.0"));
+            "src", "Presentation.WebApp", "bin", configuration, "net10.0"));
 
-        _output.WriteLine($"[WEBAPI] Output dir: {webApiOutputDir}");
+        _output.WriteLine($"[HOST] WebApi output dir: {webApiOutputDir}");
 
         if (!Directory.Exists(webApiOutputDir))
         {
             throw new DirectoryNotFoundException($"WebApi output directory not found at {webApiOutputDir}. Build the WebApi project first.");
         }
 
+        // Find the executable dynamically by looking for .runtimeconfig.json files
+        // The main application executable has a matching .runtimeconfig.json (dependency dlls do not)
+        // File is like "sampleapp.runtimeconfig.json", we need to extract "sampleapp"
         var exePath = Directory.GetFiles(webApiOutputDir, "*.runtimeconfig.json")
             .Select(rc => Path.GetFileName(rc).Replace(".runtimeconfig.json", ""))
             .Select(name => Path.Combine(webApiOutputDir, name + ".exe"))
             .FirstOrDefault(File.Exists);
 
+        // Fallback to dll if exe doesn't exist (Linux/macOS)
         if (exePath == null)
         {
             exePath = Directory.GetFiles(webApiOutputDir, "*.runtimeconfig.json")
                 .Select(rc => Path.GetFileName(rc).Replace(".runtimeconfig.json", ""))
                 .Select(name => Path.Combine(webApiOutputDir, name + ".dll"))
                 .FirstOrDefault(File.Exists);
+            _output.WriteLine($"[HOST] No .exe found, trying DLL: {exePath}");
         }
+
+        _output.WriteLine($"[HOST] Using executable: {exePath}");
 
         if (exePath == null || !File.Exists(exePath))
         {
@@ -83,11 +99,14 @@ public class WebApiTestHost : IAsyncDisposable
         var args = isExe ? $"--urls {BaseUrl}" : $"\"{exePath}\" --urls {BaseUrl}";
         var fileName = isExe ? exePath : "dotnet";
 
-        _output.WriteLine($"[WEBAPI] Starting: {fileName} {args}");
+        _output.WriteLine($"[HOST] FileName: {fileName}");
+        _output.WriteLine($"[HOST] Arguments: {args}");
+        _output.WriteLine($"[HOST] WorkingDirectory: {workDir}");
 
         var startInfo = new ProcessStartInfo
         {
             FileName = fileName,
+            // Pass --urls argument to configure the listening URL
             Arguments = args,
             UseShellExecute = false,
             RedirectStandardOutput = true,
@@ -96,9 +115,12 @@ public class WebApiTestHost : IAsyncDisposable
             WorkingDirectory = workDir
         };
 
+        // Also set environment variables as fallback
         startInfo.Environment["ASPNETCORE_URLS"] = BaseUrl;
         startInfo.Environment["ASPNETCORE_ENVIRONMENT"] = "Development";
+        // Disable launch settings to avoid conflicts
         startInfo.Environment["DOTNET_LAUNCH_PROFILE"] = "";
+        // Use a unique in-memory database for each test run to ensure clean state
         startInfo.Environment["SQLITE_CONNECTION_STRING"] = $"Data Source={Guid.NewGuid()};Mode=Memory;Cache=Shared";
 
         _process = new Process { StartInfo = startInfo };
@@ -123,11 +145,12 @@ public class WebApiTestHost : IAsyncDisposable
         _process.BeginOutputReadLine();
         _process.BeginErrorReadLine();
 
-        _output.WriteLine($"[WEBAPI] Process started (PID: {_process.Id})");
+        _output.WriteLine($"[HOST] Process started (PID: {_process.Id})");
 
+        // Wait for the server to be ready
         await WaitForServerReady(timeout.Value);
 
-        _output.WriteLine("[WEBAPI] Started successfully");
+        _output.WriteLine("[HOST] WebApi started successfully");
     }
 
     private async Task WaitForServerReady(TimeSpan timeout)
@@ -136,9 +159,10 @@ public class WebApiTestHost : IAsyncDisposable
 
         while (sw.Elapsed < timeout)
         {
+            // Check if process has exited unexpectedly
             if (_process != null && _process.HasExited)
             {
-                throw new InvalidOperationException($"WebApi process exited unexpectedly with code {_process.ExitCode}.");
+                throw new InvalidOperationException($"WebApi process exited unexpectedly with code {_process.ExitCode}. Check the output logs above for errors.");
             }
 
             try
@@ -146,13 +170,17 @@ public class WebApiTestHost : IAsyncDisposable
                 var response = await _httpClient.GetAsync("/");
                 if (response.IsSuccessStatusCode || (int)response.StatusCode < 500)
                 {
-                    _output.WriteLine($"[WEBAPI] Server responded with {response.StatusCode} after {sw.ElapsedMilliseconds}ms");
+                    _output.WriteLine($"[HOST] Server responded with {response.StatusCode} after {sw.ElapsedMilliseconds}ms");
                     return;
                 }
             }
-            catch (HttpRequestException)
+            catch (HttpRequestException ex)
             {
-                // Server not ready yet
+                // Server not ready yet - log every 5 seconds
+                if (sw.ElapsedMilliseconds % 5000 < 100)
+                {
+                    _output.WriteLine($"[HOST] Waiting for server... ({sw.ElapsedMilliseconds}ms elapsed, error: {ex.Message})");
+                }
             }
 
             await Task.Delay(100);
@@ -161,9 +189,33 @@ public class WebApiTestHost : IAsyncDisposable
         throw new TimeoutException($"WebApi did not start within {timeout.TotalSeconds}s");
     }
 
+    /// <summary>
+    /// Creates a SignalR HubConnection to the specified hub.
+    /// </summary>
+    public HubConnection CreateHubConnection(string hubPath)
+    {
+        _output.WriteLine($"[HOST] Creating SignalR connection to {hubPath}");
+
+        var hubUrl = new Uri(new Uri(BaseUrl), hubPath);
+
+        return new HubConnectionBuilder()
+            .WithUrl(hubUrl)
+            .Build();
+    }
+
+    /// <summary>
+    /// Creates an HTTP client with authentication.
+    /// </summary>
+    public HttpClient CreateAuthenticatedClient(string token)
+    {
+        var client = new HttpClient { BaseAddress = new Uri(BaseUrl) };
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        return client;
+    }
+
     public async ValueTask DisposeAsync()
     {
-        _output.WriteLine("[WEBAPI] Shutting down...");
+        _output.WriteLine("[HOST] Shutting down WebApi...");
 
         if (_process != null && !_process.HasExited)
         {
@@ -174,13 +226,13 @@ public class WebApiTestHost : IAsyncDisposable
             }
             catch (Exception ex)
             {
-                _output.WriteLine($"[WEBAPI] Error killing process: {ex.Message}");
+                _output.WriteLine($"[HOST] Error killing process: {ex.Message}");
             }
         }
 
         _process?.Dispose();
         _httpClient.Dispose();
 
-        _output.WriteLine("[WEBAPI] Stopped");
+        _output.WriteLine("[HOST] WebApi stopped");
     }
 }

@@ -1,4 +1,4 @@
-using Application.Common.Configuration.Extensions;
+using Application.Common.Extensions;
 using Application.Logger.Extensions;
 using Infrastructure.OpenTelemetry.Logger.Interfaces;
 using Infrastructure.OpenTelemetry.Logger.LogEventPropertyTypes;

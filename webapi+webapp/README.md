@@ -101,13 +101,13 @@ Dependencies flow inward: Outer layers depend on inner layers, never reverse.
 │   ├── Infrastructure.EFCore.LocalStore/   # Key-value storage
 │   ├── Infrastructure.Passkeys/            # WebAuthn/Passkey support
 │   ├── Infrastructure.Serilog.Logger/      # Structured logging
-│   ├── Presentation.WebApi/                # REST API controllers
+│   ├── Presentation.WebApp/                # REST API controllers
 │   └── Presentation.WebApp/                # Blazor Server UI
 ├── tests/
 │   ├── Domain.UnitTests/                   # Domain logic tests
 │   ├── Application.UnitTests/              # Application service tests
 │   ├── Application.IntegrationTests/       # Integration tests
-│   └── Presentation.WebApi.FunctionalTests/# API functional tests
+│   └── Presentation.WebApp.FunctionalTests/# API functional tests
 └── ApplicationBuilderHelpersTemplate.sln
 ```
 
@@ -182,7 +182,7 @@ The file will not be overwritten if it already exists.
 dotnet build                # Build the solution
 dotnet test                 # Run all tests
 
-dotnet run --project src/Presentation.WebApi   # Run REST API
+dotnet run --project src/Presentation.WebApp   # Run REST API
 dotnet run --project src/Presentation.WebApp   # Run Blazor web app
 ```
 
@@ -195,12 +195,12 @@ Test projects are organized by layer:
 | Domain.UnitTests | Pure domain logic tests |
 | Application.UnitTests | Application service tests |
 | Application.IntegrationTests | Tests with real infrastructure |
-| Presentation.WebApi.FunctionalTests | Full API endpoint tests |
+| Presentation.WebApp.FunctionalTests | Full API endpoint tests |
 
 ```powershell
 dotnet test                                          # Run all tests
 dotnet test tests/Domain.UnitTests                   # Run domain tests
-dotnet test tests/Presentation.WebApi.FunctionalTests # Run API tests
+dotnet test tests/Presentation.WebApp.FunctionalTests # Run API tests
 ```
 
 ## 🔧 Customization
@@ -209,7 +209,7 @@ dotnet test tests/Presentation.WebApi.FunctionalTests # Run API tests
 1. Define entities in `Domain/`
 2. Create interfaces and services in `Application/`
 3. Implement infrastructure in `Infrastructure.*/`
-4. Add controllers in `Presentation.WebApi/`
+4. Add controllers in `Presentation.WebApp/`
 
 ### Switching Database Provider
 Replace SQLite with PostgreSQL, SQL Server, etc. by creating a new Infrastructure provider project that implements the same interfaces.

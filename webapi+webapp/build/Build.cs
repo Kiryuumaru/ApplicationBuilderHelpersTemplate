@@ -23,7 +23,7 @@ partial class Build : BaseNukeBuildHelpers
     TestEntry TestEntry => _ => _
         .AppId(AppId)
         .Matrix([RunnerOS.Windows2022, RunnerOS.Ubuntu2204], (osTest, osId) => osTest
-            .Matrix(["Domain.UnitTests", "Application.UnitTests", "Application.IntegrationTests", "Presentation.WebApi.FunctionalTests"], (test, testId) => test
+            .Matrix(["Domain.UnitTests", "Application.UnitTests", "Application.IntegrationTests", "Presentation.WebApp.FunctionalTests"], (test, testId) => test
                 .DisplayName($"Test {testId} on {osId.Name}")
                 .WorkflowId($"test_{osId.Name}_{testId}".Replace(".", "_").Replace("-", "_").ToLowerInvariant())
                 .RunnerOS(osId)

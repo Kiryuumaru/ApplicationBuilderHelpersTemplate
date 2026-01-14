@@ -18,7 +18,7 @@ Since WebApi uses `ApplicationBuilderHelpers.ApplicationBuilder.Create()` patter
 │                                      ▼                                  │
 │  ┌───────────────────────────────────────────────────────────────────┐ │
 │  │  WebApiTestHost                                                   │ │
-│  │  - Runs: src/Presentation.WebApi/bin/Debug/net10.0/WebApi.exe    │ │
+│  │  - Runs: src/Presentation.WebApp/bin/Debug/net10.0/WebApi.exe    │ │
 │  │  - Uses ASPNETCORE_URLS env var for URL configuration            │ │
 │  │  - Waits for server ready via polling                             │ │
 │  └───────────────────────────────────────────────────────────────────┘ │
@@ -47,7 +47,7 @@ Since WebApi uses `ApplicationBuilderHelpers.ApplicationBuilder.Create()` patter
 ### File Organization
 Each controller has its own test file:
 ```
-tests/Presentation.WebApi.FunctionalTests/
+tests/Presentation.WebApp.FunctionalTests/
 ├── Auth/
 │   └── AuthApiTests.cs
 ├── Users/
@@ -115,13 +115,13 @@ Examples:
 
 ```bash
 # Run all functional tests
-dotnet test tests/Presentation.WebApi.FunctionalTests
+dotnet test tests/Presentation.WebApp.FunctionalTests
 
 # Run specific test class
-dotnet test tests/Presentation.WebApi.FunctionalTests --filter "FullyQualifiedName~AuthApiTests"
+dotnet test tests/Presentation.WebApp.FunctionalTests --filter "FullyQualifiedName~AuthApiTests"
 
 # Run specific test
-dotnet test tests/Presentation.WebApi.FunctionalTests --filter "FullyQualifiedName~Login_WithValidCredentials"
+dotnet test tests/Presentation.WebApp.FunctionalTests --filter "FullyQualifiedName~Login_WithValidCredentials"
 ```
 
 ## Pre-Test Build
@@ -129,8 +129,8 @@ dotnet test tests/Presentation.WebApi.FunctionalTests --filter "FullyQualifiedNa
 Always rebuild WebApi before running tests:
 
 ```bash
-dotnet build src/Presentation.WebApi
-dotnet test tests/Presentation.WebApi.FunctionalTests
+dotnet build src/Presentation.WebApp
+dotnet test tests/Presentation.WebApp.FunctionalTests
 ```
 
 ## Test Summary
@@ -140,5 +140,5 @@ dotnet test tests/Presentation.WebApi.FunctionalTests
 | Domain.UnitTests | 46 |
 | Application.UnitTests | 67 |
 | Application.IntegrationTests | 20 |
-| Presentation.WebApi.FunctionalTests | 378 |
+| Presentation.WebApp.FunctionalTests | 378 |
 | **Total** | **511** |
