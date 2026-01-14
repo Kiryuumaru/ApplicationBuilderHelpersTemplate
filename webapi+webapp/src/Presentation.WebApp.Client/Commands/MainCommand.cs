@@ -15,16 +15,9 @@ internal class MainCommand : Build.BaseCommand<WebAssemblyHostBuilderWrapper>
 {
     protected override ValueTask<WebAssemblyHostBuilderWrapper> ApplicationBuilder(CancellationToken stoppingToken)
     {
-        Console.WriteLine("Creating WebAssembly Host Builder...");
         var builder = new WebAssemblyHostBuilderWrapper(WebAssemblyHostBuilder.CreateDefault());
 
         return new ValueTask<WebAssemblyHostBuilderWrapper>(builder);
-    }
-
-    protected override async ValueTask Run(ApplicationHost<WebAssemblyHostBuilderWrapper> applicationHost, CancellationTokenSource cancellationTokenSource)
-    {
-        Console.WriteLine("Starting WebAssembly Host...");
-        await base.Run(applicationHost, cancellationTokenSource);
     }
 
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
