@@ -1,34 +1,21 @@
-using Presentation.WebApp.Components;
+using Application.Server;
+using Infrastructure.EFCore;
+using Infrastructure.EFCore.LocalStore;
+using Infrastructure.EFCore.Server.Identity;
+using Infrastructure.EFCore.Sqlite;
+using Infrastructure.OpenTelemetry;
+using Infrastructure.Server.Identity;
+using Infrastructure.Server.Passkeys;
+using Presentation.WebApp.Commands;
 
-var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
-builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents()
-    .AddInteractiveWebAssemblyComponents();
-
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseWebAssemblyDebugging();
-}
-else
-{
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
-}
-app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-app.UseHttpsRedirection();
-
-app.UseAntiforgery();
-
-app.MapStaticAssets();
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode()
-    .AddInteractiveWebAssemblyRenderMode()
-    .AddAdditionalAssemblies(typeof(Presentation.WebApp.Client._Imports).Assembly);
-
-app.Run();
+return await ApplicationBuilderHelpers.ApplicationBuilder.Create()
+    .AddApplication<ServerApplication>()
+    .AddApplication<OpenTelemetryInfrastructure>()
+    .AddApplication<IdentityInfrastructure>()
+    .AddApplication<PasskeysInfrastructure>()
+    .AddApplication<EFCoreInfrastructure>()
+    .AddApplication<EFCoreSqliteInfrastructure>()
+    .AddApplication<EFCoreIdentityInfrastructure>()
+    .AddApplication<EFCoreLocalStoreInfrastructure>()
+    .AddCommand<MainCommand>()
+    .RunAsync(args);
