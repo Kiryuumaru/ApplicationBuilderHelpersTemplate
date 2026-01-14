@@ -1,8 +1,9 @@
-﻿using ApplicationBuilderHelpers.Attributes;
+﻿using ApplicationBuilderHelpers;
+using ApplicationBuilderHelpers.Attributes;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
-namespace Presentation.WebApp.Client.Controllers;
+namespace Presentation.WebApp.Client.Commands;
 
 [Command("Main subcommand.")]
 internal class MainCommand : Build.BaseCommand<WebAssemblyHostBuilderWrapper>
@@ -13,6 +14,4 @@ internal class MainCommand : Build.BaseCommand<WebAssemblyHostBuilderWrapper>
 
         return new ValueTask<WebAssemblyHostBuilderWrapper>(builder);
     }
-
-
 }
