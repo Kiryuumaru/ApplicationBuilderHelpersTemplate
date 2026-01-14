@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "Presentation.WebApp": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "https://::5901;http://::5900"
+      }
+    }
+  }
+}

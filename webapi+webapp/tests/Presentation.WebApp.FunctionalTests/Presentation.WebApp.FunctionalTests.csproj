@@ -25,10 +25,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\src\Presentation.WebApp\Presentation.WebApp.csproj" ReferenceOutputAssembly="false" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<Using Include="Xunit" />
 		<Using Include="Xunit.Abstractions" />
 	</ItemGroup>
