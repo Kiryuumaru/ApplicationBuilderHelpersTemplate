@@ -12,7 +12,7 @@ namespace Presentation.WebApp.FunctionalTests.Auth;
 /// Tests authentication flows, credential validation, and security edge cases.
 /// Each test class gets its own isolated WebApi host with random port and database.
 /// </summary>
-public class LoginApiTests : WebApiTestBase
+public class LoginApiTests : WebAppTestBase
 {
     public LoginApiTests(ITestOutputHelper output) : base(output)
     {

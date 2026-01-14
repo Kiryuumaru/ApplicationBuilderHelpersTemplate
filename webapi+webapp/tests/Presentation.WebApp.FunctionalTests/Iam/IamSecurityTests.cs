@@ -8,7 +8,7 @@ namespace Presentation.WebApp.FunctionalTests.Iam;
 /// Security tests for IAM API endpoints.
 /// Tests access control, self-escalation prevention, and cross-user access restrictions.
 /// </summary>
-public class IamSecurityTests : WebApiTestBase
+public class IamSecurityTests : WebAppTestBase
 {
     public IamSecurityTests(ITestOutputHelper output) : base(output)
     {

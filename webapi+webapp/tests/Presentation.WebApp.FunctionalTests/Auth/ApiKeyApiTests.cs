@@ -9,7 +9,7 @@ namespace Presentation.WebApp.FunctionalTests.Auth;
 /// Functional tests for API Key Management endpoints.
 /// Tests create, list, revoke, and usage of API keys.
 /// </summary>
-public class ApiKeyApiTests : WebApiTestBase
+public class ApiKeyApiTests : WebAppTestBase
 {
     public ApiKeyApiTests(ITestOutputHelper output) : base(output)
     {

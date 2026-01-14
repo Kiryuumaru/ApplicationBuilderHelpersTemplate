@@ -12,7 +12,7 @@ namespace Presentation.WebApp.FunctionalTests.Auth;
 /// - Cross-user header confusion at /auth/refresh (Authorization header vs refresh token in body)
 /// - Using refresh tokens as bearer tokens on other protected endpoints
 /// </summary>
-public class RefreshTokenMisuseTests : WebApiTestBase
+public class RefreshTokenMisuseTests : WebAppTestBase
 {
     public RefreshTokenMisuseTests(ITestOutputHelper output) : base(output)
     {

@@ -10,7 +10,7 @@ namespace Presentation.WebApp.FunctionalTests.Iam;
 /// Functional tests for IAM Roles API endpoints.
 /// Tests role assignment and removal operations.
 /// </summary>
-public class RolesApiTests : WebApiTestBase
+public class RolesApiTests : WebAppTestBase
 {
     // Use unique usernames per test run to avoid conflicts
     private readonly string _testUsername = $"testuser_{Guid.NewGuid():N}";

@@ -8,7 +8,7 @@ namespace Presentation.WebApp.FunctionalTests.Auth;
 /// Functional tests for Session Management API endpoints.
 /// Tests session listing, revocation, and refresh token rotation.
 /// </summary>
-public class SessionApiTests : WebApiTestBase
+public class SessionApiTests : WebAppTestBase
 {
     public SessionApiTests(ITestOutputHelper output) : base(output)
     {

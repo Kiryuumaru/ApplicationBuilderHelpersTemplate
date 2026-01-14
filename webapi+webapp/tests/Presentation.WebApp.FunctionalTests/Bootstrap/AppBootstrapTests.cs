@@ -5,7 +5,7 @@ namespace Presentation.WebApp.FunctionalTests.Bootstrap;
 /// <summary>
 /// Tests that the WebApi application boots correctly.
 /// </summary>
-public class AppBootstrapTests : WebApiTestBase
+public class AppBootstrapTests : WebAppTestBase
 {
     public AppBootstrapTests(ITestOutputHelper output) : base(output)
     {

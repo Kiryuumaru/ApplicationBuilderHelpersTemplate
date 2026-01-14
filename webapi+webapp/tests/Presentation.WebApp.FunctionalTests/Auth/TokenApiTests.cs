@@ -9,7 +9,7 @@ namespace Presentation.WebApp.FunctionalTests.Auth;
 /// Functional tests for Token Management API endpoints.
 /// Tests refresh token, logout, and token security.
 /// </summary>
-public class TokenApiTests : WebApiTestBase
+public class TokenApiTests : WebAppTestBase
 {
     public TokenApiTests(ITestOutputHelper output) : base(output)
     {

@@ -10,7 +10,7 @@ namespace Presentation.WebApp.FunctionalTests.Iam;
 /// Functional tests for IAM Users API endpoints.
 /// Tests admin operations on users including CRUD and permissions.
 /// </summary>
-public class UsersApiTests : WebApiTestBase
+public class UsersApiTests : WebAppTestBase
 {
     // Use unique usernames per test run to avoid conflicts
     private readonly string _adminUsername = $"admin_{Guid.NewGuid():N}";

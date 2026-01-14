@@ -8,7 +8,7 @@ namespace Presentation.WebApp.FunctionalTests.Iam;
 /// Deliberately "messy" policy states that should still behave deterministically.
 /// These tests focus on mixed allow/deny across multiple roles and direct grants.
 /// </summary>
-public class PermissionChaosTests : WebApiTestBase
+public class PermissionChaosTests : WebAppTestBase
 {
     public PermissionChaosTests(ITestOutputHelper output) : base(output)
     {

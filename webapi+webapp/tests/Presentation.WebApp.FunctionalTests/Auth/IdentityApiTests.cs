@@ -9,7 +9,7 @@ namespace Presentation.WebApp.FunctionalTests.Auth;
 /// Functional tests for the Identity API endpoint.
 /// Tests GET /api/v1/auth/users/{userId}/identity for retrieving linked identities.
 /// </summary>
-public class IdentityApiTests : WebApiTestBase
+public class IdentityApiTests : WebAppTestBase
 {
     public IdentityApiTests(ITestOutputHelper output) : base(output)
     {

@@ -10,7 +10,7 @@ namespace Presentation.WebApp.FunctionalTests.Stress;
 /// Stress tests for concurrent operations, race conditions, and system stability under load.
 /// These tests verify the system behaves correctly when many users perform operations simultaneously.
 /// </summary>
-public class StressTests : WebApiTestBase
+public class StressTests : WebAppTestBase
 {
     public StressTests(ITestOutputHelper output) : base(output)
     {

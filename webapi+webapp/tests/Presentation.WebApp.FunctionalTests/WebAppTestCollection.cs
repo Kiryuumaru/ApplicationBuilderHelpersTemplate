@@ -12,7 +12,7 @@ namespace Presentation.WebApp.FunctionalTests;
 /// if needed, but parallelization is enabled. Each test class manages its own WebApiTestHost.
 /// </remarks>
 [CollectionDefinition(Name)]
-public class WebApiTestCollection
+public class WebAppTestCollection
 {
     public const string Name = "WebApi Tests";
 }

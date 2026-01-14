@@ -11,7 +11,7 @@ namespace Presentation.WebApp.FunctionalTests.Iam;
 /// Tests the full lifecycle of creating roles, assigning permissions to roles,
 /// assigning roles to users, and verifying access based on role permissions.
 /// </summary>
-public class CustomRoleManagementTests : WebApiTestBase
+public class CustomRoleManagementTests : WebAppTestBase
 {
     public CustomRoleManagementTests(ITestOutputHelper output) : base(output)
     {

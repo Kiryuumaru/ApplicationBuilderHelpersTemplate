@@ -9,7 +9,7 @@ namespace Presentation.WebApp.FunctionalTests.RegressionTests;
 /// Regression tests to verify all issues documented in WHAT_YOU_DID_WRONG_FOUND_BY_DEV.md are fixed.
 /// Each test corresponds to a specific issue number from the document.
 /// </summary>
-public class RefactoringRegressionTests : WebApiTestBase
+public class RefactoringRegressionTests : WebAppTestBase
 {
     public RefactoringRegressionTests(ITestOutputHelper output) : base(output)
     {

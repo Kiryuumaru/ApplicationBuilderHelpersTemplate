@@ -9,7 +9,7 @@ namespace Presentation.WebApp.FunctionalTests;
 /// Each test class gets its own WebApiTestHost with a random port and isolated database.
 /// This enables parallel test execution without port or data collisions.
 /// </summary>
-public abstract class WebApiTestBase : IAsyncLifetime
+public abstract class WebAppTestBase : IAsyncLifetime
 {
     private WebApiTestHost? _host;
 
@@ -21,7 +21,7 @@ public abstract class WebApiTestBase : IAsyncLifetime
     protected static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
     protected const string TestPassword = "TestPassword123!";
 
-    protected WebApiTestBase(ITestOutputHelper output)
+    protected WebAppTestBase(ITestOutputHelper output)
     {
         Output = output;
     }

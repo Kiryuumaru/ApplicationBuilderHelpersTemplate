@@ -11,7 +11,7 @@ namespace Presentation.WebApp.FunctionalTests.Auth;
 /// Functional tests for Password Management API endpoints.
 /// Tests change password, forgot password, reset password, and security edge cases.
 /// </summary>
-public class PasswordApiTests : WebApiTestBase
+public class PasswordApiTests : WebAppTestBase
 {
     private const string NewPassword = "NewPassword456!";
 

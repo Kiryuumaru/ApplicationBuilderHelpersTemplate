@@ -1,5 +1,7 @@
-using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Application.Client;
+using Presentation.WebApp.Client.Controllers;
 
-var builder = WebAssemblyHostBuilder.CreateDefault(args);
-
-await builder.Build().RunAsync();
+return await ApplicationBuilderHelpers.ApplicationBuilder.Create()
+    .AddApplication<ClientApplication>()
+    .AddCommand<MainCommand>()
+    .RunAsync(args);

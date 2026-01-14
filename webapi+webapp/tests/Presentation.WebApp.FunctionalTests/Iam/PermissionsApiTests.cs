@@ -10,7 +10,7 @@ namespace Presentation.WebApp.FunctionalTests.Iam;
 /// Functional tests for IAM Permissions API endpoints.
 /// Tests permission grant and revoke operations.
 /// </summary>
-public class PermissionsApiTests : WebApiTestBase
+public class PermissionsApiTests : WebAppTestBase
 {
     // Use unique usernames per test run to avoid conflicts
     private readonly string _testUsername = $"testuser_{Guid.NewGuid():N}";
