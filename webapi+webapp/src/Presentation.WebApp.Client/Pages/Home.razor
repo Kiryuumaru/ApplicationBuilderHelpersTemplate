@@ -7,91 +7,89 @@
     <div class="flex justify-between items-center">
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
     </div>
-    
-    <AuthorizeView>
-        <Authorized>
-            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card>
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Welcome back</p>
-                            <p class="text-xl font-bold text-gray-900 dark:text-white">@context.User.Identity?.Name</p>
-                        </div>
-                        <div class="text-3xl">👋</div>
-                    </div>
-                </Card>
-                
-                <Card>
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Your Roles</p>
-                            <p class="text-xl font-bold text-gray-900 dark:text-white">@GetRoleCount(context)</p>
-                        </div>
-                        <div class="text-3xl">🔐</div>
-                    </div>
-                </Card>
-                
-                <Card>
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Account Status</p>
-                            <p class="text-xl font-bold text-green-600 dark:text-green-400">Active</p>
-                        </div>
-                        <div class="text-3xl">✓</div>
-                    </div>
-                </Card>
-                
-                <Card>
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">App Version</p>
-                            <p class="text-xl font-bold text-gray-900 dark:text-white">@ApplicationConstants.Version</p>
-                        </div>
-                        <div class="text-3xl">📦</div>
-                    </div>
-                </Card>
+
+    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Welcome back</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">@context.User.Identity?.Name</p>
+                </div>
+                <div class="text-3xl">👋</div>
             </div>
-            
-            <div class="grid gap-6 md:grid-cols-2">
-                <Card>
-                    <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
-                    <div class="space-y-2">
-                        <a href="account/profile" class="flex items-center p-3 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
-                            <span class="mr-3">👤</span>
-                            <span>View Profile</span>
-                        </a>
-                        <a href="account/sessions" class="flex items-center p-3 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
-                            <span class="mr-3">🔒</span>
-                            <span>Manage Sessions</span>
-                        </a>
-                        <a href="account/change-password" class="flex items-center p-3 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
-                            <span class="mr-3">🔑</span>
-                            <span>Change Password</span>
-                        </a>
-                        <a href="account/two-factor" class="flex items-center p-3 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
-                            <span class="mr-3">📱</span>
-                            <span>Two-Factor Authentication</span>
-                        </a>
-                    </div>
-                </Card>
-                
-                <Card>
-                    <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Your Roles</h2>
-                    <div class="flex flex-wrap gap-2">
-                        @foreach (var role in GetRoles(context))
-                        {
-                            <span class="px-3 py-1 text-sm rounded-full bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-300">
-                                @role
-                            </span>
-                        }
-                    </div>
-                </Card>
+        </Card>
+
+        <Card>
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Your Roles</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">@GetRoleCount(context)</p>
+                </div>
+                <div class="text-3xl">🔐</div>
             </div>
-        </Authorized>
-        <NotAuthorized>
-            <RedirectToLogin />
-        </NotAuthorized>
-    </AuthorizeView>
+        </Card>
+
+        <Card>
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Account Status</p>
+                    <p class="text-xl font-bold text-green-600 dark:text-green-400">Active</p>
+                </div>
+                <div class="text-3xl">✓</div>
+            </div>
+        </Card>
+
+        <Card>
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">App Version</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-white">@ApplicationConstants.Version</p>
+                </div>
+                <div class="text-3xl">📦</div>
+            </div>
+        </Card>
+    </div>
+
+    <div class="grid gap-6 md:grid-cols-2">
+        <Card>
+            <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
+            <div class="space-y-2">
+                <a href="account/profile"
+                    class="flex items-center p-3 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <span class="mr-3">👤</span>
+                    <span>View Profile</span>
+                </a>
+                <a href="account/sessions"
+                    class="flex items-center p-3 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <span class="mr-3">🔒</span>
+                    <span>Manage Sessions</span>
+                </a>
+                <a href="account/change-password"
+                    class="flex items-center p-3 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <span class="mr-3">🔑</span>
+                    <span>Change Password</span>
+                </a>
+                <a href="account/two-factor"
+                    class="flex items-center p-3 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <span class="mr-3">📱</span>
+                    <span>Two-Factor Authentication</span>
+                </a>
+            </div>
+        </Card>
+
+        <Card>
+            <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Your Roles</h2>
+            <div class="flex flex-wrap gap-2">
+                @foreach (var role in GetRoles(context))
+                {
+                    <span
+                        class="px-3 py-1 text-sm rounded-full bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-300">
+                        @role
+                    </span>
+                }
+            </div>
+        </Card>
+    </div>
 </div>
 
 @code {
@@ -101,14 +99,14 @@
     private int GetRoleCount(AuthenticationState context)
     {
         return context.User.Claims
-            .Where(c => c.Type == System.Security.Claims.ClaimTypes.Role)
-            .Count();
+        .Where(c => c.Type == System.Security.Claims.ClaimTypes.Role)
+        .Count();
     }
 
     private IEnumerable<string> GetRoles(AuthenticationState context)
     {
         return context.User.Claims
-            .Where(c => c.Type == System.Security.Claims.ClaimTypes.Role)
-            .Select(c => c.Value);
+        .Where(c => c.Type == System.Security.Claims.ClaimTypes.Role)
+        .Select(c => c.Value);
     }
 }
