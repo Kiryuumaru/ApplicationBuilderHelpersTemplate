@@ -1,4 +1,5 @@
 ﻿using Application.Client.Authentication.Interfaces.Infrastructure;
+using Application.LocalStore.Interfaces.Infrastructure;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Attributes;
 using Blazored.LocalStorage;
@@ -32,7 +33,8 @@ internal class MainCommand : Build.BaseCommand<WebAssemblyHostBuilderWrapper>
 
         services.AddBlazoredLocalStorage();
 
-        services.AddScoped<ITokenStorage, LocalStorageTokenStorage>();
+        services.AddScoped<ITokenStorage, BlazoredLocalStorageStorage>();
+        services.AddScoped<ILocalStoreService, BlazoredLocalStorageStorage>();
 
         services.AddScoped<AuthenticationStateProvider, BlazorAuthStateProvider>();
 

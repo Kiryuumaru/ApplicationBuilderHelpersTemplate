@@ -1,5 +1,6 @@
 using Application.Client.Authentication.Interfaces.Infrastructure;
 using Application.Client.Authentication.Models;
+using Application.LocalStore.Interfaces.Infrastructure;
 using Blazored.LocalStorage;
 
 namespace Presentation.WebApp.Client.Services;
@@ -7,12 +8,12 @@ namespace Presentation.WebApp.Client.Services;
 /// <summary>
 /// Token storage implementation using browser local storage.
 /// </summary>
-public class LocalStorageTokenStorage : ITokenStorage
+public class BlazoredLocalStorageStorage : ITokenStorage, ILocalStoreService
 {
     private const string CredentialsKey = "auth_credentials";
     private readonly ILocalStorageService _localStorage;
 
-    public LocalStorageTokenStorage(ILocalStorageService localStorage)
+    public BlazoredLocalStorageStorage(ILocalStorageService localStorage)
     {
         _localStorage = localStorage;
     }
