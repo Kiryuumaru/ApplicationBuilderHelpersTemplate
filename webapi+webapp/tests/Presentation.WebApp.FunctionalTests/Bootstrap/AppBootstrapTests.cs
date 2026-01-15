@@ -21,12 +21,14 @@ public class AppBootstrapTests : WebAppTestBase
 
         Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
-        // Root redirects to Scalar API docs (302/200)
+        // Root serves the Blazor app which may require authentication
+        // The app is running successfully if we get any valid HTTP response
         Assert.True(
             response.StatusCode == HttpStatusCode.OK ||
             response.StatusCode == HttpStatusCode.Redirect ||
-            response.StatusCode == HttpStatusCode.Found,
-            $"Expected OK or Redirect, got {response.StatusCode}");
+            response.StatusCode == HttpStatusCode.Found ||
+            response.StatusCode == HttpStatusCode.Unauthorized,
+            $"Expected OK, Redirect, or Unauthorized, got {response.StatusCode}");
 
         Output.WriteLine("[PASS] WebApi started and responds successfully");
     }

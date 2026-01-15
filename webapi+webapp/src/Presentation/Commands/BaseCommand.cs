@@ -68,7 +68,6 @@ public abstract class BaseCommand<[DynamicallyAccessedMembers(DynamicallyAccesse
         base.AddServices(applicationBuilder, services);
 
         services.AddSingleton(sp => ApplicationConstants);
-        services.AddScoped(sp => ApplicationConstants);
 
         services.Configure<ConsoleLifetimeOptions>(opts => opts.SuppressStatusMessages = true);
     }

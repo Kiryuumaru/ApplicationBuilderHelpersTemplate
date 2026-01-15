@@ -167,8 +167,37 @@ public abstract class WebAppTestBase : IAsyncLifetime
             // Loading indicator might not exist
         }
 
-        // Give Blazor a moment to hydrate
-        await Task.Delay(500);
+        // Wait for LoadingSpinner (used during auth state determination) to disappear
+        try
+        {
+            await Page.WaitForSelectorAsync("[data-loading-spinner]", new PageWaitForSelectorOptions
+            {
+                State = WaitForSelectorState.Hidden,
+                Timeout = 5000
+            });
+        }
+        catch (TimeoutException)
+        {
+            // LoadingSpinner might not exist
+        }
+
+        // Wait for route content to be rendered by checking for common page elements
+        // The page should have either a form, h1, or main content area
+        try
+        {
+            await Page.WaitForSelectorAsync("form, h1, main, [data-page-content]", new PageWaitForSelectorOptions
+            {
+                State = WaitForSelectorState.Attached,
+                Timeout = 5000
+            });
+        }
+        catch (TimeoutException)
+        {
+            // Some pages might not have these elements
+        }
+
+        // Give Blazor a moment to complete rendering
+        await Task.Delay(200);
     }
 
     #endregion

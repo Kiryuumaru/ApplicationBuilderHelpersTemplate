@@ -8,6 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
     <ResourcePreloader />
+    <link rel="stylesheet" href="@Assets["tailwind.css"]" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets[$"{ApplicationConstants.AppName}.styles.css"]" />
     <ImportMap />
@@ -16,7 +17,9 @@
 </head>
 
 <body>
-    <Routes @rendermode="new InteractiveWebAssemblyRenderMode(prerender: false)" />
+    <div id="app">
+        <Routes @rendermode="new InteractiveWebAssemblyRenderMode(prerender: false)" />
+    </div>
     <ReconnectModal />
     <script src="@Assets["_framework/blazor.web.js"]"></script>
 </body>

@@ -5,6 +5,7 @@ using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Attributes;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
 using Presentation.WebApp.Components;
@@ -196,7 +197,21 @@ internal class MainCommand : Build.BaseCommand<WebApplicationBuilder>
             // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
             app.UseHsts();
         }
+        // Status code pages with re-execute for non-API routes (Blazor pages only)
         app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+        // Disable status code pages for API routes so they return proper HTTP status codes
+        app.Use(async (context, next) =>
+        {
+            if (context.Request.Path.StartsWithSegments("/api"))
+            {
+                var statusCodePagesFeature = context.Features.Get<IStatusCodePagesFeature>();
+                if (statusCodePagesFeature != null)
+                {
+                    statusCodePagesFeature.Enabled = false;
+                }
+            }
+            await next();
+        });
         app.UseHttpsRedirection();
 
         app.UseAntiforgery();

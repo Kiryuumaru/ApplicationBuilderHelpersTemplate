@@ -47,22 +47,25 @@ public class WebAppTestHost : IAsyncDisposable
 
         _output.WriteLine($"[WEBAPP] Starting WebApp on {BaseUrl}...");
 
-        var webAppOutputDir = Path.GetFullPath(Path.Combine(
+        var basePath = Path.GetFullPath(Path.Combine(
             AppContext.BaseDirectory,
             "..", "..", "..", "..", "..",
-            "src", "Presentation.WebApp", "bin", "Release", "net10.0", "wwwroot"));
+            "src", "Presentation.WebApp.Client"));
 
-        var webAppSourceDir = Path.GetFullPath(Path.Combine(
-            AppContext.BaseDirectory,
-            "..", "..", "..", "..", "..",
-            "src", "Presentation.WebApp", "wwwroot"));
+        // Try Release first, then Debug
+        var releaseDir = Path.Combine(basePath, "bin", "Release", "net10.0", "wwwroot");
+        var debugDir = Path.Combine(basePath, "bin", "Debug", "net10.0", "wwwroot");
+        
+        var webAppOutputDir = Directory.Exists(releaseDir) ? releaseDir : debugDir;
+
+        var webAppSourceDir = Path.Combine(basePath, "wwwroot");
 
         _output.WriteLine($"[WEBAPP] Output wwwroot dir: {webAppOutputDir}");
         _output.WriteLine($"[WEBAPP] Source wwwroot dir: {webAppSourceDir}");
 
         if (!Directory.Exists(webAppOutputDir))
         {
-            throw new DirectoryNotFoundException($"WebApp output directory not found at {webAppOutputDir}. Ensure Presentation.WebApp is built.");
+            throw new DirectoryNotFoundException($"WebApp output directory not found at {releaseDir} or {debugDir}. Ensure Presentation.WebApp.Client is built.");
         }
 
         if (!Directory.Exists(webAppSourceDir))

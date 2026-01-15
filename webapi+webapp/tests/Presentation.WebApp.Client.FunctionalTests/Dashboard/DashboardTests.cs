@@ -104,6 +104,13 @@ public class DashboardTests : WebAppTestBase
     [Fact]
     public async Task Dashboard_HasNavigationMenu()
     {
+        // Arrange - Register and login (dashboard requires auth)
+        var username = $"navmenu_{Guid.NewGuid():N}".Substring(0, 20);
+        var email = $"{username}@test.example.com";
+
+        await RegisterUserAsync(username, email, TestPassword);
+        await LoginAsync(email, TestPassword);
+
         // Act
         await GoToHomeAsync();
 
@@ -115,6 +122,13 @@ public class DashboardTests : WebAppTestBase
     [Fact]
     public async Task Dashboard_ShowsCorrectTitle()
     {
+        // Arrange - Register and login (dashboard requires auth)
+        var username = $"title_{Guid.NewGuid():N}".Substring(0, 20);
+        var email = $"{username}@test.example.com";
+
+        await RegisterUserAsync(username, email, TestPassword);
+        await LoginAsync(email, TestPassword);
+
         // Act
         await GoToHomeAsync();
 

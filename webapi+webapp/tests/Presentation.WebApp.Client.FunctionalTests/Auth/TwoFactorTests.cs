@@ -78,7 +78,7 @@ public class TwoFactorTests : WebAppTestBase
     }
 
     [Fact]
-    public async Task TwoFactorSetup_HasVerificationCodeInput()
+    public async Task TwoFactorSetup_HasSetupOrVerificationOption()
     {
         // Arrange - Register and login
         var username = $"2fa_input_{Guid.NewGuid():N}".Substring(0, 20);
@@ -91,15 +91,18 @@ public class TwoFactorTests : WebAppTestBase
         await Page.GotoAsync($"{WebAppUrl}/account/two-factor");
         await WaitForBlazorAsync();
 
-        // Assert - Should have code input field
-        var codeInput = await Page.QuerySelectorAsync("input[type='text'], input[placeholder*='000000'], input#code");
+        // Assert - Should have setup button (initial state), code input (after starting setup), 
+        // or enable/verify button
+        var setupButton = await Page.QuerySelectorAsync("button:has-text('Set Up'), button:has-text('Setup')");
+        var codeInput = await Page.QuerySelectorAsync("input[type='text'], input[placeholder*='000000'], input#code, input#verificationCode");
         var enableButton = await Page.QuerySelectorAsync("button:has-text('Enable'), button:has-text('Verify')");
 
+        Output.WriteLine($"Setup button found: {setupButton != null}");
         Output.WriteLine($"Code input found: {codeInput != null}");
         Output.WriteLine($"Enable button found: {enableButton != null}");
 
-        // At least one verification element should exist
-        Assert.True(codeInput != null || enableButton != null, "Should have code input or enable button");
+        // At least one verification/setup element should exist
+        Assert.True(setupButton != null || codeInput != null || enableButton != null, "Should have setup button, code input, or enable button");
     }
 
     [Fact]

@@ -4,21 +4,32 @@ using Microsoft.Playwright;
 namespace Presentation.WebApp.Client.FunctionalTests.Fixtures;
 
 /// <summary>
-/// Shared test fixture that manages a single WebApi + WebApp host pair and browser.
+/// Shared test fixture that manages a single WebApp host and browser.
 /// Used with xUnit's ICollectionFixture to share across all tests in a collection.
 /// Each test gets its own browser context for isolation.
+/// 
+/// Note: In the unified Blazor Web App architecture, Presentation.WebApp serves both
+/// the API endpoints and the Blazor WASM client. There's no separate WebApp static file
+/// server needed - the unified app handles everything.
 /// </summary>
 public sealed class SharedTestFixture : IAsyncLifetime
 {
-    private WebApiTestHost? _webApiHost;
-    private WebAppTestHost? _webAppHost;
+    private WebApiTestHost? _webAppHost;
     private IPlaywright? _playwright;
     private IBrowser? _browser;
     private bool _initialized;
 
-    public string WebApiUrl => _webApiHost?.BaseUrl ?? throw new InvalidOperationException("Not initialized");
+    /// <summary>
+    /// The base URL of the unified WebApp that serves both API and Blazor client.
+    /// </summary>
+    public string WebApiUrl => _webAppHost?.BaseUrl ?? throw new InvalidOperationException("Not initialized");
+
+    /// <summary>
+    /// The base URL for browser navigation. Same as WebApiUrl since the unified app serves both.
+    /// </summary>
     public string WebAppUrl => _webAppHost?.BaseUrl ?? throw new InvalidOperationException("Not initialized");
-    public HttpClient HttpClient => _webApiHost?.HttpClient ?? throw new InvalidOperationException("Not initialized");
+    
+    public HttpClient HttpClient => _webAppHost?.HttpClient ?? throw new InvalidOperationException("Not initialized");
 
     public async Task InitializeAsync()
     {
@@ -27,13 +38,8 @@ public sealed class SharedTestFixture : IAsyncLifetime
         var sw = Stopwatch.StartNew();
         Console.WriteLine("[FIXTURE] Initializing shared test fixture...");
 
-        // Start WebApi host
-        _webApiHost = new WebApiTestHost(new ConsoleLogAdapter());
-        await _webApiHost.StartAsync(TimeSpan.FromSeconds(30));
-        Console.WriteLine($"[FIXTURE] WebApi started at {_webApiHost.BaseUrl} ({sw.ElapsedMilliseconds}ms)");
-
-        // Start WebApp host
-        _webAppHost = new WebAppTestHost(new ConsoleLogAdapter(), _webApiHost.BaseUrl);
+        // Start the unified WebApp host (serves both API and Blazor client)
+        _webAppHost = new WebApiTestHost(new ConsoleLogAdapter());
         await _webAppHost.StartAsync(TimeSpan.FromSeconds(30));
         Console.WriteLine($"[FIXTURE] WebApp started at {_webAppHost.BaseUrl} ({sw.ElapsedMilliseconds}ms)");
 
@@ -71,11 +77,6 @@ public sealed class SharedTestFixture : IAsyncLifetime
         if (_webAppHost != null)
         {
             await _webAppHost.DisposeAsync();
-        }
-
-        if (_webApiHost != null)
-        {
-            await _webApiHost.DisposeAsync();
         }
 
         Console.WriteLine("[FIXTURE] Shared fixture disposed");

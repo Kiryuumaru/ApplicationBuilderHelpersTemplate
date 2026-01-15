@@ -99,6 +99,13 @@ public class LayoutTests : WebAppTestBase
     [Fact]
     public async Task MainLayout_HasMainContentArea()
     {
+        // Arrange - Register and login (main layout requires auth)
+        var username = $"maincontent_{Guid.NewGuid():N}".Substring(0, 20);
+        var email = $"{username}@test.example.com";
+
+        await RegisterUserAsync(username, email, TestPassword);
+        await LoginAsync(email, TestPassword);
+
         // Act
         await GoToHomeAsync();
 

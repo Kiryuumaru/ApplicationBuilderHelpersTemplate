@@ -17,7 +17,7 @@ public abstract class ValueObject : DomainObject
         return !EqualOperator(left, right);
     }
 
-    protected abstract IEnumerable<object> GetEqualityComponents();
+    protected abstract IEnumerable<object?> GetEqualityComponents();
 
     public override bool Equals(object? obj)
     {
