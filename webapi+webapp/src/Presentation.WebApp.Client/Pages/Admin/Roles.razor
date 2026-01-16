@@ -6,7 +6,7 @@
 
 <div class="space-y-6">
     <div class="flex justify-between items-center">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Role Management</h1>
+        <h1 class="text-2xl font-bold text-secondary-900 dark:text-white">Role Management</h1>
         <Button OnClick="ShowCreateModal">
             Create Role
         </Button>
@@ -29,7 +29,7 @@
     else if (_roles.Count == 0)
     {
         <Card>
-            <p class="text-gray-500 dark:text-gray-400">No roles found.</p>
+            <p class="text-secondary-500 dark:text-secondary-400">No roles found.</p>
         </Card>
     }
     else
@@ -40,12 +40,12 @@
                 <Card>
                     <div class="flex items-start justify-between">
                         <div>
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">@role.Name</h3>
-                            <p class="text-xs font-mono text-gray-500 dark:text-gray-400">@role.Code</p>
+                            <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">@role.Name</h3>
+                            <p class="text-xs font-mono text-secondary-500 dark:text-secondary-400">@role.Code</p>
                         </div>
                         @if (role.IsSystemRole)
                         {
-                            <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                            <span class="px-2 py-1 text-xs rounded-full bg-secondary-100 text-secondary-800 dark:bg-secondary-700 dark:text-secondary-300">
                                 System
                             </span>
                         }
@@ -53,11 +53,11 @@
                     
                     @if (!string.IsNullOrEmpty(role.Description))
                     {
-                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">@role.Description</p>
+                        <p class="text-sm text-secondary-600 dark:text-secondary-400 mt-2">@role.Description</p>
                     }
                     
                     <div class="mt-4">
-                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                        <p class="text-xs text-secondary-500 dark:text-secondary-400">
                             @role.ScopeTemplates.Count permission scope(s)
                         </p>
                     </div>
@@ -92,7 +92,7 @@
 {
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
         <Card class="w-full max-w-lg m-4">
-            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Create Role</h3>
+            <h3 class="text-lg font-bold text-secondary-900 dark:text-white mb-4">Create Role</h3>
             
             <div class="space-y-4">
                 <TextInput Id="roleCode"
@@ -125,41 +125,41 @@
 {
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
         <Card class="w-full max-w-lg m-4 max-h-96 overflow-y-auto">
-            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Role Details: @_viewingRole.Name</h3>
+            <h3 class="text-lg font-bold text-secondary-900 dark:text-white mb-4">Role Details: @_viewingRole.Name</h3>
             
             <div class="space-y-3">
                 <div>
-                    <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Code</label>
-                    <p class="font-mono text-gray-900 dark:text-white">@_viewingRole.Code</p>
+                    <label class="text-sm font-medium text-secondary-500 dark:text-secondary-400">Code</label>
+                    <p class="font-mono text-secondary-900 dark:text-white">@_viewingRole.Code</p>
                 </div>
                 <div>
-                    <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Name</label>
-                    <p class="text-gray-900 dark:text-white">@_viewingRole.Name</p>
+                    <label class="text-sm font-medium text-secondary-500 dark:text-secondary-400">Name</label>
+                    <p class="text-secondary-900 dark:text-white">@_viewingRole.Name</p>
                 </div>
                 @if (!string.IsNullOrEmpty(_viewingRole.Description))
                 {
                     <div>
-                        <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Description</label>
-                        <p class="text-gray-900 dark:text-white">@_viewingRole.Description</p>
+                        <label class="text-sm font-medium text-secondary-500 dark:text-secondary-400">Description</label>
+                        <p class="text-secondary-900 dark:text-white">@_viewingRole.Description</p>
                     </div>
                 }
                 <div>
-                    <label class="text-sm font-medium text-gray-500 dark:text-gray-400">System Role</label>
-                    <p class="text-gray-900 dark:text-white">@(_viewingRole.IsSystemRole ? "Yes" : "No")</p>
+                    <label class="text-sm font-medium text-secondary-500 dark:text-secondary-400">System Role</label>
+                    <p class="text-secondary-900 dark:text-white">@(_viewingRole.IsSystemRole ? "Yes" : "No")</p>
                 </div>
                 <div>
-                    <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Scope Templates</label>
+                    <label class="text-sm font-medium text-secondary-500 dark:text-secondary-400">Scope Templates</label>
                     @if (_viewingRole.ScopeTemplates.Count == 0)
                     {
-                        <p class="text-gray-500 dark:text-gray-400">No scope templates defined</p>
+                        <p class="text-secondary-500 dark:text-secondary-400">No scope templates defined</p>
                     }
                     else
                     {
                         <ul class="mt-1 space-y-1">
                             @foreach (var scope in _viewingRole.ScopeTemplates)
                             {
-                                <li class="text-sm text-gray-900 dark:text-white flex items-center">
-                                    <span class="@(scope.IsAllow ? "text-green-500" : "text-red-500") mr-2">
+                                <li class="text-sm text-secondary-900 dark:text-white flex items-center">
+                                    <span class="@(scope.IsAllow ? "text-success-500" : "text-error-500") mr-2">
                                         @(scope.IsAllow ? "✓" : "✗")
                                     </span>
                                     @scope.PermissionIdentifier
@@ -184,9 +184,9 @@
 {
     <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
         <Card class="w-full max-w-md m-4">
-            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Delete Role</h3>
+            <h3 class="text-lg font-bold text-secondary-900 dark:text-white mb-4">Delete Role</h3>
             
-            <p class="text-gray-600 dark:text-gray-400">
+            <p class="text-secondary-600 dark:text-secondary-400">
                 Are you sure you want to delete the role "<strong>@_roleToDelete.Name</strong>"? This action cannot be undone.
             </p>
             

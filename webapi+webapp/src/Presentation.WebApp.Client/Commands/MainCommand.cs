@@ -7,6 +7,9 @@ using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Presentation.WebApp.Client.Components.Extensions;
+using Presentation.WebApp.Client.Components.Theme.Interfaces;
+using Presentation.WebApp.Client.Components.Theme.Services;
 using Presentation.WebApp.Client.Services;
 
 namespace Presentation.WebApp.Client.Commands;
@@ -40,5 +43,7 @@ internal class MainCommand : Build.BaseCommand<WebAssemblyHostBuilderWrapper>
         services.AddScoped<AuthenticationStateProvider, BlazorAuthStateProvider>();
 
         services.AddAuthorizationCore();
+
+        services.AddClientComponents();
     }
 }

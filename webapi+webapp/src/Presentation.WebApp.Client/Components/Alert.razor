@@ -47,18 +47,18 @@
 
     private string AlertClass => Type switch
     {
-        AlertType.Success => "flex items-center p-4 mb-4 text-sm text-green-800 rounded-lg bg-green-50 dark:bg-gray-800 dark:text-green-400",
-        AlertType.Error => "flex items-center p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400",
-        AlertType.Warning => "flex items-center p-4 mb-4 text-sm text-yellow-800 rounded-lg bg-yellow-50 dark:bg-gray-800 dark:text-yellow-300",
-        _ => "flex items-center p-4 mb-4 text-sm text-blue-800 rounded-lg bg-blue-50 dark:bg-gray-800 dark:text-blue-400"
+        AlertType.Success => "flex items-center p-4 mb-4 text-sm text-success-800 rounded-lg bg-success-50 border border-success-200 dark:bg-success-950 dark:text-success-300 dark:border-success-800",
+        AlertType.Error => "flex items-center p-4 mb-4 text-sm text-error-800 rounded-lg bg-error-50 border border-error-200 dark:bg-error-950 dark:text-error-300 dark:border-error-800",
+        AlertType.Warning => "flex items-center p-4 mb-4 text-sm text-warning-800 rounded-lg bg-warning-50 border border-warning-200 dark:bg-warning-950 dark:text-warning-300 dark:border-warning-800",
+        _ => "flex items-center p-4 mb-4 text-sm text-info-800 rounded-lg bg-info-50 border border-info-200 dark:bg-info-950 dark:text-info-300 dark:border-info-800"
     };
 
     private string DismissButtonClass => Type switch
     {
-        AlertType.Success => "ms-auto -mx-1.5 -my-1.5 bg-green-50 text-green-500 rounded-lg focus:ring-2 focus:ring-green-400 p-1.5 hover:bg-green-200 inline-flex items-center justify-center h-8 w-8 dark:bg-gray-800 dark:text-green-400 dark:hover:bg-gray-700",
-        AlertType.Error => "ms-auto -mx-1.5 -my-1.5 bg-red-50 text-red-500 rounded-lg focus:ring-2 focus:ring-red-400 p-1.5 hover:bg-red-200 inline-flex items-center justify-center h-8 w-8 dark:bg-gray-800 dark:text-red-400 dark:hover:bg-gray-700",
-        AlertType.Warning => "ms-auto -mx-1.5 -my-1.5 bg-yellow-50 text-yellow-500 rounded-lg focus:ring-2 focus:ring-yellow-400 p-1.5 hover:bg-yellow-200 inline-flex items-center justify-center h-8 w-8 dark:bg-gray-800 dark:text-yellow-300 dark:hover:bg-gray-700",
-        _ => "ms-auto -mx-1.5 -my-1.5 bg-blue-50 text-blue-500 rounded-lg focus:ring-2 focus:ring-blue-400 p-1.5 hover:bg-blue-200 inline-flex items-center justify-center h-8 w-8 dark:bg-gray-800 dark:text-blue-400 dark:hover:bg-gray-700"
+        AlertType.Success => "ms-auto -mx-1.5 -my-1.5 bg-success-50 text-success-600 rounded-lg focus:ring-2 focus:ring-success-400 p-1.5 hover:bg-success-100 inline-flex items-center justify-center h-8 w-8 dark:bg-success-950 dark:text-success-400 dark:hover:bg-success-900",
+        AlertType.Error => "ms-auto -mx-1.5 -my-1.5 bg-error-50 text-error-600 rounded-lg focus:ring-2 focus:ring-error-400 p-1.5 hover:bg-error-100 inline-flex items-center justify-center h-8 w-8 dark:bg-error-950 dark:text-error-400 dark:hover:bg-error-900",
+        AlertType.Warning => "ms-auto -mx-1.5 -my-1.5 bg-warning-50 text-warning-600 rounded-lg focus:ring-2 focus:ring-warning-400 p-1.5 hover:bg-warning-100 inline-flex items-center justify-center h-8 w-8 dark:bg-warning-950 dark:text-warning-400 dark:hover:bg-warning-900",
+        _ => "ms-auto -mx-1.5 -my-1.5 bg-info-50 text-info-600 rounded-lg focus:ring-2 focus:ring-info-400 p-1.5 hover:bg-info-100 inline-flex items-center justify-center h-8 w-8 dark:bg-info-950 dark:text-info-400 dark:hover:bg-info-900"
     };
 
     private string Icon => Type switch

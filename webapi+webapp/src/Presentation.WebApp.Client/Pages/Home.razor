@@ -8,15 +8,15 @@
 
         <div class="space-y-6">
             <div class="flex justify-between items-center">
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+                <h1 class="text-2xl font-bold text-secondary-900 dark:text-white">Dashboard</h1>
             </div>
 
             <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Welcome back</p>
-                            <p class="text-xl font-bold text-gray-900 dark:text-white">@context.User.Identity?.Name</p>
+                            <p class="text-sm text-secondary-500 dark:text-secondary-400">Welcome back</p>
+                            <p class="text-xl font-bold text-secondary-900 dark:text-white">@context.User.Identity?.Name</p>
                         </div>
                         <div class="text-3xl">👋</div>
                     </div>
@@ -25,8 +25,8 @@
                 <Card>
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Your Roles</p>
-                            <p class="text-xl font-bold text-gray-900 dark:text-white">@GetRoleCount(context)</p>
+                            <p class="text-sm text-secondary-500 dark:text-secondary-400">Your Roles</p>
+                            <p class="text-xl font-bold text-secondary-900 dark:text-white">@GetRoleCount(context)</p>
                         </div>
                         <div class="text-3xl">🔐</div>
                     </div>
@@ -35,8 +35,8 @@
                 <Card>
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Account Status</p>
-                            <p class="text-xl font-bold text-green-600 dark:text-green-400">Active</p>
+                            <p class="text-sm text-secondary-500 dark:text-secondary-400">Account Status</p>
+                            <p class="text-xl font-bold text-success-600 dark:text-success-400">Active</p>
                         </div>
                         <div class="text-3xl">✓</div>
                     </div>
@@ -45,8 +45,8 @@
                 <Card>
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">App Version</p>
-                            <p class="text-xl font-bold text-gray-900 dark:text-white">@ApplicationConstants.Version</p>
+                            <p class="text-sm text-secondary-500 dark:text-secondary-400">App Version</p>
+                            <p class="text-xl font-bold text-secondary-900 dark:text-white">@ApplicationConstants.Version</p>
                         </div>
                         <div class="text-3xl">📦</div>
                     </div>
@@ -55,25 +55,25 @@
 
             <div class="grid gap-6 md:grid-cols-2">
                 <Card>
-                    <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
+                    <h2 class="text-lg font-bold text-secondary-900 dark:text-white mb-4">Quick Actions</h2>
                     <div class="space-y-2">
                         <a href="account/profile"
-                            class="flex items-center p-3 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
+                            class="flex items-center p-3 text-secondary-900 rounded-lg dark:text-white hover:bg-secondary-100 dark:hover:bg-secondary-700">
                             <span class="mr-3">👤</span>
                             <span>View Profile</span>
                         </a>
                         <a href="account/sessions"
-                            class="flex items-center p-3 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
+                            class="flex items-center p-3 text-secondary-900 rounded-lg dark:text-white hover:bg-secondary-100 dark:hover:bg-secondary-700">
                             <span class="mr-3">🔒</span>
                             <span>Manage Sessions</span>
                         </a>
                         <a href="account/change-password"
-                            class="flex items-center p-3 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
+                            class="flex items-center p-3 text-secondary-900 rounded-lg dark:text-white hover:bg-secondary-100 dark:hover:bg-secondary-700">
                             <span class="mr-3">🔑</span>
                             <span>Change Password</span>
                         </a>
                         <a href="account/two-factor"
-                            class="flex items-center p-3 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
+                            class="flex items-center p-3 text-secondary-900 rounded-lg dark:text-white hover:bg-secondary-100 dark:hover:bg-secondary-700">
                             <span class="mr-3">📱</span>
                             <span>Two-Factor Authentication</span>
                         </a>
@@ -81,7 +81,7 @@
                 </Card>
 
                 <Card>
-                    <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Your Roles</h2>
+                    <h2 class="text-lg font-bold text-secondary-900 dark:text-white mb-4">Your Roles</h2>
                     <div class="flex flex-wrap gap-2">
                         @foreach (var role in GetRoles(context))
                         {

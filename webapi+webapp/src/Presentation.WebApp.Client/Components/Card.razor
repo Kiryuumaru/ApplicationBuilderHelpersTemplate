@@ -8,13 +8,13 @@
     <div class="@BodyClass">
         @if (!string.IsNullOrEmpty(Title))
         {
-            <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">@Title</h5>
+            <h5 class="mb-2 text-2xl font-bold tracking-tight text-secondary-900 dark:text-white">@Title</h5>
         }
         @ChildContent
     </div>
     @if (Footer != null)
     {
-        <div class="px-5 py-3 border-t border-gray-200 dark:border-gray-700">
+        <div class="px-5 py-3 border-t border-secondary-200 dark:border-secondary-700">
             @Footer
         </div>
     }
@@ -45,6 +45,6 @@
     [Parameter(CaptureUnmatchedValues = true)]
     public Dictionary<string, object>? AdditionalAttributes { get; set; }
 
-    private string CardClass => "bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700";
+    private string CardClass => "bg-white border border-secondary-200 rounded-lg shadow-sm dark:bg-secondary-800 dark:border-secondary-700";
     private string BodyClass => Padding;
 }
