@@ -5,22 +5,32 @@ applyTo: '**'
 
 ## Overview
 
-This project uses **Tailwind CSS v4** with a build-time compilation pipeline. The CSS is generated during the .NET build process and served from the WebApp server's wwwroot.
+This project uses **Tailwind CSS v4** with a build-time compilation pipeline. CSS is generated during the .NET build process and served automatically via static web assets.
 
 ## File Locations
 
 | File | Location | Purpose |
 |------|----------|---------|
-| Source CSS | `src/Presentation.WebApp.Client/wwwroot/css/tailwind.css` | Tailwind directives + custom utilities |
-| Generated CSS | `src/Presentation.WebApp.Client/wwwroot/css/tailwind.generated.css` | Compiled output (minified) |
-| Served CSS | `src/Presentation.WebApp/wwwroot/tailwind.css` | Copy served by the server |
+| Tailwind Source | `src/Presentation.WebApp.Client/wwwroot/css/tailwind.css` | Tailwind v4 config + custom components (NOT served directly) |
+| Tailwind Generated | `src/Presentation.WebApp.Client/wwwroot/css/tailwind.generated.css` | Compiled output (minified) - served to users |
+| Server CSS | `src/Presentation.WebApp/wwwroot/css/app.css` | Server-side styles (served to users) |
 | Package config | `src/Presentation.WebApp.Client/package.json` | npm scripts for Tailwind CLI |
+
+## How CSS Is Served
+
+The .NET static web assets system automatically serves files from both projects:
+- `css/app.css` → from `Presentation.WebApp/wwwroot/css/app.css`
+- `css/tailwind.generated.css` → from `Presentation.WebApp.Client/wwwroot/css/tailwind.generated.css`
+
+**You do NOT need to manually copy CSS files between projects.** The build system handles this automatically.
 
 ## How It Works
 
-1. **Source file** (`tailwind.css`) contains:
-   - `@tailwind base;` `@tailwind components;` `@tailwind utilities;` directives
-   - Custom utility classes in `@layer utilities`
+1. **Source file** (`tailwind.css`) is a **config file** containing:
+   - `@import "tailwindcss";` directive (Tailwind v4 syntax)
+   - `@theme` block with custom colors (e.g., `primary` palette) and fonts
+   - `@layer components` with custom utility classes (`.btn-primary`, `.card`, etc.)
+   - **This file is NOT served to users** - it's only used as input for compilation
 
 2. **Build target** in `Presentation.WebApp.Client.csproj` runs automatically:
    ```xml
@@ -34,7 +44,30 @@ This project uses **Tailwind CSS v4** with a build-time compilation pipeline. Th
    - `npm run tailwind:build` - One-time build (minified)
    - `npm run tailwind:watch` - Watch mode for development
 
-4. **Generated CSS** is scanned from `**/*.razor`, `**/*.cshtml`, `**/*.html` files
+4. **Content scanning**: `**/*.razor`, `**/*.cshtml`, `**/*.html` files are scanned for Tailwind classes
+
+## Tailwind v4 Configuration
+
+Tailwind v4 uses **CSS-first configuration** instead of `tailwind.config.js`. Configuration is done in the source CSS file:
+
+```css
+@import "tailwindcss";
+
+@theme {
+    --color-primary-50: #eff6ff;
+    --color-primary-100: #dbeafe;
+    /* ... more primary colors ... */
+    --color-primary-900: #1e3a8a;
+    
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer components {
+    .btn-primary {
+        @apply bg-primary-600 hover:bg-primary-700 ...;
+    }
+}
+```
 
 ## Adding New Tailwind Classes
 
@@ -55,14 +88,14 @@ npm run tailwind:watch
 
 This watches for changes and regenerates `tailwind.generated.css` automatically.
 
-## Custom Utilities
+## Custom Components
 
-Add custom styles in the source `tailwind.css` file under `@layer utilities`:
+Add custom component classes in the source `tailwind.css` file under `@layer components`:
 
 ```css
-@layer utilities {
-    .my-custom-class {
-        /* styles */
+@layer components {
+    .my-custom-button {
+        @apply px-4 py-2 rounded-lg bg-primary-600 text-white;
     }
 }
 ```
@@ -70,8 +103,9 @@ Add custom styles in the source `tailwind.css` file under `@layer utilities`:
 ## Important Notes
 
 - **Never edit `tailwind.generated.css`** - It's auto-generated and will be overwritten
-- The CSS is served from the **server's wwwroot**, not the client's `_content/` path
-- Tailwind v4 uses the new CSS-first configuration (no `tailwind.config.js` needed)
+- **Never edit `tailwind.css` expecting it to be served** - It's a config file, not output
+- CSS is served via .NET static web assets - no manual copying needed
+- Tailwind v4 uses `@import "tailwindcss"` and `@theme` instead of JS config
 - The `@tailwindcss/cli` package is used for compilation
 
 ## Troubleshooting
@@ -82,3 +116,5 @@ Add custom styles in the source `tailwind.css` file under `@layer utilities`:
 | Missing node_modules | Run `npm install` in `Presentation.WebApp.Client` |
 | CSS not updating | Check that `tailwind:build` ran (see build output) |
 | New class not included | Ensure the class is used in a `.razor`/`.cshtml`/`.html` file |
+| Custom colors not working | Ensure `@theme` block has the color variables defined |
+| `@apply` not working | Check that the utility exists in Tailwind or is defined in `@theme` |
