@@ -370,3 +370,5 @@ FodyWeavers.xsd
 /webapi+webapp/src/Presentation.WebApp/app.db
 /webapi+webapp/src/Presentation.WebApp/app.db-shm
 /webapi+webapp/src/Presentation.WebApp/app.db-wal
+/webapi+webapp/src/Presentation.WebApp.Client/package-lock.json
+/webapi+webapp/src/Presentation.WebApp.Client/wwwroot/css/tailwind.generated.css
