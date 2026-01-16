@@ -1,4 +1,4 @@
-using Blazored.LocalStorage;
+using Application.LocalStore.Interfaces.Infrastructure;
 using Microsoft.JSInterop;
 using Presentation.WebApp.Client.Components.Theme.Interfaces;
 
@@ -6,20 +6,21 @@ namespace Presentation.WebApp.Client.Components.Theme.Services;
 
 internal sealed class ThemeService : IThemeService
 {
-    private const string ThemeStorageKey = "theme_preference";
+    private const string ThemeStorageGroup = "theme";
+    private const string ThemeStorageId = "preference";
     private const string DarkClass = "dark";
 
     private readonly IJSRuntime _jsRuntime;
-    private readonly ILocalStorageService _localStorage;
+    private readonly ILocalStoreService _localStore;
 
     private bool? _cachedIsDark;
 
     public event Action<bool>? ThemeChanged;
 
-    public ThemeService(IJSRuntime jsRuntime, ILocalStorageService localStorage)
+    public ThemeService(IJSRuntime jsRuntime, ILocalStoreService localStore)
     {
         _jsRuntime = jsRuntime;
-        _localStorage = localStorage;
+        _localStore = localStore;
     }
 
     public async Task<bool> IsDarkModeAsync()
@@ -46,7 +47,10 @@ internal sealed class ThemeService : IThemeService
         );
 
         _cachedIsDark = isDark;
-        await _localStorage.SetItemAsync(ThemeStorageKey, isDark);
+        
+        await _localStore.Open(CancellationToken.None);
+        await _localStore.Set(ThemeStorageGroup, ThemeStorageId, isDark.ToString(), CancellationToken.None);
+        await _localStore.CommitAsync(CancellationToken.None);
 
         ThemeChanged?.Invoke(isDark);
     }
@@ -65,10 +69,12 @@ internal sealed class ThemeService : IThemeService
 
         try
         {
-            var stored = await _localStorage.GetItemAsync<bool?>(ThemeStorageKey);
-            if (stored.HasValue)
+            await _localStore.Open(CancellationToken.None);
+            var stored = await _localStore.Get(ThemeStorageGroup, ThemeStorageId, CancellationToken.None);
+            
+            if (!string.IsNullOrEmpty(stored) && bool.TryParse(stored, out var parsed))
             {
-                isDark = stored.Value;
+                isDark = parsed;
             }
             else
             {

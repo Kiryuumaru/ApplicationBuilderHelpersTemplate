@@ -1,15 +1,9 @@
-﻿using Application.Client.Authentication.Interfaces.Infrastructure;
-using Application.Client.Common.Extensions;
-using Application.LocalStore.Interfaces.Infrastructure;
+﻿using Application.Client.Common.Extensions;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Attributes;
-using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Presentation.WebApp.Client.Components.Extensions;
-using Presentation.WebApp.Client.Components.Theme.Interfaces;
-using Presentation.WebApp.Client.Components.Theme.Services;
 using Presentation.WebApp.Client.Services;
 
 namespace Presentation.WebApp.Client.Commands;
@@ -34,11 +28,6 @@ internal class MainCommand : Build.BaseCommand<WebAssemblyHostBuilderWrapper>
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
     {
         base.AddServices(applicationBuilder, services);
-
-        services.AddBlazoredLocalStorage();
-
-        services.AddScoped<ITokenStorage, BlazoredLocalStorageStorage>();
-        services.AddScoped<ILocalStoreService, BlazoredLocalStorageStorage>();
 
         services.AddScoped<AuthenticationStateProvider, BlazorAuthStateProvider>();
 

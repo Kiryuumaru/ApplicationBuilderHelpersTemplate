@@ -20,6 +20,9 @@ public class ClientApplication : Application
     {
         base.AddServices(applicationBuilder, services);
 
+        // Token storage using local store
+        services.AddScoped<ITokenStorage, LocalStoreTokenStorage>();
+
         // Auth state provider
         services.AddScoped<IAuthStateProvider, ClientAuthStateProvider>();
 

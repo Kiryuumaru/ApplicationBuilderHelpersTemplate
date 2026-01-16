@@ -10,6 +10,7 @@ namespace Application.Client.Json;
 /// </summary>
 [JsonSerializable(typeof(TokenResponse))]
 [JsonSerializable(typeof(ErrorResponse))]
+[JsonSerializable(typeof(StoredCredentials))]
 [JsonSerializable(typeof(LoginRequest))]
 [JsonSerializable(typeof(RegisterRequest))]
 [JsonSerializable(typeof(RefreshTokenRequest))]

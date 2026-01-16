@@ -1,4 +1,5 @@
 using ApplicationBuilderHelpers;
+using Infrastructure.EFCore.Sqlite.Client.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.EFCore.Sqlite.Client;
@@ -14,6 +15,6 @@ public class EFCoreSqliteClientInfrastructure : ApplicationDependency
     {
         base.AddServices(applicationBuilder, services);
 
-        // Client-specific Sqlite configuration (OPFS) will be added here
+        services.AddEFCoreSqliteClient();
     }
 }

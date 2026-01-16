@@ -64,7 +64,41 @@ applyTo: '**'
     using Infrastructure.EFCore;
     ```
 
-2. **Concrete Types in Application Layer**
+2. **Infrastructure Imports Outside Composition Root**
+   ```csharp
+   // BAD: Command/Controller/Service importing Infrastructure extensions directly
+   using Infrastructure.EFCore.LocalStore.Extensions;
+   using Infrastructure.EFCore.Sqlite.Client.Extensions;
+   
+   // In a Command class, Controller, Application service, etc.
+   public override void AddServices(..., IServiceCollection services)
+   {
+       services.AddEFCoreSqliteClient();  // WRONG! Infrastructure leak
+       services.AddEFCoreLocalStore();    // WRONG! Infrastructure leak
+   }
+   ```
+
+   ✅ Correct approach - use `ApplicationDependency` in `Program.cs`:
+   ```csharp
+   // GOOD: Program.cs (true composition root) uses ApplicationDependency
+   return await ApplicationBuilderHelpers.ApplicationBuilder.Create()
+       .AddApplication<ClientApplication>()
+       .AddApplication<EFCoreSqliteClientInfrastructure>()  // Provider
+       .AddApplication<EFCoreLocalStoreInfrastructure>()    // Feature
+       .AddCommand<MainCommand>()
+       .RunAsync(args);
+   ```
+
+   **Principle:** Infrastructure wiring belongs **only** in `Program.cs` using `ApplicationDependency` classes. Commands, controllers, Application services, and other non-composition-root code must never import or call Infrastructure extensions directly.
+
+   > **IMPORTANT:** All Infrastructure dependencies must coincide in `Program.cs` of executable leaf projects (e.g., `Presentation.WebApp`, `Presentation.Cli`). Infrastructure must **never** be referenced from:
+   > - Application layer projects
+   > - Presentation layer components, services, or commands
+   > - Shared/common projects
+   >
+   > Only the final executable's `Program.cs` composes Infrastructure via `ApplicationDependency`.
+
+3. **Concrete Types in Application Layer**
    ```csharp
    // BAD: Application layer knowing about Binance
    public class TradingService
@@ -203,6 +237,28 @@ services.AddEFCoreIdentity();                 // Feature
 ```
 
 **Principle:** If your provider project has `using Infrastructure.EFCore.{Feature}`, you're coupling horizontally. Providers are interchangeable foundations; features build on top via abstractions.
+
+### Naming/Documentation Ignorance
+
+**Names and documentation must only reference the abstractions actually used, not hidden implementation details.**
+
+When a class depends on an interface (e.g., `ILocalStoreService`), don't name or document it based on the implementation behind that interface (e.g., EF Core).
+
+```csharp
+// BAD: Name/docs leak implementation details
+/// <summary>
+/// Token storage implementation using EF Core LocalStore.  // WRONG! Mentions EF Core
+/// </summary>
+public class EFCoreTokenStorage(ILocalStoreService localStore)  // WRONG! Name implies EF Core
+
+// GOOD: Name/docs reflect actual dependencies
+/// <summary>
+/// Token storage implementation using local store.
+/// </summary>
+public class LocalStoreTokenStorage(ILocalStoreService localStore)  // Only knows ILocalStoreService
+```
+
+**Principle:** If your class only depends on `ILocalStoreService`, it shouldn't care whether that's backed by EF Core, SQLite, IndexedDB, or a text file. Names and docs should reflect what you actually depend on.
 
 ### Type Variation Ignorance (General Rule)
 
