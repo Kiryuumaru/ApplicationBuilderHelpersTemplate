@@ -61,12 +61,23 @@ Tailwind v4 uses **CSS-first configuration** instead of `tailwind.config.js`. Co
     
     --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
 }
+```
 
-@layer components {
-    .btn-primary {
-        @apply bg-primary-600 hover:bg-primary-700 ...;
-    }
-}
+## Component Styling Approach
+
+**Keep component-specific styles in the component file**, not in `tailwind.css`. This keeps styles co-located with the component for easier maintenance.
+
+### What goes in `tailwind.css`:
+- `@theme` block with custom colors, fonts, dimensions (primitives)
+- Blazor-specific styles (loading spinner, error UI, validation)
+- Truly global/shared utility classes (rare)
+
+### What goes in `.razor` components:
+- Component-specific Tailwind utility classes (inline in the markup or as computed properties)
+
+**Example** - Card.razor:
+```csharp
+private string CardClass => "bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700";
 ```
 
 ## Adding New Tailwind Classes
@@ -88,22 +99,11 @@ npm run tailwind:watch
 
 This watches for changes and regenerates `tailwind.generated.css` automatically.
 
-## Custom Components
-
-Add custom component classes in the source `tailwind.css` file under `@layer components`:
-
-```css
-@layer components {
-    .my-custom-button {
-        @apply px-4 py-2 rounded-lg bg-primary-600 text-white;
-    }
-}
-```
-
 ## Important Notes
 
 - **Never edit `tailwind.generated.css`** - It's auto-generated and will be overwritten
 - **Never edit `tailwind.css` expecting it to be served** - It's a config file, not output
+- **Keep component styles in the component** - Only put primitives in `tailwind.css`
 - CSS is served via .NET static web assets - no manual copying needed
 - Tailwind v4 uses `@import "tailwindcss"` and `@theme` instead of JS config
 - The `@tailwindcss/cli` package is used for compilation
@@ -117,4 +117,3 @@ Add custom component classes in the source `tailwind.css` file under `@layer com
 | CSS not updating | Check that `tailwind:build` ran (see build output) |
 | New class not included | Ensure the class is used in a `.razor`/`.cshtml`/`.html` file |
 | Custom colors not working | Ensure `@theme` block has the color variables defined |
-| `@apply` not working | Check that the utility exists in Tailwind or is defined in `@theme` |
