@@ -1,6 +1,6 @@
-using Infrastructure.OpenTelemetry.Logger.Abstractions;
+using Infrastructure.OpenTelemetry.Abstractions;
 
-namespace Infrastructure.OpenTelemetry.Logger.LogEventPropertyTypes;
+namespace Infrastructure.OpenTelemetry.LogEventPropertyTypes;
 
 internal class LongPropertyParser : LogEventPropertyParser<long>
 {

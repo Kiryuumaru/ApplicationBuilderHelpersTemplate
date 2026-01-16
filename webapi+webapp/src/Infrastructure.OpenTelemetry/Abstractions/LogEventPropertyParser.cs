@@ -1,6 +1,6 @@
-using Infrastructure.OpenTelemetry.Logger.Interfaces;
+using Infrastructure.OpenTelemetry.Interfaces;
 
-namespace Infrastructure.OpenTelemetry.Logger.Abstractions;
+namespace Infrastructure.OpenTelemetry.Abstractions;
 
 internal abstract class LogEventPropertyParser<T> : ILogEventPropertyParser
 {

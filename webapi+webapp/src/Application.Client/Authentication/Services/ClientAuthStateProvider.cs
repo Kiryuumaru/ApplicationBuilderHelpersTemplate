@@ -7,10 +7,7 @@ using Application.Client.Json;
 
 namespace Application.Client.Authentication.Services;
 
-/// <summary>
-/// Provides authentication state management with JWT token parsing.
-/// </summary>
-public class ClientAuthStateProvider : IAuthStateProvider
+internal class ClientAuthStateProvider : IAuthStateProvider
 {
     private readonly ITokenStorage _tokenStorage;
     private AuthState _currentState = AuthState.Anonymous;

@@ -1,21 +1,12 @@
 using Infrastructure.EFCore.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace Infrastructure.EFCore.Sqlite.Extensions;
+namespace Infrastructure.EFCore.Sqlite.Services;
 
-/// <summary>
-/// Factory for creating SqliteDbContext instances with registered entity configurations.
-/// </summary>
-internal sealed class SqliteDbContextFactory : IDbContextFactory<SqliteDbContext>
+internal sealed class SqliteDbContextFactory(string connectionString, IEnumerable<IEFCoreEntityConfiguration> configurations) : IDbContextFactory<SqliteDbContext>
 {
-    private readonly string _connectionString;
-    private readonly IEnumerable<IEFCoreEntityConfiguration> _configurations;
-
-    public SqliteDbContextFactory(string connectionString, IEnumerable<IEFCoreEntityConfiguration> configurations)
-    {
-        _connectionString = connectionString;
-        _configurations = configurations;
-    }
+    private readonly string _connectionString = connectionString;
+    private readonly IEnumerable<IEFCoreEntityConfiguration> _configurations = configurations;
 
     public SqliteDbContext CreateDbContext()
     {

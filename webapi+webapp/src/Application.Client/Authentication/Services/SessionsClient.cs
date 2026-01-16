@@ -5,10 +5,7 @@ using Application.Client.Json;
 
 namespace Application.Client.Authentication.Services;
 
-/// <summary>
-/// HTTP client for session management API endpoints.
-/// </summary>
-public class SessionsClient : ISessionsClient
+internal class SessionsClient : ISessionsClient
 {
     private readonly HttpClient _httpClient;
 

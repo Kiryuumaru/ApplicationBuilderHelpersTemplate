@@ -2,7 +2,7 @@ using Infrastructure.EFCore.Interfaces;
 
 namespace Infrastructure.EFCore.Services;
 
-public sealed class EFCoreDatabaseInitializationState : IDatabaseInitializationState
+internal sealed class EFCoreDatabaseInitializationState : IDatabaseInitializationState
 {
     private readonly TaskCompletionSource _initializationComplete = new(TaskCreationOptions.RunContinuationsAsynchronously);
 

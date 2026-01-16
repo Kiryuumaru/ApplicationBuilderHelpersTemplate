@@ -5,10 +5,7 @@ using Application.Client.Json;
 
 namespace Application.Client.Authentication.Services;
 
-/// <summary>
-/// HTTP client for API key management endpoints.
-/// </summary>
-public class ApiKeysClient : IApiKeysClient
+internal class ApiKeysClient : IApiKeysClient
 {
     private readonly HttpClient _httpClient;
 

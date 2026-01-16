@@ -1,18 +1,16 @@
 using ApplicationBuilderHelpers;
+using Infrastructure.EFCore.Sqlite.Extensions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.EFCore.Sqlite.Server;
 
-/// <summary>
-/// Server-side EFCore Sqlite infrastructure composition.
-/// Composes: EFCore.Sqlite + Server.Identity + LocalStore
-/// </summary>
 public class EFCoreSqliteServerInfrastructure : ApplicationDependency
 {
-    public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
+    public override void AddConfigurations(ApplicationHostBuilder applicationBuilder, IConfiguration configuration)
     {
-        base.AddServices(applicationBuilder, services);
+        base.AddConfigurations(applicationBuilder, configuration);
 
-        // Server-specific Sqlite configuration can be added here
+        configuration.SetSqliteConnectionString("Data Source=app.db");
     }
 }

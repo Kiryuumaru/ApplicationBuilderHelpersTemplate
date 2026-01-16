@@ -5,10 +5,7 @@ using Application.Client.Authentication.Interfaces.Infrastructure;
 
 namespace Application.Client.Authentication.Services;
 
-/// <summary>
-/// HTTP message handler that automatically attaches JWT tokens and handles token refresh.
-/// </summary>
-public class TokenRefreshHandler : DelegatingHandler
+internal class TokenRefreshHandler : DelegatingHandler
 {
     private readonly ITokenStorage _tokenStorage;
     private readonly IAuthenticationClient _authClient;

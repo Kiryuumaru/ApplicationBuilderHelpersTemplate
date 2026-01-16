@@ -1,4 +1,6 @@
+using Infrastructure.EFCore.Sqlite.Extensions;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Configuration;
 
 namespace Infrastructure.EFCore.Sqlite.Services;
 
@@ -6,15 +8,16 @@ namespace Infrastructure.EFCore.Sqlite.Services;
 /// Holds an open SQLite connection for in-memory databases with shared cache.
 /// This prevents the database from being destroyed when all other connections close.
 /// </summary>
-internal sealed class SqliteConnectionHolder : IDisposable
+public sealed class SqliteConnectionHolder(IConfiguration configuration) : IDisposable
 {
     private SqliteConnection? _keepAliveConnection;
 
-    public SqliteConnectionHolder(string connectionString)
+    public void EnsureOpen()
     {
         // For in-memory databases with shared cache, keep one connection open
         // to prevent the database from being destroyed when all connections close
-        if (connectionString.Contains("Mode=Memory", StringComparison.OrdinalIgnoreCase))
+        var connectionString = configuration.GetSqliteConnectionString();
+        if (_keepAliveConnection == null && connectionString.Contains("Mode=Memory", StringComparison.OrdinalIgnoreCase))
         {
             _keepAliveConnection = new SqliteConnection(connectionString);
             _keepAliveConnection.Open();

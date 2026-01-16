@@ -2,9 +2,9 @@ using Application.Common.Extensions;
 using Application.Logger.Extensions;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Extensions;
-using Infrastructure.OpenTelemetry.Logger.Enrichers;
-using Infrastructure.OpenTelemetry.Logger.Interfaces;
-using Infrastructure.OpenTelemetry.Logger.Services;
+using Infrastructure.OpenTelemetry.Enrichers;
+using Infrastructure.OpenTelemetry.Interfaces;
+using Infrastructure.OpenTelemetry.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -20,7 +20,7 @@ using Serilog.Formatting.Compact;
 using Serilog.Templates;
 using Serilog.Templates.Themes;
 
-namespace Infrastructure.OpenTelemetry.Logger.Extensions;
+namespace Infrastructure.OpenTelemetry.Extensions;
 
 public static class LoggerApplicationHostBuilderExtensions
 {

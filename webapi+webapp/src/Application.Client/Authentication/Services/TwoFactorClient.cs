@@ -5,10 +5,7 @@ using Application.Client.Json;
 
 namespace Application.Client.Authentication.Services;
 
-/// <summary>
-/// HTTP client for two-factor authentication endpoints.
-/// </summary>
-public class TwoFactorClient : ITwoFactorClient
+internal class TwoFactorClient : ITwoFactorClient
 {
     private readonly HttpClient _httpClient;
 

@@ -1,5 +1,6 @@
 using ApplicationBuilderHelpers;
-using Infrastructure.EFCore.Sqlite.Client.Extensions;
+using Infrastructure.EFCore.Sqlite.Extensions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.EFCore.Sqlite.Client;
@@ -11,10 +12,10 @@ namespace Infrastructure.EFCore.Sqlite.Client;
 /// </summary>
 public class EFCoreSqliteClientInfrastructure : ApplicationDependency
 {
-    public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
+    public override void AddConfigurations(ApplicationHostBuilder applicationBuilder, IConfiguration configuration)
     {
-        base.AddServices(applicationBuilder, services);
+        base.AddConfigurations(applicationBuilder, configuration);
 
-        services.AddEFCoreSqliteClient();
+        configuration.SetSqliteConnectionString("Data Source=app.db");
     }
 }

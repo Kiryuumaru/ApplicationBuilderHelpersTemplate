@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace Infrastructure.EFCore.Sqlite.Extensions;
+namespace Infrastructure.EFCore.Sqlite.Services;
 
 /// <summary>
 /// Adapter to allow IDbContextFactory&lt;EFCoreDbContext&gt; registration from specific DbContext factories.
