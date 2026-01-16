@@ -34,4 +34,8 @@
 		<ProjectReference Include="..\Presentation\Presentation.csproj" />
 	</ItemGroup>
 
+	<Target Name="BuildTailwindCss" BeforeTargets="Build">
+		<Exec Command="npm run tailwind:build" WorkingDirectory="$(MSBuildProjectDirectory)" />
+	</Target>
+
 </Project>

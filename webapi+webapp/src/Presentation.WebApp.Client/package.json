@@ -3,13 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build:css": "npx tailwindcss -i ./wwwroot/css/app.src.css -o ./wwwroot/css/app.css --minify",
-    "watch:css": "npx tailwindcss -i ./wwwroot/css/app.src.css -o ./wwwroot/css/app.css --watch"
+    "tailwind:build": "npx tailwindcss -i ./wwwroot/css/tailwind.css -o ./wwwroot/css/tailwind.generated.css --minify",
+    "tailwind:watch": "npx tailwindcss -i ./wwwroot/css/tailwind.css -o ./wwwroot/css/tailwind.generated.css --watch"
   },
   "devDependencies": {
-    "tailwindcss": "^3.4.0"
-  },
-  "dependencies": {
-    "flowbite": "^2.2.1"
+    "@tailwindcss/cli": "^4.1.18",
+    "tailwindcss": "^4.1.18"
   }
 }
