@@ -1,5 +1,5 @@
 ﻿using ApplicationBuilderHelpers;
-using Infrastructure.OpenTelemetry.Logger.Extensions;
+using Infrastructure.OpenTelemetry.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

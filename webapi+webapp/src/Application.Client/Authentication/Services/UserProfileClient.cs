@@ -5,10 +5,7 @@ using Application.Client.Json;
 
 namespace Application.Client.Authentication.Services;
 
-/// <summary>
-/// HTTP client for user profile endpoints.
-/// </summary>
-public class UserProfileClient : IUserProfileClient
+internal class UserProfileClient : IUserProfileClient
 {
     private readonly HttpClient _httpClient;
 

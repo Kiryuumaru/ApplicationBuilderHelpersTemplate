@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Infrastructure.Server.Identity.Extensions;
 
-public static class IdentityCoreServiceCollectionExtensions
+internal static class IdentityCoreServiceCollectionExtensions
 {
     public static IServiceCollection AddIdentityCoreServices(this IServiceCollection services)
     {

@@ -11,7 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.EFCore.Server.Identity.Extensions;
 
-public static class EFCoreIdentityServiceCollectionExtensions
+internal static class EFCoreIdentityServiceCollectionExtensions
 {
     public static IServiceCollection AddEFCoreIdentity(this IServiceCollection services)
     {

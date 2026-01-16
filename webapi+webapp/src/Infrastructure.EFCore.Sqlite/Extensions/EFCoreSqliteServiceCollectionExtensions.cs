@@ -7,37 +7,26 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.EFCore.Sqlite.Extensions;
 
-public static class EFCoreSqliteServiceCollectionExtensions
+internal static class EFCoreSqliteServiceCollectionExtensions
 {
-    private const string DefaultConnectionString = "Data Source=app.db";
-
-    public static IServiceCollection AddEFCoreSqlite(this IServiceCollection services, IConfiguration configuration)
-    {
-        var connectionString = configuration.GetRefValueOrDefault("SQLITE_CONNECTION_STRING", DefaultConnectionString);
-        return services.AddEFCoreSqlite(connectionString);
-    }
-
-    public static IServiceCollection AddEFCoreSqlite(this IServiceCollection services, string connectionString)
+    public static IServiceCollection AddEFCoreSqlite(this IServiceCollection services)
     {
         // For in-memory databases with shared cache, keep one connection open
         // to prevent the database from being destroyed when all connections close
-        services.AddSingleton(new SqliteConnectionHolder(connectionString));
-        
+        services.AddSingleton<SqliteConnectionHolder>();
+
         // Register DbContext with factory pattern that injects entity configurations
         services.AddDbContext<SqliteDbContext>((sp, options) =>
         {
-            options.UseSqlite(connectionString);
+            options.UseSqlite(sp.GetRequiredService<IConfiguration>().GetSqliteConnectionString());
         });
 
         // Register factory that creates DbContext with configurations
         services.AddSingleton<IDbContextFactory<SqliteDbContext>>(sp =>
-        {
-            var configurations = sp.GetServices<IEFCoreEntityConfiguration>();
-            return new SqliteDbContextFactory(connectionString, configurations);
-        });
+            new SqliteDbContextFactory(sp.GetRequiredService<IConfiguration>().GetSqliteConnectionString(), sp.GetServices<IEFCoreEntityConfiguration>()));
 
         // Register IDbContextFactory<EFCoreDbContext> for persistence-ignorant consumers
-        services.AddSingleton<IDbContextFactory<EFCoreDbContext>>(sp => 
+        services.AddSingleton<IDbContextFactory<EFCoreDbContext>>(sp =>
             new EFCoreDbContextFactoryAdapter(sp.GetRequiredService<IDbContextFactory<SqliteDbContext>>()));
 
         // Also register the base DbContext for scoped usage

@@ -5,10 +5,7 @@ using Application.Client.Json;
 
 namespace Application.Client.Authentication.Services;
 
-/// <summary>
-/// HTTP client for authentication API endpoints.
-/// </summary>
-public class AuthenticationClient : IAuthenticationClient
+internal class AuthenticationClient : IAuthenticationClient
 {
     private readonly HttpClient _httpClient;
 

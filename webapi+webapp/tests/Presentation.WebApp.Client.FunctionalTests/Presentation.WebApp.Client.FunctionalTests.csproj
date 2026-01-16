@@ -7,10 +7,6 @@
 		<Nullable>enable</Nullable>
 		<IsPackable>false</IsPackable>
 		<IsTestProject>true</IsTestProject>
-		<!-- Functional tests share browser/server state - run sequentially -->
-		<xUnitParallelizeTestCollections>false</xUnitParallelizeTestCollections>
-		<!-- Not an executable, just a test library that uses ASP.NET Core types -->
-		<OutputType>Library</OutputType>
 	</PropertyGroup>
 
 	<ItemGroup>

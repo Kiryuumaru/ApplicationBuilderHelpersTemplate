@@ -1,4 +1,4 @@
-namespace Infrastructure.OpenTelemetry.Logger.Interfaces;
+namespace Infrastructure.OpenTelemetry.Interfaces;
 
 public interface ILoggerReader
 {

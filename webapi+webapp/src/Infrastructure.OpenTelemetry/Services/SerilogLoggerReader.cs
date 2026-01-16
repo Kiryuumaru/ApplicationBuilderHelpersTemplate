@@ -1,7 +1,7 @@
 using AbsolutePathHelpers;
 using Application.Common.Extensions;
 using ApplicationBuilderHelpers.Common;
-using Infrastructure.OpenTelemetry.Logger.Interfaces;
+using Infrastructure.OpenTelemetry.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using Serilog.Events;
@@ -9,7 +9,7 @@ using Serilog.Formatting.Compact.Reader;
 using Serilog.Parsing;
 using System.Globalization;
 
-namespace Infrastructure.OpenTelemetry.Logger.Services;
+namespace Infrastructure.OpenTelemetry.Services;
 
 internal class SerilogLoggerReader(IConfiguration configuration) : ILoggerReader
 {

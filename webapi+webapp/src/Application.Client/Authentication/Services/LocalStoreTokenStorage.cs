@@ -6,11 +6,7 @@ using Application.LocalStore.Interfaces.Infrastructure;
 
 namespace Application.Client.Authentication.Services;
 
-/// <summary>
-/// Token storage implementation using local store.
-/// Persists authentication credentials via ILocalStoreService.
-/// </summary>
-public sealed class LocalStoreTokenStorage(ILocalStoreService localStoreService) : ITokenStorage
+internal sealed class LocalStoreTokenStorage(ILocalStoreService localStoreService) : ITokenStorage
 {
     private const string GroupName = "auth";
     private const string CredentialsId = "credentials";

@@ -1,12 +1,12 @@
 using Application.Common.Extensions;
 using Application.Logger.Extensions;
-using Infrastructure.OpenTelemetry.Logger.Interfaces;
-using Infrastructure.OpenTelemetry.Logger.LogEventPropertyTypes;
+using Infrastructure.OpenTelemetry.Interfaces;
+using Infrastructure.OpenTelemetry.LogEventPropertyTypes;
 using Microsoft.Extensions.Configuration;
 using Serilog.Core;
 using Serilog.Events;
 
-namespace Infrastructure.OpenTelemetry.Logger.Enrichers;
+namespace Infrastructure.OpenTelemetry.Enrichers;
 
 internal class DefaultLogEnricher(IConfiguration configuration, Dictionary<string, object?>? scopeMap) : ILogEventEnricher
 {
