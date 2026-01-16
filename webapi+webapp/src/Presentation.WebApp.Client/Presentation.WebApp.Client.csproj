@@ -35,6 +35,7 @@
 	</ItemGroup>
 
 	<Target Name="BuildTailwindCss" BeforeTargets="Build">
+		<Exec Command="npm install" WorkingDirectory="$(MSBuildProjectDirectory)" Condition="!Exists('$(MSBuildProjectDirectory)\node_modules')" />
 		<Exec Command="npm run tailwind:build" WorkingDirectory="$(MSBuildProjectDirectory)" />
 	</Target>
 
