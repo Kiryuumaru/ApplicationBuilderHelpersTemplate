@@ -2,8 +2,8 @@ using Application.Server;
 using Infrastructure.EFCore;
 using Infrastructure.EFCore.LocalStore;
 using Infrastructure.EFCore.Server.Identity;
-using Infrastructure.EFCore.Server.Sqlite;
 using Infrastructure.EFCore.Sqlite;
+using Infrastructure.EFCore.Sqlite.Server;
 using Infrastructure.OpenTelemetry;
 using Infrastructure.Server.Identity;
 using Infrastructure.Server.Passkeys;
@@ -16,7 +16,7 @@ return await ApplicationBuilderHelpers.ApplicationBuilder.Create()
     .AddApplication<PasskeysInfrastructure>()
     .AddApplication<EFCoreInfrastructure>()
     .AddApplication<EFCoreSqliteInfrastructure>()
-    .AddApplication<EFCoreServerSqliteInfrastructure>()
+    .AddApplication<EFCoreSqliteServerInfrastructure>()
     .AddApplication<EFCoreServerIdentityInfrastructure>()
     .AddApplication<EFCoreLocalStoreInfrastructure>()
     .AddCommand<MainCommand>()

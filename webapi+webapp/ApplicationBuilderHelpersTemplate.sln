@@ -72,9 +72,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure.EFCore.Serve
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Application.Client", "src\Application.Client\Application.Client.csproj", "{DD5C1582-38E0-4373-8B30-8F6905665B15}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure.EFCore.Server.Sqlite", "src\Infrastructure.EFCore.Server.Sqlite\Infrastructure.EFCore.Server.Sqlite.csproj", "{901E5D74-0384-4B65-90CF-2E5F2D7AE9C1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure.EFCore.Sqlite.Server", "src\Infrastructure.EFCore.Sqlite.Server\Infrastructure.EFCore.Sqlite.Server.csproj", "{901E5D74-0384-4B65-90CF-2E5F2D7AE9C1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure.EFCore.Client.Sqlite", "src\Infrastructure.EFCore.Client.Sqlite\Infrastructure.EFCore.Client.Sqlite.csproj", "{06A31DB8-73B4-4A39-8AE5-D64ADC955E38}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure.EFCore.Sqlite.Client", "src\Infrastructure.EFCore.Sqlite.Client\Infrastructure.EFCore.Sqlite.Client.csproj", "{06A31DB8-73B4-4A39-8AE5-D64ADC955E38}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Presentation.WebApp.Client.FunctionalTests", "tests\Presentation.WebApp.Client.FunctionalTests\Presentation.WebApp.Client.FunctionalTests.csproj", "{610D0D7E-1E2E-4F0C-AD98-8227F9DA7935}"
 EndProject

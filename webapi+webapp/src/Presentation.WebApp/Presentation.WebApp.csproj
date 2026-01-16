@@ -42,7 +42,7 @@
 		<ProjectReference Include="..\Infrastructure.EFCore\Infrastructure.EFCore.csproj" />
 		<ProjectReference Include="..\Infrastructure.EFCore.Server.Identity\Infrastructure.EFCore.Server.Identity.csproj" />
 		<ProjectReference Include="..\Infrastructure.EFCore.LocalStore\Infrastructure.EFCore.LocalStore.csproj" />
-		<ProjectReference Include="..\Infrastructure.EFCore.Server.Sqlite\Infrastructure.EFCore.Server.Sqlite.csproj" />
+		<ProjectReference Include="..\Infrastructure.EFCore.Sqlite.Server\Infrastructure.EFCore.Sqlite.Server.csproj" />
 		<ProjectReference Include="..\Infrastructure.Server.Identity\Infrastructure.Server.Identity.csproj" />
 		<ProjectReference Include="..\Infrastructure.Server.Passkeys\Infrastructure.Server.Passkeys.csproj" />
 		<ProjectReference Include="..\Infrastructure.OpenTelemetry\Infrastructure.OpenTelemetry.csproj" />

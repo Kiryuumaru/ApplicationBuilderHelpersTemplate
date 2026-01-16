@@ -171,6 +171,39 @@ applyTo: '**'
 - Application layer has NO knowledge of Blazor, SignalR, etc.
 - Business logic works the same whether called from Blazor, CLI, or API
 
+### Provider/Feature Ignorance (Infrastructure Layer Rule)
+
+Database providers and features are separate concerns within Infrastructure:
+
+**Providers** (horizontal): SQLite, Postgres, SQL Server, etc.
+**Features** (vertical): LocalStore, Identity, Caching, etc.
+
+1. **Providers don't know about Features** - `Infrastructure.EFCore.Sqlite` should NOT reference `Infrastructure.EFCore.LocalStore`
+2. **Features don't know about Providers** - `Infrastructure.EFCore.LocalStore` uses `IDbContextFactory<EFCoreDbContext>`, not `SqliteDbContext`
+3. **Composition happens at Presentation** - The composition root (Program.cs or ApplicationDependency) wires provider + features together
+
+```csharp
+// BAD: Provider referencing a feature
+// In Infrastructure.EFCore.Sqlite.Client.csproj
+<ProjectReference Include="..\Infrastructure.EFCore.LocalStore\..." />  // WRONG!
+
+// BAD: Feature referencing a specific provider
+// In Infrastructure.EFCore.LocalStore
+public class LocalStoreService(SqliteDbContext dbContext)  // WRONG! Provider-specific
+
+// GOOD: Feature uses abstraction
+// In Infrastructure.EFCore.LocalStore
+public class LocalStoreService(IDbContextFactory<EFCoreDbContext> factory)  // Provider-agnostic
+
+// GOOD: Composition at Presentation layer
+// In Presentation.WebApp/Program.cs or ApplicationDependency
+services.AddEFCoreSqlite(connectionString);  // Provider
+services.AddEFCoreLocalStore();               // Feature (uses whatever provider is registered)
+services.AddEFCoreIdentity();                 // Feature
+```
+
+**Principle:** If your provider project has `using Infrastructure.EFCore.{Feature}`, you're coupling horizontally. Providers are interchangeable foundations; features build on top via abstractions.
+
 ### Type Variation Ignorance (General Rule)
 
 When you have entities or concepts that come in multiple "types" or "modes" (e.g., Paper vs Live accounts, Spot vs Futures markets, Manual vs Automated orders), apply these rules:
