@@ -7,10 +7,18 @@
     <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
     <StaticWebAssetProjectMode>Default</StaticWebAssetProjectMode>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    
+    <!-- Compression only, no trimming (trimming can break reflection) -->
+    <BlazorEnableCompression>true</BlazorEnableCompression>
   </PropertyGroup>
 
   <ItemGroup>
 	<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.2" />
+	<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BlazorAppSampleTemplate.Shared\BlazorAppSampleTemplate.Shared.csproj" />
   </ItemGroup>
 
 </Project>

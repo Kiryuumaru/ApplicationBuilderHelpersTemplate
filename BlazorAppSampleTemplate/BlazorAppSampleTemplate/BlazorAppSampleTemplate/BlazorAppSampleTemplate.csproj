@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BlazorAppSampleTemplate.Client\BlazorAppSampleTemplate.Client.csproj" />
+    <ProjectReference Include="..\BlazorAppSampleTemplate.Shared\BlazorAppSampleTemplate.Shared.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.2" />
   </ItemGroup>
 

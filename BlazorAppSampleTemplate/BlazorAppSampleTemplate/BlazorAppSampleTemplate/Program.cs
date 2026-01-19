@@ -1,11 +1,17 @@
 using BlazorAppSampleTemplate.Client.Pages;
 using BlazorAppSampleTemplate.Components;
+using BlazorAppSampleTemplate.Services;
+using BlazorAppSampleTemplate.Shared.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddControllers();
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
+
+// Register server-side weather service for API controller
+builder.Services.AddScoped<IWeatherService, ServerWeatherService>();
 
 var app = builder.Build();
 
@@ -25,6 +31,7 @@ app.UseHttpsRedirection();
 
 app.UseAntiforgery();
 
+app.MapControllers();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()
