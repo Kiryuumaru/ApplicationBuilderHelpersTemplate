@@ -37,7 +37,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docs", "Docs", "{CD8E1CB5-E
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Presentation.WebApp.FunctionalTests", "tests\Presentation.WebApp.FunctionalTests\Presentation.WebApp.FunctionalTests.csproj", "{5FB55615-D7CD-48E1-8C10-7E2BE739D86B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Presentation.WebApp.Server.FunctionalTests", "tests\Presentation.WebApp.Server.FunctionalTests\Presentation.WebApp.Server.FunctionalTests.csproj", "{5FB55615-D7CD-48E1-8C10-7E2BE739D86B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Api", "Api", "{0347F4A6-1E41-4ADB-BED2-4B4BC01E686E}"
 	ProjectSection(SolutionItems) = preProject
@@ -80,9 +80,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Presentation.WebApp.Client.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure.OpenTelemetry", "src\Infrastructure.OpenTelemetry\Infrastructure.OpenTelemetry.csproj", "{DD6052F2-A7A7-4313-8494-72A10A2B8D3C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Presentation.WebApp", "src\Presentation.WebApp\Presentation.WebApp.csproj", "{66D00434-3579-4330-A33D-21911077A1D6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Presentation.WebApp.Server", "src\Presentation.WebApp.Server\Presentation.WebApp.Server.csproj", "{66D00434-3579-4330-A33D-21911077A1D6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Presentation.WebApp.Client", "src\Presentation.WebApp.Client\Presentation.WebApp.Client.csproj", "{7604D638-5679-4627-B218-755DB31CB416}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Presentation.WebApp", "src\Presentation.WebApp\Presentation.WebApp.csproj", "{3991B805-0E22-4833-9D18-C40860581612}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -370,6 +372,18 @@ Global
 		{7604D638-5679-4627-B218-755DB31CB416}.Release|x64.Build.0 = Release|Any CPU
 		{7604D638-5679-4627-B218-755DB31CB416}.Release|x86.ActiveCfg = Release|Any CPU
 		{7604D638-5679-4627-B218-755DB31CB416}.Release|x86.Build.0 = Release|Any CPU
+		{3991B805-0E22-4833-9D18-C40860581612}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3991B805-0E22-4833-9D18-C40860581612}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3991B805-0E22-4833-9D18-C40860581612}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3991B805-0E22-4833-9D18-C40860581612}.Debug|x64.Build.0 = Debug|Any CPU
+		{3991B805-0E22-4833-9D18-C40860581612}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3991B805-0E22-4833-9D18-C40860581612}.Debug|x86.Build.0 = Debug|Any CPU
+		{3991B805-0E22-4833-9D18-C40860581612}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3991B805-0E22-4833-9D18-C40860581612}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3991B805-0E22-4833-9D18-C40860581612}.Release|x64.ActiveCfg = Release|Any CPU
+		{3991B805-0E22-4833-9D18-C40860581612}.Release|x64.Build.0 = Release|Any CPU
+		{3991B805-0E22-4833-9D18-C40860581612}.Release|x86.ActiveCfg = Release|Any CPU
+		{3991B805-0E22-4833-9D18-C40860581612}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

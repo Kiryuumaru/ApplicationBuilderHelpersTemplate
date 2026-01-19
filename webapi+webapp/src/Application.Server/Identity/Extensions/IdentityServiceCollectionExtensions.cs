@@ -26,8 +26,6 @@ public static class IdentityServiceCollectionExtensions
             services.Configure<FrontendUrlOptions>(options => { });
         }
 
-        services.AddAuthenticationServices();
-
         services.AddScoped<UserAuthenticationService>();
         
         // Focused identity services

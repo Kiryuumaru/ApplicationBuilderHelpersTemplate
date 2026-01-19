@@ -1,4 +1,6 @@
-using Application.Server.Authorization.Models;
+using Application.Credential.Interfaces;
+using Application.Credential.Models;
+using Application.Credential.Services;
 using Application.Server.Authorization.Services;
 using ApplicationBuilderHelpers;
 using Domain.Shared.Extensions;
@@ -19,8 +21,8 @@ public class IdentityInfrastructure : ApplicationDependency
         // Register JWT token services using CredentialsService
         services.AddJwtTokenServices(async (sp, ct) =>
         {
-            var credentialsService = sp.GetRequiredService<CredentialsService>();
-            Credentials credentials = await credentialsService.GetCredentials(ct);
+            var credentialsService = sp.GetRequiredService<ICredentialService>();
+            var credentials = await credentialsService.GetCredentials(ct);
             var jwtSecret = credentials.EnvironmentCredentials.GetValueOrThrow<string>("jwt", "secret");
             var jwtIssuer = credentials.EnvironmentCredentials.GetValueOrThrow<string>("jwt", "issuer");
             var jwtAudience = credentials.EnvironmentCredentials.GetValueOrThrow<string>("jwt", "audience");

@@ -1,5 +1,7 @@
 using Application.AppEnvironment.Extensions;
+using Application.Authorization.Extensions;
 using Application.Common.Extensions;
+using Application.Credential.Extensions;
 using Application.Identity.Extensions;
 using Application.LocalStore.Extensions;
 using Application.Logger.Extensions;
@@ -19,8 +21,23 @@ public class Application : ApplicationDependency
 
         services.AddCommonServices();
         services.AddAppEnvironmentServices();
+        services.AddAuthenticationServices();
         services.AddNativeCmdServices();
         services.AddLocalStoreServices();
         services.AddIdentityServices();
+        services.AddCredentialServices();
+    }
+
+    public override void RunPreparation(ApplicationHost applicationHost)
+    {
+        base.RunPreparation(applicationHost);
+
+#if DEBUG
+        Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
+        applicationHost.Configuration["ASPNETCORE_ENVIRONMENT"] = "Development";
+#else
+        Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Production");
+        applicationHost.Configuration["ASPNETCORE_ENVIRONMENT"] = "Production";
+#endif
     }
 }

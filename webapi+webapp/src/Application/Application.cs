@@ -1,6 +1,7 @@
 using Application.AppEnvironment.Extensions;
 using Application.AppEnvironment.Services;
 using Application.Common.Extensions;
+using Application.Credential.Extensions;
 using Application.LocalStore.Extensions;
 using Application.Logger.Extensions;
 using Application.NativeCmd.Extensions;
@@ -22,6 +23,7 @@ public class Application : ApplicationDependency
         services.AddAppEnvironmentServices();
         services.AddNativeCmdServices();
         services.AddLocalStoreServices();
+        services.AddCredentialServices();
     }
 
     public override void RunPreparation(ApplicationHost applicationHost)

@@ -1,3 +1,4 @@
+using Application.Server.Authorization.Extensions;
 using Application.Server.Identity.Extensions;
 using ApplicationBuilderHelpers;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,6 +11,7 @@ public class ServerApplication : Application
     {
         base.AddServices(applicationBuilder, services);
 
+        services.AddAuthorizationServices();
         services.AddIdentityServices();
     }
 }

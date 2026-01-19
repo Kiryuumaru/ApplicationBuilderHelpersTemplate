@@ -3,6 +3,7 @@ using Application.AppEnvironment.Services;
 using Application.Authorization.Extensions;
 using Application.Common.Configuration.Extensions;
 using Application.Common.Interfaces.Application;
+using Application.Credential.Extensions;
 using Application.Logger.Extensions;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Attributes;

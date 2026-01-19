@@ -8,9 +8,10 @@ internal static class AuthenticationServiceCollectionExtensions
 {
     internal static IServiceCollection AddAuthenticationServices(this IServiceCollection services)
     {
-        services.AddScoped<CredentialsService>();
         services.AddScoped<IPermissionService, PermissionService>();
-        
+        services.AddScoped<IRoleService, RoleService>();
+        services.AddScoped<IUserRoleResolver, UserRoleResolver>();
+
         return services;
     }
 }

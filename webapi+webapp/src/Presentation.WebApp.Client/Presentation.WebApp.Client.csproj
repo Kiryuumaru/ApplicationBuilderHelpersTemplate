@@ -1,9 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
 	<PropertyGroup>
 		<LangVersion>14</LangVersion>
 		<GenerateBuildConstants>true</GenerateBuildConstants>
-		<BaseCommandType>Presentation.Commands.BaseCommand</BaseCommandType>
+		<BaseCommandType>Presentation.WebApp.Commands.BaseWebAppCommand</BaseCommandType>
 		<TargetFramework>net10.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
@@ -33,7 +33,7 @@
 		<ProjectReference Include="..\Application.Client\Application.Client.csproj" />
 		<ProjectReference Include="..\Infrastructure.EFCore.LocalStore\Infrastructure.EFCore.LocalStore.csproj" />
 		<ProjectReference Include="..\Infrastructure.EFCore.Sqlite.Client\Infrastructure.EFCore.Sqlite.Client.csproj" />
-		<ProjectReference Include="..\Presentation\Presentation.csproj" />
+		<ProjectReference Include="..\Presentation.WebApp\Presentation.WebApp.csproj" />
 	</ItemGroup>
 
 	<Target Name="BuildTailwindCss" BeforeTargets="Build">
