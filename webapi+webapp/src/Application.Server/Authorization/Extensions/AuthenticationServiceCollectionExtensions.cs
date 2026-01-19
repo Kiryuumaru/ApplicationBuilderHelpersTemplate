@@ -10,7 +10,9 @@ public static class AuthenticationServiceCollectionExtensions
     {
         services.AddScoped<CredentialsService>();
         services.AddScoped<IPermissionService, PermissionService>();
-        
+        services.AddScoped<IRoleService, RoleService>();
+        services.AddScoped<IUserRoleResolver, UserRoleResolver>();
+
         return services;
     }
 }
