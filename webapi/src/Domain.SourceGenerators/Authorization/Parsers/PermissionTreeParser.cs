@@ -1,7 +1,10 @@
+using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using Domain.SourceGenerators.Authorization.Models;
 using Domain.SourceGenerators.Utilities;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Domain.SourceGenerators.Authorization.Parsers;
@@ -22,31 +25,33 @@ internal static class PermissionTreeParser
             return false;
         }
 
-        var apiRoot = TryParseRootMethod(compilation, permissionsType, "BuildApiRoot", errorsBuilder, out var api);
-        var debugRoot = TryParseRootMethod(compilation, permissionsType, "BuildSecOpsDebugRoot", errorsBuilder, out var debug);
-
-        var rootList = ImmutableArray.CreateBuilder<PermissionTreeNode>();
-        if (apiRoot)
+        // Dynamically discover root builder methods from BuildPermissionRoots()
+        var rootMethodNames = DiscoverRootMethodNames(compilation, permissionsType, errorsBuilder);
+        if (rootMethodNames.Length == 0)
         {
-            if (api is null)
+            if (errorsBuilder.Count == 0)
             {
-                errorsBuilder.Add("BuildApiRoot parsed successfully but produced no root.");
+                errorsBuilder.Add("No root builder method invocations found in BuildPermissionRoots().");
             }
-            else
-            {
-                rootList.Add(api);
-            }
+
+            roots = ImmutableArray<PermissionTreeNode>.Empty;
+            errors = errorsBuilder.ToImmutable();
+            return false;
         }
 
-        if (debugRoot)
+        var rootList = ImmutableArray.CreateBuilder<PermissionTreeNode>();
+        foreach (var methodName in rootMethodNames)
         {
-            if (debug is null)
+            if (TryParseRootMethod(compilation, permissionsType, methodName, errorsBuilder, out var node))
             {
-                errorsBuilder.Add("BuildSecOpsDebugRoot parsed successfully but produced no root.");
-            }
-            else
-            {
-                rootList.Add(debug);
+                if (node is null)
+                {
+                    errorsBuilder.Add($"{methodName} parsed successfully but produced no root.");
+                }
+                else
+                {
+                    rootList.Add(node);
+                }
             }
         }
 
@@ -54,7 +59,7 @@ internal static class PermissionTreeParser
         {
             if (errorsBuilder.Count == 0)
             {
-                errorsBuilder.Add("No permission roots were found (BuildApiRoot/BuildSecOpsDebugRoot missing or unsupported).");
+                errorsBuilder.Add("No permission roots were successfully parsed.");
             }
 
             roots = ImmutableArray<PermissionTreeNode>.Empty;
@@ -65,6 +70,52 @@ internal static class PermissionTreeParser
         roots = rootList.ToImmutable();
         errors = errorsBuilder.ToImmutable();
         return errors.Length == 0;
+    }
+
+    private static ImmutableArray<string> DiscoverRootMethodNames(
+        Compilation compilation,
+        INamedTypeSymbol permissionsType,
+        ImmutableArray<string>.Builder errors)
+    {
+        var method = FindMethod(permissionsType, "BuildPermissionRoots");
+        if (method is null)
+        {
+            errors.Add("Could not find BuildPermissionRoots method in Permissions class.");
+            return ImmutableArray<string>.Empty;
+        }
+
+        if (method.DeclaringSyntaxReferences.Length == 0)
+        {
+            errors.Add("BuildPermissionRoots has no syntax reference.");
+            return ImmutableArray<string>.Empty;
+        }
+
+        var syntax = method.DeclaringSyntaxReferences[0].GetSyntax() as MethodDeclarationSyntax;
+        if (syntax?.Body is null)
+        {
+            errors.Add("BuildPermissionRoots must have a method body.");
+            return ImmutableArray<string>.Empty;
+        }
+
+        var methodNames = ImmutableArray.CreateBuilder<string>();
+
+        // Find all method invocations that match Build*Root pattern
+        foreach (var node in syntax.Body.DescendantNodes())
+        {
+            if (node is InvocationExpressionSyntax invocation)
+            {
+                var name = GetInvocationName(invocation.Expression);
+                if (name is not null && name.StartsWith("Build", StringComparison.Ordinal) && name.EndsWith("Root", StringComparison.Ordinal))
+                {
+                    if (!methodNames.Contains(name))
+                    {
+                        methodNames.Add(name);
+                    }
+                }
+            }
+        }
+
+        return methodNames.ToImmutable();
     }
 
     private static bool TryParseRootMethod(
