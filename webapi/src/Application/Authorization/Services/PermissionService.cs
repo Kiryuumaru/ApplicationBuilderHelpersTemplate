@@ -1,7 +1,13 @@
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Security.Claims;
+using System.Threading;
+using System.Threading.Tasks;
 using Domain.Authorization.Constants;
 using Domain.Shared.Constants;
+using Domain.Shared.Exceptions;
 using Application.Authorization.Interfaces;
 using Application.Authorization.Interfaces.Infrastructure;
 using Domain.Authorization.Enums;
@@ -13,7 +19,7 @@ using TokenClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 
 namespace Application.Authorization.Services;
 
-internal sealed class PermissionService(
+public sealed class PermissionService(
     ITokenProvider tokenProvider,
     IRoleRepository roleRepository) : IPermissionService
 {
@@ -354,51 +360,6 @@ internal sealed class PermissionService(
             : [.. ordered];
     }
 
-    private static HashSet<string> ExtractPermissionClaims(ClaimsPrincipal principal)
-    {
-        var claimSet = new HashSet<string>(StringComparer.Ordinal);
-
-        foreach (var claim in principal.Claims)
-        {
-            if (string.IsNullOrWhiteSpace(claim.Value))
-            {
-                continue;
-            }
-
-            if (string.Equals(claim.Type, ScopeClaimType, StringComparison.Ordinal))
-            {
-                var scopes = claim.Value.Split(
-                    ' ',
-                    StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
-                if (scopes.Length == 0)
-                {
-                    continue;
-                }
-
-                foreach (var scope in scopes)
-                {
-                    claimSet.Add(scope);
-                }
-
-                continue;
-            }
-        }
-
-        // SECURITY: Tokens without RBAC version are rejected (no backward compatibility)
-        // This ensures old/malformed tokens cannot gain unauthorized access
-        if (!principal.Claims.Any(claim => string.Equals(claim.Type, RbacConstants.VersionClaimType, StringComparison.Ordinal)))
-        {
-            // Return empty set - token will have no permissions
-            return new HashSet<string>(StringComparer.Ordinal);
-        }
-
-        return claimSet;
-    }
-
-    /// <summary>
-    /// Extracts scope directives from the principal's claims.
-    /// </summary>
     private static List<ScopeDirective> ExtractScopeDirectives(ClaimsPrincipal principal)
     {
         var directives = new List<ScopeDirective>();
@@ -431,11 +392,6 @@ internal sealed class PermissionService(
         return directives;
     }
 
-    /// <summary>
-    /// Resolves scope directives by extracting role codes from the principal and looking up
-    /// the current role definitions from the database. This allows role permission changes
-    /// to take effect immediately without requiring token regeneration.
-    /// </summary>
     private async Task<List<ScopeDirective>> ResolveScopeDirectivesAsync(ClaimsPrincipal principal, CancellationToken cancellationToken)
     {
         var directives = new List<ScopeDirective>();
@@ -459,14 +415,11 @@ internal sealed class PermissionService(
             return directives;
         }
 
-        // Get unique role codes to look up
         var roleCodes = parsedRoles.Select(p => p.Code).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 
-        // Look up current role definitions from the database
         var roles = await _roleRepository.GetByCodesAsync(roleCodes, cancellationToken).ConfigureAwait(false);
         var roleIndex = roles.ToDictionary(r => r.Code, StringComparer.OrdinalIgnoreCase);
 
-        // Expand scope templates for each parsed role claim
         foreach (var parsedRole in parsedRoles)
         {
             if (!roleIndex.TryGetValue(parsedRole.Code, out var role))
@@ -474,15 +427,11 @@ internal sealed class PermissionService(
                 continue;
             }
 
-            // Convert parsed parameters to string? dictionary for expansion
             var parameterValues = parsedRole.Parameters.ToDictionary(
                 kvp => kvp.Key,
                 kvp => (string?)kvp.Value,
                 StringComparer.Ordinal);
 
-            // Try to expand the role's scope templates with parameter values
-            // If the role requires parameters that aren't provided, we'll expand
-            // only the templates that don't require those parameters
             try
             {
                 var roleDirectives = role.ExpandScope(parameterValues);
@@ -520,203 +469,8 @@ internal sealed class PermissionService(
         return directives;
     }
 
-    private static bool HasPermissionInternal(HashSet<string> claimSet, Permission permission, Permission.ParsedIdentifier requestedIdentifier)
-    {
-        if (claimSet.Contains(Permissions.RootWriteIdentifier) &&
-            (permission.AccessCategory == PermissionAccessCategory.Write || permission.AccessCategory == PermissionAccessCategory.Unspecified))
-        {
-            return true;
-        }
-
-        if (claimSet.Contains(Permissions.RootReadIdentifier) && permission.AccessCategory != PermissionAccessCategory.Write)
-        {
-            return true;
-        }
-
-        if (claimSet.Contains(requestedIdentifier.Identifier))
-        {
-            return true;
-        }
-
-        if (claimSet.Contains(permission.Path))
-        {
-            return true;
-        }
-
-        if (HasMatchingClaim(claimSet, permission.Path, requestedIdentifier.Parameters))
-        {
-            return true;
-        }
-
-        if (permission.AccessCategory is PermissionAccessCategory.Read or PermissionAccessCategory.Write)
-        {
-            var current = permission;
-            while (current.Parent is not null)
-            {
-                var parent = current.Parent;
-                if (permission.AccessCategory == PermissionAccessCategory.Read)
-                {
-                    if (ScopeSatisfied(claimSet, parent, PermissionAccessCategory.Read, requestedIdentifier.Parameters))
-                    {
-                        return true;
-                    }
-                }
-                else if (permission.AccessCategory == PermissionAccessCategory.Write)
-                {
-                    if (ScopeSatisfied(claimSet, parent, PermissionAccessCategory.Write, requestedIdentifier.Parameters))
-                    {
-                        return true;
-                    }
-                }
-
-                current = parent;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool ScopeSatisfied(
-        HashSet<string> claimSet,
-        Permission scopePermission,
-        PermissionAccessCategory category,
-        IReadOnlyDictionary<string, string> requestedParameters)
-    {
-        var scopePath = BuildScopePath(scopePermission.Path, category);
-
-        var filteredParameters = FilterParameters(requestedParameters);
-
-        if (filteredParameters is not null)
-        {
-            var scopedIdentifier = BuildScopedIdentifier(scopePermission, category, filteredParameters);
-            if (claimSet.Contains(scopedIdentifier))
-            {
-                return true;
-            }
-        }
-
-        if (claimSet.Contains(scopePath))
-        {
-            return true;
-        }
-
-        IReadOnlyDictionary<string, string> effectiveParameters;
-
-        effectiveParameters = filteredParameters ?? EmptyCollections.StringStringDictionary;
-
-        return HasMatchingClaim(claimSet, scopePath, effectiveParameters);
-    }
-
-    private static bool HasMatchingClaim(
-        HashSet<string> claimSet,
-        string canonicalPath,
-        IReadOnlyDictionary<string, string> requestedParameters)
-    {
-        foreach (var claim in claimSet)
-        {
-            if (!Permission.TryParseIdentifier(claim, out var parsedClaim))
-            {
-                continue;
-            }
-
-            if (!string.Equals(parsedClaim.Canonical, canonicalPath, StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            if (ParametersCompatible(parsedClaim.Parameters, requestedParameters))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool ParametersCompatible(
-        IReadOnlyDictionary<string, string> claimParameters,
-        IReadOnlyDictionary<string, string> requestedParameters)
-    {
-        if (claimParameters.Count == 0)
-        {
-            return true;
-        }
-
-        foreach (var kvp in claimParameters)
-        {
-            if (!requestedParameters.TryGetValue(kvp.Key, out var requestedValue))
-            {
-                return false;
-            }
-
-            if (!string.Equals(kvp.Value, requestedValue, StringComparison.Ordinal))
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     private static HashSet<string> CollectRelevantParameterNames(Permission permission)
         => new(permission.GetParameterHierarchy(), StringComparer.Ordinal);
-
-    private static Dictionary<string, string>? FilterParameters(
-        IReadOnlyDictionary<string, string> requestedParameters)
-    {
-        if (requestedParameters.Count == 0)
-        {
-            return null;
-        }
-
-        return new Dictionary<string, string>(requestedParameters, StringComparer.Ordinal);
-    }
-
-    private static string BuildScopedIdentifier(
-        Permission scopePermission,
-        PermissionAccessCategory category,
-        Dictionary<string, string> parameters)
-    {
-        string basePath;
-        Dictionary<string, string?>? declaredValues = null;
-        SortedDictionary<string, string>? extraValues = null;
-
-        if (parameters.Count > 0)
-        {
-            var declaredNames = CollectRelevantParameterNames(scopePermission);
-
-            foreach (var kvp in parameters)
-            {
-                if (declaredNames.Contains(kvp.Key))
-                {
-                    declaredValues ??= new Dictionary<string, string?>(StringComparer.Ordinal);
-                    declaredValues[kvp.Key] = kvp.Value;
-                }
-                else
-                {
-                    extraValues ??= new SortedDictionary<string, string>(StringComparer.Ordinal);
-                    extraValues[kvp.Key] = kvp.Value;
-                }
-            }
-        }
-
-        basePath = declaredValues is null
-            ? scopePermission.Path
-            : scopePermission.BuildPath(declaredValues);
-
-        if (extraValues is not null)
-        {
-            var segment = string.Join(';', extraValues.Select(static kvp => $"{kvp.Key}={kvp.Value}"));
-            basePath = $"{basePath}:[{segment}]";
-        }
-
-        return category switch
-        {
-            PermissionAccessCategory.Read => $"{basePath}:_read",
-            PermissionAccessCategory.Write => $"{basePath}:_write",
-            _ => basePath
-        };
-    }
 
     private static bool AreParametersValid(Permission permission, IReadOnlyDictionary<string, string> parameters, out string? invalidParameter)
     {
@@ -760,13 +514,6 @@ internal sealed class PermissionService(
         invalidParameter = null;
         return true;
     }
-
-    private static string BuildScopePath(string basePath, PermissionAccessCategory category) => category switch
-    {
-        PermissionAccessCategory.Read => $"{basePath}:_read",
-        PermissionAccessCategory.Write => $"{basePath}:_write",
-        _ => basePath
-    };
 
     private static ReadOnlyDictionary<string, HashSet<string>> BuildReachableParameterLookup(IEnumerable<Permission> roots)
     {
