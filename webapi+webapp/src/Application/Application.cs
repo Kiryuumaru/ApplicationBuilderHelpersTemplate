@@ -1,9 +1,11 @@
 using Application.AppEnvironment.Extensions;
+using Application.AppEnvironment.Services;
 using Application.Common.Extensions;
 using Application.LocalStore.Extensions;
 using Application.Logger.Extensions;
 using Application.NativeCmd.Extensions;
 using ApplicationBuilderHelpers;
+using Domain.AppEnvironment.Constants;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -20,5 +22,18 @@ public class Application : ApplicationDependency
         services.AddAppEnvironmentServices();
         services.AddNativeCmdServices();
         services.AddLocalStoreServices();
+    }
+
+    public override void RunPreparation(ApplicationHost applicationHost)
+    {
+        base.RunPreparation(applicationHost);
+
+#if DEBUG
+        Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
+        applicationHost.Configuration["ASPNETCORE_ENVIRONMENT"] = "Development";
+#else
+        Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Production");
+        applicationHost.Configuration["ASPNETCORE_ENVIRONMENT"] = "Production";
+#endif
     }
 }
