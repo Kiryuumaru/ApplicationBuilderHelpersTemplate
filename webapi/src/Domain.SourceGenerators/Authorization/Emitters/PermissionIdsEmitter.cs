@@ -514,8 +514,16 @@ internal static class PermissionIdsEmitter
         builder.Append(memberIndent);
         builder.AppendLine("    ? $\"deny;{_path}\"");
         builder.Append(memberIndent);
-        builder.AppendLine("    : $\"deny;{_path};{_params}\";");
+        builder.AppendLine("    : $\"deny;{_path};{_params}\";");        builder.AppendLine();
 
+        builder.Append(memberIndent);
+        builder.AppendLine("/// <summary>Returns the permission identifier with configured parameters for use with HasPermission methods.</summary>");
+        builder.Append(memberIndent);
+        builder.AppendLine("public string Identifier() => string.IsNullOrEmpty(_params)");
+        builder.Append(memberIndent);
+        builder.AppendLine("    ? _path");
+        builder.Append(memberIndent);
+        builder.AppendLine("    : $\"{_path};{_params}\";");
         builder.Append(indent);
         builder.AppendLine("}");
     }
