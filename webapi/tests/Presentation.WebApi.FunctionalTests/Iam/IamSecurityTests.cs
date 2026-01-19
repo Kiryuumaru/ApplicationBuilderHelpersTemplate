@@ -547,7 +547,7 @@ public class IamSecurityTests(ITestOutputHelper output) : WebApiTestBase(output)
 
     #region Response Types
 
-    private sealed class AuthResponse
+    private new sealed class AuthResponse
     {
         public string AccessToken { get; set; } = string.Empty;
         public string RefreshToken { get; set; } = string.Empty;

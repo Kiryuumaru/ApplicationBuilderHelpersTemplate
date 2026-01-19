@@ -1,4 +1,4 @@
-using Application.Server.Authorization.Services;
+using Application.Credential.Services;
 using Domain.Shared.Extensions;
 using Microsoft.Extensions.Configuration;
 using System.Text.Json.Nodes;
@@ -6,10 +6,10 @@ using System.Text.Json.Nodes;
 namespace Application.UnitTests.Authorization;
 
 /// <summary>
-/// Unit tests for CredentialsService.
+/// Unit tests for CredentialService.
 /// Validates that credentials are correctly read from configuration by environment tag.
 /// </summary>
-public class CredentialsServiceTests
+public class CredentialServiceTests
 {
 	[Fact]
 	public async Task GetCredentials_ReadsEnvironmentSpecificValues()
@@ -29,7 +29,7 @@ public class CredentialsServiceTests
 			}
 		});
 
-		var service = new CredentialsService(appEnvironmentService: null!, configuration);
+		var service = new CredentialService(appEnvironmentService: null!, configuration);
 
 		var credentials = await service.GetCredentials("dev", CancellationToken.None);
 
@@ -56,7 +56,7 @@ public class CredentialsServiceTests
 			}
 		});
 
-		var service = new CredentialsService(appEnvironmentService: null!, configuration);
+		var service = new CredentialService(appEnvironmentService: null!, configuration);
 
 		var credentials = await service.GetCredentials("prod", CancellationToken.None);
 
@@ -83,7 +83,7 @@ public class CredentialsServiceTests
 			}
 		});
 
-		var service = new CredentialsService(appEnvironmentService: null!, configuration);
+		var service = new CredentialService(appEnvironmentService: null!, configuration);
 
 		var credentials = await service.GetCredentials("test", CancellationToken.None);
 
@@ -109,7 +109,7 @@ public class CredentialsServiceTests
 			}
 		});
 
-		var service = new CredentialsService(appEnvironmentService: null!, configuration);
+		var service = new CredentialService(appEnvironmentService: null!, configuration);
 
 		var credentials = await service.GetCredentials("staging", CancellationToken.None);
 

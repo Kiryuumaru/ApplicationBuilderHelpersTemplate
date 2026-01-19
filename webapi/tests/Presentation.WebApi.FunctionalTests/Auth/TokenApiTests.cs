@@ -22,7 +22,7 @@ public class TokenApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
 
-        var refreshRequest = new { RefreshToken = authResult!.RefreshToken };
+        var refreshRequest = new { RefreshToken = authResult.RefreshToken };
         var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", refreshRequest);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -31,7 +31,7 @@ public class TokenApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         var result = JsonSerializer.Deserialize<AuthResponse>(content, JsonOptions);
 
         Assert.NotNull(result);
-        Assert.NotEmpty(result!.AccessToken);
+        Assert.NotEmpty(result.AccessToken);
         Assert.NotEmpty(result.RefreshToken);
         Assert.NotEqual(authResult.AccessToken, result.AccessToken);
     }
@@ -52,7 +52,7 @@ public class TokenApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         Assert.NotNull(authResult);
 
         // Try to use access token as refresh token
-        var refreshRequest = new { RefreshToken = authResult!.AccessToken };
+        var refreshRequest = new { RefreshToken = authResult.AccessToken };
         var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", refreshRequest);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -89,7 +89,7 @@ public class TokenApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
 
-        var oldRefreshToken = authResult!.RefreshToken;
+        var oldRefreshToken = authResult.RefreshToken;
 
         // First refresh - should succeed
         var refreshRequest1 = new { RefreshToken = oldRefreshToken };
@@ -115,7 +115,7 @@ public class TokenApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         Assert.NotNull(authResult);
 
         // First refresh
-        var refreshRequest1 = new { RefreshToken = authResult!.RefreshToken };
+        var refreshRequest1 = new { RefreshToken = authResult.RefreshToken };
         var response1 = await HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", refreshRequest1);
         Assert.Equal(HttpStatusCode.OK, response1.StatusCode);
 
@@ -124,7 +124,7 @@ public class TokenApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         Assert.NotNull(newTokens);
 
         // Second refresh with new token - should succeed
-        var refreshRequest2 = new { RefreshToken = newTokens!.RefreshToken };
+        var refreshRequest2 = new { RefreshToken = newTokens.RefreshToken };
         var response2 = await HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", refreshRequest2);
 
         Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
@@ -141,7 +141,7 @@ public class TokenApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         Assert.NotNull(authResult);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/logout");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult!.AccessToken);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         var response = await HttpClient.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
@@ -163,7 +163,7 @@ public class TokenApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         // Logout
         using var logoutRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/logout");
-        logoutRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult!.AccessToken);
+        logoutRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         await HttpClient.SendAsync(logoutRequest);
 
         // Try to use refresh token after logout
@@ -184,7 +184,7 @@ public class TokenApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         Assert.NotNull(authResult);
 
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult!.AccessToken);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         var response = await HttpClient.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -193,7 +193,8 @@ public class TokenApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         var result = JsonSerializer.Deserialize<UserInfoResponse>(content, JsonOptions);
 
         Assert.NotNull(result);
-        Assert.NotEmpty(result!.Username);
+        Assert.NotNull(result.Username);
+        Assert.NotEmpty(result.Username);
     }
 
     [Fact]
@@ -241,7 +242,7 @@ public class TokenApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
 
-        var tokenParts = authResult!.AccessToken.Split('.');
+        var tokenParts = authResult.AccessToken.Split('.');
         if (tokenParts.Length == 3)
         {
             // Modify the payload (middle part)
@@ -261,7 +262,7 @@ public class TokenApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
 
-        var tokenParts = authResult!.AccessToken.Split('.');
+        var tokenParts = authResult.AccessToken.Split('.');
         if (tokenParts.Length == 3)
         {
             // Strip the signature
@@ -301,7 +302,7 @@ public class TokenApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
 
-        var originalAccessToken = authResult!.AccessToken;
+        var originalAccessToken = authResult.AccessToken;
 
         // Refresh to get new tokens
         var refreshRequest = new { RefreshToken = authResult.RefreshToken };
@@ -332,7 +333,7 @@ public class TokenApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         // Try to refresh with user1's token but expect user1's session
         // (This is more of a design verification - refresh tokens are tied to users)
-        var refreshRequest = new { RefreshToken = user1!.RefreshToken };
+        var refreshRequest = new { RefreshToken = user1.RefreshToken };
         var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", refreshRequest);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -358,7 +359,7 @@ public class TokenApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         Assert.NotNull(authResult);
 
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
-        request.Headers.TryAddWithoutValidation("Authorization", $"{scheme} {authResult!.AccessToken}");
+        request.Headers.TryAddWithoutValidation("Authorization", $"{scheme} {authResult.AccessToken}");
         var response = await HttpClient.SendAsync(request);
 
         // Bearer scheme should be case-insensitive per RFC 7235
@@ -375,7 +376,7 @@ public class TokenApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         Assert.NotNull(authResult);
 
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
-        request.Headers.TryAddWithoutValidation("Authorization", $"{scheme} {authResult!.AccessToken}");
+        request.Headers.TryAddWithoutValidation("Authorization", $"{scheme} {authResult.AccessToken}");
         var response = await HttpClient.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -391,7 +392,7 @@ public class TokenApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
 
-        var refreshRequest = new { RefreshToken = authResult!.RefreshToken };
+        var refreshRequest = new { RefreshToken = authResult.RefreshToken };
         var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", refreshRequest);
 
         // Check that sensitive info isn't leaked in headers

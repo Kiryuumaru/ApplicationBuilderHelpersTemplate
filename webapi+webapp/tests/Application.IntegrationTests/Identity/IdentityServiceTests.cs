@@ -1,4 +1,5 @@
 using Application.Common.Interfaces.Application;
+using Application.Server.Authorization.Extensions;
 using Application.Server.Authorization.Interfaces;
 using Application.Server.Authorization.Models;
 using Application.Server.Identity.Extensions;
@@ -311,6 +312,7 @@ public class IdentityServiceTests
             });
         });
         
+        services.AddAuthorizationServices();
         services.AddIdentityServices();
 
         services.AddIdentityCoreServices();

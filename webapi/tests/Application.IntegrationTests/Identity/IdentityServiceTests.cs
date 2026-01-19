@@ -1,3 +1,4 @@
+using Application.Authorization.Extensions;
 using Application.Authorization.Models;
 using Application.Identity.Extensions;
 using Application.Identity.Interfaces;
@@ -287,6 +288,7 @@ public class IdentityServiceTests
             });
         });
         
+        services.AddAuthorizationServices();
         services.AddIdentityServices();
 
         services.AddIdentityCoreServices();

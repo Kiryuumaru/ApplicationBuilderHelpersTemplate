@@ -21,7 +21,7 @@ public class Application : ApplicationDependency
 
         services.AddCommonServices();
         services.AddAppEnvironmentServices();
-        services.AddAuthenticationServices();
+        services.AddAuthorizationServices();
         services.AddNativeCmdServices();
         services.AddLocalStoreServices();
         services.AddIdentityServices();

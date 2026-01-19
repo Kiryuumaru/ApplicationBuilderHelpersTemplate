@@ -37,8 +37,9 @@ public class IdentityApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         Output.WriteLine($"[STEP] GET /api/v1/auth/users/{userId}/identity...");
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/identity");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
@@ -53,7 +54,7 @@ public class IdentityApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var result = JsonSerializer.Deserialize<IdentitiesResponse>(content, JsonOptions);
         Assert.NotNull(result);
-        Assert.False(result!.IsAnonymous, "User registered with password should not be anonymous");
+        Assert.False(result.IsAnonymous, "User registered with password should not be anonymous");
         Assert.True(result.HasPassword, "User registered with password should have password");
         Assert.NotNull(result.Email);
         Assert.Empty(result.LinkedProviders);
@@ -71,10 +72,12 @@ public class IdentityApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         var user2 = await RegisterUserAsync();
         Assert.NotNull(user1);
         Assert.NotNull(user2);
+        Assert.NotNull(user1.User);
+        Assert.NotNull(user2.User);
 
-        Output.WriteLine($"[STEP] GET /api/v1/auth/users/{user2!.User.Id}/identity with User1's token...");
+        Output.WriteLine($"[STEP] GET /api/v1/auth/users/{user2.User.Id}/identity with User1's token...");
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{user2.User.Id}/identity");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user1!.AccessToken);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user1.AccessToken);
         var response = await HttpClient.SendAsync(request);
 
         Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
@@ -94,7 +97,7 @@ public class IdentityApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         var nonExistentUserId = Guid.NewGuid();
         Output.WriteLine($"[STEP] GET /api/v1/auth/users/{nonExistentUserId}/identity...");
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{nonExistentUserId}/identity");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult!.AccessToken);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         var response = await HttpClient.SendAsync(request);
 
         Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
@@ -116,8 +119,9 @@ public class IdentityApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         // Create user via OAuth
         var authResult = await CreateUserViaOAuthAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         Output.WriteLine($"[STEP] GET /api/v1/auth/users/{userId}/identity...");
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/identity");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
@@ -132,7 +136,7 @@ public class IdentityApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var result = JsonSerializer.Deserialize<IdentitiesResponse>(content, JsonOptions);
         Assert.NotNull(result);
-        Assert.NotEmpty(result!.LinkedProviders);
+        Assert.NotEmpty(result.LinkedProviders);
         Assert.Contains(result.LinkedProviders, p => p.Provider.Equals("mock", StringComparison.OrdinalIgnoreCase));
 
         Output.WriteLine("[PASS] GetIdentity returns linked OAuth providers");
@@ -145,8 +149,9 @@ public class IdentityApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/identity");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         var response = await HttpClient.SendAsync(request);
@@ -158,7 +163,7 @@ public class IdentityApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         Assert.NotNull(result);
 
         // New users typically have unconfirmed email unless auto-confirmed
-        Output.WriteLine($"[INFO] EmailConfirmed: {result!.EmailConfirmed}");
+        Output.WriteLine($"[INFO] EmailConfirmed: {result.EmailConfirmed}");
         Output.WriteLine("[PASS] EmailConfirmed status is returned");
     }
 
@@ -186,8 +191,9 @@ public class IdentityApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         Assert.Equal(HttpStatusCode.Created, registerResponse.StatusCode);
         var authResult = JsonSerializer.Deserialize<AuthResponse>(await registerResponse.Content.ReadAsStringAsync(), JsonOptions);
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
 
         // Step 2: Get identity
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/identity");
@@ -199,7 +205,7 @@ public class IdentityApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         Assert.NotNull(identity);
 
         // Verify all fields
-        Assert.False(identity!.IsAnonymous);
+        Assert.False(identity.IsAnonymous);
         Assert.True(identity.HasPassword);
         Assert.Equal(email, identity.Email);
         Assert.Empty(identity.LinkedProviders);
@@ -216,8 +222,9 @@ public class IdentityApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         // Step 1: Create user via OAuth (anonymous with OAuth)
         var authResult = await CreateUserViaOAuthAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
 
         // Step 2: Check identity before linking password
         using var request1 = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/identity");
@@ -227,7 +234,7 @@ public class IdentityApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var identityBefore = JsonSerializer.Deserialize<IdentitiesResponse>(await response1.Content.ReadAsStringAsync(), JsonOptions);
         Assert.NotNull(identityBefore);
-        Assert.False(identityBefore!.HasPassword, "OAuth user should not have password initially");
+        Assert.False(identityBefore.HasPassword, "OAuth user should not have password initially");
         Assert.NotEmpty(identityBefore.LinkedProviders);
 
         // Step 3: Link password
@@ -257,7 +264,7 @@ public class IdentityApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         if (linkResponse.IsSuccessStatusCode)
         {
-            Assert.True(identityAfter!.HasPassword, "Should have password after linking");
+            Assert.True(identityAfter.HasPassword, "Should have password after linking");
             Assert.False(identityAfter.IsAnonymous, "Should no longer be anonymous after linking");
         }
 
@@ -274,16 +281,18 @@ public class IdentityApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         var user2 = await CreateUserViaOAuthAsync();
         Assert.NotNull(user1);
         Assert.NotNull(user2);
+        Assert.NotNull(user1.User);
+        Assert.NotNull(user2.User);
 
         // Get user1's identity
-        using var request1 = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{user1!.User.Id}/identity");
+        using var request1 = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{user1.User.Id}/identity");
         request1.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user1.AccessToken);
         var response1 = await HttpClient.SendAsync(request1);
         Assert.Equal(HttpStatusCode.OK, response1.StatusCode);
         var identity1 = JsonSerializer.Deserialize<IdentitiesResponse>(await response1.Content.ReadAsStringAsync(), JsonOptions);
 
         // Get user2's identity
-        using var request2 = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{user2!.User.Id}/identity");
+        using var request2 = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{user2.User.Id}/identity");
         request2.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user2.AccessToken);
         var response2 = await HttpClient.SendAsync(request2);
         Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
@@ -293,11 +302,11 @@ public class IdentityApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         Assert.NotNull(identity2);
 
         // User1: password user
-        Assert.True(identity1!.HasPassword);
+        Assert.True(identity1.HasPassword);
         Assert.Empty(identity1.LinkedProviders);
 
         // User2: OAuth user
-        Assert.False(identity2!.HasPassword);
+        Assert.False(identity2.HasPassword);
         Assert.NotEmpty(identity2.LinkedProviders);
 
         Output.WriteLine("[PASS] Two users have independent identities");

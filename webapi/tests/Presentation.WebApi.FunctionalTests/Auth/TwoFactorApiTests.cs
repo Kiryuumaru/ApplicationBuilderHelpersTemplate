@@ -20,8 +20,9 @@ public class TwoFactorApiTests(ITestOutputHelper output) : WebApiTestBase(output
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/2fa/setup");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         var response = await HttpClient.SendAsync(request);
@@ -32,7 +33,7 @@ public class TwoFactorApiTests(ITestOutputHelper output) : WebApiTestBase(output
         var result = JsonSerializer.Deserialize<TwoFactorSetupResponse>(content, JsonOptions);
 
         Assert.NotNull(result);
-        Assert.NotEmpty(result!.SharedKey);
+        Assert.NotEmpty(result.SharedKey);
         Assert.NotEmpty(result.FormattedSharedKey);
         Assert.NotEmpty(result.AuthenticatorUri);
         Assert.StartsWith("otpauth://totp/", result.AuthenticatorUri);
@@ -54,10 +55,12 @@ public class TwoFactorApiTests(ITestOutputHelper output) : WebApiTestBase(output
         var user2 = await RegisterUserAsync();
 
         Assert.NotNull(user1);
+        Assert.NotNull(user1.User);
         Assert.NotNull(user2);
+        Assert.NotNull(user2.User);
 
-        var user1Id = user1!.User.Id;
-        var user2Id = user2!.User.Id;
+        var user1Id = user1.User.Id;
+        var user2Id = user2.User.Id;
 
         using var request1 = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{user1Id}/2fa/setup");
         request1.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user1.AccessToken);
@@ -71,9 +74,11 @@ public class TwoFactorApiTests(ITestOutputHelper output) : WebApiTestBase(output
         var content2 = await response2.Content.ReadAsStringAsync();
         var result2 = JsonSerializer.Deserialize<TwoFactorSetupResponse>(content2, JsonOptions);
 
-        Assert.NotNull(result1?.SharedKey);
-        Assert.NotNull(result2?.SharedKey);
-        Assert.NotEqual(result1!.SharedKey, result2!.SharedKey);
+        Assert.NotNull(result1);
+        Assert.NotNull(result2);
+        Assert.NotEmpty(result1.SharedKey);
+        Assert.NotEmpty(result2.SharedKey);
+        Assert.NotEqual(result1.SharedKey, result2.SharedKey);
     }
 
     #endregion
@@ -85,8 +90,9 @@ public class TwoFactorApiTests(ITestOutputHelper output) : WebApiTestBase(output
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var enableRequest = new { VerificationCode = "000000" };
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/2fa/enable");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
@@ -115,8 +121,9 @@ public class TwoFactorApiTests(ITestOutputHelper output) : WebApiTestBase(output
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var enableRequest = new { VerificationCode = malformedCode };
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/2fa/enable");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
@@ -145,8 +152,9 @@ public class TwoFactorApiTests(ITestOutputHelper output) : WebApiTestBase(output
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var disableRequest = new { Password = TestPassword };
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/2fa/disable");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
@@ -166,8 +174,9 @@ public class TwoFactorApiTests(ITestOutputHelper output) : WebApiTestBase(output
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var disableRequest = new { Password = "WrongPassword123!" };
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/2fa/disable");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
@@ -198,8 +207,9 @@ public class TwoFactorApiTests(ITestOutputHelper output) : WebApiTestBase(output
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var twoFactorLoginRequest = new { UserId = authResult!.User.Id, Code = "000000" };
+        var twoFactorLoginRequest = new { UserId = authResult.User.Id, Code = "000000" };
         var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login/2fa", twoFactorLoginRequest);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -223,8 +233,9 @@ public class TwoFactorApiTests(ITestOutputHelper output) : WebApiTestBase(output
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var twoFactorLoginRequest = new { UserId = authResult!.User.Id, Code = malformedCode };
+        var twoFactorLoginRequest = new { UserId = authResult.User.Id, Code = malformedCode };
         var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login/2fa", twoFactorLoginRequest);
 
         Assert.True(
@@ -241,8 +252,9 @@ public class TwoFactorApiTests(ITestOutputHelper output) : WebApiTestBase(output
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/2fa/recovery-codes");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         var response = await HttpClient.SendAsync(request);
@@ -269,8 +281,9 @@ public class TwoFactorApiTests(ITestOutputHelper output) : WebApiTestBase(output
         var username = $"2fa_brute_{Guid.NewGuid():N}";
         var authResult = await RegisterUserAsync(username);
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
 
         // Try multiple wrong codes
         for (int i = 0; i < 5; i++)
@@ -294,11 +307,12 @@ public class TwoFactorApiTests(ITestOutputHelper output) : WebApiTestBase(output
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
         // Try multiple wrong 2FA codes
         for (int i = 0; i < 5; i++)
         {
-            var twoFactorLoginRequest = new { UserId = authResult!.User.Id, Code = $"{i:D6}" };
+            var twoFactorLoginRequest = new { UserId = authResult.User.Id, Code = $"{i:D6}" };
             var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login/2fa", twoFactorLoginRequest);
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
@@ -316,8 +330,9 @@ public class TwoFactorApiTests(ITestOutputHelper output) : WebApiTestBase(output
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var validUserId = authResult!.User.Id;
+        var validUserId = authResult.User.Id;
         var invalidUserId = Guid.NewGuid();
 
         // Measure time for valid user ID with wrong code
@@ -362,12 +377,13 @@ public class TwoFactorApiTests(ITestOutputHelper output) : WebApiTestBase(output
         // But we can verify the system properly rejects already-used codes
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
         var code = "123456";
 
         // First attempt
         var response1 = await HttpClient.PostAsJsonAsync("/api/v1/auth/login/2fa",
-            new { UserId = authResult!.User.Id, Code = code });
+            new { UserId = authResult.User.Id, Code = code });
 
         // Second attempt with same code
         var response2 = await HttpClient.PostAsJsonAsync("/api/v1/auth/login/2fa",
@@ -387,8 +403,9 @@ public class TwoFactorApiTests(ITestOutputHelper output) : WebApiTestBase(output
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var enableRequest = new { VerificationCode = "000000" };
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/2fa/enable");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
@@ -409,14 +426,16 @@ public class TwoFactorApiTests(ITestOutputHelper output) : WebApiTestBase(output
         var user2 = await RegisterUserAsync(); // 2FA not enabled
 
         Assert.NotNull(user1);
+        Assert.NotNull(user1.User);
         Assert.NotNull(user2);
+        Assert.NotNull(user2.User);
 
         var response1 = await HttpClient.PostAsJsonAsync("/api/v1/auth/login/2fa",
-            new { UserId = user1!.User.Id, Code = "000000" });
+            new { UserId = user1.User.Id, Code = "000000" });
         var content1 = await response1.Content.ReadAsStringAsync();
 
         var response2 = await HttpClient.PostAsJsonAsync("/api/v1/auth/login/2fa",
-            new { UserId = user2!.User.Id, Code = "000000" });
+            new { UserId = user2.User.Id, Code = "000000" });
         var content2 = await response2.Content.ReadAsStringAsync();
 
         // Both should return same status and similar generic message
@@ -435,9 +454,10 @@ public class TwoFactorApiTests(ITestOutputHelper output) : WebApiTestBase(output
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
         var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login/2fa",
-            new { UserId = authResult!.User.Id, Code = maliciousCode });
+            new { UserId = authResult.User.Id, Code = maliciousCode });
 
         Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
     }

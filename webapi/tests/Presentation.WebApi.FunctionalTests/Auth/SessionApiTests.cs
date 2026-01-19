@@ -23,8 +23,9 @@ public class SessionApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         // Register a new user
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         Output.WriteLine($"[STEP] GET /api/v1/auth/users/{userId}/sessions with valid token...");
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/sessions");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
@@ -39,7 +40,7 @@ public class SessionApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var result = JsonSerializer.Deserialize<SessionListResponse>(content, JsonOptions);
         Assert.NotNull(result);
-        Assert.Single(result!.Items);
+        Assert.Single(result.Items);
         Assert.True(result.Items[0].IsCurrent, "The only session should be marked as current");
 
         Output.WriteLine("[PASS] List sessions returned one current session");
@@ -75,8 +76,9 @@ public class SessionApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         // Login again (creates second session)
         var loginResult = await LoginUserWithResponseAsync(username);
         Assert.NotNull(loginResult);
+        Assert.NotNull(loginResult.User);
 
-        var userId = loginResult!.User.Id;
+        var userId = loginResult.User.Id;
         Output.WriteLine($"[STEP] GET /api/v1/auth/users/{userId}/sessions...");
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/sessions");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", loginResult.AccessToken);
@@ -91,7 +93,7 @@ public class SessionApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var result = JsonSerializer.Deserialize<SessionListResponse>(content, JsonOptions);
         Assert.NotNull(result);
-        Assert.Equal(2, result!.Items.Count);
+        Assert.Equal(2, result.Items.Count);
         Assert.Single(result.Items, s => s.IsCurrent);
 
         Output.WriteLine("[PASS] List sessions returned multiple sessions with one current");
@@ -108,8 +110,9 @@ public class SessionApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
 
         // Get the current session ID
         using var listRequest = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/sessions");
@@ -143,8 +146,9 @@ public class SessionApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var secondAuth = await LoginUserWithResponseAsync(username);
         Assert.NotNull(secondAuth);
+        Assert.NotNull(secondAuth.User);
 
-        var userId = secondAuth!.User.Id;
+        var userId = secondAuth.User.Id;
 
         // Get the first session ID (not current from perspective of second login)
         using var listRequest = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/sessions");
@@ -181,8 +185,9 @@ public class SessionApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var fakeSessionId = Guid.NewGuid();
 
         Output.WriteLine($"[STEP] DELETE /api/v1/auth/users/{userId}/sessions/{fakeSessionId} (non-existent)...");
@@ -212,8 +217,9 @@ public class SessionApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         await LoginUserWithResponseAsync(username);
         var currentAuth = await LoginUserWithResponseAsync(username);
         Assert.NotNull(currentAuth);
+        Assert.NotNull(currentAuth.User);
 
-        var userId = currentAuth!.User.Id;
+        var userId = currentAuth.User.Id;
 
         // Verify 3 sessions exist
         using var listRequest = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/sessions");
@@ -237,7 +243,7 @@ public class SessionApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var result = JsonSerializer.Deserialize<SessionRevokeAllResponse>(content, JsonOptions);
         Assert.NotNull(result);
-        Assert.Equal(3, result!.RevokedCount); // All sessions are revoked including current
+        Assert.Equal(3, result.RevokedCount); // All sessions are revoked including current
 
         // After revoking all sessions, the access token should no longer work
         using var verifyRequest = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/sessions");
@@ -261,7 +267,7 @@ public class SessionApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
 
-        var originalRefreshToken = authResult!.RefreshToken;
+        var originalRefreshToken = authResult.RefreshToken;
 
         // First refresh - should succeed
         Output.WriteLine("[STEP] POST /api/v1/auth/refresh with original token...");
@@ -274,7 +280,7 @@ public class SessionApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         var firstRefreshContent = await firstRefreshResponse.Content.ReadAsStringAsync();
         var newTokens = JsonSerializer.Deserialize<AuthResponse>(firstRefreshContent, JsonOptions);
         Assert.NotNull(newTokens);
-        Assert.NotEqual(originalRefreshToken, newTokens!.RefreshToken);
+        Assert.NotEqual(originalRefreshToken, newTokens.RefreshToken);
 
         Output.WriteLine($"[INFO] Old refresh token: {originalRefreshToken[..20]}...");
         Output.WriteLine($"[INFO] New refresh token: {newTokens.RefreshToken[..20]}...");
@@ -299,7 +305,7 @@ public class SessionApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         Assert.NotNull(authResult);
 
         // First refresh
-        var refreshRequest1 = new { RefreshToken = authResult!.RefreshToken };
+        var refreshRequest1 = new { RefreshToken = authResult.RefreshToken };
         var response1 = await HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", refreshRequest1);
         Assert.Equal(HttpStatusCode.OK, response1.StatusCode);
         var content1 = await response1.Content.ReadAsStringAsync();
@@ -316,7 +322,7 @@ public class SessionApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         var content2 = await response2.Content.ReadAsStringAsync();
         var tokens2 = JsonSerializer.Deserialize<AuthResponse>(content2, JsonOptions);
         Assert.NotNull(tokens2);
-        Assert.NotEqual(tokens1.RefreshToken, tokens2!.RefreshToken);
+        Assert.NotEqual(tokens1.RefreshToken, tokens2.RefreshToken);
 
         Output.WriteLine("[PASS] Refresh with rotated token succeeds");
     }
@@ -340,7 +346,7 @@ public class SessionApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         // Logout from second session
         Output.WriteLine("[STEP] POST /api/v1/auth/logout...");
         using var logoutRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/logout");
-        logoutRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", secondAuth!.AccessToken);
+        logoutRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", secondAuth.AccessToken);
         var logoutResponse = await HttpClient.SendAsync(logoutRequest);
 
         Assert.Equal(HttpStatusCode.NoContent, logoutResponse.StatusCode);

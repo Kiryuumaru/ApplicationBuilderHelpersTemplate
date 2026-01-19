@@ -26,7 +26,7 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
 
-        Output.WriteLine($"[INFO] ExpiresIn value: {authResult!.ExpiresIn} seconds");
+        Output.WriteLine($"[INFO] ExpiresIn value: {authResult.ExpiresIn} seconds");
 
         Assert.Equal(ExpectedAccessTokenExpirationSeconds, authResult.ExpiresIn);
         Output.WriteLine("[PASS] ExpiresIn matches expected value (3600 seconds / 60 minutes)");
@@ -53,7 +53,7 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
         var result = JsonSerializer.Deserialize<AuthResponse>(content, JsonOptions);
 
         Assert.NotNull(result);
-        Output.WriteLine($"[INFO] ExpiresIn value: {result!.ExpiresIn} seconds");
+        Output.WriteLine($"[INFO] ExpiresIn value: {result.ExpiresIn} seconds");
 
         Assert.Equal(ExpectedAccessTokenExpirationSeconds, result.ExpiresIn);
         Output.WriteLine("[PASS] Register response ExpiresIn is correct");
@@ -67,7 +67,7 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
 
-        var refreshRequest = new { RefreshToken = authResult!.RefreshToken };
+        var refreshRequest = new { RefreshToken = authResult.RefreshToken };
         var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", refreshRequest);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -76,7 +76,7 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
         var result = JsonSerializer.Deserialize<AuthResponse>(content, JsonOptions);
 
         Assert.NotNull(result);
-        Output.WriteLine($"[INFO] ExpiresIn value: {result!.ExpiresIn} seconds");
+        Output.WriteLine($"[INFO] ExpiresIn value: {result.ExpiresIn} seconds");
 
         Assert.Equal(ExpectedAccessTokenExpirationSeconds, result.ExpiresIn);
         Output.WriteLine("[PASS] Refresh response ExpiresIn is correct");
@@ -90,7 +90,7 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
 
-        Assert.True(authResult!.ExpiresIn > 0, "ExpiresIn should be a positive number");
+        Assert.True(authResult.ExpiresIn > 0, "ExpiresIn should be a positive number");
         Output.WriteLine($"[PASS] ExpiresIn is positive: {authResult.ExpiresIn}");
     }
 
@@ -107,12 +107,12 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
         Assert.NotNull(authResult);
 
         var handler = new JwtSecurityTokenHandler();
-        var token = handler.ReadJwtToken(authResult!.AccessToken);
+        var token = handler.ReadJwtToken(authResult.AccessToken);
 
         var expClaim = token.Claims.FirstOrDefault(c => c.Type == "exp");
         Assert.NotNull(expClaim);
 
-        var expValue = long.Parse(expClaim!.Value);
+        var expValue = long.Parse(expClaim.Value);
         var expDate = DateTimeOffset.FromUnixTimeSeconds(expValue);
 
         Output.WriteLine($"[INFO] Token exp claim: {expDate:O}");
@@ -132,7 +132,7 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
         Assert.NotNull(authResult);
 
         var handler = new JwtSecurityTokenHandler();
-        var token = handler.ReadJwtToken(authResult!.AccessToken);
+        var token = handler.ReadJwtToken(authResult.AccessToken);
 
         var expClaim = token.Claims.FirstOrDefault(c => c.Type == "exp");
         var iatClaim = token.Claims.FirstOrDefault(c => c.Type == "iat");
@@ -140,8 +140,8 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
         Assert.NotNull(expClaim);
         Assert.NotNull(iatClaim);
 
-        var exp = long.Parse(expClaim!.Value);
-        var iat = long.Parse(iatClaim!.Value);
+        var exp = long.Parse(expClaim.Value);
+        var iat = long.Parse(iatClaim.Value);
         var tokenLifetimeSeconds = exp - iat;
 
         Output.WriteLine($"[INFO] Token lifetime from claims: {tokenLifetimeSeconds} seconds");
@@ -164,12 +164,12 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
         Assert.NotNull(authResult);
 
         var handler = new JwtSecurityTokenHandler();
-        var token = handler.ReadJwtToken(authResult!.AccessToken);
+        var token = handler.ReadJwtToken(authResult.AccessToken);
 
         var iatClaim = token.Claims.FirstOrDefault(c => c.Type == "iat");
         Assert.NotNull(iatClaim);
 
-        var iatValue = long.Parse(iatClaim!.Value);
+        var iatValue = long.Parse(iatClaim.Value);
         var iatDate = DateTimeOffset.FromUnixTimeSeconds(iatValue);
 
         Output.WriteLine($"[INFO] Token iat claim: {iatDate:O}");
@@ -190,12 +190,12 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
         Assert.NotNull(authResult);
 
         var handler = new JwtSecurityTokenHandler();
-        var token = handler.ReadJwtToken(authResult!.RefreshToken);
+        var token = handler.ReadJwtToken(authResult.RefreshToken);
 
         var expClaim = token.Claims.FirstOrDefault(c => c.Type == "exp");
         Assert.NotNull(expClaim);
 
-        var expValue = long.Parse(expClaim!.Value);
+        var expValue = long.Parse(expClaim.Value);
         var expDate = DateTimeOffset.FromUnixTimeSeconds(expValue);
 
         Output.WriteLine($"[INFO] Refresh token exp: {expDate:O}");
@@ -216,7 +216,7 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
         Assert.NotNull(authResult);
 
         var handler = new JwtSecurityTokenHandler();
-        var accessToken = handler.ReadJwtToken(authResult!.AccessToken);
+        var accessToken = handler.ReadJwtToken(authResult.AccessToken);
         var refreshToken = handler.ReadJwtToken(authResult.RefreshToken);
 
         var accessExp = long.Parse(accessToken.Claims.First(c => c.Type == "exp").Value);
@@ -246,7 +246,7 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
         // Get sessions and revoke the current one via logout
         Output.WriteLine("[STEP] Logging out to revoke session...");
         using var logoutRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/logout");
-        logoutRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", secondLogin!.AccessToken);
+        logoutRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", secondLogin.AccessToken);
         await HttpClient.SendAsync(logoutRequest);
 
         // Now try to refresh with the revoked session's token
@@ -275,8 +275,9 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
         var secondLogin = await LoginUserWithResponseAsync(username);
         Assert.NotNull(firstLogin);
         Assert.NotNull(secondLogin);
+        Assert.NotNull(secondLogin.User);
 
-        var userId = secondLogin!.User.Id;
+        var userId = secondLogin.User.Id;
 
         // Revoke all sessions (including current now)
         Output.WriteLine("[STEP] Revoking all sessions...");
@@ -286,7 +287,8 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
 
         // First login's refresh token should now be invalid
         Output.WriteLine("[STEP] Attempting refresh with revoked session token...");
-        var refreshRequest = new { RefreshToken = firstLogin!.RefreshToken };
+        Assert.NotNull(firstLogin);
+        var refreshRequest = new { RefreshToken = firstLogin.RefreshToken };
         var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", refreshRequest);
 
         Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
@@ -307,7 +309,7 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
 
-        var stolenToken = authResult!.RefreshToken;
+        var stolenToken = authResult.RefreshToken;
 
         // Legitimate user refreshes - this should work
         Output.WriteLine("[STEP] Legitimate refresh (simulating victim)...");
@@ -334,7 +336,7 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
 
-        var originalToken = authResult!.RefreshToken;
+        var originalToken = authResult.RefreshToken;
 
         // First refresh - succeeds
         var refresh1 = new { RefreshToken = originalToken };
@@ -362,7 +364,7 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
 
-        var stolenToken = authResult!.RefreshToken;
+        var stolenToken = authResult.RefreshToken;
 
         // Legitimate refresh
         var legitRefresh = new { RefreshToken = stolenToken };
@@ -370,6 +372,7 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
         Assert.Equal(HttpStatusCode.OK, legitResponse.StatusCode);
         var newContent = await legitResponse.Content.ReadAsStringAsync();
         var newTokens = JsonSerializer.Deserialize<AuthResponse>(newContent, JsonOptions);
+        Assert.NotNull(newTokens);
 
         // Attacker uses stolen token - triggers theft detection
         var attackerRefresh = new { RefreshToken = stolenToken };
@@ -377,7 +380,7 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
 
         // Now even the legitimate NEW token should be revoked
         Output.WriteLine("[STEP] Checking if new token is also revoked...");
-        var newTokenRefresh = new { RefreshToken = newTokens!.RefreshToken };
+        var newTokenRefresh = new { RefreshToken = newTokens.RefreshToken };
         var finalResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", newTokenRefresh);
 
         Output.WriteLine($"[RECEIVED] New token response: {(int)finalResponse.StatusCode}");
@@ -399,7 +402,7 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
 
-        var tokens = new List<string> { authResult!.RefreshToken };
+        var tokens = new List<string> { authResult.RefreshToken };
 
         // Do 5 chained refreshes
         for (int i = 0; i < 5; i++)
@@ -414,7 +417,7 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
             var newTokens = JsonSerializer.Deserialize<AuthResponse>(content, JsonOptions);
 
             Assert.NotNull(newTokens);
-            Assert.NotEqual(currentToken, newTokens!.RefreshToken);
+            Assert.NotEqual(currentToken, newTokens.RefreshToken);
 
             tokens.Add(newTokens.RefreshToken);
             Output.WriteLine($"[INFO] Refresh {i + 1}: New token different from previous");
@@ -433,7 +436,7 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
 
-        var tokenChain = new List<string> { authResult!.RefreshToken };
+        var tokenChain = new List<string> { authResult.RefreshToken };
 
         // Build a chain of 3 tokens - each refresh rotates to a new token
         for (int i = 0; i < 3; i++)
@@ -443,7 +446,8 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             var content = await response.Content.ReadAsStringAsync();
             var newTokens = JsonSerializer.Deserialize<AuthResponse>(content, JsonOptions);
-            tokenChain.Add(newTokens!.RefreshToken);
+            Assert.NotNull(newTokens);
+            tokenChain.Add(newTokens.RefreshToken);
         }
 
         Output.WriteLine($"[INFO] Built chain of {tokenChain.Count} tokens");
@@ -485,7 +489,7 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
         Assert.NotNull(authResult);
 
         // Try using access token in refresh endpoint
-        var wrongTokenRefresh = new { RefreshToken = authResult!.AccessToken };
+        var wrongTokenRefresh = new { RefreshToken = authResult.AccessToken };
         var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", wrongTokenRefresh);
 
         Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode}");
@@ -503,7 +507,7 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
         Assert.NotNull(authResult);
 
         var handler = new JwtSecurityTokenHandler();
-        var token = handler.ReadJwtToken(authResult!.AccessToken);
+        var token = handler.ReadJwtToken(authResult.AccessToken);
 
         // Log all claims for debugging
         Output.WriteLine("[INFO] Access token claims:");
@@ -531,7 +535,7 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
         Assert.NotNull(authResult);
 
         var handler = new JwtSecurityTokenHandler();
-        var token = handler.ReadJwtToken(authResult!.RefreshToken);
+        var token = handler.ReadJwtToken(authResult.RefreshToken);
 
         // Log all claims
         Output.WriteLine("[INFO] Refresh token claims:");
@@ -620,7 +624,7 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
 
         var requestWithExtra = new
         {
-            RefreshToken = authResult!.RefreshToken,
+            RefreshToken = authResult.RefreshToken,
             ExtraField = "should-be-ignored",
             AnotherField = 12345
         };
@@ -649,12 +653,12 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
         Assert.NotNull(session2);
 
         // Refresh session 1's token
-        var refresh1 = new { RefreshToken = session1!.RefreshToken };
+        var refresh1 = new { RefreshToken = session1.RefreshToken };
         var response1 = await HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", refresh1);
         Assert.Equal(HttpStatusCode.OK, response1.StatusCode);
 
         // Session 2's token should still work
-        var refresh2 = new { RefreshToken = session2!.RefreshToken };
+        var refresh2 = new { RefreshToken = session2.RefreshToken };
         var response2 = await HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", refresh2);
 
         Output.WriteLine($"[RECEIVED] Session 2 refresh: {(int)response2.StatusCode}");
@@ -673,10 +677,12 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
 
         Assert.NotNull(user1);
         Assert.NotNull(user2);
+        Assert.NotNull(user1.User);
+        Assert.NotNull(user2.User);
 
         // Try to get info using user1's access token
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user1!.AccessToken);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user1.AccessToken);
         var response = await HttpClient.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -685,7 +691,8 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
         var userInfo = JsonSerializer.Deserialize<UserInfoResponse>(content, JsonOptions);
 
         // Verify it's actually user1's info
-        Assert.NotEqual(user2!.User.Id, userInfo!.Id);
+        Assert.NotNull(userInfo);
+        Assert.NotEqual(user2.User.Id, userInfo.Id);
         Output.WriteLine($"[INFO] User1 ID: {user1.User.Id}, Response ID: {userInfo.Id}");
 
         Output.WriteLine("[PASS] Token belongs to correct user");
@@ -710,8 +717,8 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
         Assert.NotNull(auth3);
 
         // All access tokens should be different
-        Assert.NotEqual(auth1!.AccessToken, auth2!.AccessToken);
-        Assert.NotEqual(auth2.AccessToken, auth3!.AccessToken);
+        Assert.NotEqual(auth1.AccessToken, auth2.AccessToken);
+        Assert.NotEqual(auth2.AccessToken, auth3.AccessToken);
         Assert.NotEqual(auth1.AccessToken, auth3.AccessToken);
 
         // All refresh tokens should be different
@@ -734,16 +741,17 @@ public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(out
         Assert.NotNull(registerResponse);
         Assert.NotNull(loginResponse);
 
-        Assert.Equal("Bearer", registerResponse!.TokenType);
-        Assert.Equal("Bearer", loginResponse!.TokenType);
+        Assert.Equal("Bearer", registerResponse.TokenType);
+        Assert.Equal("Bearer", loginResponse.TokenType);
 
         // Refresh should also return Bearer
         var refreshRequest = new { RefreshToken = loginResponse.RefreshToken };
         var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", refreshRequest);
         var content = await response.Content.ReadAsStringAsync();
         var refreshResult = JsonSerializer.Deserialize<AuthResponse>(content, JsonOptions);
+        Assert.NotNull(refreshResult);
 
-        Assert.Equal("Bearer", refreshResult!.TokenType);
+        Assert.Equal("Bearer", refreshResult.TokenType);
         Output.WriteLine("[PASS] All responses have Bearer token type");
     }
 

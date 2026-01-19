@@ -20,8 +20,9 @@ public class PasskeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var requestBody = new { CredentialName = "Test Passkey" };
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/identity/passkeys/options");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
@@ -50,8 +51,9 @@ public class PasskeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var requestBody = new { CredentialName = "" };
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/identity/passkeys/options");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
@@ -122,8 +124,9 @@ public class PasskeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var requestBody = new { ChallengeId = Guid.NewGuid(), AttestationResponseJson = "{}" };
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/identity/passkeys");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
@@ -138,8 +141,9 @@ public class PasskeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var requestBody = new { ChallengeId = Guid.Empty, AttestationResponseJson = "{}" };
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/identity/passkeys");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
@@ -203,8 +207,9 @@ public class PasskeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/identity/passkeys");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         var response = await HttpClient.SendAsync(request);
@@ -242,8 +247,9 @@ public class PasskeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         using var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{userId}/identity/passkeys/{Guid.NewGuid()}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         var response = await HttpClient.SendAsync(request);
@@ -287,8 +293,9 @@ public class PasskeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
 
         // Get a creation challenge
         using var optionsRequest = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/identity/passkeys/options");
@@ -332,8 +339,9 @@ public class PasskeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var requestBody = new { CredentialName = maliciousName };
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/identity/passkeys/options");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
@@ -350,8 +358,9 @@ public class PasskeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var requestBody = new { ChallengeId = Guid.NewGuid(), AttestationResponseJson = maliciousJson };
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/identity/passkeys");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
@@ -373,8 +382,9 @@ public class PasskeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         Assert.NotNull(user1);
         Assert.NotNull(user2);
+        Assert.NotNull(user2.User);
 
-        var user2Id = user2!.User.Id;
+        var user2Id = user2.User.Id;
 
         // Try to delete a passkey (even though it doesn't exist) using user2's token
         // but with an ID that could belong to user1
@@ -395,8 +405,9 @@ public class PasskeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var largeJson = "{\"data\":\"" + new string('a', 100000) + "\"}";
         var requestBody = new { ChallengeId = Guid.NewGuid(), AttestationResponseJson = largeJson };
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/identity/passkeys");
@@ -416,8 +427,9 @@ public class PasskeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var longName = new string('a', 10000);
         var requestBody = new { CredentialName = longName };
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/identity/passkeys/options");

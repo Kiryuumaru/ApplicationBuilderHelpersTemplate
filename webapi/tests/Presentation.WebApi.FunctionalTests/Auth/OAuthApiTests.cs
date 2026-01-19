@@ -32,12 +32,12 @@ public class OAuthApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var result = JsonSerializer.Deserialize<OAuthProvidersResponse>(content, JsonOptions);
         Assert.NotNull(result);
-        Assert.NotEmpty(result!.Providers);
+        Assert.NotEmpty(result.Providers);
 
         // Mock provider should be enabled by default
         var mockProvider = result.Providers.FirstOrDefault(p => p.Provider.Equals("mock", StringComparison.OrdinalIgnoreCase));
         Assert.NotNull(mockProvider);
-        Assert.True(mockProvider!.IsEnabled, "Mock provider should be enabled by default");
+        Assert.True(mockProvider.IsEnabled, "Mock provider should be enabled by default");
 
         Output.WriteLine("[PASS] Get providers returned available providers with Mock enabled");
     }
@@ -80,7 +80,7 @@ public class OAuthApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var result = JsonSerializer.Deserialize<OAuthAuthorizationResponse>(content, JsonOptions);
         Assert.NotNull(result);
-        Assert.NotEmpty(result!.AuthorizationUrl);
+        Assert.NotEmpty(result.AuthorizationUrl);
         Assert.NotEmpty(result.State);
 
         Output.WriteLine("[PASS] Initiate OAuth returned authorization URL with state");
@@ -140,7 +140,7 @@ public class OAuthApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         var callbackRequest = new OAuthCallbackRequest(
             Provider: "mock",
             Code: "mock_auth_code",
-            State: initiateResult!.State,
+            State: initiateResult.State,
             RedirectUri: "https://localhost/callback");
 
         Output.WriteLine("[STEP] POST /api/v1/auth/external/callback...");
@@ -156,9 +156,9 @@ public class OAuthApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var result = JsonSerializer.Deserialize<AuthResponse>(content, JsonOptions);
         Assert.NotNull(result);
-        Assert.NotEmpty(result!.AccessToken);
-        Assert.NotEmpty(result.RefreshToken);
         Assert.NotNull(result.User);
+        Assert.NotEmpty(result.AccessToken);
+        Assert.NotEmpty(result.RefreshToken);
 
         Output.WriteLine("[PASS] OAuth callback created new user with session");
     }
@@ -213,8 +213,9 @@ public class OAuthApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         // Register a new user with password (no external logins)
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         Output.WriteLine($"[STEP] GET /api/v1/auth/users/{userId}/identity/external...");
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/identity/external");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
@@ -229,7 +230,7 @@ public class OAuthApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var result = JsonSerializer.Deserialize<ExternalLoginsResponse>(content, JsonOptions);
         Assert.NotNull(result);
-        Assert.Empty(result!.Logins);
+        Assert.Empty(result.Logins);
 
         Output.WriteLine("[PASS] Returns empty list for user with no external logins");
     }
@@ -260,8 +261,9 @@ public class OAuthApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         Output.WriteLine($"[STEP] DELETE /api/v1/auth/users/{userId}/identity/external/mock (user has no external logins)...");
         using var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{userId}/identity/external/mock");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);

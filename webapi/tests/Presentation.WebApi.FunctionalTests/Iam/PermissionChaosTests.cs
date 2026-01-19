@@ -226,7 +226,7 @@ public class PermissionChaosTests(ITestOutputHelper output) : WebApiTestBase(out
         return JsonSerializer.Deserialize<AuthResponse>(content, JsonOptions);
     }
 
-    private async Task<AuthResponse?> LoginAsync(string username, string password)
+    private new async Task<AuthResponse?> LoginAsync(string username, string password)
     {
         var loginRequest = new { Username = username, Password = password };
 
@@ -242,7 +242,7 @@ public class PermissionChaosTests(ITestOutputHelper output) : WebApiTestBase(out
         return JsonSerializer.Deserialize<AuthResponse>(content, JsonOptions);
     }
 
-    private sealed class AuthResponse
+    private new sealed class AuthResponse
     {
         public string AccessToken { get; set; } = string.Empty;
         public string RefreshToken { get; set; } = string.Empty;

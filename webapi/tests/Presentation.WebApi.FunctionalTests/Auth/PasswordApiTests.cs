@@ -22,8 +22,9 @@ public class PasswordApiTests(ITestOutputHelper output) : WebApiTestBase(output)
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var changePasswordRequest = new { CurrentPassword = TestPassword, NewPassword = NewPassword };
         using var request = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/auth/users/{userId}/identity/password");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
@@ -39,8 +40,9 @@ public class PasswordApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         var username = $"pwd_old_{Guid.NewGuid():N}";
         var authResult = await RegisterUserAsync(username);
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
 
         // Change password
         var changePasswordRequest = new { CurrentPassword = TestPassword, NewPassword = NewPassword };
@@ -62,8 +64,9 @@ public class PasswordApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         var username = $"pwd_new_{Guid.NewGuid():N}";
         var authResult = await RegisterUserAsync(username);
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
 
         // Change password
         var changePasswordRequest = new { CurrentPassword = TestPassword, NewPassword = NewPassword };
@@ -84,8 +87,9 @@ public class PasswordApiTests(ITestOutputHelper output) : WebApiTestBase(output)
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var changePasswordRequest = new { CurrentPassword = "WrongPassword123!", NewPassword = NewPassword };
         using var request = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/auth/users/{userId}/identity/password");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
@@ -100,8 +104,9 @@ public class PasswordApiTests(ITestOutputHelper output) : WebApiTestBase(output)
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var changePasswordRequest = new { CurrentPassword = TestPassword, NewPassword = "123" };
         using var request = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/auth/users/{userId}/identity/password");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
@@ -126,8 +131,9 @@ public class PasswordApiTests(ITestOutputHelper output) : WebApiTestBase(output)
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
 
         // Try to change to the same password
         var changePasswordRequest = new { CurrentPassword = TestPassword, NewPassword = TestPassword };
@@ -325,8 +331,9 @@ public class PasswordApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         var username = $"pwd_brute_{Guid.NewGuid():N}";
         var authResult = await RegisterUserAsync(username);
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
 
         // Try multiple wrong current passwords
         for (int i = 0; i < 5; i++)
@@ -356,8 +363,9 @@ public class PasswordApiTests(ITestOutputHelper output) : WebApiTestBase(output)
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var changePasswordRequest = new { CurrentPassword = TestPassword, NewPassword = newPassword };
         using var request = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/auth/users/{userId}/identity/password");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
@@ -376,8 +384,9 @@ public class PasswordApiTests(ITestOutputHelper output) : WebApiTestBase(output)
     {
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var changePasswordRequest = new { CurrentPassword = "WrongPassword!", NewPassword = NewPassword };
         using var request = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/auth/users/{userId}/identity/password");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
@@ -417,8 +426,9 @@ public class PasswordApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         var username = $"pwd_session_{Guid.NewGuid():N}";
         var authResult1 = await RegisterUserAsync(username);
         Assert.NotNull(authResult1);
+        Assert.NotNull(authResult1.User);
 
-        var userId = authResult1!.User.Id;
+        var userId = authResult1.User.Id;
 
         // Login again to create another session
         var loginResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/login",

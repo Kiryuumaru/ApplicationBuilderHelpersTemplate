@@ -1048,7 +1048,7 @@ public class CustomRoleManagementTests(ITestOutputHelper output) : WebApiTestBas
         return JsonSerializer.Deserialize<AuthResponse>(content, JsonOptions);
     }
 
-    private async Task<AuthResponse?> LoginAsync(string username, string password)
+    private new async Task<AuthResponse?> LoginAsync(string username, string password)
     {
         var loginRequest = new { Username = username, Password = password };
         var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
@@ -1068,7 +1068,7 @@ public class CustomRoleManagementTests(ITestOutputHelper output) : WebApiTestBas
 
     #region Response Types
 
-    private sealed class AuthResponse
+    private new sealed class AuthResponse
     {
         public string AccessToken { get; set; } = string.Empty;
         public string RefreshToken { get; set; } = string.Empty;

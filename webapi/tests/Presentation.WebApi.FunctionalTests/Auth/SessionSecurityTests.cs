@@ -22,8 +22,9 @@ public class SessionSecurityTests(ITestOutputHelper output) : WebApiTestBase(out
 
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var invalidSessionId = "not-a-guid";
 
         using var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{userId}/sessions/{invalidSessionId}");
@@ -48,8 +49,9 @@ public class SessionSecurityTests(ITestOutputHelper output) : WebApiTestBase(out
 
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var emptyGuid = Guid.Empty;
 
         using var request = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{userId}/sessions/{emptyGuid}");
@@ -75,10 +77,12 @@ public class SessionSecurityTests(ITestOutputHelper output) : WebApiTestBase(out
         var user2 = await RegisterUserAsync();
 
         Assert.NotNull(user1);
+        Assert.NotNull(user1.User);
         Assert.NotNull(user2);
+        Assert.NotNull(user2.User);
 
-        var user1Id = user1!.User.Id;
-        var user2Id = user2!.User.Id;
+        var user1Id = user1.User.Id;
+        var user2Id = user2.User.Id;
 
         // Get user1's session ID
         using var listRequest = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{user1Id}/sessions");
@@ -118,10 +122,12 @@ public class SessionSecurityTests(ITestOutputHelper output) : WebApiTestBase(out
         var user2 = await RegisterUserAsync();
 
         Assert.NotNull(user1);
+        Assert.NotNull(user1.User);
         Assert.NotNull(user2);
+        Assert.NotNull(user2.User);
 
-        var user1Id = user1!.User.Id;
-        var user2Id = user2!.User.Id;
+        var user1Id = user1.User.Id;
+        var user2Id = user2.User.Id;
 
         // Get user1's sessions
         using var request1 = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{user1Id}/sessions");
@@ -152,8 +158,9 @@ public class SessionSecurityTests(ITestOutputHelper output) : WebApiTestBase(out
 
         var user1 = await RegisterUserAsync();
         Assert.NotNull(user1);
+        Assert.NotNull(user1.User);
 
-        var userId = user1!.User.Id;
+        var userId = user1.User.Id;
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/sessions");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user1.AccessToken);
         var response = await HttpClient.SendAsync(request);
@@ -185,14 +192,14 @@ public class SessionSecurityTests(ITestOutputHelper output) : WebApiTestBase(out
         // Create initial session via registration
         var initialSession = await RegisterUserAsync(username);
         Assert.NotNull(initialSession);
-        sessions.Add(initialSession!);
+        sessions.Add(initialSession);
 
         // Create 4 more sessions
         for (int i = 0; i < 4; i++)
         {
             var session = await LoginUserWithResponseAsync(username);
             Assert.NotNull(session);
-            sessions.Add(session!);
+            sessions.Add(session);
         }
 
         Output.WriteLine($"[INFO] Created {sessions.Count} sessions");
@@ -223,9 +230,10 @@ public class SessionSecurityTests(ITestOutputHelper output) : WebApiTestBase(out
 
         Assert.NotNull(session1);
         Assert.NotNull(session2);
+        Assert.NotNull(session2.User);
         Assert.NotNull(session3);
 
-        var userId = session2!.User.Id;
+        var userId = session2.User.Id;
 
         // Get session2's ID
         using var listRequest = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/sessions");
@@ -250,7 +258,7 @@ public class SessionSecurityTests(ITestOutputHelper output) : WebApiTestBase(out
         Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
 
         using var check3 = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
-        check3.Headers.Authorization = new AuthenticationHeaderValue("Bearer", session3!.AccessToken);
+        check3.Headers.Authorization = new AuthenticationHeaderValue("Bearer", session3.AccessToken);
         var response3 = await HttpClient.SendAsync(check3);
         Assert.Equal(HttpStatusCode.OK, response3.StatusCode);
 
@@ -269,8 +277,9 @@ public class SessionSecurityTests(ITestOutputHelper output) : WebApiTestBase(out
 
         Assert.NotNull(session1);
         Assert.NotNull(session2);
+        Assert.NotNull(session2.User);
 
-        var userId = session2!.User.Id;
+        var userId = session2.User.Id;
 
         // Get session1's ID using session2
         using var listRequest = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/sessions");
@@ -291,7 +300,7 @@ public class SessionSecurityTests(ITestOutputHelper output) : WebApiTestBase(out
         // Now try to use session1's access token - should fail
         Output.WriteLine("[STEP] Attempting to use revoked session's access token...");
         using var accessRequest = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
-        accessRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", session1!.AccessToken);
+        accessRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", session1.AccessToken);
         var accessResponse = await HttpClient.SendAsync(accessRequest);
 
         Assert.Equal(HttpStatusCode.Unauthorized, accessResponse.StatusCode);
@@ -310,8 +319,9 @@ public class SessionSecurityTests(ITestOutputHelper output) : WebApiTestBase(out
 
         Assert.NotNull(session1);
         Assert.NotNull(session2);
+        Assert.NotNull(session2.User);
 
-        var userId = session2!.User.Id;
+        var userId = session2.User.Id;
 
         // Get session1's ID using session2
         using var listRequest = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/sessions");
@@ -333,7 +343,7 @@ public class SessionSecurityTests(ITestOutputHelper output) : WebApiTestBase(out
         Output.WriteLine("[STEP] Attempting to use revoked session's refresh token...");
         var refreshResponse = await HttpClient.PostAsJsonAsync(
             "/api/v1/auth/refresh",
-            new { RefreshToken = session1!.RefreshToken });
+            new { RefreshToken = session1.RefreshToken });
 
         Assert.Equal(HttpStatusCode.Unauthorized, refreshResponse.StatusCode);
         Output.WriteLine("[PASS] Revoked session's refresh token returns 401");
@@ -357,10 +367,11 @@ public class SessionSecurityTests(ITestOutputHelper output) : WebApiTestBase(out
         Assert.NotNull(session1);
         Assert.NotNull(session2);
         Assert.NotNull(session3);
+        Assert.NotNull(session3.User);
 
         // All tokens should be different
-        Assert.NotEqual(session1!.AccessToken, session2!.AccessToken);
-        Assert.NotEqual(session2.AccessToken, session3!.AccessToken);
+        Assert.NotEqual(session1.AccessToken, session2.AccessToken);
+        Assert.NotEqual(session2.AccessToken, session3.AccessToken);
         Assert.NotEqual(session1.RefreshToken, session2.RefreshToken);
         Assert.NotEqual(session2.RefreshToken, session3.RefreshToken);
 
@@ -393,8 +404,9 @@ public class SessionSecurityTests(ITestOutputHelper output) : WebApiTestBase(out
         var currentSession = await LoginUserWithResponseAsync(username);
 
         Assert.NotNull(currentSession);
+        Assert.NotNull(currentSession.User);
 
-        var userId = currentSession!.User.Id;
+        var userId = currentSession.User.Id;
 
         // Revoke all sessions (including current)
         using var revokeRequest = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{userId}/sessions");
@@ -424,8 +436,9 @@ public class SessionSecurityTests(ITestOutputHelper output) : WebApiTestBase(out
         Assert.NotNull(session1);
         Assert.NotNull(session2);
         Assert.NotNull(currentSession);
+        Assert.NotNull(currentSession.User);
 
-        var userId = currentSession!.User.Id;
+        var userId = currentSession.User.Id;
 
         // Revoke all sessions using current session
         using var revokeRequest = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{userId}/sessions");
@@ -433,11 +446,11 @@ public class SessionSecurityTests(ITestOutputHelper output) : WebApiTestBase(out
         await HttpClient.SendAsync(revokeRequest);
 
         // Refresh with all sessions should fail (including current)
-        var refresh1 = new { RefreshToken = session1!.RefreshToken };
+        var refresh1 = new { RefreshToken = session1.RefreshToken };
         var response1 = await HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", refresh1);
         Assert.Equal(HttpStatusCode.Unauthorized, response1.StatusCode);
 
-        var refresh2 = new { RefreshToken = session2!.RefreshToken };
+        var refresh2 = new { RefreshToken = session2.RefreshToken };
         var response2 = await HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", refresh2);
         Assert.Equal(HttpStatusCode.Unauthorized, response2.StatusCode);
 
@@ -461,8 +474,9 @@ public class SessionSecurityTests(ITestOutputHelper output) : WebApiTestBase(out
         var currentSession = await LoginUserWithResponseAsync(username);
 
         Assert.NotNull(currentSession);
+        Assert.NotNull(currentSession.User);
 
-        var userId = currentSession!.User.Id;
+        var userId = currentSession.User.Id;
 
         // Should have 4 sessions total (1 register + 3 logins)
         using var listRequest = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/sessions");
@@ -502,8 +516,9 @@ public class SessionSecurityTests(ITestOutputHelper output) : WebApiTestBase(out
         var currentSession = await LoginUserWithResponseAsync(username);
 
         Assert.NotNull(currentSession);
+        Assert.NotNull(currentSession.User);
 
-        var userId = currentSession!.User.Id;
+        var userId = currentSession.User.Id;
         using var listRequest = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/sessions");
         listRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", currentSession.AccessToken);
         var listResponse = await HttpClient.SendAsync(listRequest);
@@ -526,8 +541,9 @@ public class SessionSecurityTests(ITestOutputHelper output) : WebApiTestBase(out
 
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         using var listRequest = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/sessions");
         listRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         var listResponse = await HttpClient.SendAsync(listRequest);
@@ -566,7 +582,7 @@ public class SessionSecurityTests(ITestOutputHelper output) : WebApiTestBase(out
 
         // Logout from session2
         using var logoutRequest = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/logout");
-        logoutRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", session2!.AccessToken);
+        logoutRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", session2.AccessToken);
         await HttpClient.SendAsync(logoutRequest);
 
         // Session2's refresh should fail
@@ -575,7 +591,7 @@ public class SessionSecurityTests(ITestOutputHelper output) : WebApiTestBase(out
         Assert.Equal(HttpStatusCode.Unauthorized, response2.StatusCode);
 
         // Session1's refresh should still work
-        var refresh1 = new { RefreshToken = session1!.RefreshToken };
+        var refresh1 = new { RefreshToken = session1.RefreshToken };
         var response1 = await HttpClient.PostAsJsonAsync("/api/v1/auth/refresh", refresh1);
         Assert.Equal(HttpStatusCode.OK, response1.StatusCode);
 
@@ -592,7 +608,7 @@ public class SessionSecurityTests(ITestOutputHelper output) : WebApiTestBase(out
 
         // First logout
         using var logout1 = new HttpRequestMessage(HttpMethod.Post, "/api/v1/auth/logout");
-        logout1.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult!.AccessToken);
+        logout1.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         var response1 = await HttpClient.SendAsync(logout1);
         Assert.Equal(HttpStatusCode.NoContent, response1.StatusCode);
 

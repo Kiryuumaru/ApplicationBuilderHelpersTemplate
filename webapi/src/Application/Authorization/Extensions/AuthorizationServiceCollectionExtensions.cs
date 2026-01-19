@@ -4,9 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Application.Authorization.Extensions;
 
-internal static class AuthenticationServiceCollectionExtensions
+internal static class AuthorizationServiceCollectionExtensions
 {
-    internal static IServiceCollection AddAuthenticationServices(this IServiceCollection services)
+    internal static IServiceCollection AddAuthorizationServices(this IServiceCollection services)
     {
         services.AddScoped<IPermissionService, PermissionService>();
         services.AddScoped<IRoleService, RoleService>();

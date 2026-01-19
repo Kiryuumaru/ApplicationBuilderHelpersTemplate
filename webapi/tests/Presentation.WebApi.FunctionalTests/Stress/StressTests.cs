@@ -989,7 +989,7 @@ public class StressTests : WebApiTestBase
 
     #region Helper Methods
 
-    private async Task<AuthResponse?> RegisterUserAsync(string username)
+    private new async Task<AuthResponse?> RegisterUserAsync(string username)
     {
         var registerRequest = new
         {
@@ -1071,7 +1071,7 @@ public class StressTests : WebApiTestBase
 
     #region Response Types
 
-    private sealed class AuthResponse
+    private new sealed class AuthResponse
     {
         public string AccessToken { get; set; } = string.Empty;
         public string RefreshToken { get; set; } = string.Empty;

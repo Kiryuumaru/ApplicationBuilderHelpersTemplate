@@ -37,8 +37,9 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         Output.WriteLine($"[STEP] GET /api/v1/auth/users/{userId}/api-keys with valid token...");
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/api-keys");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
@@ -53,7 +54,7 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var result = JsonSerializer.Deserialize<ApiKeyListResponse>(content, JsonOptions);
         Assert.NotNull(result);
-        Assert.Empty(result!.Items);
+        Assert.Empty(result.Items);
 
         Output.WriteLine("[PASS] List API keys returns empty list for new user");
     }
@@ -70,9 +71,11 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         Assert.NotNull(user2);
 
         // User1 tries to list User2's API keys
-        Output.WriteLine($"[STEP] GET /api/v1/auth/users/{user2!.User.Id}/api-keys with User1's token...");
+        Assert.NotNull(user1.User);
+        Assert.NotNull(user2.User);
+        Output.WriteLine($"[STEP] GET /api/v1/auth/users/{user2.User.Id}/api-keys with User1's token...");
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{user2.User.Id}/api-keys");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user1!.AccessToken);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user1.AccessToken);
         var response = await HttpClient.SendAsync(request);
 
         Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
@@ -92,8 +95,9 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var createRequest = new { Name = "Test API Key" };
 
         Output.WriteLine($"[STEP] POST /api/v1/auth/users/{userId}/api-keys...");
@@ -111,7 +115,7 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var result = JsonSerializer.Deserialize<CreateApiKeyResponse>(content, JsonOptions);
         Assert.NotNull(result);
-        Assert.NotEqual(Guid.Empty, result!.Id);
+        Assert.NotEqual(Guid.Empty, result.Id);
         Assert.Equal("Test API Key", result.Name);
         Assert.False(string.IsNullOrEmpty(result.Key), "API key JWT should be returned");
         Assert.Null(result.ExpiresAt);
@@ -126,8 +130,9 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var expiresAt = DateTimeOffset.UtcNow.AddDays(30);
         var createRequest = new { Name = "Expiring Key", ExpiresAt = expiresAt };
 
@@ -144,7 +149,7 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         var content = await response.Content.ReadAsStringAsync();
         var result = JsonSerializer.Deserialize<CreateApiKeyResponse>(content, JsonOptions);
         Assert.NotNull(result);
-        Assert.NotNull(result!.ExpiresAt);
+        Assert.NotNull(result.ExpiresAt);
 
         Output.WriteLine("[PASS] API key created with expiration date");
     }
@@ -156,8 +161,9 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var pastDate = DateTimeOffset.UtcNow.AddDays(-1);
         var createRequest = new { Name = "Past Expiry Key", ExpiresAt = pastDate };
 
@@ -203,9 +209,11 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var createRequest = new { Name = "Hacker Key" };
 
-        Output.WriteLine($"[STEP] POST /api/v1/auth/users/{user2!.User.Id}/api-keys with User1's token...");
+        Assert.NotNull(user1.User);
+        Assert.NotNull(user2.User);
+        Output.WriteLine($"[STEP] POST /api/v1/auth/users/{user2.User.Id}/api-keys with User1's token...");
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{user2.User.Id}/api-keys");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user1!.AccessToken);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user1.AccessToken);
         request.Content = JsonContent.Create(createRequest);
         var response = await HttpClient.SendAsync(request);
 
@@ -222,8 +230,9 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var createRequest = new { Name = "" };
 
         Output.WriteLine($"[STEP] POST /api/v1/auth/users/{userId}/api-keys with empty name...");
@@ -249,14 +258,15 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
 
         // Create an API key first
         var createResponse = await CreateApiKeyAsync(userId, authResult.AccessToken, "Key to Revoke");
         Assert.NotNull(createResponse);
 
-        Output.WriteLine($"[STEP] DELETE /api/v1/auth/users/{userId}/api-keys/{createResponse!.Id}...");
+        Output.WriteLine($"[STEP] DELETE /api/v1/auth/users/{userId}/api-keys/{createResponse.Id}...");
         using var request = new HttpRequestMessage(HttpMethod.Delete, 
             $"/api/v1/auth/users/{userId}/api-keys/{createResponse.Id}");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
@@ -275,8 +285,9 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var nonExistentId = Guid.NewGuid();
 
         Output.WriteLine($"[STEP] DELETE /api/v1/auth/users/{userId}/api-keys/{nonExistentId}...");
@@ -298,8 +309,9 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
 
         // Create and revoke an API key
         var createResponse = await CreateApiKeyAsync(userId, authResult.AccessToken, "Double Revoke Key");
@@ -307,7 +319,7 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         // First revoke
         using var request1 = new HttpRequestMessage(HttpMethod.Delete, 
-            $"/api/v1/auth/users/{userId}/api-keys/{createResponse!.Id}");
+            $"/api/v1/auth/users/{userId}/api-keys/{createResponse.Id}");
         request1.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
         var response1 = await HttpClient.SendAsync(request1);
         Assert.Equal(HttpStatusCode.NoContent, response1.StatusCode);
@@ -334,16 +346,18 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         var user2 = await RegisterUserAsync();
         Assert.NotNull(user1);
         Assert.NotNull(user2);
+        Assert.NotNull(user1.User);
+        Assert.NotNull(user2.User);
 
         // User2 creates an API key
-        var createResponse = await CreateApiKeyAsync(user2!.User.Id, user2.AccessToken, "User2 Key");
+        var createResponse = await CreateApiKeyAsync(user2.User.Id, user2.AccessToken, "User2 Key");
         Assert.NotNull(createResponse);
 
         // User1 tries to revoke User2's key
-        Output.WriteLine($"[STEP] DELETE /api/v1/auth/users/{user2.User.Id}/api-keys/{createResponse!.Id} with User1's token...");
+        Output.WriteLine($"[STEP] DELETE /api/v1/auth/users/{user2.User.Id}/api-keys/{createResponse.Id} with User1's token...");
         using var request = new HttpRequestMessage(HttpMethod.Delete, 
             $"/api/v1/auth/users/{user2.User.Id}/api-keys/{createResponse.Id}");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user1!.AccessToken);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user1.AccessToken);
         var response = await HttpClient.SendAsync(request);
 
         Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
@@ -363,8 +377,9 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
 
         // Create an API key
         var createResponse = await CreateApiKeyAsync(userId, authResult.AccessToken, "Usage Test Key");
@@ -373,7 +388,7 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         // Use the API key to access /auth/me
         Output.WriteLine("[STEP] GET /api/v1/auth/me with API key...");
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", createResponse!.Key);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", createResponse.Key);
         var response = await HttpClient.SendAsync(request);
 
         Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
@@ -383,7 +398,7 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         var content = await response.Content.ReadAsStringAsync();
         var meResult = JsonSerializer.Deserialize<UserInfoResponse>(content, JsonOptions);
         Assert.NotNull(meResult);
-        Assert.Equal(userId, meResult!.Id);
+        Assert.Equal(userId, meResult.Id);
 
         Output.WriteLine("[PASS] API key can access regular endpoints");
     }
@@ -397,8 +412,9 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
 
         // Create an API key
         var createResponse = await CreateApiKeyAsync(userId, authResult.AccessToken, "Not A Refresh Token");
@@ -408,7 +424,7 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         Output.WriteLine("[STEP] POST /api/v1/auth/refresh with API key as refresh token...");
         var response = await HttpClient.PostAsJsonAsync(
             "/api/v1/auth/refresh",
-            new { RefreshToken = createResponse!.Key });
+            new { RefreshToken = createResponse.Key });
 
         Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
 
@@ -423,8 +439,9 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
 
         // Create an API key
         var createResponse = await CreateApiKeyAsync(userId, authResult.AccessToken, "First Key");
@@ -433,7 +450,7 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         // Try to create another API key using the first API key (should be denied)
         Output.WriteLine("[STEP] POST /api/v1/auth/users/{userId}/api-keys with API key...");
         using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/v1/auth/users/{userId}/api-keys");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", createResponse!.Key);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", createResponse.Key);
         request.Content = JsonContent.Create(new { Name = "Second Key via API Key" });
         var response = await HttpClient.SendAsync(request);
 
@@ -450,8 +467,9 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
 
         // Create an API key
         var createResponse = await CreateApiKeyAsync(userId, authResult.AccessToken, "List Deny Key");
@@ -460,7 +478,7 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         // Try to list API keys using the API key (should be denied)
         Output.WriteLine("[STEP] GET /api/v1/auth/users/{userId}/api-keys with API key...");
         using var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{userId}/api-keys");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", createResponse!.Key);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", createResponse.Key);
         var response = await HttpClient.SendAsync(request);
 
         Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
@@ -476,8 +494,9 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
 
         // Create two API keys
         var key1 = await CreateApiKeyAsync(userId, authResult.AccessToken, "Key 1");
@@ -486,10 +505,10 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         Assert.NotNull(key2);
 
         // Try to revoke key2 using key1 (should be denied)
-        Output.WriteLine($"[STEP] DELETE /api/v1/auth/users/{userId}/api-keys/{key2!.Id} with API key...");
+        Output.WriteLine($"[STEP] DELETE /api/v1/auth/users/{userId}/api-keys/{key2.Id} with API key...");
         using var request = new HttpRequestMessage(HttpMethod.Delete, 
             $"/api/v1/auth/users/{userId}/api-keys/{key2.Id}");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key1!.Key);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key1.Key);
         var response = await HttpClient.SendAsync(request);
 
         Output.WriteLine($"[RECEIVED] Status: {(int)response.StatusCode} {response.StatusCode}");
@@ -505,8 +524,9 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
 
         // Create an API key
         var createResponse = await CreateApiKeyAsync(userId, authResult.AccessToken, "Soon to be revoked");
@@ -514,7 +534,7 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         // Verify it works first
         using var workingRequest = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
-        workingRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", createResponse!.Key);
+        workingRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", createResponse.Key);
         var workingResponse = await HttpClient.SendAsync(workingRequest);
         Assert.Equal(HttpStatusCode.OK, workingResponse.StatusCode);
 
@@ -550,19 +570,20 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         Output.WriteLine("[STEP 1] Registering new user...");
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
-        var userId = authResult!.User.Id;
+        Assert.NotNull(authResult.User);
+        var userId = authResult.User.Id;
 
         // Step 2: List API keys (should be empty)
         Output.WriteLine("[STEP 2] Listing API keys (should be empty)...");
         var listBefore = await ListApiKeysAsync(userId, authResult.AccessToken);
         Assert.NotNull(listBefore);
-        Assert.Empty(listBefore!.Items);
+        Assert.Empty(listBefore.Items);
 
         // Step 3: Create first API key
         Output.WriteLine("[STEP 3] Creating first API key...");
         var key1 = await CreateApiKeyAsync(userId, authResult.AccessToken, "Production Bot");
         Assert.NotNull(key1);
-        var key1Jwt = key1!.Key;
+        var key1Jwt = key1.Key;
 
         // Step 4: Create second API key
         Output.WriteLine("[STEP 4] Creating second API key...");
@@ -573,7 +594,7 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         Output.WriteLine("[STEP 5] Listing API keys (should have 2)...");
         var listAfterCreate = await ListApiKeysAsync(userId, authResult.AccessToken);
         Assert.NotNull(listAfterCreate);
-        Assert.Equal(2, listAfterCreate!.Items.Count);
+        Assert.Equal(2, listAfterCreate.Items.Count);
 
         // Step 6: Use first API key to access an endpoint
         Output.WriteLine("[STEP 6] Using first API key to access /auth/me...");
@@ -601,7 +622,7 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         Output.WriteLine("[STEP 9] Listing API keys (should have 1)...");
         var listAfterRevoke = await ListApiKeysAsync(userId, authResult.AccessToken);
         Assert.NotNull(listAfterRevoke);
-        Assert.Single(listAfterRevoke!.Items);
+        Assert.Single(listAfterRevoke.Items);
         Assert.Equal("Development Bot", listAfterRevoke.Items[0].Name);
 
         Output.WriteLine("[PASS] Full API key lifecycle completed successfully");
@@ -615,7 +636,8 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         // Register user
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
-        var userId = authResult!.User.Id;
+        Assert.NotNull(authResult.User);
+        var userId = authResult.User.Id;
 
         // Create multiple API keys with different purposes
         var tradingKey = await CreateApiKeyAsync(userId, authResult.AccessToken, "Trading Bot");
@@ -628,8 +650,9 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         Assert.NotNull(cicdKey);
 
         // Verify all keys can access /auth/me
-        foreach (var key in new[] { tradingKey!, monitorKey!, cicdKey! })
+        foreach (var key in new[] { tradingKey, monitorKey, cicdKey })
         {
+            Assert.NotNull(key);
             using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key.Key);
             var response = await HttpClient.SendAsync(request);
@@ -639,12 +662,12 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         // Verify all keys are listed
         var allKeys = await ListApiKeysAsync(userId, authResult.AccessToken);
         Assert.NotNull(allKeys);
-        Assert.Equal(3, allKeys!.Items.Count);
+        Assert.Equal(3, allKeys.Items.Count);
 
         // Verify expiration is set correctly for CI/CD key
         var cicdKeyInfo = allKeys.Items.FirstOrDefault(k => k.Name == "CI/CD Pipeline");
         Assert.NotNull(cicdKeyInfo);
-        Assert.NotNull(cicdKeyInfo!.ExpiresAt);
+        Assert.NotNull(cicdKeyInfo.ExpiresAt);
 
         Output.WriteLine("[PASS] Multiple API keys managed successfully");
     }
@@ -663,8 +686,9 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         const int testKeyCount = 5;
 
         // Create several keys to verify the creation works
@@ -678,7 +702,7 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         // Verify all keys were created
         var allKeys = await ListApiKeysAsync(userId, authResult.AccessToken);
         Assert.NotNull(allKeys);
-        Assert.Equal(testKeyCount, allKeys!.Items.Count);
+        Assert.Equal(testKeyCount, allKeys.Items.Count);
 
         Output.WriteLine($"[PASS] Successfully created {testKeyCount} API keys (max is 100)");
     }
@@ -690,8 +714,9 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var authResult = await RegisterUserAsync();
         Assert.NotNull(authResult);
+        Assert.NotNull(authResult.User);
 
-        var userId = authResult!.User.Id;
+        var userId = authResult.User.Id;
         var longName = new string('A', 101); // Over 100 char limit
 
         Output.WriteLine($"[STEP] POST /api/v1/auth/users/{userId}/api-keys with 101 char name...");
@@ -717,14 +742,15 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var auth = await RegisterUserAsync();
         Assert.NotNull(auth);
+        Assert.NotNull(auth.User);
 
         // Create key
-        var key = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, "Temp Key");
+        var key = await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, "Temp Key");
         Assert.NotNull(key);
 
         // Use key successfully
         using var req1 = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
-        req1.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key!.Key);
+        req1.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key.Key);
         var res1 = await HttpClient.SendAsync(req1);
         Assert.Equal(HttpStatusCode.OK, res1.StatusCode);
 
@@ -752,14 +778,16 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         var user2 = await RegisterUserAsync();
         Assert.NotNull(user1);
         Assert.NotNull(user2);
+        Assert.NotNull(user1.User);
+        Assert.NotNull(user2.User);
 
         // User1 creates key
-        var key1 = await CreateApiKeyAsync(user1!.User.Id, user1.AccessToken, "User1 Key");
+        var key1 = await CreateApiKeyAsync(user1.User.Id, user1.AccessToken, "User1 Key");
         Assert.NotNull(key1);
 
         // User2 tries to revoke User1's key
-        using var req = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{user1.User.Id}/api-keys/{key1!.Id}");
-        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user2!.AccessToken);
+        using var req = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{user1.User.Id}/api-keys/{key1.Id}");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user2.AccessToken);
         var res = await HttpClient.SendAsync(req);
         Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
 
@@ -773,8 +801,9 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var auth = await RegisterUserAsync();
         Assert.NotNull(auth);
+        Assert.NotNull(auth.User);
 
-        var key1 = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, "Key A");
+        var key1 = await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, "Key A");
         var key2 = await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, "Key B");
         var key3 = await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, "Key C");
         Assert.NotNull(key1);
@@ -782,17 +811,17 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         Assert.NotNull(key3);
 
         // Revoke middle key
-        using var revokeReq = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{auth.User.Id}/api-keys/{key2!.Id}");
+        using var revokeReq = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{auth.User.Id}/api-keys/{key2.Id}");
         revokeReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
         await HttpClient.SendAsync(revokeReq);
 
         // Key1 and Key3 still work
         using var req1 = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
-        req1.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key1!.Key);
+        req1.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key1.Key);
         Assert.Equal(HttpStatusCode.OK, (await HttpClient.SendAsync(req1)).StatusCode);
 
         using var req3 = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
-        req3.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key3!.Key);
+        req3.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key3.Key);
         Assert.Equal(HttpStatusCode.OK, (await HttpClient.SendAsync(req3)).StatusCode);
 
         // Key2 is revoked
@@ -802,7 +831,8 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         // List shows 2 keys
         var list = await ListApiKeysAsync(auth.User.Id, auth.AccessToken);
-        Assert.Equal(2, list!.Items.Count);
+        Assert.NotNull(list);
+        Assert.Equal(2, list.Items.Count);
 
         Output.WriteLine("[PASS] Revoking one key doesn't affect others");
     }
@@ -814,12 +844,13 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var auth = await RegisterUserAsync();
         Assert.NotNull(auth);
+        Assert.NotNull(auth.User);
 
-        var key = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, "Self-Aware Key");
+        var key = await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, "Self-Aware Key");
         Assert.NotNull(key);
 
         // Try to revoke itself using the API key
-        using var req = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{auth.User.Id}/api-keys/{key!.Id}");
+        using var req = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{auth.User.Id}/api-keys/{key.Id}");
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key.Key);
         var res = await HttpClient.SendAsync(req);
         Assert.Equal(HttpStatusCode.Forbidden, res.StatusCode);
@@ -834,8 +865,9 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var auth = await RegisterUserAsync();
         Assert.NotNull(auth);
+        Assert.NotNull(auth.User);
 
-        var key = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, "Parallel Key");
+        var key = await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, "Parallel Key");
         Assert.NotNull(key);
 
         // Access token works
@@ -845,7 +877,7 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         // API key also works
         using var req2 = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
-        req2.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key!.Key);
+        req2.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key.Key);
         Assert.Equal(HttpStatusCode.OK, (await HttpClient.SendAsync(req2)).StatusCode);
 
         Output.WriteLine("[PASS] Both token types work simultaneously");
@@ -858,14 +890,16 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var auth = await RegisterUserAsync();
         Assert.NotNull(auth);
+        Assert.NotNull(auth.User);
 
         var specialName = "My Key! @#$%^&*() - Test_123";
-        var key = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, specialName);
+        var key = await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, specialName);
         Assert.NotNull(key);
-        Assert.Equal(specialName, key!.Name);
+        Assert.Equal(specialName, key.Name);
 
         var list = await ListApiKeysAsync(auth.User.Id, auth.AccessToken);
-        Assert.Contains(list!.Items, k => k.Name == specialName);
+        Assert.NotNull(list);
+        Assert.Contains(list.Items, k => k.Name == specialName);
 
         Output.WriteLine("[PASS] Special characters in name preserved");
     }
@@ -877,19 +911,22 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var auth = await RegisterUserAsync();
         Assert.NotNull(auth);
+        Assert.NotNull(auth.User);
 
         // Create and revoke a few keys
         for (int i = 0; i < 3; i++)
         {
-            var k = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, $"OldKey{i}");
-            using var req = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{auth.User.Id}/api-keys/{k!.Id}");
+            var k = await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, $"OldKey{i}");
+            Assert.NotNull(k);
+            using var req = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{auth.User.Id}/api-keys/{k.Id}");
             req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
             await HttpClient.SendAsync(req);
         }
 
         // List should be empty
-        var listBefore = await ListApiKeysAsync(auth!.User.Id, auth.AccessToken);
-        Assert.Empty(listBefore!.Items);
+        var listBefore = await ListApiKeysAsync(auth.User.Id, auth.AccessToken);
+        Assert.NotNull(listBefore);
+        Assert.Empty(listBefore.Items);
 
         // Create new key
         var newKey = await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, "FreshStart");
@@ -897,7 +934,7 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         // New key works
         using var useReq = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
-        useReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", newKey!.Key);
+        useReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", newKey.Key);
         Assert.Equal(HttpStatusCode.OK, (await HttpClient.SendAsync(useReq)).StatusCode);
 
         Output.WriteLine("[PASS] Can create new keys after revoking all");
@@ -910,17 +947,19 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var auth = await RegisterUserAsync();
         Assert.NotNull(auth);
+        Assert.NotNull(auth.User);
 
-        var key = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, "Identity Key");
+        var key = await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, "Identity Key");
         Assert.NotNull(key);
 
         using var req = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
-        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key!.Key);
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key.Key);
         var res = await HttpClient.SendAsync(req);
         var content = await res.Content.ReadAsStringAsync();
         var me = JsonSerializer.Deserialize<UserInfoResponse>(content, JsonOptions);
 
-        Assert.Equal(auth.User.Id, me!.Id);
+        Assert.NotNull(me);
+        Assert.Equal(auth.User.Id, me.Id);
         Assert.Equal(auth.User.Username, me.Username);
 
         Output.WriteLine("[PASS] API key returns correct user identity");
@@ -933,11 +972,12 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var auth = await RegisterUserAsync();
         Assert.NotNull(auth);
+        Assert.NotNull(auth.User);
 
         var expiresAt = DateTimeOffset.UtcNow.AddHours(24);
-        var key = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, "24h Key", expiresAt);
+        var key = await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, "24h Key", expiresAt);
         Assert.NotNull(key);
-        Assert.NotNull(key!.ExpiresAt);
+        Assert.NotNull(key.ExpiresAt);
 
         // Key works before expiry
         using var req = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
@@ -954,13 +994,15 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var auth = await RegisterUserAsync();
         Assert.NotNull(auth);
+        Assert.NotNull(auth.User);
 
         var expires = DateTimeOffset.UtcNow.AddDays(7);
-        var key = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, "Metadata Key", expires);
+        var key = await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, "Metadata Key", expires);
         Assert.NotNull(key);
 
         var list = await ListApiKeysAsync(auth.User.Id, auth.AccessToken);
-        var listed = list!.Items.First(k => k.Id == key!.Id);
+        Assert.NotNull(list);
+        var listed = list.Items.First(k => k.Id == key.Id);
 
         Assert.Equal("Metadata Key", listed.Name);
         Assert.NotNull(listed.ExpiresAt);
@@ -976,21 +1018,23 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var auth = await RegisterUserAsync();
         Assert.NotNull(auth);
+        Assert.NotNull(auth.User);
 
         // Rapidly create and revoke 5 keys
         for (int i = 0; i < 5; i++)
         {
-            var k = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, $"Rapid{i}");
+            var k = await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, $"Rapid{i}");
             Assert.NotNull(k);
 
-            using var req = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{auth.User.Id}/api-keys/{k!.Id}");
+            using var req = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{auth.User.Id}/api-keys/{k.Id}");
             req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
             var res = await HttpClient.SendAsync(req);
             Assert.Equal(HttpStatusCode.NoContent, res.StatusCode);
         }
 
-        var list = await ListApiKeysAsync(auth!.User.Id, auth.AccessToken);
-        Assert.Empty(list!.Items);
+        var list = await ListApiKeysAsync(auth.User.Id, auth.AccessToken);
+        Assert.NotNull(list);
+        Assert.Empty(list.Items);
 
         Output.WriteLine("[PASS] Rapid create/revoke cycles work");
     }
@@ -1002,8 +1046,9 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var auth = await RegisterUserAsync();
         Assert.NotNull(auth);
+        Assert.NotNull(auth.User);
 
-        var key = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, "Persistent Key");
+        var key = await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, "Persistent Key");
         Assert.NotNull(key);
 
         // Refresh access token
@@ -1013,7 +1058,7 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         // API key still works after session refresh
         using var req = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
-        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key!.Key);
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key.Key);
         Assert.Equal(HttpStatusCode.OK, (await HttpClient.SendAsync(req)).StatusCode);
 
         Output.WriteLine("[PASS] API key survives session refresh");
@@ -1026,14 +1071,18 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var user1 = await RegisterUserAsync();
         var user2 = await RegisterUserAsync();
+        Assert.NotNull(user1);
+        Assert.NotNull(user2);
+        Assert.NotNull(user1.User);
+        Assert.NotNull(user2.User);
 
         // Both users create keys with same name
-        var key1 = await CreateApiKeyAsync(user1!.User.Id, user1.AccessToken, "Production");
-        var key2 = await CreateApiKeyAsync(user2!.User.Id, user2.AccessToken, "Production");
+        var key1 = await CreateApiKeyAsync(user1.User.Id, user1.AccessToken, "Production");
+        var key2 = await CreateApiKeyAsync(user2.User.Id, user2.AccessToken, "Production");
 
         Assert.NotNull(key1);
         Assert.NotNull(key2);
-        Assert.NotEqual(key1!.Id, key2!.Id);
+        Assert.NotEqual(key1.Id, key2.Id);
         Assert.NotEqual(key1.Key, key2.Key);
 
         // Each key only accesses its owner
@@ -1041,13 +1090,15 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         req1.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key1.Key);
         var res1 = await HttpClient.SendAsync(req1);
         var me1 = JsonSerializer.Deserialize<UserInfoResponse>(await res1.Content.ReadAsStringAsync(), JsonOptions);
-        Assert.Equal(user1.User.Id, me1!.Id);
+        Assert.NotNull(me1);
+        Assert.Equal(user1.User.Id, me1.Id);
 
         using var req2 = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
         req2.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key2.Key);
         var res2 = await HttpClient.SendAsync(req2);
         var me2 = JsonSerializer.Deserialize<UserInfoResponse>(await res2.Content.ReadAsStringAsync(), JsonOptions);
-        Assert.Equal(user2.User.Id, me2!.Id);
+        Assert.NotNull(me2);
+        Assert.Equal(user2.User.Id, me2.Id);
 
         Output.WriteLine("[PASS] Same key name, different users, isolated");
     }
@@ -1059,13 +1110,14 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var auth = await RegisterUserAsync();
         Assert.NotNull(auth);
+        Assert.NotNull(auth.User);
 
-        var key = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, "Instant Key");
+        var key = await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, "Instant Key");
         Assert.NotNull(key);
 
         // Immediately use without delay
         using var req = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
-        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key!.Key);
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key.Key);
         var res = await HttpClient.SendAsync(req);
         Assert.Equal(HttpStatusCode.OK, res.StatusCode);
 
@@ -1079,9 +1131,10 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var auth = await RegisterUserAsync();
         Assert.NotNull(auth);
+        Assert.NotNull(auth.User);
 
         var fakeKeyId = Guid.NewGuid();
-        using var req = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{auth!.User.Id}/api-keys/{fakeKeyId}");
+        using var req = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{auth.User.Id}/api-keys/{fakeKeyId}");
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
         var res = await HttpClient.SendAsync(req);
 
@@ -1097,17 +1150,19 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var auth = await RegisterUserAsync();
         Assert.NotNull(auth);
+        Assert.NotNull(auth.User);
 
         // Create 5 keys
         var keys = new List<CreateApiKeyResponse>();
         for (int i = 0; i < 5; i++)
         {
-            var k = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, $"Key{i}");
-            keys.Add(k!);
+            var k = await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, $"Key{i}");
+            Assert.NotNull(k);
+            keys.Add(k);
         }
 
         // Revoke 2 of them (indices 1 and 3)
-        using var rev1 = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{auth!.User.Id}/api-keys/{keys[1].Id}");
+        using var rev1 = new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/auth/users/{auth.User.Id}/api-keys/{keys[1].Id}");
         rev1.Headers.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
         await HttpClient.SendAsync(rev1);
 
@@ -1117,7 +1172,8 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         // List should show 3 keys
         var list = await ListApiKeysAsync(auth.User.Id, auth.AccessToken);
-        Assert.Equal(3, list!.Items.Count);
+        Assert.NotNull(list);
+        Assert.Equal(3, list.Items.Count);
         Assert.Contains(list.Items, k => k.Name == "Key0");
         Assert.Contains(list.Items, k => k.Name == "Key2");
         Assert.Contains(list.Items, k => k.Name == "Key4");
@@ -1134,13 +1190,17 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var user1 = await RegisterUserAsync();
         var user2 = await RegisterUserAsync();
+        Assert.NotNull(user1);
+        Assert.NotNull(user2);
+        Assert.NotNull(user1.User);
+        Assert.NotNull(user2.User);
 
-        var key1 = await CreateApiKeyAsync(user1!.User.Id, user1.AccessToken, "User1 Key");
+        var key1 = await CreateApiKeyAsync(user1.User.Id, user1.AccessToken, "User1 Key");
         Assert.NotNull(key1);
 
         // User1's API key tries to list User2's API keys
-        using var req = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{user2!.User.Id}/api-keys");
-        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key1!.Key);
+        using var req = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/auth/users/{user2.User.Id}/api-keys");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key1.Key);
         var res = await HttpClient.SendAsync(req);
 
         // Should be 403 (API keys can't list any API keys including other users')
@@ -1156,11 +1216,12 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var auth = await RegisterUserAsync();
         Assert.NotNull(auth);
+        Assert.NotNull(auth.User);
 
         var maxName = new string('X', 100); // Exactly 100 chars
-        var key = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, maxName);
+        var key = await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, maxName);
         Assert.NotNull(key);
-        Assert.Equal(maxName, key!.Name);
+        Assert.Equal(maxName, key.Name);
 
         Output.WriteLine("[PASS] 100-char name accepted");
     }
@@ -1172,16 +1233,20 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var auth = await RegisterUserAsync();
         Assert.NotNull(auth);
+        Assert.NotNull(auth.User);
 
-        var keyA = await CreateApiKeyAsync(auth!.User.Id, auth.AccessToken, "KeyA");
+        var keyA = await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, "KeyA");
         var keyB = await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, "KeyB");
         var keyC = await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, "KeyC");
+        Assert.NotNull(keyA);
+        Assert.NotNull(keyB);
+        Assert.NotNull(keyC);
 
         // Use each key in sequence
         foreach (var key in new[] { keyA, keyB, keyC })
         {
             using var req = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
-            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key!.Key);
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key.Key);
             var res = await HttpClient.SendAsync(req);
             Assert.Equal(HttpStatusCode.OK, res.StatusCode);
         }
@@ -1196,21 +1261,25 @@ public class ApiKeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 
         var auth = await RegisterUserAsync();
         Assert.NotNull(auth);
+        Assert.NotNull(auth.User);
 
         // Verify empty
-        var listBefore = await ListApiKeysAsync(auth!.User.Id, auth.AccessToken);
-        Assert.Empty(listBefore!.Items);
+        var listBefore = await ListApiKeysAsync(auth.User.Id, auth.AccessToken);
+        Assert.NotNull(listBefore);
+        Assert.Empty(listBefore.Items);
 
         // Add one
         await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, "First");
         var listAfter = await ListApiKeysAsync(auth.User.Id, auth.AccessToken);
-        Assert.Single(listAfter!.Items);
+        Assert.NotNull(listAfter);
+        Assert.Single(listAfter.Items);
 
         // Add two more
         await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, "Second");
         await CreateApiKeyAsync(auth.User.Id, auth.AccessToken, "Third");
         var listFinal = await ListApiKeysAsync(auth.User.Id, auth.AccessToken);
-        Assert.Equal(3, listFinal!.Items.Count);
+        Assert.NotNull(listFinal);
+        Assert.Equal(3, listFinal.Items.Count);
 
         Output.WriteLine("[PASS] List grows correctly as keys are added");
     }
