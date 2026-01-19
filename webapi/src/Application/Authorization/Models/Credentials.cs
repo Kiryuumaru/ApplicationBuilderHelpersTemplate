@@ -1,6 +1,8 @@
+using System.Text.Json.Nodes;
+
 namespace Application.Authorization.Models;
 
 public class Credentials
 {
-    public required JwtConfiguration JwtConfiguration { get; init; }
+    public required JsonObject EnvironmentCredentials { get; init; }
 }

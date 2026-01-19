@@ -1,10 +1,10 @@
 using Application.Server.Authorization.Interfaces;
 using Application.Server.Authorization.Interfaces.Infrastructure;
-using Application.Server.Authorization.Models;
 using Application.Server.Authorization.Services;
 using Application.UnitTests.Authorization.Fakes;
 using Domain.Authorization.Constants;
 using Infrastructure.Server.Identity.Interfaces;
+using Infrastructure.Server.Identity.Models;
 using Infrastructure.Server.Identity.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;

@@ -1,4 +1,4 @@
-using Application.Server.Authorization.Models;
+using Infrastructure.Server.Identity.Models;
 using Infrastructure.Server.Identity.Services;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;

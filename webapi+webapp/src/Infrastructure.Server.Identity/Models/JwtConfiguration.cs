@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Application.Server.Authorization.Models;
+namespace Infrastructure.Server.Identity.Models;
 
 /// <summary>
 /// Configuration settings for JSON Web Token (JWT) authentication.
