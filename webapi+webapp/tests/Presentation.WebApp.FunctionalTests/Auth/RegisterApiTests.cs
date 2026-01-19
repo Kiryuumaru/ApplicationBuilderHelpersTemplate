@@ -226,9 +226,12 @@ public class RegisterApiTests : WebAppTestBase
     [InlineData("${7*7}")]                             // Expression injection
     public async Task Register_WithInjectionInUsername_DoesNotCauseServerError(string maliciousUsername)
     {
+        // Add unique suffix to allow test re-runs without conflicts (max 50 chars)
+        var combined = $"{maliciousUsername}_{Guid.NewGuid():N}";
+        var uniqueUsername = combined.Length > 50 ? combined[..50] : combined;
         var registerRequest = new
         {
-            Username = maliciousUsername,
+            Username = uniqueUsername,
             Email = $"{Guid.NewGuid():N}@example.com",
             Password = TestPassword,
             ConfirmPassword = TestPassword
@@ -242,7 +245,7 @@ public class RegisterApiTests : WebAppTestBase
             response.StatusCode == HttpStatusCode.BadRequest ||
             response.StatusCode == HttpStatusCode.Created ||
             response.StatusCode == HttpStatusCode.InternalServerError,  // TODO: Fix app to return 400 for invalid usernames
-            $"Unexpected status code: {(int)response.StatusCode}");
+            $"Unexpected status code: {response.StatusCode}");
     }
 
     [Theory]

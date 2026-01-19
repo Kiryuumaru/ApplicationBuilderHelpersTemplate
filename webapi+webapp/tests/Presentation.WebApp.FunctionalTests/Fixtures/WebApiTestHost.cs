@@ -121,7 +121,9 @@ public class WebApiTestHost : IAsyncDisposable
         // Disable launch settings to avoid conflicts
         startInfo.Environment["DOTNET_LAUNCH_PROFILE"] = "";
         // Use a unique in-memory database for each test run to ensure clean state
-        startInfo.Environment["SQLITE_CONNECTION_STRING"] = $"Data Source={Guid.NewGuid()};Mode=Memory;Cache=Shared";
+        var connectionString = $"Data Source={Guid.NewGuid()};Mode=Memory;Cache=Shared";
+        startInfo.Environment["SQLITE_CONNECTION_STRING"] = connectionString;
+        _output.WriteLine($"[HOST] SQLITE_CONNECTION_STRING: {connectionString}");
 
         _process = new Process { StartInfo = startInfo };
 

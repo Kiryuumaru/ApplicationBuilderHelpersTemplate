@@ -1,16 +1,12 @@
 using ApplicationBuilderHelpers;
-using Infrastructure.EFCore.Sqlite.Extensions;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.EFCore.Sqlite.Server;
 
+/// <summary>
+/// Server-side EFCore Sqlite infrastructure composition.
+/// Connection string is resolved via GetRefValueOrDefault which checks
+/// IConfiguration then environment variables, with fallback to "Data Source=app.db".
+/// </summary>
 public class EFCoreSqliteServerInfrastructure : ApplicationDependency
 {
-    public override void AddConfigurations(ApplicationHostBuilder applicationBuilder, IConfiguration configuration)
-    {
-        base.AddConfigurations(applicationBuilder, configuration);
-
-        configuration.SetSqliteConnectionString("Data Source=app.db");
-    }
 }
