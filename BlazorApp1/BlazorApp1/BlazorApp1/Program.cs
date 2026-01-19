@@ -1,17 +1,15 @@
-using BlazorAppSampleTemplate.Client.Pages;
-using BlazorAppSampleTemplate.Components;
-using BlazorAppSampleTemplate.Services;
-using BlazorAppSampleTemplate.Shared.Services;
+using BlazorApp1.Client.Pages;
+using BlazorApp1.Components;
+using BlazorApp1.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
+builder.Services.AddScoped<IWeatherService, WeatherService>();
+
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
-
-// Register server-side weather service for API controller
-builder.Services.AddScoped<IWeatherService, ServerWeatherService>();
 
 var app = builder.Build();
 
@@ -29,14 +27,12 @@ else
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
-app.UseStaticFiles();
-
 app.UseAntiforgery();
 
-app.MapControllers();
 app.MapStaticAssets();
+app.MapControllers();
 app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()
-    .AddAdditionalAssemblies(typeof(BlazorAppSampleTemplate.Client._Imports).Assembly);
+    .AddAdditionalAssemblies(typeof(BlazorApp1.Client._Imports).Assembly);
 
 app.Run();
