@@ -1,9 +1,14 @@
 using Application.Authorization.Services;
+using Domain.Shared.Extensions;
 using Microsoft.Extensions.Configuration;
 using System.Text.Json.Nodes;
 
 namespace Application.UnitTests.Authorization;
 
+/// <summary>
+/// Unit tests for CredentialsService.
+/// Validates that credentials are correctly read from configuration by environment tag.
+/// </summary>
 public class CredentialsServiceTests
 {
 	[Fact]
@@ -28,15 +33,15 @@ public class CredentialsServiceTests
 
 		var credentials = await service.GetCredentials("dev", CancellationToken.None);
 
-		Assert.Equal("dev-secret", credentials.JwtConfiguration.Secret);
-		Assert.Equal("https://issuer.dev", credentials.JwtConfiguration.Issuer);
-		Assert.Equal("https://audience.dev", credentials.JwtConfiguration.Audience);
-		Assert.Equal(TimeSpan.FromHours(2), credentials.JwtConfiguration.DefaultExpiration);
-		Assert.Equal(TimeSpan.FromSeconds(45), credentials.JwtConfiguration.ClockSkew);
+		Assert.Equal("dev-secret", credentials.EnvironmentCredentials.GetValueOrThrow<string>("jwt", "secret"));
+		Assert.Equal("https://issuer.dev", credentials.EnvironmentCredentials.GetValueOrThrow<string>("jwt", "issuer"));
+		Assert.Equal("https://audience.dev", credentials.EnvironmentCredentials.GetValueOrThrow<string>("jwt", "audience"));
+		Assert.Equal(7200, credentials.EnvironmentCredentials.GetValueOrThrow<double>("jwt", "default_expiration_seconds"));
+		Assert.Equal(45, credentials.EnvironmentCredentials.GetValueOrThrow<double>("jwt", "clock_skew_seconds"));
 	}
 
 	[Fact]
-	public async Task GetCredentials_UsesDefaultsWhenOptionalValuesMissing()
+	public async Task GetCredentials_ReturnsNullForMissingOptionalValues()
 	{
 		var configuration = BuildConfiguration(new JsonObject
 		{
@@ -55,12 +60,13 @@ public class CredentialsServiceTests
 
 		var credentials = await service.GetCredentials("prod", CancellationToken.None);
 
-		Assert.Equal(TimeSpan.FromHours(1), credentials.JwtConfiguration.DefaultExpiration);
-		Assert.Equal(TimeSpan.FromMinutes(5), credentials.JwtConfiguration.ClockSkew);
+		Assert.Equal("prod-secret", credentials.EnvironmentCredentials.GetValueOrThrow<string>("jwt", "secret"));
+		Assert.Null(credentials.EnvironmentCredentials.GetValueOrDefault<double?>(null, "jwt", "default_expiration_seconds"));
+		Assert.Null(credentials.EnvironmentCredentials.GetValueOrDefault<double?>(null, "jwt", "clock_skew_seconds"));
 	}
 
 	[Fact]
-	public async Task GetCredentials_ClampsNegativeDurationsToZero()
+	public async Task GetCredentials_ReadsNegativeValues()
 	{
 		var configuration = BuildConfiguration(new JsonObject
 		{
@@ -81,8 +87,34 @@ public class CredentialsServiceTests
 
 		var credentials = await service.GetCredentials("test", CancellationToken.None);
 
-		Assert.Equal(TimeSpan.Zero, credentials.JwtConfiguration.DefaultExpiration);
-		Assert.Equal(TimeSpan.Zero, credentials.JwtConfiguration.ClockSkew);
+		Assert.Equal(-30, credentials.EnvironmentCredentials.GetValueOrThrow<double>("jwt", "default_expiration_seconds"));
+		Assert.Equal(-10, credentials.EnvironmentCredentials.GetValueOrThrow<double>("jwt", "clock_skew_seconds"));
+	}
+
+	[Fact]
+	public async Task GetCredentials_ReadsNonJwtCredentials()
+	{
+		var configuration = BuildConfiguration(new JsonObject
+		{
+			["staging"] = new JsonObject
+			{
+				["database"] = new JsonObject
+				{
+					["connection_string"] = "Server=localhost;Database=test"
+				},
+				["api_keys"] = new JsonObject
+				{
+					["service_a"] = "key-123"
+				}
+			}
+		});
+
+		var service = new CredentialsService(appEnvironmentService: null!, configuration);
+
+		var credentials = await service.GetCredentials("staging", CancellationToken.None);
+
+		Assert.Equal("Server=localhost;Database=test", credentials.EnvironmentCredentials.GetValueOrThrow<string>("database", "connection_string"));
+		Assert.Equal("key-123", credentials.EnvironmentCredentials.GetValueOrThrow<string>("api_keys", "service_a"));
 	}
 
 	private static IConfiguration BuildConfiguration(JsonObject credentials)

@@ -271,19 +271,32 @@ public class LocalStoreFactoryIntegrationTests
 		var dbName = Guid.NewGuid().ToString();
 		var connectionString = $"Data Source={dbName};Mode=Memory;Cache=Shared";
 
+		// Build configuration with connection string
+		var configuration = new ConfigurationBuilder()
+			.AddInMemoryCollection(new Dictionary<string, string?>
+			{
+				["SQLITE_CONNECTION_STRING"] = connectionString
+			})
+			.Build();
+
 		// Build services via DI - persistence ignorant pattern
 		var services = new ServiceCollection();
 		services.AddLogging();
+		services.AddSingleton<IConfiguration>(configuration);
 		
 		// Register EFCore infrastructure (includes EFCoreDatabaseInitializationState)
 		services.AddEFCoreInfrastructure();
-		services.AddEFCoreSqlite(connectionString);
+		services.AddEFCoreSqlite();
 		services.AddEFCoreLocalStore();
 		
 		// Register Application layer services
 		services.AddLocalStoreServices();
 
 		var provider = services.BuildServiceProvider();
+		
+		// Ensure the keep-alive connection is open before any database operations
+		var connectionHolder = provider.GetRequiredService<Infrastructure.EFCore.Sqlite.Services.SqliteConnectionHolder>();
+		connectionHolder.EnsureOpen();
 		
 		// Keep a connection open to preserve the in-memory database and initialize schema
 		var dbContextFactory = provider.GetRequiredService<Microsoft.EntityFrameworkCore.IDbContextFactory<Infrastructure.EFCore.EFCoreDbContext>>();
