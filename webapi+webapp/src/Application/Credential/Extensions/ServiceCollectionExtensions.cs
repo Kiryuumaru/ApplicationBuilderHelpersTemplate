@@ -8,6 +8,6 @@ internal static class ServiceCollectionExtensions
 {
     public static void AddCredentialServices(this IServiceCollection services)
     {
-        services.AddSingleton<ICredentialService, CredentialService>();
+        services.AddScoped<ICredentialService, CredentialService>();
     }
 }
