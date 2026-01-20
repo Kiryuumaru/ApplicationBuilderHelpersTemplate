@@ -45,10 +45,7 @@ public sealed class SqliteConnectionHolder : IDisposable
 
     public void Dispose()
     {
-        if (_keepAliveConnection != null)
-        {
-            _keepAliveConnection.Dispose();
-            _keepAliveConnection = null;
-        }
+        _keepAliveConnection?.Dispose();
+        _keepAliveConnection = null;
     }
 }

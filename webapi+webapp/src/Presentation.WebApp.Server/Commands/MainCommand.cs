@@ -175,9 +175,6 @@ internal class MainCommand : Build.BaseCommand<WebApplicationBuilder>
                 """);
         });
 
-        //app.MapGet("/", () => Results.Redirect("/scalar/v1"))
-        //    .ExcludeFromDescription();
-
         app.MapStaticAssets();
         app.MapRazorComponents<App>()
             .AddInteractiveServerRenderMode()
@@ -210,10 +207,7 @@ internal class MainCommand : Build.BaseCommand<WebApplicationBuilder>
             if (context.Request.Path.StartsWithSegments("/api"))
             {
                 var statusCodePagesFeature = context.Features.Get<IStatusCodePagesFeature>();
-                if (statusCodePagesFeature != null)
-                {
-                    statusCodePagesFeature.Enabled = false;
-                }
+                statusCodePagesFeature?.Enabled = false;
             }
             await next();
         });
