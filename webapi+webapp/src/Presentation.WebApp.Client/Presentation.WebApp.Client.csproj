@@ -31,8 +31,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Application.Client\Application.Client.csproj" />
-		<ProjectReference Include="..\Infrastructure.EFCore.LocalStore\Infrastructure.EFCore.LocalStore.csproj" />
-		<ProjectReference Include="..\Infrastructure.EFCore.Sqlite.Client\Infrastructure.EFCore.Sqlite.Client.csproj" />
+		<ProjectReference Include="..\Infrastructure.Browser.IndexedDB.LocalStore\Infrastructure.Browser.IndexedDB.LocalStore.csproj" />
 		<ProjectReference Include="..\Presentation.WebApp\Presentation.WebApp.csproj" />
 	</ItemGroup>
 

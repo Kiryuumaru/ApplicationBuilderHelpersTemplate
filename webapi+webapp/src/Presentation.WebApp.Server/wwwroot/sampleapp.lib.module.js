@@ -6,10 +6,19 @@
 //
 // This workaround uses the Cache API since .NET 10's built-in HTTP cache 
 // with force-cache doesn't work reliably in browsers.
+// NOTE: Cache Storage API requires secure context (HTTPS or localhost).
 
 const CACHE_NAME = 'blazor-wasm-cache-v1';
 
+// Cache Storage API is only available in secure contexts (HTTPS or localhost)
+const isCacheAvailable = typeof caches !== 'undefined';
+
 export function beforeWebStart(options) {
+    // Skip custom caching if Cache API is not available
+    if (!isCacheAvailable) {
+        return;
+    }
+
     options.webAssembly = options.webAssembly || {};
     options.webAssembly.loadBootResource = function(type, name, defaultUri, integrity, behavior) {
         // Only cache assembly-related resources

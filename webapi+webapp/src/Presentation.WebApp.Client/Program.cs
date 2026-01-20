@@ -1,9 +1,6 @@
 using Application.Client;
 using Application.Common.Interfaces.Application;
-using Infrastructure.EFCore;
-using Infrastructure.EFCore.LocalStore;
-using Infrastructure.EFCore.Sqlite;
-using Infrastructure.EFCore.Sqlite.Client;
+using Infrastructure.Browser.IndexedDB.LocalStore;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Presentation.WebApp.Client.Commands;
 
@@ -11,10 +8,7 @@ try
 {
     return await ApplicationBuilderHelpers.ApplicationBuilder.Create()
         .AddApplication<ClientApplication>()
-        .AddApplication<EFCoreInfrastructure>()
-        .AddApplication<EFCoreLocalStoreInfrastructure>()
-        .AddApplication<EFCoreSqliteInfrastructure>()
-        .AddApplication<EFCoreSqliteClientInfrastructure>()
+        .AddApplication<IndexedDBLocalStoreInfrastructure>()
         .AddCommand<MainCommand>()
         .RunAsync(args);
 
