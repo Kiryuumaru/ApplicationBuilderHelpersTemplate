@@ -1,13 +1,15 @@
 using ApplicationBuilderHelpers;
+using Infrastructure.EFCore.Sqlite.Extensions;
+using Microsoft.Extensions.Configuration;
 
 namespace Infrastructure.EFCore.Sqlite.Client;
 
-/// <summary>
-/// Client-side EFCore Sqlite infrastructure composition.
-/// Provides SQLite with OPFS persistence for WASM/browser environments.
-/// Connection string is resolved via GetRefValueOrDefault which checks
-/// IConfiguration then environment variables, with fallback to "Data Source=app.db".
-/// </summary>
 public class EFCoreSqliteClientInfrastructure : ApplicationDependency
 {
+    public override void AddConfigurations(ApplicationHostBuilder applicationBuilder, IConfiguration configuration)
+    {
+        base.AddConfigurations(applicationBuilder, configuration);
+
+        configuration.SetSqliteConnectionString("Data Source=app.db");
+    }
 }
