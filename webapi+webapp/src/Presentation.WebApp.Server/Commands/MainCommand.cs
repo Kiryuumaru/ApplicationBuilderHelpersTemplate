@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
 using Presentation.WebApp.Server.Components;
+using Presentation.WebApp.Server.Extensions;
 using Presentation.WebApp.Server.Filters;
 using Scalar.AspNetCore;
 using System.Reflection;
@@ -34,9 +35,13 @@ internal class MainCommand : Build.BaseCommand<WebApplicationBuilder>
     {
         base.AddServices(applicationBuilder, services);
 
+        services.AddHttpContextAccessor();
+
         services.AddRazorComponents()
             .AddInteractiveServerComponents()
             .AddInteractiveWebAssemblyComponents();
+
+        services.AddServerRenderStateServices();
 
         services.AddScoped<ApiExceptionFilter>();
         services.AddScoped<Controllers.V1.Auth.Shared.AuthResponseFactory>();

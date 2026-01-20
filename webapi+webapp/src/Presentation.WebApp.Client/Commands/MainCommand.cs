@@ -4,6 +4,7 @@ using ApplicationBuilderHelpers.Attributes;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Presentation.WebApp.Client.Components.Extensions;
+using Presentation.WebApp.Client.Extensions;
 using Presentation.WebApp.Client.Services;
 
 namespace Presentation.WebApp.Client.Commands;
@@ -28,6 +29,8 @@ internal class MainCommand : Build.BaseCommand<WebAssemblyHostBuilderWrapper>
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
     {
         base.AddServices(applicationBuilder, services);
+
+        services.AddClientRenderStateServices();
 
         services.AddScoped<AuthenticationStateProvider, BlazorAuthStateProvider>();
 
