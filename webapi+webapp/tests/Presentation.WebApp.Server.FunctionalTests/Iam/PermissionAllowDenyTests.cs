@@ -24,7 +24,7 @@ public class PermissionAllowDenyTests : WebAppTestBase
     /// Test that an Allow grant gives a user access to a protected endpoint
     /// even without having a role that grants the permission.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task AllowGrant_GivesAccessWithoutRole()
     {
         Output.WriteLine("[TEST] AllowGrant_GivesAccessWithoutRole");
@@ -84,7 +84,7 @@ public class PermissionAllowDenyTests : WebAppTestBase
     /// <summary>
     /// Test that revoking an Allow grant removes access.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task RevokeAllowGrant_RemovesAccess()
     {
         Output.WriteLine("[TEST] RevokeAllowGrant_RemovesAccess");
@@ -156,7 +156,7 @@ public class PermissionAllowDenyTests : WebAppTestBase
     /// <summary>
     /// Test that a Deny grant blocks access even when user has permission from a role.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task DenyGrant_BlocksAccessDespiteRole()
     {
         Output.WriteLine("[TEST] DenyGrant_BlocksAccessDespiteRole");
@@ -261,7 +261,7 @@ public class PermissionAllowDenyTests : WebAppTestBase
     /// <summary>
     /// Test that revoking a Deny grant restores role-based access.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task RevokeDenyGrant_RestoresRoleAccess()
     {
         Output.WriteLine("[TEST] RevokeDenyGrant_RestoresRoleAccess");
@@ -354,7 +354,7 @@ public class PermissionAllowDenyTests : WebAppTestBase
     /// Test that a Deny grant does not apply when its parameters do not match the request,
     /// even if the user has broad access via a role.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task DenyGrant_WithNonMatchingParameters_DoesNotOverrideRoleAllow()
     {
         Output.WriteLine("[TEST] DenyGrant_WithNonMatchingParameters_DoesNotOverrideRoleAllow");
@@ -450,7 +450,7 @@ public class PermissionAllowDenyTests : WebAppTestBase
     /// Test that having an Allow grant for one permission does not grant access to other permissions.
     /// This locks in that the requested permission must match at least one allow directive.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task AllowGrant_ForDifferentPermission_DoesNotGrantAccessToOtherPermission()
     {
         Output.WriteLine("[TEST] AllowGrant_ForDifferentPermission_DoesNotGrantAccessToOtherPermission");
@@ -514,7 +514,7 @@ public class PermissionAllowDenyTests : WebAppTestBase
     /// <summary>
     /// Test that a global Deny overrides all role-based Allow permissions.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task GlobalDeny_OverridesAllRolePermissions()
     {
         Output.WriteLine("[TEST] GlobalDeny_OverridesAllRolePermissions");
@@ -606,7 +606,7 @@ public class PermissionAllowDenyTests : WebAppTestBase
     /// direct permission grants are baked into the JWT token for performance.
     /// This means users must re-login to receive updated permission grants.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task PermissionGrants_RequireReLoginToTakeEffect()
     {
         Output.WriteLine("[TEST] PermissionGrants_RequireReLoginToTakeEffect");
@@ -673,7 +673,7 @@ public class PermissionAllowDenyTests : WebAppTestBase
     /// <summary>
     /// Test precedence: specific Deny should override broad Allow from role.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task SpecificDeny_OverridesBroadAllow()
     {
         Output.WriteLine("[TEST] SpecificDeny_OverridesBroadAllow");
@@ -846,6 +846,7 @@ public class PermissionAllowDenyTests : WebAppTestBase
 
     #endregion
 }
+
 
 
 

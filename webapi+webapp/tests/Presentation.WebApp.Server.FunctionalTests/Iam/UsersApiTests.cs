@@ -22,7 +22,7 @@ public class UsersApiTests : WebAppTestBase
 
     #region List Users Tests
 
-    [Fact]
+    [TimedFact]
     public async Task ListUsers_AsAdmin_ReturnsAllUsers()
     {
         Output.WriteLine("[TEST] ListUsers_AsAdmin_ReturnsAllUsers");
@@ -63,7 +63,7 @@ public class UsersApiTests : WebAppTestBase
         }
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ListUsers_AsRegularUser_Returns403()
     {
         Output.WriteLine("[TEST] ListUsers_AsRegularUser_Returns403");
@@ -88,7 +88,7 @@ public class UsersApiTests : WebAppTestBase
 
     #region Get User Tests
 
-    [Fact]
+    [TimedFact]
     public async Task GetUser_WithValidId_ReturnsUser()
     {
         Output.WriteLine("[TEST] GetUser_WithValidId_ReturnsUser");
@@ -118,7 +118,7 @@ public class UsersApiTests : WebAppTestBase
         Output.WriteLine("[PASS] GetUser returns correct user");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task GetUser_WithInvalidId_Returns404()
     {
         Output.WriteLine("[TEST] GetUser_WithInvalidId_Returns404");
@@ -147,7 +147,7 @@ public class UsersApiTests : WebAppTestBase
 
     #region Update User Tests
 
-    [Fact]
+    [TimedFact]
     public async Task UpdateUser_AsSelf_UpdatesOwnProfile()
     {
         Output.WriteLine("[TEST] UpdateUser_AsSelf_UpdatesOwnProfile");
@@ -178,7 +178,7 @@ public class UsersApiTests : WebAppTestBase
         Output.WriteLine("[PASS] User updated own profile");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task UpdateUser_AsOtherUser_Returns403()
     {
         Output.WriteLine("[TEST] UpdateUser_AsOtherUser_Returns403");
@@ -210,7 +210,7 @@ public class UsersApiTests : WebAppTestBase
 
     #region Delete User Tests
 
-    [Fact]
+    [TimedFact]
     public async Task DeleteUser_AsSelf_Returns403()
     {
         Output.WriteLine("[TEST] DeleteUser_AsSelf_Returns403");
@@ -235,7 +235,7 @@ public class UsersApiTests : WebAppTestBase
 
     #region Permissions Tests
 
-    [Fact]
+    [TimedFact]
     public async Task GetPermissions_ReturnsExpandedPermissions()
     {
         Output.WriteLine("[TEST] GetPermissions_ReturnsExpandedPermissions");
@@ -354,6 +354,7 @@ public class UsersApiTests : WebAppTestBase
 
     #endregion
 }
+
 
 
 

@@ -17,6 +17,7 @@ internal class BlazorAuthStateProvider : AuthenticationStateProvider
 
     public override Task<AuthenticationState> GetAuthenticationStateAsync()
     {
+        // Initialization is guaranteed by RunPreparationAsync before app serves requests
         var state = _authStateProvider.CurrentState;
 
         if (!state.IsAuthenticated)

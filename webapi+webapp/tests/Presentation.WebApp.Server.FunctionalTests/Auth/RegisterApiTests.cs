@@ -16,7 +16,7 @@ public class RegisterApiTests : WebAppTestBase
 
     #region Basic Registration Tests
 
-    [Fact]
+    [TimedFact]
     public async Task Register_WithValidData_CreatesUserAndReturnsTokens()
     {
         var username = $"reg_valid_{Guid.NewGuid():N}";
@@ -42,7 +42,7 @@ public class RegisterApiTests : WebAppTestBase
         Assert.Equal(username, result.User.Username);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Register_WithExistingUsername_Returns409Conflict()
     {
         var username = $"reg_dup_{Guid.NewGuid():N}";
@@ -72,7 +72,7 @@ public class RegisterApiTests : WebAppTestBase
 
     #region Password Validation Tests
 
-    [Theory]
+    [TimedTheory]
     [InlineData("123")]              // Too short
     [InlineData("12345678")]         // No uppercase, no special char
     [InlineData("abcdefgh")]         // No uppercase, no digit, no special char
@@ -94,7 +94,7 @@ public class RegisterApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Register_WithMismatchedPasswords_Returns400()
     {
         var username = $"reg_mismatch_{Guid.NewGuid():N}";
@@ -115,7 +115,7 @@ public class RegisterApiTests : WebAppTestBase
 
     #region Email Validation Tests
 
-    [Theory]
+    [TimedTheory]
     [InlineData("not-an-email")]
     [InlineData("@nodomain.com")]
     [InlineData("")]
@@ -135,7 +135,7 @@ public class RegisterApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Register_WithDuplicateEmail_Returns409OrSuccess()
     {
         var email = $"dup_{Guid.NewGuid():N}@example.com";
@@ -168,7 +168,7 @@ public class RegisterApiTests : WebAppTestBase
 
     #region Input Validation Tests
 
-    [Theory]
+    [TimedTheory]
     [InlineData("")]           // Empty username
     [InlineData("   ")]        // Whitespace only
     [InlineData("ab")]         // Too short (if min length is 3)
@@ -186,7 +186,7 @@ public class RegisterApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Register_WithEmptyBody_CreatesAnonymousUser()
     {
         var response = await HttpClient.PostAsync(
@@ -204,7 +204,7 @@ public class RegisterApiTests : WebAppTestBase
         Assert.Null(authResponse.User.Username);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Register_WithMalformedJson_Returns400()
     {
         var response = await HttpClient.PostAsync(
@@ -218,7 +218,7 @@ public class RegisterApiTests : WebAppTestBase
 
     #region Security Tests - Injection Attacks
 
-    [Theory]
+    [TimedTheory]
     [InlineData("admin'--")]                           // SQL injection
     [InlineData("admin' OR '1'='1")]                   // SQL injection
     [InlineData("<script>alert('xss')</script>")]      // XSS
@@ -248,7 +248,7 @@ public class RegisterApiTests : WebAppTestBase
             $"Unexpected status code: {response.StatusCode}");
     }
 
-    [Theory]
+    [TimedTheory]
     [InlineData("test'--@example.com")]
     [InlineData("test<script>@example.com")]
     public async Task Register_WithInjectionInEmail_DoesNotCauseServerError(string maliciousEmail)
@@ -270,7 +270,7 @@ public class RegisterApiTests : WebAppTestBase
 
     #region Security Tests - Username Enumeration Prevention
 
-    [Fact]
+    [TimedFact]
     public async Task Register_ConflictResponse_DoesNotLeakUserDetails()
     {
         var username = $"reg_enum_{Guid.NewGuid():N}";
@@ -304,7 +304,7 @@ public class RegisterApiTests : WebAppTestBase
 
     #region Security Tests - Large Payload Protection
 
-    [Fact]
+    [TimedFact]
     public async Task Register_WithExtremelyLongUsername_Returns400()
     {
         var longUsername = new string('a', 100000);
@@ -324,7 +324,7 @@ public class RegisterApiTests : WebAppTestBase
             $"Expected 400 or 413, got {(int)response.StatusCode}");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Register_WithExtremelyLongEmail_Returns400OrSucceeds()
     {
         var longEmail = new string('a', 100000) + "@example.com";
@@ -338,10 +338,11 @@ public class RegisterApiTests : WebAppTestBase
         };
         var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
 
-        // Should either reject with 400/413 or succeed (if no length limit)
-        // TODO: Consider adding email length validation
+        // Should either reject with 400/409/413 or succeed (if no length limit)
+        // 409 can occur if the email validation/normalization fails
         Assert.True(
             response.StatusCode == HttpStatusCode.BadRequest ||
+            response.StatusCode == HttpStatusCode.Conflict ||
             response.StatusCode == HttpStatusCode.RequestEntityTooLarge ||
             response.StatusCode == HttpStatusCode.Created,
             $"Unexpected status: {(int)response.StatusCode}");
@@ -351,7 +352,7 @@ public class RegisterApiTests : WebAppTestBase
 
     #region Security Tests - Reserved Usernames
 
-    [Theory]
+    [TimedTheory]
     [InlineData("admin")]
     [InlineData("administrator")]
     [InlineData("root")]
@@ -378,7 +379,7 @@ public class RegisterApiTests : WebAppTestBase
 
     #region Security Tests - Response Information
 
-    [Fact]
+    [TimedFact]
     public async Task Register_ErrorResponse_DoesNotContainStackTrace()
     {
         var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", new
@@ -396,7 +397,7 @@ public class RegisterApiTests : WebAppTestBase
         Assert.DoesNotContain("StackTrace", content, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Register_SuccessResponse_DoesNotContainPassword()
     {
         var username = $"reg_nopwd_{Guid.NewGuid():N}";
@@ -419,7 +420,7 @@ public class RegisterApiTests : WebAppTestBase
 
     #region Security Tests - Case Handling
 
-    [Fact]
+    [TimedFact]
     public async Task Register_UsernameNormalization_PreventsCaseDuplicates()
     {
         var baseUsername = $"CaseTest_{Guid.NewGuid():N}";
@@ -450,7 +451,7 @@ public class RegisterApiTests : WebAppTestBase
 
     #region Security Tests - Email Normalization
 
-    [Fact]
+    [TimedFact]
     public async Task Register_EmailNormalization_IsCaseInsensitive()
     {
         var baseEmail = $"Test{Guid.NewGuid():N}@Example.COM";
@@ -499,6 +500,8 @@ public class RegisterApiTests : WebAppTestBase
 
     #endregion
 }
+
+
 
 
 

@@ -20,7 +20,7 @@ public class LoginApiTests : WebAppTestBase
 
     #region Basic Login Tests
 
-    [Fact]
+    [TimedFact]
     public async Task Login_WithValidCredentials_ReturnsJwtToken()
     {
         var username = $"login_valid_{Guid.NewGuid():N}";
@@ -43,7 +43,7 @@ public class LoginApiTests : WebAppTestBase
         Assert.Equal(username, result.User.Username);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Login_WithEmail_ReturnsJwtToken()
     {
         var username = $"login_email_{Guid.NewGuid():N}";
@@ -66,7 +66,7 @@ public class LoginApiTests : WebAppTestBase
         Assert.Equal(username, result.User.Username);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Login_WithInvalidPassword_Returns401()
     {
         var username = $"login_badpwd_{Guid.NewGuid():N}";
@@ -78,7 +78,7 @@ public class LoginApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Login_WithNonExistentUser_Returns401()
     {
         var loginRequest = new { Username = $"nonexistent_{Guid.NewGuid():N}", Password = TestPassword };
@@ -91,7 +91,7 @@ public class LoginApiTests : WebAppTestBase
 
     #region Input Validation Tests
 
-    [Theory]
+    [TimedTheory]
     [InlineData("", "TestPassword123!")]           // Empty username
     [InlineData("   ", "TestPassword123!")]        // Whitespace username
     [InlineData("user", "")]                 // Empty password
@@ -107,7 +107,7 @@ public class LoginApiTests : WebAppTestBase
             $"Expected 400 or 401, got {(int)response.StatusCode}");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Login_WithEmptyBody_Returns400()
     {
         var response = await HttpClient.PostAsync(
@@ -119,7 +119,7 @@ public class LoginApiTests : WebAppTestBase
             $"Expected 400 or 401, got {(int)response.StatusCode}");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Login_WithMalformedJson_Returns400()
     {
         var response = await HttpClient.PostAsync(
@@ -133,7 +133,7 @@ public class LoginApiTests : WebAppTestBase
 
     #region Security Tests - Injection Attacks
 
-    [Theory]
+    [TimedTheory]
     [InlineData("admin'--")]                           // SQL injection
     [InlineData("admin' OR '1'='1")]                   // SQL injection
     [InlineData("admin\"; DROP TABLE users;--")]       // SQL injection
@@ -154,7 +154,7 @@ public class LoginApiTests : WebAppTestBase
             $"Injection attempt should not cause server error. Got {(int)response.StatusCode}");
     }
 
-    [Theory]
+    [TimedTheory]
     [InlineData("password'--")]
     [InlineData("' OR '1'='1")]
     [InlineData("password\"; DROP TABLE users;--")]
@@ -175,7 +175,7 @@ public class LoginApiTests : WebAppTestBase
 
     #region Security Tests - Header Manipulation
 
-    [Fact]
+    [TimedFact]
     public async Task Login_WithSpoofedHeaders_DoesNotBypassAuth()
     {
         var loginRequest = new { Username = $"nonexistent_{Guid.NewGuid():N}", Password = "wrong" };
@@ -194,7 +194,7 @@ public class LoginApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Login_WithFakeAuthHeader_DoesNotBypassLogin()
     {
         var loginRequest = new { Username = $"nonexistent_{Guid.NewGuid():N}", Password = "wrong" };
@@ -213,7 +213,7 @@ public class LoginApiTests : WebAppTestBase
 
     #region Security Tests - Timing Attack Resistance
 
-    [Fact]
+    [TimedFact]
     public async Task Login_TimingForValidVsInvalidUser_ShouldBeSimilar()
     {
         // Register a valid user
@@ -260,7 +260,7 @@ public class LoginApiTests : WebAppTestBase
 
     #region Security Tests - Response Information Leakage
 
-    [Fact]
+    [TimedFact]
     public async Task Login_InvalidCredentials_DoesNotLeakUserExistence()
     {
         // Register a real user
@@ -288,7 +288,7 @@ public class LoginApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.Unauthorized, fakeUserResponse.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Login_ErrorResponse_DoesNotContainStackTrace()
     {
         var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login",
@@ -307,7 +307,7 @@ public class LoginApiTests : WebAppTestBase
 
     #region Security Tests - Large Payload Protection
 
-    [Fact]
+    [TimedFact]
     public async Task Login_WithExtremelyLongUsername_Returns400OrDoesNotCrash()
     {
         var longUsername = new string('a', 100000); // 100KB username
@@ -322,7 +322,7 @@ public class LoginApiTests : WebAppTestBase
             $"Long payload should be handled gracefully. Got {(int)response.StatusCode}");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Login_WithExtremelyLongPassword_Returns400OrDoesNotCrash()
     {
         var longPassword = new string('a', 100000); // 100KB password
@@ -340,7 +340,7 @@ public class LoginApiTests : WebAppTestBase
 
     #region Security Tests - Case Sensitivity
 
-    [Fact]
+    [TimedFact]
     public async Task Login_UsernameIsCaseInsensitive()
     {
         var username = $"CaseTEST_{Guid.NewGuid():N}";
@@ -358,7 +358,7 @@ public class LoginApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.OK, uppercaseResponse.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Login_PasswordIsCaseSensitive()
     {
         var username = $"pwdcase_{Guid.NewGuid():N}";
@@ -375,7 +375,7 @@ public class LoginApiTests : WebAppTestBase
 
     #region Security Tests - Unicode and Special Characters
 
-    [Fact]
+    [TimedFact]
     public async Task Login_WithUnicodeUsername_WorksCorrectly()
     {
         // Note: This test may need adjustment based on actual username validation rules
@@ -404,7 +404,7 @@ public class LoginApiTests : WebAppTestBase
         }
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Login_WithSpecialCharactersInPassword_WorksCorrectly()
     {
         var username = $"specialpwd_{Guid.NewGuid():N}";
@@ -444,3 +444,5 @@ public class LoginApiTests : WebAppTestBase
 
     #endregion
 }
+
+

@@ -14,7 +14,7 @@ public class PermissionChaosTests : WebAppTestBase
     {
     }
 
-    [Fact]
+    [TimedFact]
     public async Task MixedRoles_AllowAndDeny_ForSamePermission_DenyWins()
     {
         Output.WriteLine("[TEST] MixedRoles_AllowAndDeny_ForSamePermission_DenyWins");
@@ -77,7 +77,7 @@ public class PermissionChaosTests : WebAppTestBase
         Output.WriteLine("[PASS] Deny role wins over allow role");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RoleDeny_BeatsDirectAllow_ForSameEndpoint()
     {
         Output.WriteLine("[TEST] RoleDeny_BeatsDirectAllow_ForSameEndpoint");
@@ -264,6 +264,7 @@ public class PermissionChaosTests : WebAppTestBase
 
     private sealed record ScopeTemplateRequest(string Type, string PermissionPath);
 }
+
 
 
 

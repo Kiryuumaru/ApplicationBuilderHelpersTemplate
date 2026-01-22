@@ -17,7 +17,7 @@ public class TokenApiTests : WebAppTestBase
 
     #region Refresh Token Tests
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_WithValidToken_ReturnsNewTokens()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -37,7 +37,7 @@ public class TokenApiTests : WebAppTestBase
         Assert.NotEqual(authResult.AccessToken, result.AccessToken);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_WithInvalidToken_Returns401()
     {
         var refreshRequest = new { RefreshToken = "invalid.token.here" };
@@ -46,7 +46,7 @@ public class TokenApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_WithAccessTokenInsteadOfRefresh_Returns401()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -59,7 +59,7 @@ public class TokenApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_WithEmptyToken_Returns400Or401()
     {
         var refreshRequest = new { RefreshToken = "" };
@@ -70,7 +70,7 @@ public class TokenApiTests : WebAppTestBase
             $"Expected 400 or 401, got {(int)response.StatusCode}");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_WithMalformedJson_Returns400()
     {
         var response = await HttpClient.PostAsync(
@@ -84,7 +84,7 @@ public class TokenApiTests : WebAppTestBase
 
     #region Token Rotation Tests
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_RotatesToken_OldTokenBecomesInvalid()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -109,7 +109,7 @@ public class TokenApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.Unauthorized, response2.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_NewTokenWorks_AfterRotation()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -135,7 +135,7 @@ public class TokenApiTests : WebAppTestBase
 
     #region Logout Tests
 
-    [Fact]
+    [TimedFact]
     public async Task Logout_WithValidToken_ReturnsNoContent()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -148,7 +148,7 @@ public class TokenApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Logout_WithoutToken_Returns401()
     {
         var response = await HttpClient.PostAsync("/api/v1/auth/logout", null);
@@ -156,7 +156,7 @@ public class TokenApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Logout_InvalidatesRefreshToken()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -178,7 +178,7 @@ public class TokenApiTests : WebAppTestBase
 
     #region GetMe Tests
 
-    [Fact]
+    [TimedFact]
     public async Task GetMe_WithValidToken_ReturnsUserInfo()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -197,7 +197,7 @@ public class TokenApiTests : WebAppTestBase
         Assert.NotEmpty(result!.Username);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task GetMe_WithNoToken_Returns401()
     {
         var response = await HttpClient.GetAsync("/api/v1/auth/me");
@@ -205,7 +205,7 @@ public class TokenApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task GetMe_WithInvalidToken_Returns401()
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
@@ -219,7 +219,7 @@ public class TokenApiTests : WebAppTestBase
 
     #region Security Tests - Token Manipulation
 
-    [Theory]
+    [TimedTheory]
     [InlineData("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U")] // Valid format but wrong key
     [InlineData("notajwt")]
     [InlineData("a.b.c")]
@@ -236,7 +236,7 @@ public class TokenApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task GetMe_WithModifiedTokenPayload_Returns401()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -256,7 +256,7 @@ public class TokenApiTests : WebAppTestBase
         }
     }
 
-    [Fact]
+    [TimedFact]
     public async Task GetMe_WithStrippedSignature_Returns401()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -276,7 +276,7 @@ public class TokenApiTests : WebAppTestBase
         }
     }
 
-    [Fact]
+    [TimedFact]
     public async Task GetMe_WithNoneAlgorithmAttack_Returns401()
     {
         // "none" algorithm attack - a common JWT vulnerability
@@ -296,7 +296,7 @@ public class TokenApiTests : WebAppTestBase
 
     #region Security Tests - Token Reuse After Operations
 
-    [Fact]
+    [TimedFact]
     public async Task AccessToken_StillWorks_AfterRefresh()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -322,7 +322,7 @@ public class TokenApiTests : WebAppTestBase
 
     #region Security Tests - Cross-User Token Usage
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_CannotBeUsedByDifferentUser()
     {
         var user1 = await RegisterUniqueUserAsync();
@@ -349,7 +349,7 @@ public class TokenApiTests : WebAppTestBase
 
     #region Security Tests - Authorization Header Variations
 
-    [Theory]
+    [TimedTheory]
     [InlineData("bearer")]    // Lowercase
     [InlineData("BEARER")]    // Uppercase
     [InlineData("Bearer")]    // Standard
@@ -366,7 +366,7 @@ public class TokenApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
-    [Theory]
+    [TimedTheory]
     [InlineData("Basic")]
     [InlineData("Digest")]
     [InlineData("Custom")]
@@ -386,7 +386,7 @@ public class TokenApiTests : WebAppTestBase
 
     #region Security Tests - Response Headers
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_Response_DoesNotLeakSensitiveHeaders()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -443,6 +443,8 @@ public class TokenApiTests : WebAppTestBase
 
     #endregion
 }
+
+
 
 
 

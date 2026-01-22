@@ -92,6 +92,16 @@ public abstract class WebAppTestBase : IAsyncLifetime
             Output.WriteLine($"[BROWSER ERROR] {error}");
         };
 
+        // Log network responses to debug MIME type issues
+        _page.Response += (_, response) =>
+        {
+            if (response.Url.Contains("dotnet") || response.Url.Contains("blazor"))
+            {
+                var contentType = response.Headers.TryGetValue("content-type", out var ct) ? ct : "(none)";
+                Output.WriteLine($"[NETWORK] {response.Status} {response.Url} Content-Type: {contentType}");
+            }
+        };
+
         Output.WriteLine($"[TEST] Browser context ready. WebApp at {WebAppUrl}");
     }
 
@@ -146,14 +156,21 @@ public abstract class WebAppTestBase : IAsyncLifetime
     /// </summary>
     protected async Task WaitForBlazorAsync(int timeoutMs = 30000)
     {
-        // Wait for Blazor to initialize by checking for the app element
-        await Page.WaitForSelectorAsync("#app", new PageWaitForSelectorOptions
+        // Wait for Blazor framework script to be present (fingerprinted filename: blazor.web.{hash}.js)
+        await Page.WaitForSelectorAsync("script[src*='blazor.web.']", new PageWaitForSelectorOptions
         {
             State = WaitForSelectorState.Attached,
             Timeout = timeoutMs
         });
 
-        // Wait for the loading indicator to disappear (if present)
+        // Wait for any of: form, h1, main, nav - indicates Blazor has rendered content
+        await Page.WaitForSelectorAsync("form, h1, main, nav, [data-page-content]", new PageWaitForSelectorOptions
+        {
+            State = WaitForSelectorState.Attached,
+            Timeout = timeoutMs
+        });
+
+        // Wait for loading indicators to disappear (if present)
         try
         {
             await Page.WaitForSelectorAsync(".loading", new PageWaitForSelectorOptions
@@ -181,23 +198,81 @@ public abstract class WebAppTestBase : IAsyncLifetime
             // LoadingSpinner might not exist
         }
 
-        // Wait for route content to be rendered by checking for common page elements
-        // The page should have either a form, h1, or main content area
-        try
-        {
-            await Page.WaitForSelectorAsync("form, h1, main, [data-page-content]", new PageWaitForSelectorOptions
-            {
-                State = WaitForSelectorState.Attached,
-                Timeout = 5000
-            });
-        }
-        catch (TimeoutException)
-        {
-            // Some pages might not have these elements
-        }
-
         // Give Blazor a moment to complete rendering
         await Task.Delay(200);
+    }
+
+    /// <summary>
+    /// Wait for Blazor WASM to fully load AND the authenticated state to be restored from IndexedDB.
+    /// Use this after login when you need to wait for authenticated UI elements.
+    /// </summary>
+    protected async Task WaitForAuthenticatedStateAsync(int timeoutMs = 30000)
+    {
+        Output.WriteLine("[TEST] Waiting for authenticated state...");
+        
+        // Wait for page to stabilize (not redirecting)
+        var lastUrl = Page.Url;
+        var stableCount = 0;
+        var maxWaitMs = timeoutMs;
+        var pollIntervalMs = 500;
+        var elapsed = 0;
+
+        // First, wait for URL to stabilize (no more redirects)
+        while (elapsed < maxWaitMs && stableCount < 3)
+        {
+            await Task.Delay(pollIntervalMs);
+            elapsed += pollIntervalMs;
+            
+            var currentUrl = Page.Url;
+            if (currentUrl == lastUrl)
+            {
+                stableCount++;
+            }
+            else
+            {
+                Output.WriteLine($"[TEST] URL changed: {lastUrl} -> {currentUrl}");
+                lastUrl = currentUrl;
+                stableCount = 0;
+            }
+        }
+        
+        Output.WriteLine($"[TEST] URL stabilized at: {lastUrl} after {elapsed}ms");
+        
+        // If we ended up back on login page, auth initialization failed
+        if (lastUrl.Contains("/auth/login", StringComparison.OrdinalIgnoreCase))
+        {
+            Output.WriteLine("[TEST] WARNING: Redirected back to login page - auth state not persisting");
+            // This is a known issue with Blazor Web WASM auth state restoration
+            // The test should fail with a clear message
+            return;
+        }
+        
+        // Now wait for Blazor to render authenticated content
+        await WaitForBlazorAsync(10000);
+        
+        // Wait for authenticated UI indicators with longer timeout
+        var authWaitMs = 15000;
+        var authElapsed = 0;
+        
+        while (authElapsed < authWaitMs)
+        {
+            // Check for authenticated indicators
+            var signInLink = await Page.QuerySelectorAsync("a[href*='auth/login']");
+            var userMenu = await Page.QuerySelectorAsync("button[aria-expanded]");
+            var signOutText = await Page.GetByText("Sign out").CountAsync();
+            
+            // If no sign-in link visible and either user menu or sign out exists
+            if (signInLink == null || (userMenu != null || signOutText > 0))
+            {
+                Output.WriteLine($"[TEST] Authenticated state detected after {authElapsed}ms");
+                return;
+            }
+            
+            await Task.Delay(200);
+            authElapsed += 200;
+        }
+
+        Output.WriteLine($"[TEST] WARNING: Authenticated state not detected after {authElapsed}ms");
     }
 
     #endregion

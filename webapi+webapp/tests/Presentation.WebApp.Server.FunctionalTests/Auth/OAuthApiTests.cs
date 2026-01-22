@@ -17,7 +17,7 @@ public class OAuthApiTests : WebAppTestBase
 
     #region Get Providers Tests
 
-    [Fact]
+    [TimedFact]
     public async Task GetProviders_ReturnsAvailableProviders()
     {
         Output.WriteLine("[TEST] GetProviders_ReturnsAvailableProviders");
@@ -44,7 +44,7 @@ public class OAuthApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Get providers returned available providers with Mock enabled");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task GetProviders_NoAuthRequired()
     {
         Output.WriteLine("[TEST] GetProviders_NoAuthRequired");
@@ -63,7 +63,7 @@ public class OAuthApiTests : WebAppTestBase
 
     #region Initiate OAuth Tests
 
-    [Fact]
+    [TimedFact]
     public async Task InitiateOAuth_WithMockProvider_ReturnsAuthorizationUrl()
     {
         Output.WriteLine("[TEST] InitiateOAuth_WithMockProvider_ReturnsAuthorizationUrl");
@@ -88,7 +88,7 @@ public class OAuthApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Initiate OAuth returned authorization URL with state");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task InitiateOAuth_WithInvalidProvider_Returns400()
     {
         Output.WriteLine("[TEST] InitiateOAuth_WithInvalidProvider_Returns400");
@@ -104,7 +104,7 @@ public class OAuthApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Returns 400 for invalid provider");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task InitiateOAuth_WithDisabledProvider_Returns400()
     {
         Output.WriteLine("[TEST] InitiateOAuth_WithDisabledProvider_Returns400");
@@ -125,7 +125,7 @@ public class OAuthApiTests : WebAppTestBase
 
     #region OAuth Callback Tests
 
-    [Fact]
+    [TimedFact]
     public async Task OAuthCallback_WithMockProvider_CreatesNewUserAndSession()
     {
         Output.WriteLine("[TEST] OAuthCallback_WithMockProvider_CreatesNewUserAndSession");
@@ -165,7 +165,7 @@ public class OAuthApiTests : WebAppTestBase
         Output.WriteLine("[PASS] OAuth callback created new user with session");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task OAuthCallback_WithEmptyState_Returns400()
     {
         Output.WriteLine("[TEST] OAuthCallback_WithEmptyState_Returns400");
@@ -192,7 +192,7 @@ public class OAuthApiTests : WebAppTestBase
 
     #region Get External Logins Tests
 
-    [Fact]
+    [TimedFact]
     public async Task GetExternalLogins_WithoutAuth_Returns401()
     {
         Output.WriteLine("[TEST] GetExternalLogins_WithoutAuth_Returns401");
@@ -207,7 +207,7 @@ public class OAuthApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Returns 401 without authentication");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task GetExternalLogins_WithAuth_ReturnsEmptyListForNewUser()
     {
         Output.WriteLine("[TEST] GetExternalLogins_WithAuth_ReturnsEmptyListForNewUser");
@@ -240,7 +240,7 @@ public class OAuthApiTests : WebAppTestBase
 
     #region Unlink External Login Tests
 
-    [Fact]
+    [TimedFact]
     public async Task UnlinkExternalLogin_WithoutAuth_Returns401()
     {
         Output.WriteLine("[TEST] UnlinkExternalLogin_WithoutAuth_Returns401");
@@ -255,7 +255,7 @@ public class OAuthApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Returns 401 without authentication");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task UnlinkExternalLogin_NonExistentProvider_Returns404()
     {
         Output.WriteLine("[TEST] UnlinkExternalLogin_NonExistentProvider_Returns404");
@@ -341,6 +341,7 @@ public class OAuthApiTests : WebAppTestBase
 
     #endregion
 }
+
 
 
 

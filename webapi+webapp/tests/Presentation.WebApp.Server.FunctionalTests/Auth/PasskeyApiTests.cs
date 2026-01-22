@@ -17,7 +17,7 @@ public class PasskeyApiTests : WebAppTestBase
 
     #region Passkey Creation Options Tests
 
-    [Fact]
+    [TimedFact]
     public async Task PasskeyCreationOptions_WithValidToken_ReturnsOptions()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -37,7 +37,7 @@ public class PasskeyApiTests : WebAppTestBase
         Assert.Contains("optionsjson", content.ToLowerInvariant());
     }
 
-    [Fact]
+    [TimedFact]
     public async Task PasskeyCreationOptions_WithoutToken_Returns401()
     {
         var randomUserId = Guid.NewGuid();
@@ -47,7 +47,7 @@ public class PasskeyApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task PasskeyCreationOptions_WithEmptyCredentialName_MayReturn400()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -70,7 +70,7 @@ public class PasskeyApiTests : WebAppTestBase
 
     #region Passkey Login Options Tests
 
-    [Fact]
+    [TimedFact]
     public async Task PasskeyLoginOptions_ReturnsOptions()
     {
         var requestBody = new { Username = (string?)null };
@@ -82,7 +82,7 @@ public class PasskeyApiTests : WebAppTestBase
         Assert.Contains("challengeid", content.ToLowerInvariant());
     }
 
-    [Fact]
+    [TimedFact]
     public async Task PasskeyLoginOptions_WithUsername_ReturnsOptions()
     {
         var username = $"passkey_opts_{Guid.NewGuid():N}";
@@ -94,7 +94,7 @@ public class PasskeyApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task PasskeyLoginOptions_WithNonExistentUsername_StillReturnsOptions()
     {
         // Security: Should not reveal if user exists
@@ -109,7 +109,7 @@ public class PasskeyApiTests : WebAppTestBase
 
     #region Passkey Registration Tests
 
-    [Fact]
+    [TimedFact]
     public async Task PasskeyRegister_WithoutToken_Returns401()
     {
         var randomUserId = Guid.NewGuid();
@@ -119,7 +119,7 @@ public class PasskeyApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task PasskeyRegister_WithInvalidChallengeId_Returns400()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -135,7 +135,7 @@ public class PasskeyApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task PasskeyRegister_WithEmptyChallengeId_Returns400()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -155,7 +155,7 @@ public class PasskeyApiTests : WebAppTestBase
 
     #region Passkey Login Tests
 
-    [Fact]
+    [TimedFact]
     public async Task PasskeyLogin_WithInvalidChallengeId_Returns400()
     {
         var requestBody = new { ChallengeId = Guid.NewGuid(), AssertionResponseJson = "{}" };
@@ -164,7 +164,7 @@ public class PasskeyApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task PasskeyLogin_WithEmptyChallengeId_Returns400()
     {
         var requestBody = new { ChallengeId = Guid.Empty, AssertionResponseJson = "{}" };
@@ -173,7 +173,7 @@ public class PasskeyApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task PasskeyLogin_WithMalformedAssertionJson_Returns400Or500()
     {
         // First get a valid challenge
@@ -200,7 +200,7 @@ public class PasskeyApiTests : WebAppTestBase
 
     #region Passkey List Tests
 
-    [Fact]
+    [TimedFact]
     public async Task PasskeyList_WithValidToken_ReturnsEmptyList()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -217,7 +217,7 @@ public class PasskeyApiTests : WebAppTestBase
         Assert.Contains("items", content.ToLowerInvariant());
     }
 
-    [Fact]
+    [TimedFact]
     public async Task PasskeyList_WithoutToken_Returns401()
     {
         var randomUserId = Guid.NewGuid();
@@ -230,7 +230,7 @@ public class PasskeyApiTests : WebAppTestBase
 
     #region Passkey Delete Tests
 
-    [Fact]
+    [TimedFact]
     public async Task PasskeyDelete_WithoutToken_Returns401()
     {
         var randomUserId = Guid.NewGuid();
@@ -239,7 +239,7 @@ public class PasskeyApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task PasskeyDelete_WithNonExistentId_Returns404()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -257,7 +257,7 @@ public class PasskeyApiTests : WebAppTestBase
 
     #region Security Tests - Challenge Reuse
 
-    [Fact]
+    [TimedFact]
     public async Task PasskeyLogin_ChallengeCannotBeReused()
     {
         // Get a challenge
@@ -284,7 +284,7 @@ public class PasskeyApiTests : WebAppTestBase
         }
     }
 
-    [Fact]
+    [TimedFact]
     public async Task PasskeyRegister_ChallengeCannotBeReused()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -326,7 +326,7 @@ public class PasskeyApiTests : WebAppTestBase
 
     #region Security Tests - Injection in Passkey Data
 
-    [Theory]
+    [TimedTheory]
     [InlineData("<script>alert('xss')</script>")]
     [InlineData("' OR '1'='1")]
     [InlineData("{{constructor.constructor}}")]
@@ -345,7 +345,7 @@ public class PasskeyApiTests : WebAppTestBase
         Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
     }
 
-    [Theory]
+    [TimedTheory]
     [InlineData("{\"malicious\":\"<script>alert(1)</script>\"}")]
     [InlineData("{\"__proto__\":{\"polluted\":true}}")]
     public async Task PasskeyRegister_WithMaliciousAttestationJson_DoesNotCauseServerError(string maliciousJson)
@@ -367,7 +367,7 @@ public class PasskeyApiTests : WebAppTestBase
 
     #region Security Tests - Cross-User Passkey Access
 
-    [Fact]
+    [TimedFact]
     public async Task PasskeyDelete_CannotDeleteOtherUserPasskey()
     {
         var user1 = await RegisterUniqueUserAsync();
@@ -392,7 +392,7 @@ public class PasskeyApiTests : WebAppTestBase
 
     #region Security Tests - Large Payload
 
-    [Fact]
+    [TimedFact]
     public async Task PasskeyRegister_WithLargeAttestationJson_DoesNotCrash()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -413,7 +413,7 @@ public class PasskeyApiTests : WebAppTestBase
             $"Expected 400 or 413, got {(int)response.StatusCode}");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task PasskeyCreationOptions_WithLongCredentialName_DoesNotCrash()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -480,6 +480,8 @@ public class PasskeyApiTests : WebAppTestBase
 
     #endregion
 }
+
+
 
 
 

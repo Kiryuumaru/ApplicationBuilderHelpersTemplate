@@ -1,5 +1,6 @@
 using Application.LocalStore.Interfaces.Infrastructure;
 using Microsoft.JSInterop;
+using System.Text.Json.Serialization;
 
 namespace Infrastructure.Browser.IndexedDB.LocalStore.Services;
 
@@ -42,13 +43,21 @@ public sealed class IndexedDBLocalStoreService : ILocalStoreService
         var operations = _pendingOperations.ToArray();
         _pendingOperations.Clear();
 
+        var jsOperations = operations.Select(o => new JsOperation
+        {
+            Type = o.Type == OperationType.Set ? "set" : "delete",
+            Group = o.Group,
+            Id = o.Id,
+            Data = o.Data
+        }).ToArray();
+
         await _jsRuntime.InvokeVoidAsync(
             "indexedDBLocalStore.commitOperations",
             cancellationToken,
             DatabaseName,
             StoreName,
             DatabaseVersion,
-            operations.Select(o => new { o.Type, o.Group, o.Id, o.Data }).ToArray());
+            jsOperations);
     }
 
     public Task RollbackAsync(CancellationToken cancellationToken)
@@ -201,4 +210,22 @@ public sealed class IndexedDBLocalStoreService : ILocalStoreService
     }
 
     private sealed record PendingOperation(OperationType Type, string Group, string Id, string? Data);
+
+    /// <summary>
+    /// DTO for JS interop - uses explicit JSON property names for trimmed WebAssembly compatibility.
+    /// </summary>
+    private sealed class JsOperation
+    {
+        [JsonPropertyName("type")]
+        public string Type { get; set; } = "";
+
+        [JsonPropertyName("group")]
+        public string Group { get; set; } = "";
+
+        [JsonPropertyName("id")]
+        public string Id { get; set; } = "";
+
+        [JsonPropertyName("data")]
+        public string? Data { get; set; }
+    }
 }

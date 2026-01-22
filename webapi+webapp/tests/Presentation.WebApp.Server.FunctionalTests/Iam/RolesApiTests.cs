@@ -21,7 +21,7 @@ public class RolesApiTests : WebAppTestBase
 
     #region Role Management Tests
 
-    [Fact]
+    [TimedFact]
     public async Task AssignRole_AsRegularUser_Returns403()
     {
         Output.WriteLine("[TEST] AssignRole_AsRegularUser_Returns403");
@@ -45,7 +45,7 @@ public class RolesApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Cannot assign roles without admin access");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RemoveRole_AsRegularUser_Returns403()
     {
         Output.WriteLine("[TEST] RemoveRole_AsRegularUser_Returns403");
@@ -130,6 +130,7 @@ public class RolesApiTests : WebAppTestBase
 
     #endregion
 }
+
 
 
 

@@ -15,7 +15,7 @@ public class TokenFormatTests : WebAppTestBase
 
     #region JWT Claim Type Tests
 
-    [Fact]
+    [TimedFact]
     public async Task AccessToken_UsesShortClaimTypeNames()
     {
         Output.WriteLine("[TEST] AccessToken_UsesShortClaimTypeNames");
@@ -44,7 +44,7 @@ public class TokenFormatTests : WebAppTestBase
         Output.WriteLine("[PASS] Token uses short claim type names");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task AccessToken_RoleClaimHasInlineParameters()
     {
         Output.WriteLine("[TEST] AccessToken_RoleClaimHasInlineParameters");
@@ -67,7 +67,7 @@ public class TokenFormatTests : WebAppTestBase
         Output.WriteLine("[PASS] Role claim has inline parameters");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task AccessToken_DoesNotContainRoleDerivedScopes()
     {
         Output.WriteLine("[TEST] AccessToken_DoesNotContainRoleDerivedScopes");
@@ -93,7 +93,7 @@ public class TokenFormatTests : WebAppTestBase
         Output.WriteLine("[PASS] Token does not contain role-derived scopes");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_OnlyHasRefreshPermission()
     {
         Output.WriteLine("[TEST] RefreshToken_OnlyHasRefreshPermission");
@@ -125,7 +125,7 @@ public class TokenFormatTests : WebAppTestBase
 
     #region API Response Format Tests
 
-    [Fact]
+    [TimedFact]
     public async Task AuthResponse_RolesHaveInlineFormat()
     {
         Output.WriteLine("[TEST] AuthResponse_RolesHaveInlineFormat");
@@ -146,7 +146,7 @@ public class TokenFormatTests : WebAppTestBase
         Output.WriteLine("[PASS] API response roles have inline format");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task AuthResponse_PermissionsIncludeRoleDerivedScopes()
     {
         Output.WriteLine("[TEST] AuthResponse_PermissionsIncludeRoleDerivedScopes");
@@ -172,7 +172,7 @@ public class TokenFormatTests : WebAppTestBase
 
     #region RBAC Version Tests
 
-    [Fact]
+    [TimedFact]
     public async Task AccessToken_HasRbacVersion2()
     {
         Output.WriteLine("[TEST] AccessToken_HasRbacVersion2");
@@ -222,6 +222,7 @@ public class TokenFormatTests : WebAppTestBase
 
     #endregion
 }
+
 
 
 

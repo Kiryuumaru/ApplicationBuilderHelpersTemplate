@@ -51,7 +51,7 @@ public class WebApiTestHost : IAsyncDisposable
         var webApiOutputDir = Path.GetFullPath(Path.Combine(
             AppContext.BaseDirectory,
             "..", "..", "..", "..", "..",
-            "src", "Presentation.WebApp", "bin", configuration, "net10.0"));
+            "src", "Presentation.WebApp.Server", "bin", configuration, "net10.0"));
 
         _output.WriteLine($"[WEBAPI] Output dir: {webApiOutputDir}");
 

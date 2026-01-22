@@ -17,7 +17,7 @@ public class AuthSecurityTests : WebAppTestBase
 
     #region JWT Security Tests
 
-    [Fact]
+    [TimedFact]
     public async Task JWT_WithNoneAlgorithm_IsRejected()
     {
         // "none" algorithm attack - tries to bypass signature verification
@@ -34,7 +34,7 @@ public class AuthSecurityTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task JWT_WithModifiedPayload_IsRejected()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -57,7 +57,7 @@ public class AuthSecurityTests : WebAppTestBase
         }
     }
 
-    [Fact]
+    [TimedFact]
     public async Task JWT_WithModifiedSignature_IsRejected()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -77,7 +77,7 @@ public class AuthSecurityTests : WebAppTestBase
         }
     }
 
-    [Fact]
+    [TimedFact]
     public async Task JWT_WithEmptySignature_IsRejected()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -96,7 +96,7 @@ public class AuthSecurityTests : WebAppTestBase
         }
     }
 
-    [Theory]
+    [TimedTheory]
     [InlineData("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9")]  // Only header
     [InlineData("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZXN0IjoiZGF0YSJ9")]  // No signature
     [InlineData("notbase64.notbase64.notbase64")]  // Invalid base64
@@ -114,7 +114,7 @@ public class AuthSecurityTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task JWT_FromDifferentKey_IsRejected()
     {
         // A JWT signed with a different key should be rejected
@@ -132,7 +132,7 @@ public class AuthSecurityTests : WebAppTestBase
 
     #region Header Manipulation Tests
 
-    [Fact]
+    [TimedFact]
     public async Task Request_WithMultipleAuthHeaders_UsesFirstOrRejects()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -148,7 +148,7 @@ public class AuthSecurityTests : WebAppTestBase
         Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Request_WithSpoofedXForwardedFor_DoesNotBypassSecurity()
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
@@ -160,7 +160,7 @@ public class AuthSecurityTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Request_WithSpoofedHost_DoesNotCauseIssues()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -175,7 +175,7 @@ public class AuthSecurityTests : WebAppTestBase
         Assert.NotEqual(HttpStatusCode.InternalServerError, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Request_WithUrlRewriteHeaders_DoesNotBypassAuth()
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
@@ -191,7 +191,7 @@ public class AuthSecurityTests : WebAppTestBase
 
     #region Content-Type Manipulation Tests
 
-    [Fact]
+    [TimedFact]
     public async Task Login_WithWrongContentType_Returns400Or415()
     {
         var loginData = "Username=test&Password=test";
@@ -206,7 +206,7 @@ public class AuthSecurityTests : WebAppTestBase
             $"Expected 400 or 415, got {(int)response.StatusCode}");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Login_WithXmlContentType_Returns400Or415()
     {
         var xmlData = "<login><username>test</username><password>test</password></login>";
@@ -224,7 +224,7 @@ public class AuthSecurityTests : WebAppTestBase
 
     #region HTTP Method Tests
 
-    [Theory]
+    [TimedTheory]
     [InlineData("GET")]
     [InlineData("PUT")]
     [InlineData("DELETE")]
@@ -251,7 +251,7 @@ public class AuthSecurityTests : WebAppTestBase
 
     #region Path Traversal Tests
 
-    [Theory]
+    [TimedTheory]
     [InlineData("/api/v1/auth/../../../etc/passwd")]
     [InlineData("/api/v1/auth/..\\..\\..\\windows\\system32")]
     [InlineData("/api/v1/auth/me%2f..%2f..%2fetc%2fpasswd")]
@@ -277,7 +277,7 @@ public class AuthSecurityTests : WebAppTestBase
 
     #region Request Smuggling Tests
 
-    [Fact]
+    [TimedFact]
     public async Task Request_WithCRLFInjection_DoesNotCauseIssues()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -297,7 +297,7 @@ public class AuthSecurityTests : WebAppTestBase
 
     #region Encoding Tests
 
-    [Fact]
+    [TimedFact]
     public async Task Login_WithUnicodeNormalizationAttack_DoesNotBypass()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -312,7 +312,7 @@ public class AuthSecurityTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Login_WithNullByteInjection_DoesNotBypass()
     {
         var loginRequest = new { Username = "admin\x00ignore", Password = TestPassword };
@@ -328,7 +328,7 @@ public class AuthSecurityTests : WebAppTestBase
 
     #region Response Security Headers Tests
 
-    [Fact]
+    [TimedFact]
     public async Task Response_HasSecurityHeaders()
     {
         var response = await HttpClient.GetAsync("/api/v1/auth/me");
@@ -352,7 +352,7 @@ public class AuthSecurityTests : WebAppTestBase
         }
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Response_DoesNotCacheAuthTokens()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -373,7 +373,7 @@ public class AuthSecurityTests : WebAppTestBase
 
     #region Error Response Tests
 
-    [Fact]
+    [TimedFact]
     public async Task ErrorResponse_DoesNotLeakStackTrace()
     {
         // Send malformed request that might cause error
@@ -390,7 +390,7 @@ public class AuthSecurityTests : WebAppTestBase
         Assert.DoesNotContain("ArgumentException", content);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ErrorResponse_DoesNotLeakDatabaseInfo()
     {
         var loginRequest = new { Username = "'; DROP TABLE Users;--", Password = "test" };
@@ -405,7 +405,7 @@ public class AuthSecurityTests : WebAppTestBase
         Assert.DoesNotContain("constraint", content, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ErrorResponse_DoesNotLeakFilePaths()
     {
         var response = await HttpClient.PostAsync(
@@ -424,7 +424,7 @@ public class AuthSecurityTests : WebAppTestBase
 
     #region Session Fixation Tests
 
-    [Fact]
+    [TimedFact]
     public async Task Login_GeneratesNewSessionId()
     {
         var username = $"session_fix_{Guid.NewGuid():N}";
@@ -447,7 +447,7 @@ public class AuthSecurityTests : WebAppTestBase
 
     #region Concurrent Request Tests
 
-    [Fact]
+    [TimedFact]
     public async Task ConcurrentLogins_DoNotCauseRaceConditions()
     {
         var username = $"concurrent_{Guid.NewGuid():N}";
@@ -470,7 +470,7 @@ public class AuthSecurityTests : WebAppTestBase
         }
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ConcurrentRegistrations_PreventDuplicates()
     {
         var username = $"dup_race_{Guid.NewGuid():N}";
@@ -547,6 +547,8 @@ public class AuthSecurityTests : WebAppTestBase
 
     #endregion
 }
+
+
 
 
 

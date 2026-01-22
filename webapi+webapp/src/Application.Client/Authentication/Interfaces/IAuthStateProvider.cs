@@ -4,6 +4,7 @@ namespace Application.Client.Authentication.Interfaces;
 
 /// <summary>
 /// Provides access to the current authentication state.
+/// Initialization is guaranteed by RunPreparationAsync before the app serves requests.
 /// </summary>
 public interface IAuthStateProvider
 {
@@ -26,9 +27,4 @@ public interface IAuthStateProvider
     /// Clears the current authentication state (logout).
     /// </summary>
     Task ClearStateAsync();
-
-    /// <summary>
-    /// Initializes the authentication state from stored credentials.
-    /// </summary>
-    Task InitializeAsync();
 }

@@ -31,7 +31,7 @@ public class RolesManagementTests : WebAppTestBase
     }
 
     [Fact]
-    public async Task RolesPage_Authenticated_ShowsRoleCards()
+    public async Task RolesPage_Authenticated_ShowsRoleCardsOrAccessDenied()
     {
         // Arrange - Register and login
         var username = $"roles_{Guid.NewGuid():N}".Substring(0, 20);
@@ -48,15 +48,18 @@ public class RolesManagementTests : WebAppTestBase
         var pageContent = await Page.ContentAsync();
         Output.WriteLine($"Roles page URL: {currentUrl}");
 
-        // Assert - If accessible, should show role management content
-        if (!currentUrl.Contains("/auth/login", StringComparison.OrdinalIgnoreCase))
-        {
-            var hasRolesContent = pageContent.Contains("role", StringComparison.OrdinalIgnoreCase) ||
-                                  pageContent.Contains("permission", StringComparison.OrdinalIgnoreCase) ||
-                                  pageContent.Contains("admin", StringComparison.OrdinalIgnoreCase);
+        // Assert - Should either show content, deny access, or redirect
+        var redirectedToLogin = currentUrl.Contains("/auth/login", StringComparison.OrdinalIgnoreCase);
+        var hasRolesContent = pageContent.Contains("role", StringComparison.OrdinalIgnoreCase) &&
+                              (pageContent.Contains("permission", StringComparison.OrdinalIgnoreCase) ||
+                               pageContent.Contains("admin", StringComparison.OrdinalIgnoreCase));
+        var hasAccessDenied = pageContent.Contains("access denied", StringComparison.OrdinalIgnoreCase) ||
+                              pageContent.Contains("unauthorized", StringComparison.OrdinalIgnoreCase);
 
-            Output.WriteLine($"Has roles content: {hasRolesContent}");
-        }
+        Output.WriteLine($"Has roles content: {hasRolesContent}");
+
+        Assert.True(redirectedToLogin || hasRolesContent || hasAccessDenied,
+            "Roles page should show content, deny access, or redirect to login");
     }
 
     [Fact]
@@ -74,12 +77,23 @@ public class RolesManagementTests : WebAppTestBase
         await WaitForBlazorAsync();
 
         var currentUrl = Page.Url;
-        if (!currentUrl.Contains("/auth/login", StringComparison.OrdinalIgnoreCase))
+        var pageContent = await Page.ContentAsync();
+
+        // Skip if user doesn't have admin access
+        var redirectedAway = currentUrl.Contains("/auth/login", StringComparison.OrdinalIgnoreCase);
+        var hasAccessDenied = pageContent.Contains("access denied", StringComparison.OrdinalIgnoreCase) ||
+                              pageContent.Contains("unauthorized", StringComparison.OrdinalIgnoreCase);
+
+        if (redirectedAway || hasAccessDenied)
         {
-            // Assert - Should have add role button
-            var addButton = await Page.QuerySelectorAsync("button:has-text('Add'), button:has-text('Create'), button:has-text('New')");
-            Output.WriteLine($"Add role button found: {addButton != null}");
+            Output.WriteLine("User doesn't have admin access - skipping add role button test");
+            return;
         }
+
+        // Assert - Should have add role button
+        var addButton = await Page.QuerySelectorAsync("button:has-text('Add'), button:has-text('Create'), button:has-text('New')");
+        Output.WriteLine($"Add role button found: {addButton != null}");
+        Assert.NotNull(addButton);
     }
 
     [Fact]
@@ -97,16 +111,27 @@ public class RolesManagementTests : WebAppTestBase
         await WaitForBlazorAsync();
 
         var currentUrl = Page.Url;
-        if (!currentUrl.Contains("/auth/login", StringComparison.OrdinalIgnoreCase))
-        {
-            // Assert - Should display permissions for roles
-            var pageContent = await Page.ContentAsync();
-            var hasPermissions = pageContent.Contains("permission", StringComparison.OrdinalIgnoreCase) ||
-                                pageContent.Contains("read", StringComparison.OrdinalIgnoreCase) ||
-                                pageContent.Contains("write", StringComparison.OrdinalIgnoreCase);
+        var pageContent = await Page.ContentAsync();
 
-            Output.WriteLine($"Has permissions display: {hasPermissions}");
+        // Skip if user doesn't have admin access
+        var redirectedAway = currentUrl.Contains("/auth/login", StringComparison.OrdinalIgnoreCase);
+        var hasAccessDenied = pageContent.Contains("access denied", StringComparison.OrdinalIgnoreCase) ||
+                              pageContent.Contains("unauthorized", StringComparison.OrdinalIgnoreCase);
+
+        if (redirectedAway || hasAccessDenied)
+        {
+            Output.WriteLine("User doesn't have admin access - skipping role permissions test");
+            return;
         }
+
+        // Assert - Should display permissions for roles
+        var hasPermissions = pageContent.Contains("permission", StringComparison.OrdinalIgnoreCase) ||
+                            pageContent.Contains("read", StringComparison.OrdinalIgnoreCase) ||
+                            pageContent.Contains("write", StringComparison.OrdinalIgnoreCase) ||
+                            pageContent.Contains("scope", StringComparison.OrdinalIgnoreCase);
+
+        Output.WriteLine($"Has permissions display: {hasPermissions}");
+        Assert.True(hasPermissions, "Roles page should display permissions information");
     }
 
     [Fact]
@@ -124,14 +149,25 @@ public class RolesManagementTests : WebAppTestBase
         await WaitForBlazorAsync();
 
         var currentUrl = Page.Url;
-        if (!currentUrl.Contains("/auth/login", StringComparison.OrdinalIgnoreCase))
-        {
-            // Assert - Should show user count for roles
-            var pageContent = await Page.ContentAsync();
-            var hasUserCount = pageContent.Contains("user", StringComparison.OrdinalIgnoreCase);
+        var pageContent = await Page.ContentAsync();
 
-            Output.WriteLine($"Has user count display: {hasUserCount}");
+        // Skip if user doesn't have admin access
+        var redirectedAway = currentUrl.Contains("/auth/login", StringComparison.OrdinalIgnoreCase);
+        var hasAccessDenied = pageContent.Contains("access denied", StringComparison.OrdinalIgnoreCase) ||
+                              pageContent.Contains("unauthorized", StringComparison.OrdinalIgnoreCase);
+
+        if (redirectedAway || hasAccessDenied)
+        {
+            Output.WriteLine("User doesn't have admin access - skipping user count test");
+            return;
         }
+
+        // Assert - Should show user count for roles
+        var hasUserCount = pageContent.Contains("user", StringComparison.OrdinalIgnoreCase) ||
+                          pageContent.Contains("member", StringComparison.OrdinalIgnoreCase);
+
+        Output.WriteLine($"Has user count display: {hasUserCount}");
+        Assert.True(hasUserCount, "Roles page should display user count or member information");
     }
 
     [Fact]
@@ -149,16 +185,26 @@ public class RolesManagementTests : WebAppTestBase
         await WaitForBlazorAsync();
 
         var currentUrl = Page.Url;
-        if (!currentUrl.Contains("/auth/login", StringComparison.OrdinalIgnoreCase))
-        {
-            // Assert - Admin/User system roles should not have delete button
-            // or delete button should be disabled
-            var pageContent = await Page.ContentAsync();
+        var pageContent = await Page.ContentAsync();
 
-            // Look for Admin role card - it should exist
-            var hasAdminRole = pageContent.Contains("Admin", StringComparison.Ordinal);
-            Output.WriteLine($"Has Admin role: {hasAdminRole}");
+        // Skip if user doesn't have admin access
+        var redirectedAway = currentUrl.Contains("/auth/login", StringComparison.OrdinalIgnoreCase);
+        var hasAccessDenied = pageContent.Contains("access denied", StringComparison.OrdinalIgnoreCase) ||
+                              pageContent.Contains("unauthorized", StringComparison.OrdinalIgnoreCase);
+
+        if (redirectedAway || hasAccessDenied)
+        {
+            Output.WriteLine("User doesn't have admin access - skipping system roles test");
+            return;
         }
+
+        // Assert - Admin/User system roles should exist and be visible
+        var hasAdminRole = pageContent.Contains("Admin", StringComparison.Ordinal);
+        var hasUserRole = pageContent.Contains("User", StringComparison.Ordinal);
+        Output.WriteLine($"Has Admin role: {hasAdminRole}");
+        Output.WriteLine($"Has User role: {hasUserRole}");
+
+        Assert.True(hasAdminRole, "Roles page should display the Admin system role");
     }
 
     [Fact]
@@ -176,12 +222,23 @@ public class RolesManagementTests : WebAppTestBase
         await WaitForBlazorAsync();
 
         var currentUrl = Page.Url;
-        if (!currentUrl.Contains("/auth/login", StringComparison.OrdinalIgnoreCase))
+        var pageContent = await Page.ContentAsync();
+
+        // Skip if user doesn't have admin access
+        var redirectedAway = currentUrl.Contains("/auth/login", StringComparison.OrdinalIgnoreCase);
+        var hasAccessDenied = pageContent.Contains("access denied", StringComparison.OrdinalIgnoreCase) ||
+                              pageContent.Contains("unauthorized", StringComparison.OrdinalIgnoreCase);
+
+        if (redirectedAway || hasAccessDenied)
         {
-            // Assert - Should have edit buttons for roles
-            var editButtons = await Page.QuerySelectorAllAsync("button[aria-label*='edit' i], button:has(svg)");
-            Output.WriteLine($"Edit buttons found: {editButtons.Count}");
+            Output.WriteLine("User doesn't have admin access - skipping edit buttons test");
+            return;
         }
+
+        // Assert - Should have edit buttons for roles
+        var editButtons = await Page.QuerySelectorAllAsync("button[aria-label*='edit' i], button:has(svg)");
+        Output.WriteLine($"Edit buttons found: {editButtons.Count}");
+        Assert.True(editButtons.Count > 0, "Roles page should have edit buttons");
     }
 
     [Fact]
@@ -199,15 +256,25 @@ public class RolesManagementTests : WebAppTestBase
         await WaitForBlazorAsync();
 
         var currentUrl = Page.Url;
-        if (!currentUrl.Contains("/auth/login", StringComparison.OrdinalIgnoreCase))
-        {
-            // Assert - Should show role descriptions
-            var pageContent = await Page.ContentAsync();
-            var hasDescriptions = pageContent.Contains("access", StringComparison.OrdinalIgnoreCase) ||
-                                 pageContent.Contains("management", StringComparison.OrdinalIgnoreCase) ||
-                                 pageContent.Contains("description", StringComparison.OrdinalIgnoreCase);
+        var pageContent = await Page.ContentAsync();
 
-            Output.WriteLine($"Has role descriptions: {hasDescriptions}");
+        // Skip if user doesn't have admin access
+        var redirectedAway = currentUrl.Contains("/auth/login", StringComparison.OrdinalIgnoreCase);
+        var hasAccessDenied = pageContent.Contains("access denied", StringComparison.OrdinalIgnoreCase) ||
+                              pageContent.Contains("unauthorized", StringComparison.OrdinalIgnoreCase);
+
+        if (redirectedAway || hasAccessDenied)
+        {
+            Output.WriteLine("User doesn't have admin access - skipping role description test");
+            return;
         }
+
+        // Assert - Should show role descriptions
+        var hasDescriptions = pageContent.Contains("access", StringComparison.OrdinalIgnoreCase) ||
+                             pageContent.Contains("management", StringComparison.OrdinalIgnoreCase) ||
+                             pageContent.Contains("description", StringComparison.OrdinalIgnoreCase);
+
+        Output.WriteLine($"Has role descriptions: {hasDescriptions}");
+        Assert.True(hasDescriptions, "Roles page should display role descriptions");
     }
 }

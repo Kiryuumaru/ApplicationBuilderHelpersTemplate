@@ -17,7 +17,7 @@ public class IdentityApiTests : WebAppTestBase
 
     #region Get Identity Tests
 
-    [Fact]
+    [TimedFact]
     public async Task GetIdentity_WithoutToken_Returns401()
     {
         Output.WriteLine("[TEST] GetIdentity_WithoutToken_Returns401");
@@ -32,7 +32,7 @@ public class IdentityApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Returns 401 without authentication");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task GetIdentity_WithValidToken_ReturnsIdentityInfo()
     {
         Output.WriteLine("[TEST] GetIdentity_WithValidToken_ReturnsIdentityInfo");
@@ -64,7 +64,7 @@ public class IdentityApiTests : WebAppTestBase
         Output.WriteLine("[PASS] GetIdentity returns correct identity info");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task GetIdentity_ForOtherUser_Returns403()
     {
         Output.WriteLine("[TEST] GetIdentity_ForOtherUser_Returns403");
@@ -85,7 +85,7 @@ public class IdentityApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Returns 403 when accessing other user's identity");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task GetIdentity_NonExistentUser_Returns404()
     {
         Output.WriteLine("[TEST] GetIdentity_NonExistentUser_Returns404");
@@ -110,7 +110,7 @@ public class IdentityApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Returns 403 or 404 for non-existent user");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task GetIdentity_UserWithOAuth_ReturnsLinkedProviders()
     {
         Output.WriteLine("[TEST] GetIdentity_UserWithOAuth_ReturnsLinkedProviders");
@@ -140,7 +140,7 @@ public class IdentityApiTests : WebAppTestBase
         Output.WriteLine("[PASS] GetIdentity returns linked OAuth providers");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task GetIdentity_EmailConfirmedStatus_Correct()
     {
         Output.WriteLine("[TEST] GetIdentity_EmailConfirmedStatus_Correct");
@@ -168,7 +168,7 @@ public class IdentityApiTests : WebAppTestBase
 
     #region Journey Tests
 
-    [Fact]
+    [TimedFact]
     public async Task Journey_RegisterThenCheckIdentity()
     {
         Output.WriteLine("[TEST] Journey_RegisterThenCheckIdentity");
@@ -210,7 +210,7 @@ public class IdentityApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Journey: Register and check identity completed");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Journey_OAuthUserLinksPasswordThenCheckIdentity()
     {
         Output.WriteLine("[TEST] Journey_OAuthUserLinksPasswordThenCheckIdentity");
@@ -266,7 +266,7 @@ public class IdentityApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Journey: OAuth user links password completed");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Journey_TwoUsersHaveIndependentIdentities()
     {
         Output.WriteLine("[TEST] Journey_TwoUsersHaveIndependentIdentities");
@@ -416,6 +416,7 @@ public class IdentityApiTests : WebAppTestBase
 
     #endregion
 }
+
 
 
 

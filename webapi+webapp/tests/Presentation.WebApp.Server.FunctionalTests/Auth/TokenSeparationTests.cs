@@ -33,7 +33,7 @@ public class TokenSeparationTests : WebAppTestBase
     /// The key test: Access tokens CANNOT be used as refresh tokens.
     /// This verifies that the deny;api:auth:refresh directive works.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task AccessTokenAsRefreshToken_IsRejected_Returns401()
     {
         // Arrange: Register a user and get tokens
@@ -57,7 +57,7 @@ public class TokenSeparationTests : WebAppTestBase
     /// Refresh tokens CAN be used as refresh tokens.
     /// This verifies they have allow;api:auth:refresh.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task RefreshTokenAsRefreshToken_IsAccepted_Returns200()
     {
         // Arrange: Register a user and get tokens
@@ -87,7 +87,7 @@ public class TokenSeparationTests : WebAppTestBase
     /// Refresh tokens CANNOT access endpoints with [RequiredPermission].
     /// This verifies they only have the refresh permission.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_CannotAccessProtectedEndpoint_Returns403()
     {
         // Arrange: Register a user and get tokens
@@ -109,7 +109,7 @@ public class TokenSeparationTests : WebAppTestBase
 
     #region Access Token Tests
 
-    [Fact]
+    [TimedFact]
     public async Task AccessToken_CanAccessMe_Returns200()
     {
         // Arrange: Register a user and get tokens
@@ -127,7 +127,7 @@ public class TokenSeparationTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task AccessToken_CanLogout_ReturnsSuccess()
     {
         // Arrange: Register a user and get tokens
@@ -153,7 +153,7 @@ public class TokenSeparationTests : WebAppTestBase
     /// Refresh tokens CANNOT access /auth/me because it has [RequiredPermission].
     /// Refresh tokens only have api:auth:refresh permission, not api:auth:me.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_CannotAccessMe_BecausePermissionRequired()
     {
         // Arrange: Register a user and get tokens
@@ -175,7 +175,7 @@ public class TokenSeparationTests : WebAppTestBase
     /// Refresh tokens CANNOT logout because /auth/logout has [RequiredPermission].
     /// Refresh tokens only have api:auth:refresh permission, not api:auth:logout.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_CannotLogout_BecausePermissionRequired()
     {
         // Arrange: Register a user and get tokens
@@ -200,7 +200,7 @@ public class TokenSeparationTests : WebAppTestBase
     /// <summary>
     /// After refresh, new access token still cannot be used as refresh token.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task NewAccessToken_AfterRefresh_StillCannotBeUsedAsRefreshToken()
     {
         // Arrange: Register and refresh to get new tokens
@@ -234,7 +234,7 @@ public class TokenSeparationTests : WebAppTestBase
     /// <summary>
     /// After refresh, new refresh token CAN be used as refresh token.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task NewRefreshToken_AfterRefresh_CanBeUsedAsRefreshToken()
     {
         // Arrange: Register and refresh once
@@ -267,7 +267,7 @@ public class TokenSeparationTests : WebAppTestBase
     /// <summary>
     /// After refresh, new refresh token still cannot access protected endpoints.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task NewRefreshToken_AfterRefresh_StillCannotAccessProtectedEndpoints()
     {
         // Arrange: Register and refresh
@@ -342,6 +342,7 @@ public class TokenSeparationTests : WebAppTestBase
 
     #endregion
 }
+
 
 
 

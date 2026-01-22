@@ -10,12 +10,16 @@ namespace Presentation.WebApp.FunctionalTests.Fixtures;
 /// Test host that runs the WebApi application as a subprocess for functional testing.
 /// Since WebApi uses ApplicationBuilderHelpers CLI pattern, WebApplicationFactory doesn't work.
 /// Instead, we start the actual application and test against it via HTTP.
+/// Each instance gets:
+/// - A unique random port (isolated network)
+/// - A unique file-based SQLite database (isolated data)
 /// </summary>
 public class WebApiTestHost : IAsyncDisposable
 {
     private readonly ITestOutputHelper _output;
     private readonly HttpClient _httpClient;
     private readonly int _port;
+    private readonly string _dbPath;
     private Process? _process;
 
     public string BaseUrl => $"http://localhost:{_port}";
@@ -26,6 +30,10 @@ public class WebApiTestHost : IAsyncDisposable
         _output = output;
         _port = port == 0 ? GetAvailablePort() : port;
         _httpClient = new HttpClient { BaseAddress = new Uri(BaseUrl) };
+        
+        // Create a unique temp database file for complete isolation
+        // File-based ensures no cross-process memory sharing issues
+        _dbPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid():N}.db");
     }
 
     /// <summary>
@@ -60,7 +68,7 @@ public class WebApiTestHost : IAsyncDisposable
         var webApiOutputDir = Path.GetFullPath(Path.Combine(
             AppContext.BaseDirectory,
             "..", "..", "..", "..", "..",
-            "src", "Presentation.WebApp", "bin", configuration, "net10.0"));
+            "src", "Presentation.WebApp.Server", "bin", configuration, "net10.0"));
 
         _output.WriteLine($"[HOST] WebApi output dir: {webApiOutputDir}");
 
@@ -96,17 +104,21 @@ public class WebApiTestHost : IAsyncDisposable
 
         var isExe = exePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
         var workDir = Path.GetDirectoryName(exePath);
-        var args = isExe ? $"--urls {BaseUrl}" : $"\"{exePath}\" --urls {BaseUrl}";
+        // Use a unique file-based database for complete test isolation
+        var connectionString = $"Data Source={_dbPath}";
+        var args = isExe 
+            ? $"--urls {BaseUrl}"
+            : $"\"{exePath}\" --urls {BaseUrl}";
         var fileName = isExe ? exePath : "dotnet";
 
         _output.WriteLine($"[HOST] FileName: {fileName}");
         _output.WriteLine($"[HOST] Arguments: {args}");
         _output.WriteLine($"[HOST] WorkingDirectory: {workDir}");
+        _output.WriteLine($"[HOST] Database file: {_dbPath}");
 
         var startInfo = new ProcessStartInfo
         {
             FileName = fileName,
-            // Pass --urls argument to configure the listening URL
             Arguments = args,
             UseShellExecute = false,
             RedirectStandardOutput = true,
@@ -115,15 +127,13 @@ public class WebApiTestHost : IAsyncDisposable
             WorkingDirectory = workDir
         };
 
-        // Also set environment variables as fallback
+        // Set environment variables for the child process
         startInfo.Environment["ASPNETCORE_URLS"] = BaseUrl;
         startInfo.Environment["ASPNETCORE_ENVIRONMENT"] = "Development";
         // Disable launch settings to avoid conflicts
         startInfo.Environment["DOTNET_LAUNCH_PROFILE"] = "";
-        // Use a unique in-memory database for each test run to ensure clean state
-        var connectionString = $"Data Source={Guid.NewGuid()};Mode=Memory;Cache=Shared";
+        // SQLite connection string via environment variable
         startInfo.Environment["SQLITE_CONNECTION_STRING"] = connectionString;
-        _output.WriteLine($"[HOST] SQLITE_CONNECTION_STRING: {connectionString}");
 
         _process = new Process { StartInfo = startInfo };
 
@@ -234,6 +244,25 @@ public class WebApiTestHost : IAsyncDisposable
 
         _process?.Dispose();
         _httpClient.Dispose();
+
+        // Clean up the temp database file
+        try
+        {
+            if (File.Exists(_dbPath))
+            {
+                File.Delete(_dbPath);
+                _output.WriteLine($"[HOST] Deleted temp database: {_dbPath}");
+            }
+            // Also clean up WAL and SHM files if they exist
+            var walPath = _dbPath + "-wal";
+            var shmPath = _dbPath + "-shm";
+            if (File.Exists(walPath)) File.Delete(walPath);
+            if (File.Exists(shmPath)) File.Delete(shmPath);
+        }
+        catch (Exception ex)
+        {
+            _output.WriteLine($"[HOST] Warning: Could not delete temp database: {ex.Message}");
+        }
 
         _output.WriteLine("[HOST] WebApi stopped");
     }

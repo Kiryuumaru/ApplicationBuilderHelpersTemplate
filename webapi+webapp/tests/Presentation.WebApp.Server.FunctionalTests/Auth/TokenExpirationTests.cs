@@ -23,7 +23,7 @@ public class TokenExpirationTests : WebAppTestBase
 
     #region ExpiresIn Response Field Tests
 
-    [Fact]
+    [TimedFact]
     public async Task Login_Response_ExpiresIn_IsCorrectValue()
     {
         Output.WriteLine("[TEST] Login_Response_ExpiresIn_IsCorrectValue");
@@ -37,7 +37,7 @@ public class TokenExpirationTests : WebAppTestBase
         Output.WriteLine("[PASS] ExpiresIn matches expected value (3600 seconds / 60 minutes)");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Register_Response_ExpiresIn_IsCorrectValue()
     {
         Output.WriteLine("[TEST] Register_Response_ExpiresIn_IsCorrectValue");
@@ -64,7 +64,7 @@ public class TokenExpirationTests : WebAppTestBase
         Output.WriteLine("[PASS] Register response ExpiresIn is correct");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Refresh_Response_ExpiresIn_IsCorrectValue()
     {
         Output.WriteLine("[TEST] Refresh_Response_ExpiresIn_IsCorrectValue");
@@ -87,7 +87,7 @@ public class TokenExpirationTests : WebAppTestBase
         Output.WriteLine("[PASS] Refresh response ExpiresIn is correct");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ExpiresIn_IsPositiveNumber()
     {
         Output.WriteLine("[TEST] ExpiresIn_IsPositiveNumber");
@@ -103,7 +103,7 @@ public class TokenExpirationTests : WebAppTestBase
 
     #region JWT Expiration Claim Tests
 
-    [Fact]
+    [TimedFact]
     public async Task AccessToken_HasExpClaim()
     {
         Output.WriteLine("[TEST] AccessToken_HasExpClaim");
@@ -128,7 +128,7 @@ public class TokenExpirationTests : WebAppTestBase
         Output.WriteLine("[PASS] Access token has valid exp claim");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task AccessToken_ExpClaimMatchesExpiresIn()
     {
         Output.WriteLine("[TEST] AccessToken_ExpClaimMatchesExpiresIn");
@@ -160,7 +160,7 @@ public class TokenExpirationTests : WebAppTestBase
         Output.WriteLine("[PASS] exp claim matches ExpiresIn response");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task AccessToken_HasIatClaim()
     {
         Output.WriteLine("[TEST] AccessToken_HasIatClaim");
@@ -186,7 +186,7 @@ public class TokenExpirationTests : WebAppTestBase
         Output.WriteLine("[PASS] Access token has valid iat claim");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_HasExpClaim()
     {
         Output.WriteLine("[TEST] RefreshToken_HasExpClaim");
@@ -212,7 +212,7 @@ public class TokenExpirationTests : WebAppTestBase
         Output.WriteLine("[PASS] Refresh token has valid exp claim");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_ExpiresLaterThanAccessToken()
     {
         Output.WriteLine("[TEST] RefreshToken_ExpiresLaterThanAccessToken");
@@ -238,7 +238,7 @@ public class TokenExpirationTests : WebAppTestBase
 
     #region Session Validity Tests
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_AfterSessionRevoked_Returns401()
     {
         Output.WriteLine("[TEST] RefreshToken_AfterSessionRevoked_Returns401");
@@ -269,7 +269,7 @@ public class TokenExpirationTests : WebAppTestBase
         Output.WriteLine("[PASS] Revoked session refresh token is rejected");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_AfterAllSessionsRevoked_Returns401()
     {
         Output.WriteLine("[TEST] RefreshToken_AfterAllSessionsRevoked_Returns401");
@@ -304,7 +304,7 @@ public class TokenExpirationTests : WebAppTestBase
 
     #region Token Theft Detection Tests
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_ReusedAfterRotation_DetectsTheft()
     {
         Output.WriteLine("[TEST] RefreshToken_ReusedAfterRotation_DetectsTheft");
@@ -331,7 +331,7 @@ public class TokenExpirationTests : WebAppTestBase
         Output.WriteLine("[PASS] Token theft detected - old token rejected");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_ReusedMultipleTimes_AllFail()
     {
         Output.WriteLine("[TEST] RefreshToken_ReusedMultipleTimes_AllFail");
@@ -359,7 +359,7 @@ public class TokenExpirationTests : WebAppTestBase
         Output.WriteLine("[PASS] All reuse attempts rejected");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_TheftRevokesEntireSession()
     {
         Output.WriteLine("[TEST] RefreshToken_TheftRevokesEntireSession");
@@ -396,7 +396,7 @@ public class TokenExpirationTests : WebAppTestBase
 
     #region Token Chain Tests
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_ChainedRefreshes_EachTokenRotates()
     {
         Output.WriteLine("[TEST] RefreshToken_ChainedRefreshes_EachTokenRotates");
@@ -430,7 +430,7 @@ public class TokenExpirationTests : WebAppTestBase
         Output.WriteLine("[PASS] All refresh tokens in chain are unique");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_OldTokenInChain_Invalid()
     {
         Output.WriteLine("[TEST] RefreshToken_OldTokenInChain_Invalid");
@@ -481,7 +481,7 @@ public class TokenExpirationTests : WebAppTestBase
 
     #region Token Type Validation Tests
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_WithAccessToken_Returns401()
     {
         Output.WriteLine("[TEST] RefreshToken_WithAccessToken_Returns401");
@@ -499,7 +499,7 @@ public class TokenExpirationTests : WebAppTestBase
         Output.WriteLine("[PASS] Access token rejected when used as refresh token");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task AccessToken_HasCorrectTokenTypeClaim()
     {
         Output.WriteLine("[TEST] AccessToken_HasCorrectTokenTypeClaim");
@@ -527,7 +527,7 @@ public class TokenExpirationTests : WebAppTestBase
         Output.WriteLine("[PASS] Access token does not have refresh token type");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_HasCorrectTokenTypeClaim()
     {
         Output.WriteLine("[TEST] RefreshToken_HasCorrectTokenTypeClaim");
@@ -553,7 +553,7 @@ public class TokenExpirationTests : WebAppTestBase
 
     #region Invalid Token Format Tests
 
-    [Theory]
+    [TimedTheory]
     [InlineData("")]
     [InlineData("   ")]
     [InlineData("not-a-jwt")]
@@ -577,7 +577,7 @@ public class TokenExpirationTests : WebAppTestBase
         Output.WriteLine("[PASS] Invalid format rejected");
     }
 
-    [Theory]
+    [TimedTheory]
     [InlineData(null)]
     public async Task RefreshToken_WithNullValue_Returns400(string? nullToken)
     {
@@ -596,7 +596,7 @@ public class TokenExpirationTests : WebAppTestBase
         Output.WriteLine("[PASS] Null token rejected");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_WithEmptyObject_Returns400()
     {
         Output.WriteLine("[TEST] RefreshToken_WithEmptyObject_Returns400");
@@ -615,7 +615,7 @@ public class TokenExpirationTests : WebAppTestBase
         Output.WriteLine("[PASS] Empty object rejected");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_WithExtraFields_StillWorks()
     {
         Output.WriteLine("[TEST] RefreshToken_WithExtraFields_StillWorks");
@@ -641,7 +641,7 @@ public class TokenExpirationTests : WebAppTestBase
 
     #region Cross-Session Token Tests
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_FromDifferentSession_DoesNotAffectOther()
     {
         Output.WriteLine("[TEST] RefreshToken_FromDifferentSession_DoesNotAffectOther");
@@ -668,7 +668,7 @@ public class TokenExpirationTests : WebAppTestBase
         Output.WriteLine("[PASS] Sessions are independent");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_FromOtherUser_NotAccepted()
     {
         Output.WriteLine("[TEST] RefreshToken_FromOtherUser_NotAccepted");
@@ -700,7 +700,7 @@ public class TokenExpirationTests : WebAppTestBase
 
     #region Token Response Consistency Tests
 
-    [Fact]
+    [TimedFact]
     public async Task NewTokens_HaveDifferentValues_EachTime()
     {
         Output.WriteLine("[TEST] NewTokens_HaveDifferentValues_EachTime");
@@ -727,7 +727,7 @@ public class TokenExpirationTests : WebAppTestBase
         Output.WriteLine("[PASS] All tokens are unique across logins");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task TokenType_IsBearerForAllResponses()
     {
         Output.WriteLine("[TEST] TokenType_IsBearerForAllResponses");
@@ -820,6 +820,8 @@ public class TokenExpirationTests : WebAppTestBase
 
     #endregion
 }
+
+
 
 
 

@@ -21,7 +21,7 @@ public class PasswordApiTests : WebAppTestBase
 
     #region Change Password Tests
 
-    [Fact]
+    [TimedFact]
     public async Task ChangePassword_WithValidCredentials_ReturnsNoContent()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -37,7 +37,7 @@ public class PasswordApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ChangePassword_OldPasswordNoLongerWorks()
     {
         var username = $"pwd_old_{Guid.NewGuid():N}";
@@ -60,7 +60,7 @@ public class PasswordApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.Unauthorized, loginOldResponse.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ChangePassword_NewPasswordWorks()
     {
         var username = $"pwd_new_{Guid.NewGuid():N}";
@@ -83,7 +83,7 @@ public class PasswordApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.OK, loginNewResponse.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ChangePassword_WithWrongCurrentPassword_Returns401()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -99,7 +99,7 @@ public class PasswordApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ChangePassword_WithWeakNewPassword_Returns400()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -115,7 +115,7 @@ public class PasswordApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ChangePassword_WithoutAuthentication_Returns401()
     {
         var randomUserId = Guid.NewGuid();
@@ -125,7 +125,7 @@ public class PasswordApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ChangePassword_WithSamePassword_MayReturn400()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -149,7 +149,7 @@ public class PasswordApiTests : WebAppTestBase
 
     #region Forgot Password Tests
 
-    [Fact]
+    [TimedFact]
     public async Task ForgotPassword_WithValidEmail_ReturnsNoContent()
     {
         var username = $"forgot_valid_{Guid.NewGuid():N}";
@@ -161,7 +161,7 @@ public class PasswordApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ForgotPassword_WithNonExistentEmail_ReturnsNoContent()
     {
         // Security: Should not reveal whether email exists
@@ -172,7 +172,7 @@ public class PasswordApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ForgotPassword_WithInvalidEmailFormat_Returns400()
     {
         var forgotRequest = new { Email = "not-an-email" };
@@ -181,7 +181,7 @@ public class PasswordApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ForgotPassword_WithEmptyEmail_Returns400()
     {
         var forgotRequest = new { Email = "" };
@@ -194,7 +194,7 @@ public class PasswordApiTests : WebAppTestBase
 
     #region Reset Password Tests
 
-    [Fact]
+    [TimedFact]
     public async Task ResetPassword_WithInvalidToken_Returns400()
     {
         var username = $"reset_invalid_{Guid.NewGuid():N}";
@@ -211,7 +211,7 @@ public class PasswordApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ResetPassword_WithNonExistentEmail_Returns400()
     {
         var resetRequest = new
@@ -225,7 +225,7 @@ public class PasswordApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ResetPassword_WithWeakPassword_Returns400()
     {
         var username = $"reset_weak_{Guid.NewGuid():N}";
@@ -242,7 +242,7 @@ public class PasswordApiTests : WebAppTestBase
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ResetPassword_WithMalformedRequest_Returns400()
     {
         var response = await HttpClient.PostAsync(
@@ -256,7 +256,7 @@ public class PasswordApiTests : WebAppTestBase
 
     #region Security Tests - Email Enumeration Prevention
 
-    [Fact]
+    [TimedFact]
     public async Task ForgotPassword_ResponseTime_SimilarForExistingAndNonExisting()
     {
         // Register a real user
@@ -301,7 +301,7 @@ public class PasswordApiTests : WebAppTestBase
 
     #region Security Tests - Token Manipulation
 
-    [Theory]
+    [TimedTheory]
     [InlineData("../../../etc/passwd")]  // Path traversal
     [InlineData("<script>alert(1)</script>")]  // XSS
     [InlineData("' OR '1'='1")]  // SQL injection
@@ -324,7 +324,7 @@ public class PasswordApiTests : WebAppTestBase
 
     #region Security Tests - Brute Force Protection
 
-    [Fact]
+    [TimedFact]
     public async Task ChangePassword_MultipleWrongAttempts_DoesNotLockAccount()
     {
         var username = $"pwd_brute_{Guid.NewGuid():N}";
@@ -353,7 +353,7 @@ public class PasswordApiTests : WebAppTestBase
 
     #region Security Tests - Password Complexity
 
-    [Theory]
+    [TimedTheory]
     [InlineData("Password1!")]           // Meets minimum requirements
     [InlineData("P@$$w0rdVeryL0ng!")]   // Long password
     [InlineData("🔐Password123!")]       // Unicode in password
@@ -376,7 +376,7 @@ public class PasswordApiTests : WebAppTestBase
 
     #region Security Tests - Response Information
 
-    [Fact]
+    [TimedFact]
     public async Task ChangePassword_ErrorResponse_DoesNotLeakInfo()
     {
         var authResult = await RegisterUniqueUserAsync();
@@ -397,7 +397,7 @@ public class PasswordApiTests : WebAppTestBase
         Assert.DoesNotContain("passwordhash", content, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ForgotPassword_Response_DoesNotRevealEmailExistence()
     {
         var realUsername = $"leak_real_{Guid.NewGuid():N}";
@@ -416,7 +416,7 @@ public class PasswordApiTests : WebAppTestBase
 
     #region Security Tests - Session Invalidation
 
-    [Fact]
+    [TimedFact]
     public async Task ChangePassword_MayInvalidateOtherSessions()
     {
         var username = $"pwd_session_{Guid.NewGuid():N}";
@@ -492,6 +492,8 @@ public class PasswordApiTests : WebAppTestBase
 
     #endregion
 }
+
+
 
 
 

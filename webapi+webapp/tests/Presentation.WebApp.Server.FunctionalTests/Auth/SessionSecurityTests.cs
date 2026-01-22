@@ -18,7 +18,7 @@ public class SessionSecurityTests : WebAppTestBase
 
     #region Session ID Manipulation Tests
 
-    [Fact]
+    [TimedFact]
     public async Task RevokeSession_WithInvalidGuid_Returns404()
     {
         Output.WriteLine("[TEST] RevokeSession_WithInvalidGuid_Returns404");
@@ -44,7 +44,7 @@ public class SessionSecurityTests : WebAppTestBase
         Output.WriteLine("[PASS] Invalid GUID rejected");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RevokeSession_WithEmptyGuid_Returns404OrBadRequest()
     {
         Output.WriteLine("[TEST] RevokeSession_WithEmptyGuid_Returns404OrBadRequest");
@@ -69,7 +69,7 @@ public class SessionSecurityTests : WebAppTestBase
         Output.WriteLine("[PASS] Empty GUID rejected");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RevokeSession_OtherUsersSession_Returns404OrForbidden()
     {
         Output.WriteLine("[TEST] RevokeSession_OtherUsersSession_Returns404OrForbidden");
@@ -112,7 +112,7 @@ public class SessionSecurityTests : WebAppTestBase
 
     #region Session List Security Tests
 
-    [Fact]
+    [TimedFact]
     public async Task ListSessions_OnlyReturnsOwnSessions()
     {
         Output.WriteLine("[TEST] ListSessions_OnlyReturnsOwnSessions");
@@ -148,7 +148,7 @@ public class SessionSecurityTests : WebAppTestBase
         Output.WriteLine("[PASS] Users see only their own sessions");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ListSessions_DoesNotLeakOtherUserInfo()
     {
         Output.WriteLine("[TEST] ListSessions_DoesNotLeakOtherUserInfo");
@@ -177,7 +177,7 @@ public class SessionSecurityTests : WebAppTestBase
 
     #region Concurrent Session Tests
 
-    [Fact]
+    [TimedFact]
     public async Task ConcurrentSessions_AllWork_Independently()
     {
         Output.WriteLine("[TEST] ConcurrentSessions_AllWork_Independently");
@@ -213,7 +213,7 @@ public class SessionSecurityTests : WebAppTestBase
         Output.WriteLine("[PASS] All concurrent sessions are functional");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RevokeOneSession_OthersStillWork()
     {
         Output.WriteLine("[TEST] RevokeOneSession_OthersStillWork");
@@ -260,7 +260,7 @@ public class SessionSecurityTests : WebAppTestBase
         Output.WriteLine("[PASS] Other sessions still work after one is revoked");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RevokedSession_AccessToken_Returns401()
     {
         Output.WriteLine("[TEST] RevokedSession_AccessToken_Returns401");
@@ -301,7 +301,7 @@ public class SessionSecurityTests : WebAppTestBase
         Output.WriteLine("[PASS] Revoked session's access token returns 401");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RevokedSession_RefreshToken_Returns401()
     {
         Output.WriteLine("[TEST] RevokedSession_RefreshToken_Returns401");
@@ -346,7 +346,7 @@ public class SessionSecurityTests : WebAppTestBase
 
     #region Session Fixation Prevention Tests
 
-    [Fact]
+    [TimedFact]
     public async Task EachLogin_CreatesNewSession()
     {
         Output.WriteLine("[TEST] EachLogin_CreatesNewSession");
@@ -384,7 +384,7 @@ public class SessionSecurityTests : WebAppTestBase
 
     #region Revoke All Sessions Tests
 
-    [Fact]
+    [TimedFact]
     public async Task RevokeAllSessions_CurrentAlsoRevoked()
     {
         Output.WriteLine("[TEST] RevokeAllSessions_CurrentAlsoRevoked");
@@ -413,7 +413,7 @@ public class SessionSecurityTests : WebAppTestBase
         Output.WriteLine("[PASS] Current session revoked after revoking all");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RevokeAllSessions_AllInvalidated()
     {
         Output.WriteLine("[TEST] RevokeAllSessions_AllInvalidated");
@@ -451,7 +451,7 @@ public class SessionSecurityTests : WebAppTestBase
         Output.WriteLine("[PASS] All sessions invalidated after revoke all");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RevokeAllSessions_ReturnsCorrectCount()
     {
         Output.WriteLine("[TEST] RevokeAllSessions_ReturnsCorrectCount");
@@ -494,7 +494,7 @@ public class SessionSecurityTests : WebAppTestBase
 
     #region Session Info Tests
 
-    [Fact]
+    [TimedFact]
     public async Task ListSessions_ShowsIsCurrent_Correctly()
     {
         Output.WriteLine("[TEST] ListSessions_ShowsIsCurrent_Correctly");
@@ -522,7 +522,7 @@ public class SessionSecurityTests : WebAppTestBase
         Output.WriteLine("[PASS] IsCurrent flag is correctly set");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ListSessions_HasCreatedAt()
     {
         Output.WriteLine("[TEST] ListSessions_HasCreatedAt");
@@ -554,7 +554,7 @@ public class SessionSecurityTests : WebAppTestBase
 
     #region Logout Tests
 
-    [Fact]
+    [TimedFact]
     public async Task Logout_RevokesCurrentSessionOnly()
     {
         Output.WriteLine("[TEST] Logout_RevokesCurrentSessionOnly");
@@ -585,7 +585,7 @@ public class SessionSecurityTests : WebAppTestBase
         Output.WriteLine("[PASS] Logout only affects current session");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Logout_MultipleTimesFromSameSession_NoError()
     {
         Output.WriteLine("[TEST] Logout_MultipleTimesFromSameSession_NoError");
@@ -697,6 +697,7 @@ public class SessionSecurityTests : WebAppTestBase
 
     #endregion
 }
+
 
 
 

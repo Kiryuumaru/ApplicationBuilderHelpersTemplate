@@ -16,7 +16,7 @@ public class IamSecurityTests : WebAppTestBase
 
     #region Self-Escalation Prevention Tests
 
-    [Fact]
+    [TimedFact]
     public async Task User_CannotAssignRoleToSelf()
     {
         Output.WriteLine("[TEST] User_CannotAssignRoleToSelf");
@@ -42,7 +42,7 @@ public class IamSecurityTests : WebAppTestBase
         Output.WriteLine("[PASS] User cannot assign role to themselves");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task User_CannotRemoveRoleFromSelf()
     {
         Output.WriteLine("[TEST] User_CannotRemoveRoleFromSelf");
@@ -68,7 +68,7 @@ public class IamSecurityTests : WebAppTestBase
         Output.WriteLine("[PASS] User cannot remove role from themselves");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task User_CannotGrantPermissionToSelf()
     {
         Output.WriteLine("[TEST] User_CannotGrantPermissionToSelf");
@@ -98,7 +98,7 @@ public class IamSecurityTests : WebAppTestBase
         Output.WriteLine("[PASS] User cannot grant permission to themselves");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task User_CannotRevokePermissionFromSelf()
     {
         Output.WriteLine("[TEST] User_CannotRevokePermissionFromSelf");
@@ -130,7 +130,7 @@ public class IamSecurityTests : WebAppTestBase
 
     #region Cross-User Access Prevention Tests
 
-    [Fact]
+    [TimedFact]
     public async Task User_CannotAccessOtherUserInfo()
     {
         Output.WriteLine("[TEST] User_CannotAccessOtherUserInfo");
@@ -155,7 +155,7 @@ public class IamSecurityTests : WebAppTestBase
         Output.WriteLine("[PASS] User cannot access other user's info");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task User_CannotUpdateOtherUser()
     {
         Output.WriteLine("[TEST] User_CannotUpdateOtherUser");
@@ -181,7 +181,7 @@ public class IamSecurityTests : WebAppTestBase
         Output.WriteLine("[PASS] User cannot update other user's profile");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task User_CannotDeleteOtherUser()
     {
         Output.WriteLine("[TEST] User_CannotDeleteOtherUser");
@@ -205,7 +205,7 @@ public class IamSecurityTests : WebAppTestBase
         Output.WriteLine("[PASS] User cannot delete other user");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task User_CannotViewOtherUserPermissions()
     {
         Output.WriteLine("[TEST] User_CannotViewOtherUserPermissions");
@@ -229,7 +229,7 @@ public class IamSecurityTests : WebAppTestBase
         Output.WriteLine("[PASS] User cannot view other user's permissions");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task User_CannotAssignRoleToOtherUser()
     {
         Output.WriteLine("[TEST] User_CannotAssignRoleToOtherUser");
@@ -255,7 +255,7 @@ public class IamSecurityTests : WebAppTestBase
         Output.WriteLine("[PASS] User cannot assign role to other user");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task User_CannotGrantPermissionToOtherUser()
     {
         Output.WriteLine("[TEST] User_CannotGrantPermissionToOtherUser");
@@ -290,7 +290,7 @@ public class IamSecurityTests : WebAppTestBase
 
     #region IAM Endpoint Access Control Tests
 
-    [Fact]
+    [TimedFact]
     public async Task UnauthenticatedUser_CannotAccessIamEndpoints()
     {
         Output.WriteLine("[TEST] UnauthenticatedUser_CannotAccessIamEndpoints");
@@ -328,7 +328,7 @@ public class IamSecurityTests : WebAppTestBase
         Output.WriteLine("[PASS] All IAM endpoints require authentication");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RegularUser_CannotListAllUsers()
     {
         Output.WriteLine("[TEST] RegularUser_CannotListAllUsers");
@@ -348,7 +348,7 @@ public class IamSecurityTests : WebAppTestBase
         Output.WriteLine("[PASS] Regular user cannot list all users");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RegularUser_CanAccessOwnInfo()
     {
         Output.WriteLine("[TEST] RegularUser_CanAccessOwnInfo");
@@ -375,7 +375,7 @@ public class IamSecurityTests : WebAppTestBase
         Output.WriteLine("[PASS] User can access their own info");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RegularUser_CanViewOwnPermissions()
     {
         Output.WriteLine("[TEST] RegularUser_CanViewOwnPermissions");
@@ -404,7 +404,7 @@ public class IamSecurityTests : WebAppTestBase
         Output.WriteLine("[PASS] User can view their own permissions");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RegularUser_CanUpdateOwnProfile()
     {
         Output.WriteLine("[TEST] RegularUser_CanUpdateOwnProfile");
@@ -439,7 +439,7 @@ public class IamSecurityTests : WebAppTestBase
 
     #region Privilege Escalation Attempt Tests
 
-    [Fact]
+    [TimedFact]
     public async Task User_CannotEscalateViaRoleAssignment()
     {
         Output.WriteLine("[TEST] User_CannotEscalateViaRoleAssignment");
@@ -468,7 +468,7 @@ public class IamSecurityTests : WebAppTestBase
         Output.WriteLine("[PASS] User cannot escalate privileges via role assignment");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task User_CannotEscalateViaPermissionGrant()
     {
         Output.WriteLine("[TEST] User_CannotEscalateViaPermissionGrant");
@@ -590,6 +590,7 @@ public class IamSecurityTests : WebAppTestBase
 
     #endregion
 }
+
 
 
 

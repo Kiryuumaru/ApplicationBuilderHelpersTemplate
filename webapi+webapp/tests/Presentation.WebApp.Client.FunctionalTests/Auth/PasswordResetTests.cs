@@ -58,15 +58,16 @@ public class PasswordResetTests : WebAppTestBase
         await Page.ClickAsync("button[type='submit']");
         await Task.Delay(1000);
 
-        // Assert - Should show some confirmation or stay on page
+        // Assert - Should show confirmation message after submitting email
         var pageContent = await Page.ContentAsync();
         Output.WriteLine($"Page content after submit: {pageContent.Substring(0, Math.Min(500, pageContent.Length))}");
 
-        // Accept various outcomes - success message, error, or redirect
-        var hasSuccessIndicator = pageContent.Contains("email", StringComparison.OrdinalIgnoreCase) ||
-                                  pageContent.Contains("sent", StringComparison.OrdinalIgnoreCase) ||
-                                  pageContent.Contains("check", StringComparison.OrdinalIgnoreCase);
-        Output.WriteLine($"Has confirmation indicator: {hasSuccessIndicator}");
+        // Should show success message indicating email was sent
+        var hasSuccessIndicator = pageContent.Contains("email", StringComparison.OrdinalIgnoreCase) &&
+                                  (pageContent.Contains("sent", StringComparison.OrdinalIgnoreCase) ||
+                                   pageContent.Contains("check", StringComparison.OrdinalIgnoreCase));
+
+        Assert.True(hasSuccessIndicator, "Should show confirmation that password reset email was sent");
     }
 
     [Fact]

@@ -76,6 +76,7 @@ public class SessionsTests : WebAppTestBase
                                   pageContent.Contains("this device", StringComparison.OrdinalIgnoreCase);
 
         Output.WriteLine($"Has current session indicator: {hasCurrentIndicator}");
+        Assert.True(hasCurrentIndicator, "Sessions page should indicate which session is the current one");
     }
 
     [Fact]
@@ -106,6 +107,10 @@ public class SessionsTests : WebAppTestBase
         Output.WriteLine($"Has IP address: {hasIpAddress}");
         Output.WriteLine($"Has user agent: {hasUserAgent}");
         Output.WriteLine($"Has timestamp: {hasTimestamp}");
+
+        // Sessions should display at least some identifying information
+        Assert.True(hasIpAddress || hasUserAgent || hasTimestamp,
+            "Sessions page should display session details (IP, browser/device, or timestamps)");
     }
 
     [Fact]
@@ -129,6 +134,7 @@ public class SessionsTests : WebAppTestBase
                               pageContent.Contains("revoke", StringComparison.OrdinalIgnoreCase);
 
         Output.WriteLine($"Has revoke option: {hasRevokeOption}");
+        Assert.True(hasRevokeOption, "Sessions page should have option to revoke sessions");
     }
 
     [Fact]
@@ -153,6 +159,7 @@ public class SessionsTests : WebAppTestBase
                                  pageContent.Contains("sign out all", StringComparison.OrdinalIgnoreCase);
 
         Output.WriteLine($"Has revoke all option: {hasRevokeAllOption}");
+        Assert.True(hasRevokeAllOption, "Sessions page should have option to revoke all other sessions");
     }
 
     [Fact]

@@ -21,7 +21,7 @@ public class PermissionsApiTests : WebAppTestBase
 
     #region Permission Grant/Revoke Tests
 
-    [Fact]
+    [TimedFact]
     public async Task GrantPermission_AsRegularUser_Returns403()
     {
         Output.WriteLine("[TEST] GrantPermission_AsRegularUser_Returns403");
@@ -45,7 +45,7 @@ public class PermissionsApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Cannot grant permissions without admin access");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RevokePermission_AsRegularUser_Returns403()
     {
         Output.WriteLine("[TEST] RevokePermission_AsRegularUser_Returns403");
@@ -129,6 +129,7 @@ public class PermissionsApiTests : WebAppTestBase
 
     #endregion
 }
+
 
 
 

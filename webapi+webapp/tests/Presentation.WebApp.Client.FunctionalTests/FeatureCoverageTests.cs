@@ -68,7 +68,8 @@ public class FeatureCoverageTests : WebAppTestBase
         await RegisterUserAsync(username, email, TestPassword);
         await LoginAsync(email, TestPassword);
 
-        await GoToHomeAsync();
+        // Already on home page after login
+        await WaitForBlazorAsync();
         
         var logoutButton = await Page.QuerySelectorAsync("button:has-text('Logout'), a:has-text('Logout')");
         var pageContent = await Page.ContentAsync();
@@ -91,7 +92,8 @@ public class FeatureCoverageTests : WebAppTestBase
         await RegisterUserAsync(username, email, TestPassword);
         await LoginAsync(email, TestPassword);
 
-        await GoToHomeAsync();
+        // Already on home page after login
+        await WaitForBlazorAsync();
         var isAuthenticated = await IsAuthenticatedAsync();
 
         Output.WriteLine("✅ TOKEN REFRESH: Implemented via TokenRefreshHandler");

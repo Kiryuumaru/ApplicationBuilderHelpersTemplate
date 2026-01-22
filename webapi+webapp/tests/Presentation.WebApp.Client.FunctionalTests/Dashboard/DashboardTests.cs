@@ -30,6 +30,13 @@ public class DashboardTests : WebAppTestBase
     [Fact]
     public async Task Dashboard_ShowsStatisticsCards()
     {
+        // Arrange - Authenticate (dashboard requires auth to show cards)
+        var username = $"stats_{Guid.NewGuid():N}".Substring(0, 20);
+        var email = $"{username}@test.example.com";
+
+        await RegisterUserAsync(username, email, TestPassword);
+        await LoginAsync(email, TestPassword);
+
         // Act
         await GoToHomeAsync();
 
@@ -38,11 +45,12 @@ public class DashboardTests : WebAppTestBase
         Output.WriteLine($"Cards found: {cards.Count}");
 
         var pageContent = await Page.ContentAsync();
-        var hasStats = pageContent.Contains("users", StringComparison.OrdinalIgnoreCase) ||
-                      pageContent.Contains("active", StringComparison.OrdinalIgnoreCase) ||
-                      pageContent.Contains("sessions", StringComparison.OrdinalIgnoreCase);
+        var hasStats = pageContent.Contains("welcome", StringComparison.OrdinalIgnoreCase) ||
+                      pageContent.Contains("roles", StringComparison.OrdinalIgnoreCase) ||
+                      pageContent.Contains("active", StringComparison.OrdinalIgnoreCase);
 
         Output.WriteLine($"Has statistics content: {hasStats}");
+        Assert.True(cards.Count > 0 || hasStats, "Dashboard should display statistics cards or content");
     }
 
     [Fact]
@@ -55,23 +63,25 @@ public class DashboardTests : WebAppTestBase
         var pageContent = await Page.ContentAsync();
         var hasGetStarted = pageContent.Contains("get started", StringComparison.OrdinalIgnoreCase) ||
                            pageContent.Contains("sign in", StringComparison.OrdinalIgnoreCase) ||
-                           pageContent.Contains("login", StringComparison.OrdinalIgnoreCase);
+                           pageContent.Contains("login", StringComparison.OrdinalIgnoreCase) ||
+                           pageContent.Contains("register", StringComparison.OrdinalIgnoreCase);
 
         Output.WriteLine($"Has get started message: {hasGetStarted}");
+        Assert.True(hasGetStarted, "Dashboard should prompt unauthenticated users to sign in or register");
     }
 
     [Fact]
     public async Task Dashboard_Authenticated_ShowsWelcomeMessage()
     {
-        // Arrange - Register and login
+        // Arrange - Register and login (navigates to home after success)
         var username = $"welcome_{Guid.NewGuid():N}".Substring(0, 20);
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
         await LoginAsync(email, TestPassword);
 
-        // Act
-        await GoToHomeAsync();
+        // Act - Already on home page after login
+        await WaitForBlazorAsync();
 
         // Assert - Should show welcome message
         var pageContent = await Page.ContentAsync();
@@ -86,15 +96,15 @@ public class DashboardTests : WebAppTestBase
     [Fact]
     public async Task Dashboard_Authenticated_HasProfileLink()
     {
-        // Arrange - Register and login
+        // Arrange - Register and login (navigates to home after success)
         var username = $"proflink_{Guid.NewGuid():N}".Substring(0, 20);
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
         await LoginAsync(email, TestPassword);
 
-        // Act
-        await GoToHomeAsync();
+        // Act - Already on home page after login
+        await WaitForBlazorAsync();
 
         // Assert - Should have link to profile
         var profileLink = await Page.QuerySelectorAsync("a[href*='profile' i]");
@@ -104,15 +114,15 @@ public class DashboardTests : WebAppTestBase
     [Fact]
     public async Task Dashboard_HasNavigationMenu()
     {
-        // Arrange - Register and login (dashboard requires auth)
+        // Arrange - Register and login (dashboard requires auth, navigates to home after success)
         var username = $"navmenu_{Guid.NewGuid():N}".Substring(0, 20);
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
         await LoginAsync(email, TestPassword);
 
-        // Act
-        await GoToHomeAsync();
+        // Act - Already on home page after login
+        await WaitForBlazorAsync();
 
         // Assert - Should have navigation
         var nav = await Page.QuerySelectorAsync("nav, [role='navigation'], .nav, .navbar, .sidebar");
@@ -122,15 +132,15 @@ public class DashboardTests : WebAppTestBase
     [Fact]
     public async Task Dashboard_ShowsCorrectTitle()
     {
-        // Arrange - Register and login (dashboard requires auth)
+        // Arrange - Register and login (dashboard requires auth, navigates to home after success)
         var username = $"title_{Guid.NewGuid():N}".Substring(0, 20);
         var email = $"{username}@test.example.com";
 
         await RegisterUserAsync(username, email, TestPassword);
         await LoginAsync(email, TestPassword);
 
-        // Act
-        await GoToHomeAsync();
+        // Act - Already on home page after login
+        await WaitForBlazorAsync();
 
         // Assert - Should show dashboard title
         var title = await Page.TitleAsync();
@@ -144,42 +154,66 @@ public class DashboardTests : WebAppTestBase
     }
 
     [Fact]
-    public async Task Dashboard_UsersCard_ShowsPlaceholder()
+    public async Task Dashboard_RolesCard_ShowsInfo()
     {
+        // Arrange - Authenticate (dashboard requires auth)
+        var username = $"roles_{Guid.NewGuid():N}".Substring(0, 20);
+        var email = $"{username}@test.example.com";
+
+        await RegisterUserAsync(username, email, TestPassword);
+        await LoginAsync(email, TestPassword);
+
         // Act
         await GoToHomeAsync();
 
-        // Assert - Users stat card should show placeholder or count
+        // Assert - Roles card should show user's roles
         var pageContent = await Page.ContentAsync();
-        var hasUsersCard = pageContent.Contains("users", StringComparison.OrdinalIgnoreCase);
+        var hasRolesCard = pageContent.Contains("roles", StringComparison.OrdinalIgnoreCase);
 
-        Output.WriteLine($"Has users card: {hasUsersCard}");
+        Output.WriteLine($"Has roles card: {hasRolesCard}");
+        Assert.True(hasRolesCard, "Dashboard should display user's roles");
     }
 
     [Fact]
-    public async Task Dashboard_ActiveCard_ShowsPlaceholder()
+    public async Task Dashboard_AccountStatusCard_ShowsActive()
     {
+        // Arrange - Authenticate (dashboard requires auth)
+        var username = $"status_{Guid.NewGuid():N}".Substring(0, 20);
+        var email = $"{username}@test.example.com";
+
+        await RegisterUserAsync(username, email, TestPassword);
+        await LoginAsync(email, TestPassword);
+
         // Act
         await GoToHomeAsync();
 
-        // Assert - Active stat card should show placeholder or count
+        // Assert - Account Status card should show Active
         var pageContent = await Page.ContentAsync();
         var hasActiveCard = pageContent.Contains("active", StringComparison.OrdinalIgnoreCase);
 
-        Output.WriteLine($"Has active card: {hasActiveCard}");
+        Output.WriteLine($"Has active status card: {hasActiveCard}");
+        Assert.True(hasActiveCard, "Dashboard should display account status as Active");
     }
 
     [Fact]
-    public async Task Dashboard_SessionsCard_ShowsPlaceholder()
+    public async Task Dashboard_QuickActions_ShowsSessionsLink()
     {
+        // Arrange - Authenticate (dashboard requires auth)
+        var username = $"sess_{Guid.NewGuid():N}".Substring(0, 20);
+        var email = $"{username}@test.example.com";
+
+        await RegisterUserAsync(username, email, TestPassword);
+        await LoginAsync(email, TestPassword);
+
         // Act
         await GoToHomeAsync();
 
-        // Assert - Sessions stat card should show placeholder or count
+        // Assert - Quick Actions should have sessions link
         var pageContent = await Page.ContentAsync();
-        var hasSessionsCard = pageContent.Contains("sessions", StringComparison.OrdinalIgnoreCase);
+        var hasSessionsLink = pageContent.Contains("sessions", StringComparison.OrdinalIgnoreCase);
 
-        Output.WriteLine($"Has sessions card: {hasSessionsCard}");
+        Output.WriteLine($"Has sessions link: {hasSessionsLink}");
+        Assert.True(hasSessionsLink, "Dashboard Quick Actions should have Manage Sessions link");
     }
 
     [Fact]

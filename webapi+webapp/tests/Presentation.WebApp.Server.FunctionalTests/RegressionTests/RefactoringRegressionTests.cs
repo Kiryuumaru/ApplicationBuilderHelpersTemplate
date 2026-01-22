@@ -22,7 +22,7 @@ public class RefactoringRegressionTests : WebAppTestBase
     /// Users who registered with a password should NOT be able to use LinkPassword.
     /// (Note: This test demonstrates the API correctly rejects the attempt)
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task Issue2_LinkPassword_WhenUserAlreadyHasPassword_Returns400BadRequest()
     {
         // Arrange - Register user WITH password (so they already have one)
@@ -71,7 +71,7 @@ public class RefactoringRegressionTests : WebAppTestBase
     /// Issue #3: Auth responses should return actual permissions, not empty array.
     /// After login, the User.Permissions array should contain the user's effective permissions.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task Issue3_Login_ReturnsNonEmptyPermissionsArray()
     {
         // Arrange
@@ -117,7 +117,7 @@ public class RefactoringRegressionTests : WebAppTestBase
     /// <summary>
     /// Issue #3: Register response should also return permissions in user object.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task Issue3_Register_ReturnsNonEmptyPermissionsArray()
     {
         // Arrange
@@ -153,7 +153,7 @@ public class RefactoringRegressionTests : WebAppTestBase
     /// <summary>
     /// Issue #3: Refresh token response should return permissions in user object.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task Issue3_Refresh_ReturnsNonEmptyPermissionsArray()
     {
         // Arrange
@@ -199,7 +199,7 @@ public class RefactoringRegressionTests : WebAppTestBase
     /// Issue #5: Using an OLD refresh token after it has been rotated should be rejected.
     /// This is the token theft detection mechanism.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task Issue5_TokenTheftDetection_OldRefreshToken_IsRejected()
     {
         // Arrange
@@ -243,7 +243,7 @@ public class RefactoringRegressionTests : WebAppTestBase
     /// Issue #5: After theft detection, even the NEW refresh token should be invalid
     /// because the entire session should be revoked.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task Issue5_TokenTheftDetection_RevokesEntireSession()
     {
         // Arrange
@@ -297,7 +297,7 @@ public class RefactoringRegressionTests : WebAppTestBase
     /// <summary>
     /// Issue #6: Each login should create exactly ONE session, not two.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task Issue6_Register_CreatesExactlyOneSession()
     {
         // Arrange
@@ -339,7 +339,7 @@ public class RefactoringRegressionTests : WebAppTestBase
     /// <summary>
     /// Issue #6: Multiple logins should create the correct number of sessions (one per login).
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task Issue6_MultipleLogins_CreatesCorrectNumberOfSessions()
     {
         // Arrange
@@ -397,7 +397,7 @@ public class RefactoringRegressionTests : WebAppTestBase
     /// The RoleAssignments should be properly loaded from the database.
     /// Note: The user endpoint returns roleIds, not roles array.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task Issue7_NewUser_HasUserRoleAssigned()
     {
         // Arrange
@@ -448,7 +448,7 @@ public class RefactoringRegressionTests : WebAppTestBase
     /// Issue #7: Permissions should reflect the user's role assignments.
     /// If user has USER role, they should have USER role's permissions.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task Issue7_UserPermissions_ReflectRoleAssignments()
     {
         // Arrange
@@ -502,7 +502,7 @@ public class RefactoringRegressionTests : WebAppTestBase
     /// Issue #8: Static roles (ADMIN, USER) should be accessible even though they're not in DB.
     /// Users should be assigned the USER role which should return roleIds.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task Issue8_GetUserRoles_IncludesStaticRoles()
     {
         // Arrange
@@ -549,7 +549,7 @@ public class RefactoringRegressionTests : WebAppTestBase
     /// <summary>
     /// Verify that /me endpoint returns correct user info with permissions.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task MeEndpoint_ReturnsUserWithPermissions()
     {
         // Arrange
@@ -592,7 +592,7 @@ public class RefactoringRegressionTests : WebAppTestBase
     /// <summary>
     /// Verify that change-password works for users who have a password.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task ChangePassword_WhenUserHasPassword_Succeeds()
     {
         // Arrange
@@ -646,7 +646,7 @@ public class RefactoringRegressionTests : WebAppTestBase
     /// <summary>
     /// Verify logout properly revokes the session.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task Logout_RevokesSessionAndInvalidatesTokens()
     {
         // Arrange
@@ -716,6 +716,7 @@ public class SessionInfo
     public string? DeviceName { get; set; }
     public DateTime CreatedAt { get; set; }
 }
+
 
 
 

@@ -11,7 +11,7 @@ public class AppBootstrapTests : WebAppTestBase
     {
     }
 
-    [Fact]
+    [TimedFact]
     public async Task WebApi_StartsSuccessfully()
     {
         Output.WriteLine("[TEST] WebApi_StartsSuccessfully");
@@ -33,7 +33,7 @@ public class AppBootstrapTests : WebAppTestBase
         Output.WriteLine("[PASS] WebApi started and responds successfully");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Swagger_ReturnsOpenApiDocument()
     {
         Output.WriteLine("[TEST] Swagger_ReturnsOpenApiDocument");
@@ -57,7 +57,7 @@ public class AppBootstrapTests : WebAppTestBase
         }
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Scalar_UI_Available()
     {
         Output.WriteLine("[TEST] Scalar_UI_Available");
@@ -72,6 +72,7 @@ public class AppBootstrapTests : WebAppTestBase
         Output.WriteLine("[PASS] Scalar UI available");
     }
 }
+
 
 
 

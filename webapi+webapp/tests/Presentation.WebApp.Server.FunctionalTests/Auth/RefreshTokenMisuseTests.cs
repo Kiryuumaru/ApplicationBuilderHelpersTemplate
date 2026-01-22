@@ -18,7 +18,7 @@ public class RefreshTokenMisuseTests : WebAppTestBase
     {
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Refresh_WithBodyTokenOfUserA_AndAuthorizationHeaderOfUserB_IssuesTokensForUserA()
     {
         Output.WriteLine("[TEST] Refresh_WithBodyTokenOfUserA_AndAuthorizationHeaderOfUserB_IssuesTokensForUserA");
@@ -61,7 +61,7 @@ public class RefreshTokenMisuseTests : WebAppTestBase
         Output.WriteLine("[PASS] Refresh uses body token identity, not Authorization header");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_AsBearerToken_CannotAccessUserSessions_Returns403()
     {
         Output.WriteLine("[TEST] RefreshToken_AsBearerToken_CannotAccessUserSessions_Returns403");
@@ -156,6 +156,7 @@ public class RefreshTokenMisuseTests : WebAppTestBase
         public bool IsAnonymous { get; set; }
     }
 }
+
 
 
 

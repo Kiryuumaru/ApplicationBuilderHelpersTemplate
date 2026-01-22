@@ -16,7 +16,7 @@ public class SessionApiTests : WebAppTestBase
 
     #region List Sessions Tests
 
-    [Fact]
+    [TimedFact]
     public async Task ListSessions_AfterRegister_ReturnsOneSession()
     {
         Output.WriteLine("[TEST] ListSessions_AfterRegister_ReturnsOneSession");
@@ -46,7 +46,7 @@ public class SessionApiTests : WebAppTestBase
         Output.WriteLine("[PASS] List sessions returned one current session");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ListSessions_WithoutToken_Returns401()
     {
         Output.WriteLine("[TEST] ListSessions_WithoutToken_Returns401");
@@ -62,7 +62,7 @@ public class SessionApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Returns 401 without authentication");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ListSessions_AfterMultipleLogins_ReturnsMultipleSessions()
     {
         Output.WriteLine("[TEST] ListSessions_AfterMultipleLogins_ReturnsMultipleSessions");
@@ -102,7 +102,7 @@ public class SessionApiTests : WebAppTestBase
 
     #region Revoke Session Tests
 
-    [Fact]
+    [TimedFact]
     public async Task RevokeSession_CurrentSession_ReturnsNoContent()
     {
         Output.WriteLine("[TEST] RevokeSession_CurrentSession_ReturnsNoContent");
@@ -131,7 +131,7 @@ public class SessionApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Returns 204 when revoking current session (now allowed)");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RevokeSession_OtherSession_ReturnsNoContent()
     {
         Output.WriteLine("[TEST] RevokeSession_OtherSession_ReturnsNoContent");
@@ -175,7 +175,7 @@ public class SessionApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Revoked other session successfully");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RevokeSession_NonExistentId_Returns404()
     {
         Output.WriteLine("[TEST] RevokeSession_NonExistentId_Returns404");
@@ -201,7 +201,7 @@ public class SessionApiTests : WebAppTestBase
 
     #region Revoke All Sessions Tests
 
-    [Fact]
+    [TimedFact]
     public async Task RevokeAllSessions_WithMultipleSessions_RevokesAll()
     {
         Output.WriteLine("[TEST] RevokeAllSessions_WithMultipleSessions_RevokesAll");
@@ -254,7 +254,7 @@ public class SessionApiTests : WebAppTestBase
 
     #region Refresh Token Rotation Tests
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_RotatesToken_OldTokenInvalid()
     {
         Output.WriteLine("[TEST] RefreshToken_RotatesToken_OldTokenInvalid");
@@ -291,7 +291,7 @@ public class SessionApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Old refresh token is invalid after rotation");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RefreshToken_WithNewToken_Succeeds()
     {
         Output.WriteLine("[TEST] RefreshToken_WithNewToken_Succeeds");
@@ -326,7 +326,7 @@ public class SessionApiTests : WebAppTestBase
 
     #region Logout Revokes Session Tests
 
-    [Fact]
+    [TimedFact]
     public async Task Logout_RevokesCurrentSession()
     {
         Output.WriteLine("[TEST] Logout_RevokesCurrentSession");
@@ -439,6 +439,7 @@ public class SessionApiTests : WebAppTestBase
 
     #endregion
 }
+
 
 
 

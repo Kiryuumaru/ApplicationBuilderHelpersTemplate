@@ -17,7 +17,7 @@ public class ApiKeyApiTests : WebAppTestBase
 
     #region List API Keys Tests
 
-    [Fact]
+    [TimedFact]
     public async Task ListApiKeys_WithoutToken_Returns401()
     {
         Output.WriteLine("[TEST] ListApiKeys_WithoutToken_Returns401");
@@ -32,7 +32,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Returns 401 without authentication");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ListApiKeys_AfterRegister_ReturnsEmptyList()
     {
         Output.WriteLine("[TEST] ListApiKeys_AfterRegister_ReturnsEmptyList");
@@ -60,7 +60,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] List API keys returns empty list for new user");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ListApiKeys_ForOtherUser_Returns403()
     {
         Output.WriteLine("[TEST] ListApiKeys_ForOtherUser_Returns403");
@@ -87,7 +87,7 @@ public class ApiKeyApiTests : WebAppTestBase
 
     #region Create API Key Tests
 
-    [Fact]
+    [TimedFact]
     public async Task CreateApiKey_WithValidData_ReturnsCreatedWithKey()
     {
         Output.WriteLine("[TEST] CreateApiKey_WithValidData_ReturnsCreatedWithKey");
@@ -121,7 +121,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] API key created successfully with JWT");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task CreateApiKey_WithExpiration_ReturnsCreatedWithExpiry()
     {
         Output.WriteLine("[TEST] CreateApiKey_WithExpiration_ReturnsCreatedWithExpiry");
@@ -151,7 +151,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] API key created with expiration date");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task CreateApiKey_WithPastExpiration_Returns400()
     {
         Output.WriteLine("[TEST] CreateApiKey_WithPastExpiration_Returns400");
@@ -175,7 +175,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Rejects API key with past expiration date");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task CreateApiKey_WithoutToken_Returns401()
     {
         Output.WriteLine("[TEST] CreateApiKey_WithoutToken_Returns401");
@@ -193,7 +193,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Returns 401 without authentication");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task CreateApiKey_ForOtherUser_Returns403()
     {
         Output.WriteLine("[TEST] CreateApiKey_ForOtherUser_Returns403");
@@ -217,7 +217,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Cannot create API key for another user");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task CreateApiKey_WithEmptyName_Returns400()
     {
         Output.WriteLine("[TEST] CreateApiKey_WithEmptyName_Returns400");
@@ -244,7 +244,7 @@ public class ApiKeyApiTests : WebAppTestBase
 
     #region Revoke API Key Tests
 
-    [Fact]
+    [TimedFact]
     public async Task RevokeApiKey_ExistingKey_Returns204()
     {
         Output.WriteLine("[TEST] RevokeApiKey_ExistingKey_Returns204");
@@ -270,7 +270,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] API key revoked successfully");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RevokeApiKey_NonExistentKey_Returns404()
     {
         Output.WriteLine("[TEST] RevokeApiKey_NonExistentKey_Returns404");
@@ -293,7 +293,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Returns 404 for non-existent API key");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RevokeApiKey_AlreadyRevoked_Returns404()
     {
         Output.WriteLine("[TEST] RevokeApiKey_AlreadyRevoked_Returns404");
@@ -327,7 +327,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Returns 404 for already revoked API key");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RevokeApiKey_ForOtherUser_Returns403()
     {
         Output.WriteLine("[TEST] RevokeApiKey_ForOtherUser_Returns403");
@@ -358,7 +358,7 @@ public class ApiKeyApiTests : WebAppTestBase
 
     #region API Key Usage Tests
 
-    [Fact]
+    [TimedFact]
     public async Task UseApiKey_ForRegularEndpoint_ReturnsSuccess()
     {
         Output.WriteLine("[TEST] UseApiKey_ForRegularEndpoint_ReturnsSuccess");
@@ -390,7 +390,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] API key can access regular endpoints");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task UseApiKey_AsRefreshToken_Returns401()
     {
         // API keys are standalone JWTs - they cannot be used as refresh tokens.
@@ -418,7 +418,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] API key cannot be used as a refresh token");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task UseApiKey_ToCreateAnotherApiKey_Returns403()
     {
         Output.WriteLine("[TEST] UseApiKey_ToCreateAnotherApiKey_Returns403");
@@ -445,7 +445,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] API key cannot create other API keys");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task UseApiKey_ToListApiKeys_Returns403()
     {
         Output.WriteLine("[TEST] UseApiKey_ToListApiKeys_Returns403");
@@ -471,7 +471,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] API key cannot list API keys");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task UseApiKey_ToRevokeApiKey_Returns403()
     {
         Output.WriteLine("[TEST] UseApiKey_ToRevokeApiKey_Returns403");
@@ -500,7 +500,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] API key cannot revoke other API keys");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task UseRevokedApiKey_Returns401()
     {
         Output.WriteLine("[TEST] UseRevokedApiKey_Returns401");
@@ -543,7 +543,7 @@ public class ApiKeyApiTests : WebAppTestBase
 
     #region User Journey Tests
 
-    [Fact]
+    [TimedFact]
     public async Task UserJourney_CreateListRevokeApiKey_FullLifecycle()
     {
         Output.WriteLine("[TEST] UserJourney_CreateListRevokeApiKey_FullLifecycle");
@@ -609,7 +609,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Full API key lifecycle completed successfully");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task UserJourney_MultipleApiKeysWithDifferentPermissions()
     {
         Output.WriteLine("[TEST] UserJourney_MultipleApiKeysWithDifferentPermissions");
@@ -655,7 +655,7 @@ public class ApiKeyApiTests : WebAppTestBase
 
     #region Edge Cases and Stress Tests
 
-    [Fact]
+    [TimedFact]
     public async Task CreateApiKey_MultipleKeys_SucceedsUpToLimit()
     {
         // Note: MaxApiKeysPerUser is 100 in ApiKeyService.cs
@@ -685,7 +685,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine($"[PASS] Successfully created {testKeyCount} API keys (max is 100)");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task CreateApiKey_WithVeryLongName_Returns400()
     {
         Output.WriteLine("[TEST] CreateApiKey_WithVeryLongName_Returns400");
@@ -712,7 +712,7 @@ public class ApiKeyApiTests : WebAppTestBase
 
     #region Random User Journey Tests
 
-    [Fact]
+    [TimedFact]
     public async Task Journey_CreateKeyUseItThenRevoke()
     {
         Output.WriteLine("[TEST] Journey_CreateKeyUseItThenRevoke");
@@ -745,7 +745,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Create-use-revoke journey completed");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Journey_TwoUsersCannotShareKeys()
     {
         Output.WriteLine("[TEST] Journey_TwoUsersCannotShareKeys");
@@ -768,7 +768,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Users cannot interfere with each other's keys");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Journey_CreateMultipleKeysRevokeOne()
     {
         Output.WriteLine("[TEST] Journey_CreateMultipleKeysRevokeOne");
@@ -809,7 +809,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Revoking one key doesn't affect others");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Journey_ApiKeyCannotManageItself()
     {
         Output.WriteLine("[TEST] Journey_ApiKeyCannotManageItself");
@@ -829,7 +829,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] API key cannot revoke itself");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Journey_AccessTokenAndApiKeyBothWork()
     {
         Output.WriteLine("[TEST] Journey_AccessTokenAndApiKeyBothWork");
@@ -853,7 +853,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Both token types work simultaneously");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Journey_CreateKeyWithSpecialCharactersInName()
     {
         Output.WriteLine("[TEST] Journey_CreateKeyWithSpecialCharactersInName");
@@ -872,7 +872,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Special characters in name preserved");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Journey_RevokeAllKeysThenCreateNew()
     {
         Output.WriteLine("[TEST] Journey_RevokeAllKeysThenCreateNew");
@@ -905,7 +905,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Can create new keys after revoking all");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Journey_ApiKeyReturnsCorrectUserInMe()
     {
         Output.WriteLine("[TEST] Journey_ApiKeyReturnsCorrectUserInMe");
@@ -928,7 +928,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] API key returns correct user identity");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Journey_KeyWithExpirationStillWorksBeforeExpiry()
     {
         Output.WriteLine("[TEST] Journey_KeyWithExpirationStillWorksBeforeExpiry");
@@ -949,7 +949,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Key with future expiration works");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Journey_ListKeysShowsCorrectMetadata()
     {
         Output.WriteLine("[TEST] Journey_ListKeysShowsCorrectMetadata");
@@ -971,7 +971,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] List returns correct metadata");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Journey_RapidCreateAndRevoke()
     {
         Output.WriteLine("[TEST] Journey_RapidCreateAndRevoke");
@@ -997,7 +997,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Rapid create/revoke cycles work");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Journey_UseKeyThenRefreshAccessToken()
     {
         Output.WriteLine("[TEST] Journey_UseKeyThenRefreshAccessToken");
@@ -1021,7 +1021,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] API key survives session refresh");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Journey_TwoUsersDifferentKeyNames()
     {
         Output.WriteLine("[TEST] Journey_TwoUsersDifferentKeyNames");
@@ -1054,7 +1054,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Same key name, different users, isolated");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Journey_CreateKeyImmediatelyUse()
     {
         Output.WriteLine("[TEST] Journey_CreateKeyImmediatelyUse");
@@ -1074,7 +1074,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Key works immediately after creation");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Journey_RevokeNonExistentKeyForUser()
     {
         Output.WriteLine("[TEST] Journey_RevokeNonExistentKeyForUser");
@@ -1092,7 +1092,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Revoking non-existent key returns 404");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Journey_ListAfterMultipleOperations()
     {
         Output.WriteLine("[TEST] Journey_ListAfterMultipleOperations");
@@ -1129,7 +1129,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] List correctly reflects create/revoke operations");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Journey_ApiKeyCannotAccessOtherUserData()
     {
         Output.WriteLine("[TEST] Journey_ApiKeyCannotAccessOtherUserData");
@@ -1151,7 +1151,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] API key cannot access other user's data");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Journey_CreateKeyWithMaxLengthName()
     {
         Output.WriteLine("[TEST] Journey_CreateKeyWithMaxLengthName");
@@ -1167,7 +1167,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] 100-char name accepted");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Journey_UseMultipleKeysInSequence()
     {
         Output.WriteLine("[TEST] Journey_UseMultipleKeysInSequence");
@@ -1191,7 +1191,7 @@ public class ApiKeyApiTests : WebAppTestBase
         Output.WriteLine("[PASS] Multiple keys all work in sequence");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task Journey_EmptyListAfterRegisterThenPopulate()
     {
         Output.WriteLine("[TEST] Journey_EmptyListAfterRegisterThenPopulate");
@@ -1327,3 +1327,4 @@ public class ApiKeyApiTests : WebAppTestBase
 
     #endregion
 }
+

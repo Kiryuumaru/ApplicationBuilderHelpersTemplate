@@ -23,8 +23,10 @@ public class ClientApplication : Application
         // Token storage using local store
         services.AddScoped<ITokenStorage, LocalStoreTokenStorage>();
 
-        // Auth state provider
-        services.AddScoped<IAuthStateProvider, ClientAuthStateProvider>();
+        // Auth state provider - registered as both concrete and interface
+        // Concrete type used by RunPreparationAsync for initialization
+        services.AddScoped<ClientAuthStateProvider>();
+        services.AddScoped<IAuthStateProvider>(sp => sp.GetRequiredService<ClientAuthStateProvider>());
 
         // Authentication client (for login/register endpoints - no token needed)
         services.AddHttpClient<IAuthenticationClient, AuthenticationClient>((sp, client) =>
@@ -85,7 +87,7 @@ public class ClientApplication : Application
     public override async ValueTask RunPreparationAsync(ApplicationHost applicationHost, CancellationToken cancellationToken)
     {
         await base.RunPreparationAsync(applicationHost, cancellationToken);
-        var authStateProvider = applicationHost.Services.GetRequiredService<IAuthStateProvider>();
+        var authStateProvider = applicationHost.Services.GetRequiredService<ClientAuthStateProvider>();
         await authStateProvider.InitializeAsync();
     }
 }

@@ -22,12 +22,18 @@ public class BasicNavigationTests : WebAppTestBase
         var title = await Page.TitleAsync();
         Output.WriteLine($"Page title: {title}");
 
-        // Should have some content
-        var appElement = await Page.QuerySelectorAsync("#app");
-        Assert.NotNull(appElement);
-
+        // Blazor Web App redirects unauthenticated users to login
+        // Verify the app loaded correctly by checking for rendered content
         var bodyContent = await Page.ContentAsync();
         Assert.False(string.IsNullOrEmpty(bodyContent));
+
+        // Should have a body element with rendered Blazor content
+        var bodyElement = await Page.QuerySelectorAsync("body");
+        Assert.NotNull(bodyElement);
+
+        // Blazor script should be loaded (indicates app initialized)
+        var blazorScript = await Page.QuerySelectorAsync("script[src*='blazor.web.']");
+        Assert.NotNull(blazorScript);
     }
 
     [Fact]

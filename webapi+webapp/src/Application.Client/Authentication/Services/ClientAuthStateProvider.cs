@@ -26,8 +26,8 @@ internal class ClientAuthStateProvider : IAuthStateProvider
         if (credentials != null && credentials.IsValid)
         {
             _currentState = ParseTokenToAuthState(credentials.AccessToken, credentials.AccessTokenExpiry);
-            OnStateChanged?.Invoke();
         }
+        OnStateChanged?.Invoke();
     }
 
     public async Task UpdateStateAsync(StoredCredentials credentials)

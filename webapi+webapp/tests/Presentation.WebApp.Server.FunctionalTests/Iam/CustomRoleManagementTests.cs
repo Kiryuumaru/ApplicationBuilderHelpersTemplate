@@ -19,7 +19,7 @@ public class CustomRoleManagementTests : WebAppTestBase
 
     #region Role CRUD Tests
 
-    [Fact]
+    [TimedFact]
     public async Task CreateRole_AsAdmin_Succeeds()
     {
         Output.WriteLine("[TEST] CreateRole_AsAdmin_Succeeds");
@@ -64,7 +64,7 @@ public class CustomRoleManagementTests : WebAppTestBase
         Output.WriteLine("[PASS] Admin can create custom roles");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task CreateRole_AsRegularUser_Returns403()
     {
         Output.WriteLine("[TEST] CreateRole_AsRegularUser_Returns403");
@@ -91,7 +91,7 @@ public class CustomRoleManagementTests : WebAppTestBase
         Output.WriteLine("[PASS] Regular user cannot create roles");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task CreateRole_DuplicateCode_Returns409()
     {
         Output.WriteLine("[TEST] CreateRole_DuplicateCode_Returns409");
@@ -136,7 +136,7 @@ public class CustomRoleManagementTests : WebAppTestBase
         Output.WriteLine("[PASS] Duplicate role code returns 409 Conflict");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task CreateRole_ReservedCode_Returns409()
     {
         Output.WriteLine("[TEST] CreateRole_ReservedCode_Returns409");
@@ -163,7 +163,7 @@ public class CustomRoleManagementTests : WebAppTestBase
         Output.WriteLine("[PASS] Reserved role code returns 409 Conflict");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task GetRole_ExistingRole_ReturnsRole()
     {
         Output.WriteLine("[TEST] GetRole_ExistingRole_ReturnsRole");
@@ -210,7 +210,7 @@ public class CustomRoleManagementTests : WebAppTestBase
         Output.WriteLine("[PASS] GetRole returns the correct role");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task GetRole_NonExistentRole_Returns404()
     {
         Output.WriteLine("[TEST] GetRole_NonExistentRole_Returns404");
@@ -231,7 +231,7 @@ public class CustomRoleManagementTests : WebAppTestBase
         Output.WriteLine("[PASS] Non-existent role returns 404");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task UpdateRole_AsAdmin_Succeeds()
     {
         Output.WriteLine("[TEST] UpdateRole_AsAdmin_Succeeds");
@@ -284,7 +284,7 @@ public class CustomRoleManagementTests : WebAppTestBase
         Output.WriteLine("[PASS] Admin can update custom roles");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task UpdateRole_SystemRole_Returns400()
     {
         Output.WriteLine("[TEST] UpdateRole_SystemRole_Returns400");
@@ -312,7 +312,7 @@ public class CustomRoleManagementTests : WebAppTestBase
         Output.WriteLine("[PASS] Cannot update system roles");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task DeleteRole_AsAdmin_Succeeds()
     {
         Output.WriteLine("[TEST] DeleteRole_AsAdmin_Succeeds");
@@ -358,7 +358,7 @@ public class CustomRoleManagementTests : WebAppTestBase
         Output.WriteLine("[PASS] Admin can delete custom roles");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task DeleteRole_SystemRole_Returns400()
     {
         Output.WriteLine("[TEST] DeleteRole_SystemRole_Returns400");
@@ -380,7 +380,7 @@ public class CustomRoleManagementTests : WebAppTestBase
         Output.WriteLine("[PASS] Cannot delete system roles");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ListRoles_AsAdmin_ReturnsAllRoles()
     {
         Output.WriteLine("[TEST] ListRoles_AsAdmin_ReturnsAllRoles");
@@ -413,7 +413,7 @@ public class CustomRoleManagementTests : WebAppTestBase
 
     #region Role Assignment and Permission Verification Tests
 
-    [Fact]
+    [TimedFact]
     public async Task CustomRole_GrantsCorrectPermissions()
     {
         Output.WriteLine("[TEST] CustomRole_GrantsCorrectPermissions");
@@ -490,7 +490,7 @@ public class CustomRoleManagementTests : WebAppTestBase
         Output.WriteLine("[PASS] Custom role correctly grants permissions");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task CustomRole_WithParameters_GrantsScopedPermissions()
     {
         Output.WriteLine("[TEST] CustomRole_WithParameters_GrantsScopedPermissions");
@@ -574,7 +574,7 @@ public class CustomRoleManagementTests : WebAppTestBase
         Output.WriteLine("[PASS] Scoped role correctly limits permissions to specified parameter");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RemoveRole_RevokesPermissions()
     {
         Output.WriteLine("[TEST] RemoveRole_RevokesPermissions");
@@ -656,7 +656,7 @@ public class CustomRoleManagementTests : WebAppTestBase
     /// Tests that removing a role assignment does not affect an already-issued access token,
     /// but does affect new tokens issued after re-login.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task RemoveRole_DoesNotAffectExistingTokenUntilReLogin()
     {
         Output.WriteLine("[TEST] RemoveRole_DoesNotAffectExistingTokenUntilReLogin");
@@ -754,7 +754,7 @@ public class CustomRoleManagementTests : WebAppTestBase
     /// Tests that modifying a role's permissions takes effect immediately without requiring
     /// users to re-login or regenerate tokens. This is a key feature of role-based access control.
     /// </summary>
-    [Fact]
+    [TimedFact]
     public async Task ModifyRole_TakesEffectWithoutReLogin()
     {
         Output.WriteLine("[TEST] ModifyRole_TakesEffectWithoutReLogin");
@@ -871,7 +871,7 @@ public class CustomRoleManagementTests : WebAppTestBase
 
     #region Negative Tests
 
-    [Fact]
+    [TimedFact]
     public async Task AssignRole_NonExistentRole_Returns404()
     {
         Output.WriteLine("[TEST] AssignRole_NonExistentRole_Returns404");
@@ -901,7 +901,7 @@ public class CustomRoleManagementTests : WebAppTestBase
         Output.WriteLine("[PASS] Assigning non-existent role returns 404");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task AssignRole_NonExistentUser_Returns404()
     {
         Output.WriteLine("[TEST] AssignRole_NonExistentUser_Returns404");
@@ -928,7 +928,7 @@ public class CustomRoleManagementTests : WebAppTestBase
         Output.WriteLine("[PASS] Assigning role to non-existent user returns 404");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task CreateRole_InvalidScopeTemplateType_Returns400()
     {
         Output.WriteLine("[TEST] CreateRole_InvalidScopeTemplateType_Returns400");
@@ -962,7 +962,7 @@ public class CustomRoleManagementTests : WebAppTestBase
         Output.WriteLine("[PASS] Invalid scope template type returns 400");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RoleEndpoints_Unauthenticated_Returns401()
     {
         Output.WriteLine("[TEST] RoleEndpoints_Unauthenticated_Returns401");
@@ -1113,6 +1113,7 @@ public class CustomRoleManagementTests : WebAppTestBase
 
     #endregion
 }
+
 
 
 

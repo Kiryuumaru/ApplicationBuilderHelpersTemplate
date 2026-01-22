@@ -18,7 +18,7 @@ public class StressTests : WebAppTestBase
 
     #region Concurrent Authentication Tests
 
-    [Fact]
+    [TimedFact]
     public async Task ConcurrentLogins_50Users_AllSucceed()
     {
         Output.WriteLine("[TEST] ConcurrentLogins_50Users_AllSucceed");
@@ -54,7 +54,7 @@ public class StressTests : WebAppTestBase
         Output.WriteLine("[PASS] All concurrent logins succeeded");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ConcurrentRegistrations_30Users_AllSucceed()
     {
         Output.WriteLine("[TEST] ConcurrentRegistrations_30Users_AllSucceed");
@@ -80,7 +80,7 @@ public class StressTests : WebAppTestBase
         Output.WriteLine("[PASS] All concurrent registrations succeeded");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ConcurrentTokenRefresh_20Sessions_AllSucceed()
     {
         Output.WriteLine("[TEST] ConcurrentTokenRefresh_20Sessions_AllSucceed");
@@ -123,7 +123,7 @@ public class StressTests : WebAppTestBase
 
     #region Permission Changes Under Load
 
-    [Fact]
+    [TimedFact]
     public async Task UserAccessWhilePermissionsChange_HandledGracefully()
     {
         Output.WriteLine("[TEST] UserAccessWhilePermissionsChange_HandledGracefully");
@@ -201,7 +201,7 @@ public class StressTests : WebAppTestBase
         Output.WriteLine("[PASS] System handled concurrent access and permission changes gracefully");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task RoleAssignmentWhileUserActive_HandledGracefully()
     {
         Output.WriteLine("[TEST] RoleAssignmentWhileUserActive_HandledGracefully");
@@ -278,7 +278,7 @@ public class StressTests : WebAppTestBase
 
     #region Race Condition Tests
 
-    [Fact]
+    [TimedFact]
     public async Task ConcurrentRoleAssignment_SameUser_NoCorruption()
     {
         Output.WriteLine("[TEST] ConcurrentRoleAssignment_SameUser_NoCorruption");
@@ -321,7 +321,7 @@ public class StressTests : WebAppTestBase
         Output.WriteLine("[PASS] No data corruption from concurrent role assignments");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ConcurrentPermissionGrant_SameUserSamePermission_NoCorruption()
     {
         Output.WriteLine("[TEST] ConcurrentPermissionGrant_SameUserSamePermission_NoCorruption");
@@ -369,7 +369,7 @@ public class StressTests : WebAppTestBase
         Output.WriteLine("[PASS] No corruption from concurrent permission grants");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ConcurrentRoleCreation_SameName_OnlyOneSucceeds()
     {
         Output.WriteLine("[TEST] ConcurrentRoleCreation_SameName_OnlyOneSucceeds");
@@ -414,7 +414,7 @@ public class StressTests : WebAppTestBase
         Output.WriteLine("[PASS] Duplicate role creation handled (note: 500 errors indicate missing conflict handling)");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ConcurrentUserUpdate_SameUser_LastWriteWins()
     {
         Output.WriteLine("[TEST] ConcurrentUserUpdate_SameUser_LastWriteWins");
@@ -458,7 +458,7 @@ public class StressTests : WebAppTestBase
         Output.WriteLine("[PASS] Concurrent user updates handled without corruption");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ConcurrentTokenRefresh_SameRefreshToken_OnlyOneSucceeds()
     {
         Output.WriteLine("[TEST] ConcurrentTokenRefresh_SameRefreshToken_OnlyOneSucceeds");
@@ -495,7 +495,7 @@ public class StressTests : WebAppTestBase
         Output.WriteLine("[PASS] Concurrent refresh token usage handled correctly");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ConcurrentLogout_MultipleSessions_AllHandled()
     {
         Output.WriteLine("[TEST] ConcurrentLogout_MultipleSessions_AllHandled");
@@ -540,7 +540,7 @@ public class StressTests : WebAppTestBase
         Output.WriteLine("[PASS] Concurrent logouts handled correctly");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ConcurrentPasswordChange_SameUser_OnlyOneSucceeds()
     {
         Output.WriteLine("[TEST] ConcurrentPasswordChange_SameUser_OnlyOneSucceeds");
@@ -591,7 +591,7 @@ public class StressTests : WebAppTestBase
         Output.WriteLine("[PASS] Concurrent password changes handled correctly");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task TokenUseWhileSessionRevoked_HandledGracefully()
     {
         Output.WriteLine("[TEST] TokenUseWhileSessionRevoked_HandledGracefully");
@@ -680,7 +680,7 @@ public class StressTests : WebAppTestBase
         Output.WriteLine("[PASS] Token use during revocation handled gracefully");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ConcurrentRegistration_SameUsername_OnlyOneSucceeds()
     {
         Output.WriteLine("[TEST] ConcurrentRegistration_SameUsername_OnlyOneSucceeds");
@@ -720,7 +720,7 @@ public class StressTests : WebAppTestBase
         Output.WriteLine("[PASS] Duplicate username registration prevented correctly");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ConcurrentRoleAssignAndRemove_SameUserSameRole_Consistent()
     {
         Output.WriteLine("[TEST] ConcurrentRoleAssignAndRemove_SameUserSameRole_Consistent");
@@ -799,7 +799,7 @@ public class StressTests : WebAppTestBase
         Output.WriteLine("[PASS] Concurrent assign/remove handled without corruption");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task ConcurrentSessionRevocation_SameUser_AllHandled()
     {
         Output.WriteLine("[TEST] ConcurrentSessionRevocation_SameUser_AllHandled");
@@ -865,7 +865,7 @@ public class StressTests : WebAppTestBase
 
     #region Database Contention Tests
 
-    [Fact]
+    [TimedFact]
     public async Task HighFrequencyMeEndpoint_100Requests_AllSucceed()
     {
         Output.WriteLine("[TEST] HighFrequencyMeEndpoint_100Requests_AllSucceed");
@@ -898,7 +898,7 @@ public class StressTests : WebAppTestBase
         Output.WriteLine("[PASS] All high-frequency requests succeeded");
     }
 
-    [Fact]
+    [TimedFact]
     public async Task MixedReadWriteOperations_NoDeadlocks()
     {
         Output.WriteLine("[TEST] MixedReadWriteOperations_NoDeadlocks");
@@ -1098,6 +1098,7 @@ public class StressTests : WebAppTestBase
 
     #endregion
 }
+
 
 
 

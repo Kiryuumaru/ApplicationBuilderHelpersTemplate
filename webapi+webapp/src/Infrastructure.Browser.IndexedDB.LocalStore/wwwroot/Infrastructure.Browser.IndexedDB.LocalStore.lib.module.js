@@ -133,13 +133,13 @@ export function beforeWebStart() {
                     transaction.oncomplete = () => resolve();
 
                     for (const op of operations) {
-                        if (op.type === 0) { // Set
+                        if (op.type === 'set') {
                             store.put({
                                 group: op.group,
                                 id: op.id,
                                 data: op.data
                             });
-                        } else if (op.type === 1) { // Delete
+                        } else if (op.type === 'delete') {
                             store.delete([op.group, op.id]);
                         }
                     }
