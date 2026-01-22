@@ -364,9 +364,15 @@ FodyWeavers.xsd
 /output
 /.nuke/temp
 /creds.json
+/app.db
+/app.db-shm
+/app.db-wal
 /webapi/src/Presentation.WebApi/app.db
 /webapi/src/Presentation.WebApi/app.db-shm
 /webapi/src/Presentation.WebApi/app.db-wal
+/webapi+webapp/app.db
+/webapi+webapp/app.db-shm
+/webapi+webapp/app.db-wal
 /webapi+webapp/src/Presentation.WebApp/app.db
 /webapi+webapp/src/Presentation.WebApp/app.db-shm
 /webapi+webapp/src/Presentation.WebApp/app.db-wal
@@ -375,6 +381,3 @@ FodyWeavers.xsd
 /webapi+webapp/src/Presentation.WebApp.Server/app.db-wal
 /webapi+webapp/src/Presentation.WebApp.Client/package-lock.json
 /webapi+webapp/src/Presentation.WebApp.Client/wwwroot/css/tailwind.generated.css
-/app.db
-/app.db-shm
-/app.db-wal
