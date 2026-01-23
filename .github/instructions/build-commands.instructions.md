@@ -29,7 +29,10 @@ When building, running, or initializing this project, use the following commands
 
 ### Publish
 
+**Important:** Always run `dotnet build --no-incremental` before publishing. This ensures Tailwind CSS is regenerated and included in the publish output. The `dotnet publish` command alone may use cached build artifacts that don't include recent CSS changes.
+
 ```powershell
+dotnet build src/Presentation.WebApp.Server --no-incremental
 dotnet publish src/Presentation.WebApp.Server -o publish
 ```
 
