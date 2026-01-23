@@ -2,30 +2,29 @@ using System.Net;
 using System.Net.Http.Headers;
 using Application.Client.Authentication.Interfaces;
 using Application.Client.Authentication.Interfaces.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Application.Client.Authentication.Services;
 
 internal class TokenRefreshHandler : DelegatingHandler
 {
-    private readonly ITokenStorage _tokenStorage;
-    private readonly IAuthenticationClient _authClient;
-    private readonly IAuthStateProvider _authStateProvider;
+    private readonly IServiceProvider _serviceProvider;
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
 
-    public TokenRefreshHandler(
-        ITokenStorage tokenStorage,
-        IAuthenticationClient authClient,
-        IAuthStateProvider authStateProvider)
+    public TokenRefreshHandler(IServiceProvider serviceProvider)
     {
-        _tokenStorage = tokenStorage;
-        _authClient = authClient;
-        _authStateProvider = authStateProvider;
+        _serviceProvider = serviceProvider;
     }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        // Resolve scoped services at request time to ensure we get the correct instance
+        var tokenStorage = _serviceProvider.GetRequiredService<ITokenStorage>();
+        var authStateProvider = _serviceProvider.GetRequiredService<IAuthStateProvider>();
+
         // Attach access token if available
-        var credentials = await _tokenStorage.GetCredentialsAsync();
+        var credentials = await tokenStorage.GetCredentialsAsync();
+        
         if (credentials != null && !string.IsNullOrEmpty(credentials.AccessToken))
         {
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", credentials.AccessToken);
@@ -40,7 +39,7 @@ internal class TokenRefreshHandler : DelegatingHandler
             try
             {
                 // Re-check credentials (another thread might have refreshed)
-                var currentCredentials = await _tokenStorage.GetCredentialsAsync();
+                var currentCredentials = await tokenStorage.GetCredentialsAsync();
                 if (currentCredentials?.AccessToken != credentials.AccessToken)
                 {
                     // Token was already refreshed, retry with new token
@@ -48,8 +47,11 @@ internal class TokenRefreshHandler : DelegatingHandler
                     return await base.SendAsync(CloneRequest(request), cancellationToken);
                 }
 
+                // Resolve auth client for refresh (avoid circular dependency)
+                var authClient = _serviceProvider.GetRequiredService<IAuthenticationClient>();
+
                 // Attempt token refresh
-                var refreshResult = await _authClient.RefreshTokenAsync(credentials.RefreshToken, cancellationToken);
+                var refreshResult = await authClient.RefreshTokenAsync(credentials.RefreshToken, cancellationToken);
                 if (refreshResult.Success)
                 {
                     var newCredentials = new Models.StoredCredentials
@@ -60,7 +62,7 @@ internal class TokenRefreshHandler : DelegatingHandler
                         RefreshTokenExpiry = DateTimeOffset.UtcNow.AddDays(7) // Assume 7 day refresh token
                     };
 
-                    await _authStateProvider.UpdateStateAsync(newCredentials);
+                    await authStateProvider.UpdateStateAsync(newCredentials);
 
                     // Retry the original request with new token
                     var retryRequest = CloneRequest(request);
@@ -70,7 +72,7 @@ internal class TokenRefreshHandler : DelegatingHandler
                 else
                 {
                     // Refresh failed - clear auth state
-                    await _authStateProvider.ClearStateAsync();
+                    await authStateProvider.ClearStateAsync();
                 }
             }
             finally

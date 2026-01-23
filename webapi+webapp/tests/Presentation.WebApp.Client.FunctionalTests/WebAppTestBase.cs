@@ -1,7 +1,5 @@
 using Microsoft.Playwright;
 using Presentation.WebApp.Client.FunctionalTests.Fixtures;
-using System.Net.Http.Json;
-using System.Text.Json;
 
 namespace Presentation.WebApp.Client.FunctionalTests;
 
@@ -9,6 +7,9 @@ namespace Presentation.WebApp.Client.FunctionalTests;
 /// Base class for WebApp functional tests with parallel execution support.
 /// Uses a shared WebApi + WebApp host via collection fixture for efficiency.
 /// Each test gets its own isolated browser context.
+/// 
+/// IMPORTANT: All tests MUST use UI-only interactions (click, type, navigate).
+/// NO direct API calls. NO manual header injection. Like a real user.
 /// </summary>
 [Collection(WebAppTestCollection.Name)]
 public abstract class WebAppTestBase : IAsyncLifetime
@@ -28,16 +29,6 @@ public abstract class WebAppTestBase : IAsyncLifetime
     protected readonly ITestOutputHelper Output;
 
     /// <summary>
-    /// HTTP client for direct API calls (bypassing the browser).
-    /// </summary>
-    protected HttpClient HttpClient => _fixture.HttpClient;
-
-    /// <summary>
-    /// Base URL for the WebApi server.
-    /// </summary>
-    protected string WebApiUrl => _fixture.WebApiUrl;
-
-    /// <summary>
     /// Base URL for the WebApp server.
     /// </summary>
     protected string WebAppUrl => _fixture.WebAppUrl;
@@ -51,11 +42,6 @@ public abstract class WebAppTestBase : IAsyncLifetime
     /// The browser page for this test class.
     /// </summary>
     protected IPage Page => _page ?? throw new InvalidOperationException("Page not initialized");
-
-    /// <summary>
-    /// JSON serialization options with case-insensitive property names.
-    /// </summary>
-    protected static JsonSerializerOptions JsonOptions { get; } = new() { PropertyNameCaseInsensitive = true };
 
     /// <summary>
     /// Standard test password used across tests.
@@ -92,16 +78,6 @@ public abstract class WebAppTestBase : IAsyncLifetime
             Output.WriteLine($"[BROWSER ERROR] {error}");
         };
 
-        // Log network responses to debug MIME type issues
-        _page.Response += (_, response) =>
-        {
-            if (response.Url.Contains("dotnet") || response.Url.Contains("blazor"))
-            {
-                var contentType = response.Headers.TryGetValue("content-type", out var ct) ? ct : "(none)";
-                Output.WriteLine($"[NETWORK] {response.Status} {response.Url} Content-Type: {contentType}");
-            }
-        };
-
         Output.WriteLine($"[TEST] Browser context ready. WebApp at {WebAppUrl}");
     }
 
@@ -122,10 +98,10 @@ public abstract class WebAppTestBase : IAsyncLifetime
         Output.WriteLine("[TEST] Browser context disposed");
     }
 
-    #region Navigation Helpers
+    #region Navigation Helpers (UI-Only)
 
     /// <summary>
-    /// Navigate to the WebApp home page.
+    /// Navigate to the WebApp home page by URL.
     /// </summary>
     protected async Task GoToHomeAsync()
     {
@@ -134,7 +110,7 @@ public abstract class WebAppTestBase : IAsyncLifetime
     }
 
     /// <summary>
-    /// Navigate to the login page.
+    /// Navigate to the login page by URL.
     /// </summary>
     protected async Task GoToLoginAsync()
     {
@@ -143,7 +119,7 @@ public abstract class WebAppTestBase : IAsyncLifetime
     }
 
     /// <summary>
-    /// Navigate to the register page.
+    /// Navigate to the register page by URL.
     /// </summary>
     protected async Task GoToRegisterAsync()
     {
@@ -152,28 +128,219 @@ public abstract class WebAppTestBase : IAsyncLifetime
     }
 
     /// <summary>
+    /// Click on a navigation link to go to Profile page.
+    /// Must be authenticated first.
+    /// </summary>
+    protected async Task ClickNavigateToProfileAsync()
+    {
+        Output.WriteLine("[TEST] Clicking to navigate to Profile...");
+        
+        // Click user avatar/menu button to open dropdown
+        // The button contains a div with rounded-full and user initial letter
+        await Page.Locator("button:has(.rounded-full)").First.ClickAsync();
+        await Task.Delay(300); // Wait for dropdown animation
+        
+        // Click Profile link (in the dropdown menu)
+        await Page.Locator("a[href*='profile']").First.ClickAsync();
+        
+        await WaitForUrlContainsAsync("/account/profile");
+        await WaitForBlazorAsync();
+        
+        Output.WriteLine($"[TEST] Navigated to: {Page.Url}");
+    }
+
+    /// <summary>
+    /// Click on a navigation link to go to Change Password page.
+    /// Must be authenticated first.
+    /// </summary>
+    protected async Task ClickNavigateToChangePasswordAsync()
+    {
+        Output.WriteLine("[TEST] Clicking to navigate to Change Password...");
+        
+        // Click user avatar/menu button to open dropdown
+        await Page.Locator("button:has(.rounded-full)").First.ClickAsync();
+        await Task.Delay(300);
+        
+        // Click Change Password or Settings link
+        await Page.Locator("a[href*='settings'], a[href*='change-password']").First.ClickAsync();
+        
+        await WaitForBlazorAsync();
+        
+        Output.WriteLine($"[TEST] Navigated to: {Page.Url}");
+    }
+
+    #endregion
+
+    #region Authentication Helpers (UI-Only - Click + Type Only)
+
+    /// <summary>
+    /// Register a new user account via the WebApp UI.
+    /// Uses ONLY click and type actions - no direct API calls.
+    /// </summary>
+    protected async Task<bool> RegisterUserAsync(string username, string email, string password)
+    {
+        await GoToRegisterAsync();
+
+        Output.WriteLine($"[TEST] Registering user via UI: {username}");
+
+        // Type into registration form fields
+        await Page.Locator("#username").FillAsync(username);
+        await Page.Locator("#email").FillAsync(email);
+        await Page.Locator("#password").FillAsync(password);
+        await Page.Locator("#confirmPassword").FillAsync(password);
+
+        // Check terms checkbox if it exists
+        var termsCheckbox = Page.Locator("#terms");
+        if (await termsCheckbox.CountAsync() > 0)
+        {
+            await termsCheckbox.CheckAsync();
+        }
+
+        // Click submit button
+        Output.WriteLine("[TEST] Clicking submit button...");
+        await Page.Locator("button[type='submit']").ClickAsync();
+
+        // Wait for navigation away from register page
+        var success = await WaitForUrlNotContainsAsync("/auth/register", timeoutMs: 20000);
+
+        Output.WriteLine($"[TEST] Registration {(success ? "succeeded" : "failed")}. Current URL: {Page.Url}");
+
+        return success;
+    }
+
+    /// <summary>
+    /// Login with credentials via the WebApp UI.
+    /// Uses ONLY click and type actions - no direct API calls.
+    /// </summary>
+    protected async Task<bool> LoginAsync(string email, string password)
+    {
+        await GoToLoginAsync();
+
+        Output.WriteLine($"[TEST] Logging in via UI as: {email}");
+
+        // Type into login form fields
+        await Page.Locator("#email").FillAsync(email);
+        await Page.Locator("#password").FillAsync(password);
+
+        // Click submit button
+        await Page.Locator("button[type='submit']").ClickAsync();
+
+        // Wait for navigation away from login page
+        var success = await WaitForUrlNotContainsAsync("/auth/login", timeoutMs: 20000);
+
+        Output.WriteLine($"[TEST] Login {(success ? "succeeded" : "failed")}. Current URL: {Page.Url}");
+
+        return success;
+    }
+
+    /// <summary>
+    /// Logout via the WebApp UI.
+    /// Uses ONLY click actions - no direct API calls.
+    /// </summary>
+    protected async Task LogoutAsync()
+    {
+        Output.WriteLine("[TEST] Logging out via UI...");
+
+        // Click user avatar/menu button to open dropdown
+        var userMenu = Page.Locator("button:has(.rounded-full)").First;
+        if (await userMenu.CountAsync() > 0)
+        {
+            await userMenu.ClickAsync();
+            await Task.Delay(300);
+        }
+
+        // Click Sign out button
+        var signOut = Page.Locator("button:has-text('Sign out')").First;
+        
+        if (await signOut.CountAsync() > 0)
+        {
+            await signOut.ClickAsync();
+        }
+        else
+        {
+            // Fallback: navigate directly
+            await Page.GotoAsync($"{WebAppUrl}/auth/logout");
+        }
+
+        await WaitForUrlContainsAsync("/auth/login", timeoutMs: 10000);
+        await WaitForBlazorAsync();
+
+        Output.WriteLine("[TEST] Logout completed");
+    }
+
+    /// <summary>
+    /// Change password via the WebApp UI.
+    /// Uses ONLY click and type actions - no direct API calls.
+    /// </summary>
+    protected async Task<bool> ChangePasswordAsync(string currentPassword, string newPassword)
+    {
+        Output.WriteLine("[TEST] Changing password via UI...");
+
+        // Navigate to change password page
+        await ClickNavigateToChangePasswordAsync();
+
+        // Fill in the form
+        await Page.Locator("#currentPassword").FillAsync(currentPassword);
+        await Page.Locator("#newPassword").FillAsync(newPassword);
+        await Page.Locator("#confirmPassword").FillAsync(newPassword);
+
+        // Click submit
+        await Page.Locator("button[type='submit']").ClickAsync();
+
+        // Wait for success indicator
+        var success = await WaitForSuccessMessageAsync(timeoutMs: 10000);
+
+        Output.WriteLine($"[TEST] Change password {(success ? "succeeded" : "failed")}");
+
+        return success;
+    }
+
+    /// <summary>
+    /// Check if user is currently authenticated by looking for authenticated UI elements.
+    /// </summary>
+    protected async Task<bool> IsAuthenticatedAsync()
+    {
+        // Wait a bit for the UI to update after auth state changes
+        await Task.Delay(500);
+
+        // Look for user menu button (only visible when authenticated)
+        // The button contains a div with rounded-full and user initial letter
+        var userMenu = Page.Locator("button:has(.rounded-full)");
+        if (await userMenu.CountAsync() > 0)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    #endregion
+
+    #region Wait Helpers
+
+    /// <summary>
     /// Wait for Blazor WASM to fully load and hydrate.
     /// </summary>
     protected async Task WaitForBlazorAsync(int timeoutMs = 30000)
     {
-        // Wait for Blazor framework script to be present (fingerprinted filename: blazor.web.{hash}.js)
+        // Wait for Blazor framework script
         await Page.WaitForSelectorAsync("script[src*='blazor.web.']", new PageWaitForSelectorOptions
         {
             State = WaitForSelectorState.Attached,
             Timeout = timeoutMs
         });
 
-        // Wait for any of: form, h1, main, nav - indicates Blazor has rendered content
+        // Wait for page content
         await Page.WaitForSelectorAsync("form, h1, main, nav, [data-page-content]", new PageWaitForSelectorOptions
         {
             State = WaitForSelectorState.Attached,
             Timeout = timeoutMs
         });
 
-        // Wait for loading indicators to disappear (if present)
+        // Wait for loading spinners to disappear
         try
         {
-            await Page.WaitForSelectorAsync(".loading", new PageWaitForSelectorOptions
+            await Page.WaitForSelectorAsync("[data-loading-spinner], .loading", new PageWaitForSelectorOptions
             {
                 State = WaitForSelectorState.Hidden,
                 Timeout = 5000
@@ -184,298 +351,86 @@ public abstract class WebAppTestBase : IAsyncLifetime
             // Loading indicator might not exist
         }
 
-        // Wait for LoadingSpinner (used during auth state determination) to disappear
-        try
-        {
-            await Page.WaitForSelectorAsync("[data-loading-spinner]", new PageWaitForSelectorOptions
-            {
-                State = WaitForSelectorState.Hidden,
-                Timeout = 5000
-            });
-        }
-        catch (TimeoutException)
-        {
-            // LoadingSpinner might not exist
-        }
-
-        // Give Blazor a moment to complete rendering
-        await Task.Delay(200);
-    }
-
-    /// <summary>
-    /// Wait for Blazor WASM to fully load AND the authenticated state to be restored from IndexedDB.
-    /// Use this after login when you need to wait for authenticated UI elements.
-    /// </summary>
-    protected async Task WaitForAuthenticatedStateAsync(int timeoutMs = 30000)
-    {
-        Output.WriteLine("[TEST] Waiting for authenticated state...");
-        
-        // Wait for page to stabilize (not redirecting)
-        var lastUrl = Page.Url;
-        var stableCount = 0;
-        var maxWaitMs = timeoutMs;
-        var pollIntervalMs = 500;
-        var elapsed = 0;
-
-        // First, wait for URL to stabilize (no more redirects)
-        while (elapsed < maxWaitMs && stableCount < 3)
-        {
-            await Task.Delay(pollIntervalMs);
-            elapsed += pollIntervalMs;
-            
-            var currentUrl = Page.Url;
-            if (currentUrl == lastUrl)
-            {
-                stableCount++;
-            }
-            else
-            {
-                Output.WriteLine($"[TEST] URL changed: {lastUrl} -> {currentUrl}");
-                lastUrl = currentUrl;
-                stableCount = 0;
-            }
-        }
-        
-        Output.WriteLine($"[TEST] URL stabilized at: {lastUrl} after {elapsed}ms");
-        
-        // If we ended up back on login page, auth initialization failed
-        if (lastUrl.Contains("/auth/login", StringComparison.OrdinalIgnoreCase))
-        {
-            Output.WriteLine("[TEST] WARNING: Redirected back to login page - auth state not persisting");
-            // This is a known issue with Blazor Web WASM auth state restoration
-            // The test should fail with a clear message
-            return;
-        }
-        
-        // Now wait for Blazor to render authenticated content
-        await WaitForBlazorAsync(10000);
-        
-        // Wait for authenticated UI indicators with longer timeout
-        var authWaitMs = 15000;
-        var authElapsed = 0;
-        
-        while (authElapsed < authWaitMs)
-        {
-            // Check for authenticated indicators
-            var signInLink = await Page.QuerySelectorAsync("a[href*='auth/login']");
-            var userMenu = await Page.QuerySelectorAsync("button[aria-expanded]");
-            var signOutText = await Page.GetByText("Sign out").CountAsync();
-            
-            // If no sign-in link visible and either user menu or sign out exists
-            if (signInLink == null || (userMenu != null || signOutText > 0))
-            {
-                Output.WriteLine($"[TEST] Authenticated state detected after {authElapsed}ms");
-                return;
-            }
-            
-            await Task.Delay(200);
-            authElapsed += 200;
-        }
-
-        Output.WriteLine($"[TEST] WARNING: Authenticated state not detected after {authElapsed}ms");
-    }
-
-    #endregion
-
-    #region Authentication Helpers
-
-    /// <summary>
-    /// Register a new user account via the WebApp UI.
-    /// </summary>
-    protected async Task<bool> RegisterUserAsync(string username, string email, string password)
-    {
-        await GoToRegisterAsync();
-
-        Output.WriteLine($"[TEST] Registering user: {username}");
-
-        // Fill in registration form (using actual IDs from Register.razor)
-        await Page.FillAsync("input#username", username);
-        await Page.FillAsync("input#email", email);
-        await Page.FillAsync("input#password", password);
-        await Page.FillAsync("input#confirmPassword", password);
-
-        // Accept terms checkbox
-        var termsCheckbox = await Page.QuerySelectorAsync("input#terms");
-        if (termsCheckbox != null)
-        {
-            await termsCheckbox.CheckAsync();
-        }
-
-        // Submit the form and wait for the API request to complete
-        Output.WriteLine("[TEST] Clicking submit button...");
-        await Page.ClickAsync("button[type='submit']");
-        
-        // Wait for navigation away from register page using polling
-        // The HTTP request takes ~1.2s, then Blazor processes and navigates
-        Output.WriteLine("[TEST] Waiting for navigation after submit...");
-        var success = false;
-        var maxWaitMs = 20000; // 20 second max wait
-        var pollIntervalMs = 200;
-        var elapsed = 0;
-        
-        while (elapsed < maxWaitMs)
-        {
-            await Task.Delay(pollIntervalMs);
-            elapsed += pollIntervalMs;
-            
-            var currentUrl = Page.Url;
-            if (!currentUrl.Contains("/auth/register", StringComparison.OrdinalIgnoreCase))
-            {
-                Output.WriteLine($"[TEST] Navigation detected after {elapsed}ms. URL: {currentUrl}");
-                success = true;
-                break;
-            }
-        }
-        
-        if (!success)
-        {
-            Output.WriteLine($"[TEST] Navigation timeout after {elapsed}ms. Still on: {Page.Url}");
-        }
-
-        Output.WriteLine($"[TEST] Registration {(success ? "succeeded" : "failed")}. Current URL: {Page.Url}");
-
-        return success;
-    }
-
-    /// <summary>
-    /// Login with credentials via the WebApp UI.
-    /// </summary>
-    protected async Task<bool> LoginAsync(string email, string password)
-    {
-        await GoToLoginAsync();
-
-        Output.WriteLine($"[TEST] Logging in as: {email}");
-
-        // Fill in login form (page uses email, not username)
-        await Page.FillAsync("input#email, input[type='email']", email);
-        await Page.FillAsync("input#password, input[type='password']", password);
-
-        // Submit the form
-        await Page.ClickAsync("button[type='submit']");
-
-        // Wait for navigation away from login page using polling
-        // The HTTP request takes ~500ms, then Blazor processes and navigates
-        Output.WriteLine("[TEST] Waiting for navigation after login...");
-        var success = false;
-        var maxWaitMs = 20000; // 20 second max wait
-        var pollIntervalMs = 200;
-        var elapsed = 0;
-
-        while (elapsed < maxWaitMs)
-        {
-            await Task.Delay(pollIntervalMs);
-            elapsed += pollIntervalMs;
-
-            var currentUrl = Page.Url;
-            if (!currentUrl.Contains("/auth/login", StringComparison.OrdinalIgnoreCase))
-            {
-                Output.WriteLine($"[TEST] Navigation detected after {elapsed}ms. URL: {currentUrl}");
-                success = true;
-                break;
-            }
-        }
-
-        if (!success)
-        {
-            Output.WriteLine($"[TEST] Login timeout after {elapsed}ms. Still on: {Page.Url}");
-        }
-
-        Output.WriteLine($"[TEST] Login {(success ? "succeeded" : "failed")}. Current URL: {Page.Url}");
-
-        return success;
-    }
-
-    /// <summary>
-    /// Register and login a new user, returning authentication tokens.
-    /// </summary>
-    protected async Task<(string AccessToken, string RefreshToken)?> RegisterAndLoginViaApiAsync(string? username = null)
-    {
-        username ??= $"testuser_{Guid.NewGuid():N}";
-        var email = $"{username}@example.com";
-
-        // Register via API
-        var registerRequest = new
-        {
-            Username = username,
-            Email = email,
-            Password = TestPassword,
-            ConfirmPassword = TestPassword
-        };
-        var registerResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
-        if (!registerResponse.IsSuccessStatusCode)
-        {
-            return null;
-        }
-
-        // Login via API
-        var loginRequest = new { Username = username, Password = TestPassword };
-        var loginResponse = await HttpClient.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
-        if (!loginResponse.IsSuccessStatusCode)
-        {
-            return null;
-        }
-
-        var content = await loginResponse.Content.ReadAsStringAsync();
-        var authResponse = JsonSerializer.Deserialize<AuthResponse>(content, JsonOptions);
-        return (authResponse!.AccessToken, authResponse.RefreshToken);
-    }
-
-    /// <summary>
-    /// Logout via the WebApp UI.
-    /// </summary>
-    protected async Task LogoutAsync()
-    {
-        Output.WriteLine("[TEST] Logging out...");
-
-        var logoutButton = await Page.QuerySelectorAsync("button:has-text('Logout'), a:has-text('Logout'), [data-testid='logout']");
-
-        if (logoutButton != null)
-        {
-            await logoutButton.ClickAsync();
-            await Task.Delay(500);
-        }
-        else
-        {
-            await Page.GotoAsync($"{WebAppUrl}/auth/logout");
-        }
-
-        await WaitForBlazorAsync();
-
-        Output.WriteLine("[TEST] Logout completed");
-    }
-
-    /// <summary>
-    /// Check if user is currently authenticated by looking for authenticated UI elements.
-    /// </summary>
-    protected async Task<bool> IsAuthenticatedAsync()
-    {
-        var logoutButton = await Page.QuerySelectorAsync("button:has-text('Logout'), a:has-text('Logout')");
-        var userMenu = await Page.QuerySelectorAsync("[data-testid='user-menu'], .user-menu, .user-profile");
-
-        return logoutButton != null || userMenu != null;
-    }
-
-    #endregion
-
-    #region Wait Helpers
-
-    /// <summary>
-    /// Wait for an element to contain specific text.
-    /// </summary>
-    protected async Task WaitForTextAsync(string selector, string text, int timeoutMs = 5000)
-    {
-        await Page.WaitForFunctionAsync(
-            $"() => document.querySelector('{selector}')?.innerText?.includes('{text}')",
-            null,
-            new PageWaitForFunctionOptions { Timeout = timeoutMs });
+        // Small delay for Blazor to settle
+        await Task.Delay(100);
     }
 
     /// <summary>
     /// Wait for URL to contain a specific path.
     /// </summary>
-    protected async Task WaitForUrlAsync(string urlPart, int timeoutMs = 5000)
+    protected async Task<bool> WaitForUrlContainsAsync(string urlPart, int timeoutMs = 10000)
     {
-        await Page.WaitForURLAsync($"**/*{urlPart}*", new PageWaitForURLOptions { Timeout = timeoutMs });
+        var elapsed = 0;
+        var pollInterval = 100;
+
+        while (elapsed < timeoutMs)
+        {
+            if (Page.Url.Contains(urlPart, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+            await Task.Delay(pollInterval);
+            elapsed += pollInterval;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Wait for URL to NOT contain a specific path.
+    /// </summary>
+    protected async Task<bool> WaitForUrlNotContainsAsync(string urlPart, int timeoutMs = 10000)
+    {
+        var elapsed = 0;
+        var pollInterval = 100;
+
+        while (elapsed < timeoutMs)
+        {
+            if (!Page.Url.Contains(urlPart, StringComparison.OrdinalIgnoreCase))
+            {
+                Output.WriteLine($"[TEST] URL no longer contains '{urlPart}' after {elapsed}ms. Current: {Page.Url}");
+                return true;
+            }
+            await Task.Delay(pollInterval);
+            elapsed += pollInterval;
+        }
+
+        Output.WriteLine($"[TEST] Timeout waiting for URL to not contain '{urlPart}'. Current: {Page.Url}");
+        return false;
+    }
+
+    /// <summary>
+    /// Wait for a success message to appear on the page.
+    /// </summary>
+    protected async Task<bool> WaitForSuccessMessageAsync(int timeoutMs = 10000)
+    {
+        try
+        {
+            await Page.Locator("[data-testid='success-message'], .alert-success, .text-green-600, [class*='success']")
+                .First.WaitForAsync(new LocatorWaitForOptions { Timeout = timeoutMs });
+            return true;
+        }
+        catch (TimeoutException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Wait for an error message to appear on the page.
+    /// </summary>
+    protected async Task<bool> WaitForErrorMessageAsync(int timeoutMs = 5000)
+    {
+        try
+        {
+            await Page.Locator("[data-testid='error-message'], .alert-danger, .alert-error, .text-red-600, [class*='error']")
+                .First.WaitForAsync(new LocatorWaitForOptions { Timeout = timeoutMs });
+            return true;
+        }
+        catch (TimeoutException)
+        {
+            return false;
+        }
     }
 
     #endregion
@@ -487,8 +442,9 @@ public abstract class WebAppTestBase : IAsyncLifetime
     /// </summary>
     protected async Task AssertTextVisibleAsync(string text)
     {
-        var element = await Page.QuerySelectorAsync($"text={text}");
-        Assert.NotNull(element);
+        var locator = Page.GetByText(text);
+        await locator.WaitForAsync(new LocatorWaitForOptions { Timeout = 5000 });
+        Assert.True(await locator.CountAsync() > 0, $"Expected text '{text}' to be visible on page");
     }
 
     /// <summary>
@@ -507,15 +463,43 @@ public abstract class WebAppTestBase : IAsyncLifetime
         Assert.DoesNotContain(path, Page.Url, StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// Assert that user is authenticated (sees authenticated UI elements).
+    /// </summary>
+    protected async Task AssertIsAuthenticatedAsync()
+    {
+        var isAuth = await IsAuthenticatedAsync();
+        Assert.True(isAuth, "Expected user to be authenticated but no authenticated UI elements found");
+    }
+
+    /// <summary>
+    /// Assert that user is NOT authenticated (sees login link, no user menu).
+    /// </summary>
+    protected async Task AssertIsNotAuthenticatedAsync()
+    {
+        var isAuth = await IsAuthenticatedAsync();
+        Assert.False(isAuth, "Expected user to NOT be authenticated but found authenticated UI elements");
+    }
+
     #endregion
 
-    #region DTOs
+    #region Test Data Helpers
 
-    private record AuthResponse(
-        string AccessToken,
-        string RefreshToken,
-        string TokenType,
-        int ExpiresIn);
+    /// <summary>
+    /// Generate a unique username for testing.
+    /// </summary>
+    protected static string GenerateUsername(string prefix = "user")
+    {
+        return $"{prefix}_{Guid.NewGuid():N}"[..20]; // Max 20 chars
+    }
+
+    /// <summary>
+    /// Generate a unique email for testing.
+    /// </summary>
+    protected static string GenerateEmail(string username)
+    {
+        return $"{username}@test.example.com";
+    }
 
     #endregion
 }

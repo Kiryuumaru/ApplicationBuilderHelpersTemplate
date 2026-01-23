@@ -25,6 +25,38 @@ When building, running, or initializing this project, use the following commands
 | `dotnet run --project src/Presentation.WebApp` | Run the Blazor web application |
 | `dotnet run --project src/Presentation.Cli` | Run the CLI application |
 
+## Publishing and Running the Application
+
+### Publish
+
+```powershell
+dotnet publish src/Presentation.WebApp.Server -o publish
+```
+
+### Run from Publish Folder
+
+**Important:** Always `cd` to the publish directory AND run the executable in a **single combined command**. This ensures:
+1. Config files (`appsettings.json`, etc.) are resolved correctly
+2. The working directory doesn't reset between commands
+
+**Always use the absolute path to the executable**, even when already in the publish directory.
+
+```powershell
+Push-Location "C:\path\to\publish"; & "C:\path\to\publish\sampleapp.exe" --urls "http://0.0.0.0:5000"
+```
+
+| Flag | Description |
+|------|-------------|
+| `--urls "http://0.0.0.0:5000"` | Listen on all network interfaces at port 5000 |
+| `--urls "http://localhost:5000"` | Listen only on localhost |
+| `--urls "http://0.0.0.0:80"` | Listen on all interfaces at port 80 (requires admin) |
+
+### Stop a Running Instance
+
+```powershell
+Get-Process sampleapp -ErrorAction SilentlyContinue | Stop-Process -Force
+```
+
 ## First-Time Setup
 
 When setting up a fresh clone:

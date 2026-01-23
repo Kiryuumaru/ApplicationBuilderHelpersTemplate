@@ -1,4 +1,5 @@
-﻿using Application.Client.Authentication.Interfaces;
+﻿using System.Diagnostics.CodeAnalysis;
+using Application.Client.Authentication.Interfaces;
 using Application.Client.Authentication.Interfaces.Infrastructure;
 using Application.Client.Authentication.Services;
 using Application.Client.Common.Extensions;
@@ -7,10 +8,6 @@ using Application.Client.Iam.Services;
 using ApplicationBuilderHelpers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Application.Client;
 
@@ -28,60 +25,21 @@ public class ClientApplication : Application
         services.AddScoped<ClientAuthStateProvider>();
         services.AddScoped<IAuthStateProvider>(sp => sp.GetRequiredService<ClientAuthStateProvider>());
 
-        // Authentication client (for login/register endpoints - no token needed)
-        services.AddHttpClient<IAuthenticationClient, AuthenticationClient>((sp, client) =>
-        {
-            client.BaseAddress = sp.GetRequiredService<IConfiguration>().GetApiEndpoint();
-        });
-
         // Token refresh handler for authenticated requests
         services.AddTransient<TokenRefreshHandler>();
 
-        // Authenticated HTTP client for API calls
-        services.AddHttpClient("API", (sp, client) =>
-        {
-            client.BaseAddress = sp.GetRequiredService<IConfiguration>().GetApiEndpoint();
-        }).AddHttpMessageHandler<TokenRefreshHandler>();
+        // Authentication client (no token needed for login/register)
+        services.AddApiClient<IAuthenticationClient, AuthenticationClient>(authenticated: false);
 
-        // Factory for creating authenticated HttpClient
-        services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("API"));
-
-        // Auth-related clients (sessions, API keys, 2FA, profile)
-        services.AddHttpClient<ISessionsClient, SessionsClient>((sp, client) =>
-        {
-            client.BaseAddress = sp.GetRequiredService<IConfiguration>().GetApiEndpoint();
-        }).AddHttpMessageHandler<TokenRefreshHandler>();
-
-        services.AddHttpClient<IApiKeysClient, ApiKeysClient>((sp, client) =>
-        {
-            client.BaseAddress = sp.GetRequiredService<IConfiguration>().GetApiEndpoint();
-        }).AddHttpMessageHandler<TokenRefreshHandler>();
-
-        services.AddHttpClient<ITwoFactorClient, TwoFactorClient>((sp, client) =>
-        {
-            client.BaseAddress = sp.GetRequiredService<IConfiguration>().GetApiEndpoint();
-        }).AddHttpMessageHandler<TokenRefreshHandler>();
-
-        services.AddHttpClient<IUserProfileClient, UserProfileClient>((sp, client) =>
-        {
-            client.BaseAddress = sp.GetRequiredService<IConfiguration>().GetApiEndpoint();
-        }).AddHttpMessageHandler<TokenRefreshHandler>();
-
-        // IAM clients (users, roles, permissions)
-        services.AddHttpClient<IUsersClient, UsersClient>((sp, client) =>
-        {
-            client.BaseAddress = sp.GetRequiredService<IConfiguration>().GetApiEndpoint();
-        }).AddHttpMessageHandler<TokenRefreshHandler>();
-
-        services.AddHttpClient<IRolesClient, RolesClient>((sp, client) =>
-        {
-            client.BaseAddress = sp.GetRequiredService<IConfiguration>().GetApiEndpoint();
-        }).AddHttpMessageHandler<TokenRefreshHandler>();
-
-        services.AddHttpClient<IPermissionsClient, PermissionsClient>((sp, client) =>
-        {
-            client.BaseAddress = sp.GetRequiredService<IConfiguration>().GetApiEndpoint();
-        }).AddHttpMessageHandler<TokenRefreshHandler>();
+        // Authenticated API clients
+        services.AddApiClient<ISessionsClient, SessionsClient>();
+        services.AddApiClient<IApiKeysClient, ApiKeysClient>();
+        services.AddApiClient<ITwoFactorClient, TwoFactorClient>();
+        services.AddApiClient<IUserProfileClient, UserProfileClient>();
+        services.AddApiClient<IPasskeysClient, PasskeysClient>();
+        services.AddApiClient<IUsersClient, UsersClient>();
+        services.AddApiClient<IRolesClient, RolesClient>();
+        services.AddApiClient<IPermissionsClient, PermissionsClient>();
     }
 
     public override async ValueTask RunPreparationAsync(ApplicationHost applicationHost, CancellationToken cancellationToken)
@@ -89,5 +47,31 @@ public class ClientApplication : Application
         await base.RunPreparationAsync(applicationHost, cancellationToken);
         var authStateProvider = applicationHost.Services.GetRequiredService<ClientAuthStateProvider>();
         await authStateProvider.InitializeAsync();
+    }
+}
+
+file static class ServiceCollectionExtensions
+{
+    /// <summary>
+    /// Registers a typed HTTP client for API calls.
+    /// </summary>
+    /// <param name="authenticated">If true, adds TokenRefreshHandler for authentication.</param>
+    public static IServiceCollection AddApiClient<TInterface, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TImplementation>(
+        this IServiceCollection services,
+        bool authenticated = true)
+        where TInterface : class
+        where TImplementation : class, TInterface
+    {
+        var builder = services.AddHttpClient<TInterface, TImplementation>((sp, client) =>
+        {
+            client.BaseAddress = sp.GetRequiredService<IConfiguration>().GetApiEndpoint();
+        });
+
+        if (authenticated)
+        {
+            builder.AddHttpMessageHandler<TokenRefreshHandler>();
+        }
+
+        return services;
     }
 }

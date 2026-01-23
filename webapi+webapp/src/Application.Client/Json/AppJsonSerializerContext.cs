@@ -21,6 +21,7 @@ namespace Application.Client.Json;
 [JsonSerializable(typeof(ListResponse<ApiKeyInfo>), TypeInfoPropertyName = "ListResponseApiKeyInfo")]
 [JsonSerializable(typeof(ListResponse<IamRole>), TypeInfoPropertyName = "ListResponseIamRole")]
 [JsonSerializable(typeof(ListResponse<IamPermission>), TypeInfoPropertyName = "ListResponseIamPermission")]
+[JsonSerializable(typeof(ListResponse<PasskeyInfo>), TypeInfoPropertyName = "ListResponsePasskeyInfo")]
 [JsonSerializable(typeof(PagedResponse<IamUser>), TypeInfoPropertyName = "PagedResponseIamUser")]
 [JsonSerializable(typeof(RevokeAllResponse))]
 [JsonSerializable(typeof(SessionInfo))]
@@ -34,6 +35,14 @@ namespace Application.Client.Json;
 [JsonSerializable(typeof(RecoveryCodesResponse))]
 [JsonSerializable(typeof(UserProfile))]
 [JsonSerializable(typeof(ChangePasswordRequest))]
+[JsonSerializable(typeof(ChangeUsernameRequest))]
+[JsonSerializable(typeof(ChangeEmailRequest))]
+[JsonSerializable(typeof(PasskeyInfo))]
+[JsonSerializable(typeof(PasskeyRegistrationOptions))]
+[JsonSerializable(typeof(PasskeyRegistrationResult))]
+[JsonSerializable(typeof(PasskeyRegistrationOptionsRequest))]
+[JsonSerializable(typeof(PasskeyRegistrationRequest))]
+[JsonSerializable(typeof(PasskeyRenameRequest))]
 [JsonSerializable(typeof(IamUser))]
 [JsonSerializable(typeof(UpdateUserRequest))]
 [JsonSerializable(typeof(UserPermissions))]
@@ -186,4 +195,35 @@ public sealed class ChangePasswordRequest
 public sealed class ResetUserPasswordRequest
 {
     public string NewPassword { get; set; } = string.Empty;
+}
+
+/// <summary>Change username request DTO.</summary>
+public sealed class ChangeUsernameRequest
+{
+    public string Username { get; set; } = string.Empty;
+}
+
+/// <summary>Change email request DTO.</summary>
+public sealed class ChangeEmailRequest
+{
+    public string Email { get; set; } = string.Empty;
+}
+
+/// <summary>Passkey registration options request DTO.</summary>
+public sealed class PasskeyRegistrationOptionsRequest
+{
+    public string CredentialName { get; set; } = string.Empty;
+}
+
+/// <summary>Passkey registration request DTO.</summary>
+public sealed class PasskeyRegistrationRequest
+{
+    public Guid ChallengeId { get; set; }
+    public string AttestationResponseJson { get; set; } = string.Empty;
+}
+
+/// <summary>Passkey rename request DTO.</summary>
+public sealed class PasskeyRenameRequest
+{
+    public string Name { get; set; } = string.Empty;
 }

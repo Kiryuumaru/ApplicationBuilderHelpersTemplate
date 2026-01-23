@@ -11,6 +11,11 @@
 		<xUnitParallelizeTestCollections>true</xUnitParallelizeTestCollections>
 	</PropertyGroup>
 
+	<!-- Exclude Old/ folder from compilation (archived tests that used deprecated API patterns) -->
+	<ItemGroup>
+		<Compile Remove="Old\**\*.cs" />
+	</ItemGroup>
+
 	<ItemGroup>
 		<PackageReference Include="GitHubActionsTestLogger" Version="3.0.1">
 			<PrivateAssets>all</PrivateAssets>

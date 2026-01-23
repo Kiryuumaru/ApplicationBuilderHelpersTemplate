@@ -3,8 +3,9 @@ using Presentation.WebApp.Client.FunctionalTests.Fixtures;
 namespace Presentation.WebApp.Client.FunctionalTests.Auth;
 
 /// <summary>
-/// Playwright functional tests for the complete authentication flow.
-/// Tests register -> login -> authenticated access -> logout cycle.
+/// Core authentication flow tests using ONLY UI interactions.
+/// These tests simulate real user behavior: click buttons, type in fields.
+/// NO direct API calls, NO header manipulation.
 /// </summary>
 public class AuthFlowTests : WebAppTestBase
 {
@@ -12,95 +13,243 @@ public class AuthFlowTests : WebAppTestBase
     {
     }
 
+    /// <summary>
+    /// THE CRITICAL TEST: Register → Login → Navigate to Profile → See profile data
+    /// This is the exact flow that was broken: after login, profile page returned 401.
+    /// </summary>
     [Fact]
-    public async Task FullAuthFlow_RegisterLoginLogout_Works()
+    public async Task Journey_RegisterLoginNavigateToProfile_SeesProfileData()
     {
         // Arrange
-        var username = $"flow_{Guid.NewGuid():N}".Substring(0, 20);
-        var email = $"{username}@test.example.com";
+        var username = GenerateUsername("profile");
+        var email = GenerateEmail(username);
 
-        // Step 1: Register
-        Output.WriteLine("Step 1: Register new user");
-        var registerSuccess = await RegisterUserAsync(username, email, TestPassword);
-        Assert.True(registerSuccess, "Registration should succeed");
+        // Act 1: Register via UI (fill form, click submit)
+        Output.WriteLine("=== STEP 1: Register ===");
+        var registered = await RegisterUserAsync(username, email, TestPassword);
+        Assert.True(registered, "Registration should succeed");
 
-        // Step 2: Login
-        Output.WriteLine("Step 2: Login with new user");
-        var loginSuccess = await LoginAsync(email, TestPassword);
-        Assert.True(loginSuccess, "Login should succeed after registration");
+        // After registration, user should be auto-logged in and on home page
+        Output.WriteLine($"After registration, URL: {Page.Url}");
+        AssertUrlDoesNotContain("/auth/register");
+        AssertUrlDoesNotContain("/auth/login");
 
-        // Step 3: Verify authenticated state
-        Output.WriteLine("Step 3: Verify authenticated");
-        await GoToHomeAsync();
-        var isAuthenticated = await IsAuthenticatedAsync();
-        // Note: This may fail if there's no visible auth indicator - that's okay for minimal UI
-        Output.WriteLine($"Is authenticated (UI check): {isAuthenticated}");
+        // Act 2: Click to navigate to Profile page (not direct URL navigation)
+        Output.WriteLine("=== STEP 2: Navigate to Profile via Click ===");
+        await ClickNavigateToProfileAsync();
 
-        // Step 4: Logout
-        Output.WriteLine("Step 4: Logout");
-        await LogoutAsync();
+        // Assert: Should be on profile page and see profile data (NOT 401)
+        Output.WriteLine($"After profile click, URL: {Page.Url}");
+        AssertUrlContains("/account/profile");
 
-        // Step 5: Verify logged out - should be redirected to login or home
-        Output.WriteLine("Step 5: Verify logged out");
-        await GoToHomeAsync();
-        var isStillAuthenticated = await IsAuthenticatedAsync();
-        Output.WriteLine($"Is still authenticated after logout: {isStillAuthenticated}");
+        // Verify profile data is displayed (not an error page)
+        var pageContent = await Page.ContentAsync();
+        Output.WriteLine($"Profile page content length: {pageContent.Length}");
 
-        // After logout, user should not see authenticated UI elements
-        Assert.False(isStillAuthenticated, "Should not be authenticated after logout");
+        // Should see the username or email on the profile page
+        var hasUserData = pageContent.Contains(username, StringComparison.OrdinalIgnoreCase) ||
+                          pageContent.Contains(email, StringComparison.OrdinalIgnoreCase);
+        
+        // Should NOT see unauthorized or error messages
+        var hasError = pageContent.Contains("401", StringComparison.OrdinalIgnoreCase) ||
+                       pageContent.Contains("unauthorized", StringComparison.OrdinalIgnoreCase) ||
+                       pageContent.Contains("access denied", StringComparison.OrdinalIgnoreCase);
+
+        Assert.False(hasError, "Profile page should NOT show 401/unauthorized error");
+        Assert.True(hasUserData, $"Profile page should display user data. Username: {username}, Email: {email}");
     }
 
+    /// <summary>
+    /// Test that session persists after page refresh.
+    /// </summary>
     [Fact]
-    public async Task AuthFlow_LoginPersistsAcrossNavigation()
+    public async Task Journey_LoginRefreshPage_StillLoggedIn()
     {
         // Arrange
-        var username = $"persist_{Guid.NewGuid():N}".Substring(0, 20);
-        var email = $"{username}@test.example.com";
+        var username = GenerateUsername("refresh");
+        var email = GenerateEmail(username);
 
         // Register and login
         await RegisterUserAsync(username, email, TestPassword);
-        await LoginAsync(email, TestPassword);
+        
+        // Verify we're logged in
+        await AssertIsAuthenticatedAsync();
+        var urlBeforeRefresh = Page.Url;
+        Output.WriteLine($"Before refresh, URL: {urlBeforeRefresh}");
 
-        // Act - Navigate to different pages
-        await GoToHomeAsync();
-        var homeUrl = Page.Url;
-        Output.WriteLine($"Home URL: {homeUrl}");
-
-        // Navigate to another page and back
-        await Page.GotoAsync($"{WebAppUrl}/account/profile");
+        // Act: Refresh the page
+        Output.WriteLine("=== Refreshing page ===");
+        await Page.ReloadAsync();
         await WaitForBlazorAsync();
-        var profileUrl = Page.Url;
-        Output.WriteLine($"Profile URL: {profileUrl}");
 
-        // Go back home
-        await GoToHomeAsync();
-
-        // Assert - Should still be authenticated
+        // Assert: Should still be logged in, not redirected to login
+        Output.WriteLine($"After refresh, URL: {Page.Url}");
+        
+        // Should NOT be on login page
         AssertUrlDoesNotContain("/auth/login");
+        
+        // Should still see authenticated UI
+        await AssertIsAuthenticatedAsync();
     }
 
+    /// <summary>
+    /// Test login with existing user (separate from registration).
+    /// </summary>
     [Fact]
-    public async Task AuthFlow_MultipleLoginAttempts_LastLoginWins()
+    public async Task Journey_LoginExistingUser_Success()
     {
-        // Arrange - Create two users
-        var username1 = $"multi1_{Guid.NewGuid():N}".Substring(0, 20);
-        var email1 = $"{username1}@test.example.com";
-        await RegisterUserAsync(username1, email1, TestPassword);
+        // Arrange: Register a user first
+        var username = GenerateUsername("login");
+        var email = GenerateEmail(username);
+        await RegisterUserAsync(username, email, TestPassword);
+        
+        // Logout to test login flow separately
+        await LogoutAsync();
+        await AssertIsNotAuthenticatedAsync();
 
-        var username2 = $"multi2_{Guid.NewGuid():N}".Substring(0, 20);
-        var email2 = $"{username2}@test.example.com";
-        await RegisterUserAsync(username2, email2, TestPassword);
+        // Act: Login via UI
+        Output.WriteLine("=== Logging in ===");
+        var loggedIn = await LoginAsync(email, TestPassword);
 
-        // Act - Login as first user, then login as second user
-        await LoginAsync(email1, TestPassword);
-        Output.WriteLine($"First login as {username1}");
-
-        await LoginAsync(email2, TestPassword);
-        Output.WriteLine($"Second login as {username2}");
-
-        // Assert - Should be logged in as second user
-        // This would require checking username display, but we verify by logout working
-        await GoToHomeAsync();
+        // Assert
+        Assert.True(loggedIn, "Login should succeed");
         AssertUrlDoesNotContain("/auth/login");
+        await AssertIsAuthenticatedAsync();
+    }
+
+    /// <summary>
+    /// Test logout flow.
+    /// </summary>
+    [Fact]
+    public async Task Journey_Logout_RedirectsToLogin()
+    {
+        // Arrange: Register and login
+        var username = GenerateUsername("logout");
+        var email = GenerateEmail(username);
+        await RegisterUserAsync(username, email, TestPassword);
+        await AssertIsAuthenticatedAsync();
+
+        // Act: Logout
+        Output.WriteLine("=== Logging out ===");
+        await LogoutAsync();
+
+        // Assert: Should be on login page and not authenticated
+        AssertUrlContains("/auth/login");
+        await AssertIsNotAuthenticatedAsync();
+    }
+
+    /// <summary>
+    /// Test full cycle: login → logout → login again.
+    /// </summary>
+    [Fact]
+    public async Task Journey_LoginLogoutLoginAgain_Works()
+    {
+        // Arrange
+        var username = GenerateUsername("cycle");
+        var email = GenerateEmail(username);
+
+        // Register
+        await RegisterUserAsync(username, email, TestPassword);
+        await AssertIsAuthenticatedAsync();
+        Output.WriteLine("Step 1: Registered and authenticated");
+
+        // Logout
+        await LogoutAsync();
+        await AssertIsNotAuthenticatedAsync();
+        Output.WriteLine("Step 2: Logged out");
+
+        // Login again
+        var loggedIn = await LoginAsync(email, TestPassword);
+        Assert.True(loggedIn, "Second login should succeed");
+        await AssertIsAuthenticatedAsync();
+        Output.WriteLine("Step 3: Logged in again");
+
+        // Navigate to profile to verify full auth works
+        await ClickNavigateToProfileAsync();
+        AssertUrlContains("/account/profile");
+        Output.WriteLine("Step 4: Navigated to profile successfully");
+    }
+
+    /// <summary>
+    /// Test password change cycle: change password → logout → old password fails → new password works.
+    /// </summary>
+    [Fact(Skip = "Change Password UI not yet implemented")]
+    public async Task Journey_ChangePassword_OldFailsNewWorks()
+    {
+        // Arrange
+        var username = GenerateUsername("pwchange");
+        var email = GenerateEmail(username);
+        var newPassword = "NewPassword456!";
+
+        // Register
+        await RegisterUserAsync(username, email, TestPassword);
+        await AssertIsAuthenticatedAsync();
+        Output.WriteLine("Step 1: Registered");
+
+        // Change password
+        var changed = await ChangePasswordAsync(TestPassword, newPassword);
+        Assert.True(changed, "Password change should succeed");
+        Output.WriteLine("Step 2: Password changed");
+
+        // Logout
+        await LogoutAsync();
+        Output.WriteLine("Step 3: Logged out");
+
+        // Try login with OLD password - should fail
+        await GoToLoginAsync();
+        await Page.Locator("#email").FillAsync(email);
+        await Page.Locator("#password").FillAsync(TestPassword);
+        await Page.Locator("button[type='submit']").ClickAsync();
+        
+        // Should still be on login page (failed)
+        await Task.Delay(2000); // Wait for response
+        var stillOnLogin = Page.Url.Contains("/auth/login", StringComparison.OrdinalIgnoreCase);
+        Assert.True(stillOnLogin, "Old password should NOT work after change");
+        Output.WriteLine("Step 4: Old password rejected (correct)");
+
+        // Try login with NEW password - should succeed
+        await Page.Locator("#password").FillAsync(""); // Clear
+        await Page.Locator("#password").FillAsync(newPassword);
+        await Page.Locator("button[type='submit']").ClickAsync();
+        
+        var success = await WaitForUrlNotContainsAsync("/auth/login", timeoutMs: 10000);
+        Assert.True(success, "New password should work");
+        await AssertIsAuthenticatedAsync();
+        Output.WriteLine("Step 5: New password works (correct)");
+    }
+
+    /// <summary>
+    /// Test login with wrong password shows error.
+    /// </summary>
+    [Fact]
+    public async Task Login_WrongPassword_ShowsError()
+    {
+        // Arrange
+        var username = GenerateUsername("wrongpw");
+        var email = GenerateEmail(username);
+        await RegisterUserAsync(username, email, TestPassword);
+        await LogoutAsync();
+
+        // Act: Try to login with wrong password
+        await GoToLoginAsync();
+        await Page.Locator("#email").FillAsync(email);
+        await Page.Locator("#password").FillAsync("WrongPassword123!");
+        await Page.Locator("button[type='submit']").ClickAsync();
+
+        // Wait a bit for response
+        await Task.Delay(2000);
+
+        // Assert: Should still be on login page
+        AssertUrlContains("/auth/login");
+        
+        // Should see some kind of error indication
+        var hasError = await WaitForErrorMessageAsync(timeoutMs: 3000);
+        var pageContent = await Page.ContentAsync();
+        var hasErrorText = pageContent.Contains("invalid", StringComparison.OrdinalIgnoreCase) ||
+                           pageContent.Contains("error", StringComparison.OrdinalIgnoreCase) ||
+                           pageContent.Contains("incorrect", StringComparison.OrdinalIgnoreCase) ||
+                           pageContent.Contains("failed", StringComparison.OrdinalIgnoreCase);
+
+        Assert.True(hasError || hasErrorText, "Should show error for wrong password");
     }
 }

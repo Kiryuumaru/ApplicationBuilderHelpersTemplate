@@ -66,4 +66,72 @@ internal class UserProfileClient : IUserProfileClient
             return (false, $"Network error: {ex.Message}");
         }
     }
+
+    public async Task<(UserProfile? Profile, string? ErrorMessage)> ChangeUsernameAsync(Guid userId, string newUsername, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var request = new ChangeUsernameRequest
+            {
+                Username = newUsername
+            };
+
+            var response = await _httpClient.PutAsJsonAsync(
+                $"api/v1/auth/users/{userId}/identity/username",
+                request,
+                AppJsonSerializerContext.Default.ChangeUsernameRequest,
+                cancellationToken);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var profile = await response.Content.ReadFromJsonAsync(
+                    AppJsonSerializerContext.Default.UserProfile,
+                    cancellationToken);
+                return (profile, null);
+            }
+
+            var error = await response.Content.ReadFromJsonAsync(
+                AppJsonSerializerContext.Default.ErrorResponse,
+                cancellationToken);
+            return (null, error?.Detail ?? error?.Message ?? "Failed to change username");
+        }
+        catch (Exception ex)
+        {
+            return (null, $"Network error: {ex.Message}");
+        }
+    }
+
+    public async Task<(UserProfile? Profile, string? ErrorMessage)> ChangeEmailAsync(Guid userId, string newEmail, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var request = new ChangeEmailRequest
+            {
+                Email = newEmail
+            };
+
+            var response = await _httpClient.PutAsJsonAsync(
+                $"api/v1/auth/users/{userId}/identity/email",
+                request,
+                AppJsonSerializerContext.Default.ChangeEmailRequest,
+                cancellationToken);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var profile = await response.Content.ReadFromJsonAsync(
+                    AppJsonSerializerContext.Default.UserProfile,
+                    cancellationToken);
+                return (profile, null);
+            }
+
+            var error = await response.Content.ReadFromJsonAsync(
+                AppJsonSerializerContext.Default.ErrorResponse,
+                cancellationToken);
+            return (null, error?.Detail ?? error?.Message ?? "Failed to change email");
+        }
+        catch (Exception ex)
+        {
+            return (null, $"Network error: {ex.Message}");
+        }
+    }
 }

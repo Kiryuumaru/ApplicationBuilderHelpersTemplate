@@ -105,9 +105,10 @@
                             @if (!string.IsNullOrEmpty(_setupInfo?.AuthenticatorUri))
                             {
                                 <p class="text-sm text-secondary-600 text-center mb-2">Use your authenticator app to scan this QR code</p>
-                                <div class="text-center p-4 bg-secondary-100 rounded">
-                                    <p class="text-xs text-secondary-500">QR Code would be rendered here</p>
-                                    <p class="text-xs font-mono break-all mt-2">@_setupInfo.AuthenticatorUri</p>
+                                <div class="flex justify-center">
+                                    <img src="@GetQrCodeUrl(_setupInfo.AuthenticatorUri)" 
+                                         alt="QR Code for authenticator app" 
+                                         class="w-48 h-48" />
                                 </div>
                             }
                         </div>
@@ -294,5 +295,11 @@
         [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Verification code is required")]
         [System.ComponentModel.DataAnnotations.StringLength(6, MinimumLength = 6, ErrorMessage = "Code must be 6 digits")]
         public string? Code { get; set; }
+    }
+    
+    private static string GetQrCodeUrl(string data)
+    {
+        var encoded = Uri.EscapeDataString(data);
+        return $"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={encoded}";
     }
 }
