@@ -198,7 +198,6 @@ internal static class PermissionIdsEmitter
         builder.AppendLine("    public static class Read");
         builder.AppendLine("    {");
         builder.AppendLine("        public const string Identifier = \"_read\";");
-        builder.AppendLine("        private const string Path = Identifier;");
         builder.AppendLine();
         builder.AppendLine("        /// <summary>Creates an allow directive for global read access.</summary>");
         builder.AppendLine("        public static string Allow() => \"allow;_read\";");
@@ -207,7 +206,7 @@ internal static class PermissionIdsEmitter
         builder.AppendLine("        public static string Deny() => \"deny;_read\";");
         builder.AppendLine();
         builder.AppendLine("        /// <summary>Creates a scope builder with the userId parameter.</summary>");
-        builder.AppendLine("        public static ScopeBuilder WithUserId(string value) => new ScopeBuilder(Path, \"userId\", value);");
+        builder.AppendLine("        public static ScopeBuilder WithUserId(string value) => new ScopeBuilder(Identifier, \"userId\", value);");
         builder.AppendLine();
         WriteScopeBuilderStruct(builder, indentLevel: 2, parameters: ImmutableArray.Create("userId"), useWithPrefix: false);
         builder.AppendLine("    }");
@@ -217,7 +216,6 @@ internal static class PermissionIdsEmitter
         builder.AppendLine("    public static class Write");
         builder.AppendLine("    {");
         builder.AppendLine("        public const string Identifier = \"_write\";");
-        builder.AppendLine("        private const string Path = Identifier;");
         builder.AppendLine();
         builder.AppendLine("        /// <summary>Creates an allow directive for global write access.</summary>");
         builder.AppendLine("        public static string Allow() => \"allow;_write\";");
@@ -226,7 +224,7 @@ internal static class PermissionIdsEmitter
         builder.AppendLine("        public static string Deny() => \"deny;_write\";");
         builder.AppendLine();
         builder.AppendLine("        /// <summary>Creates a scope builder with the userId parameter.</summary>");
-        builder.AppendLine("        public static ScopeBuilder WithUserId(string value) => new ScopeBuilder(Path, \"userId\", value);");
+        builder.AppendLine("        public static ScopeBuilder WithUserId(string value) => new ScopeBuilder(Identifier, \"userId\", value);");
         builder.AppendLine();
         WriteScopeBuilderStruct(builder, indentLevel: 2, parameters: ImmutableArray.Create("userId"), useWithPrefix: false);
         builder.AppendLine("    }");
@@ -347,9 +345,6 @@ internal static class PermissionIdsEmitter
         builder.AppendLine("\";");
         builder.AppendLine();
         builder.Append(indent);
-        builder.AppendLine("private const string Path = Identifier;");
-        builder.AppendLine();
-        builder.Append(indent);
         builder.AppendLine("/// <summary>Creates an allow directive for this scope.</summary>");
         builder.Append(indent);
         builder.Append("public static string Allow() => \"allow;");
@@ -374,7 +369,7 @@ internal static class PermissionIdsEmitter
             builder.Append(indent);
             builder.Append("public static ScopeBuilder With");
             builder.Append(IdentifierNaming.ToParameterIdentifier(first));
-            builder.Append("(string value) => new ScopeBuilder(Path, \"");
+            builder.Append("(string value) => new ScopeBuilder(Identifier, \"");
             builder.Append(SourceTextEscaping.EscapeForStringLiteral(first));
             builder.AppendLine("\", value);");
             builder.AppendLine();
@@ -393,9 +388,6 @@ internal static class PermissionIdsEmitter
         builder.Append("public const string Identifier = \"");
         builder.Append(SourceTextEscaping.EscapeForStringLiteral(identifier));
         builder.AppendLine("\";");
-        builder.AppendLine();
-        builder.Append(indent);
-        builder.AppendLine("private const string Path = Identifier;");
         builder.AppendLine();
         builder.Append(indent);
         builder.AppendLine("/// <summary>Creates an allow directive for this permission.</summary>");
@@ -422,7 +414,7 @@ internal static class PermissionIdsEmitter
             builder.Append(indent);
             builder.Append("public static ScopeBuilder With");
             builder.Append(IdentifierNaming.ToParameterIdentifier(first));
-            builder.Append("(string value) => new ScopeBuilder(Path, \"");
+            builder.Append("(string value) => new ScopeBuilder(Identifier, \"");
             builder.Append(SourceTextEscaping.EscapeForStringLiteral(first));
             builder.AppendLine("\", value);");
             builder.AppendLine();
@@ -434,7 +426,7 @@ internal static class PermissionIdsEmitter
         builder.Append(indent);
         builder.AppendLine("/// <summary>Creates a permission request builder for HasPermission calls.</summary>");
         builder.Append(indent);
-        builder.AppendLine("public static PermissionRequestBuilder Permission => new PermissionRequestBuilder(Path);");
+        builder.AppendLine("public static PermissionRequestBuilder Permission => new PermissionRequestBuilder(Identifier);");
         builder.AppendLine();
         WritePermissionRequestBuilderStruct(builder, indentLevel, combinedParameters);
     }
