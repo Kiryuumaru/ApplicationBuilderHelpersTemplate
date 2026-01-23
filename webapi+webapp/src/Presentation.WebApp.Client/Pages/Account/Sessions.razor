@@ -2,6 +2,8 @@
 @attribute [Authorize]
 @inject ISessionsClient SessionsClient
 @inject IAuthStateProvider AuthStateProvider
+@inject IDialogService Dialog
+@inject IToastService Toast
 @inject NavigationManager Navigation
 
 <PageTitle>Active Sessions</PageTitle>
@@ -10,20 +12,10 @@
     <Card>
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-xl font-bold text-secondary-900 dark:text-white">Active Sessions</h2>
-            <Button Variant="Button.ButtonVariant.Danger" OnClick="ShowRevokeAllConfirmation" Loading="_isRevokingAll" LoadingText="Revoking...">
+            <Button Variant="Button.ButtonVariant.Danger" OnClick="RevokeAllSessionsWithConfirmation" Loading="_isRevokingAll" LoadingText="Revoking...">
                 Revoke All Sessions
             </Button>
         </div>
-        
-        @if (!string.IsNullOrEmpty(_successMessage))
-        {
-            <Alert Type="Alert.AlertType.Success" Message="@_successMessage" Dismissible="true" OnDismissed="() => _successMessage = null" />
-        }
-        
-        @if (!string.IsNullOrEmpty(_errorMessage))
-        {
-            <Alert Type="Alert.AlertType.Error" Message="@_errorMessage" Dismissible="true" OnDismissed="() => _errorMessage = null" />
-        }
         
         @if (_isLoading)
         {
@@ -72,43 +64,10 @@
     </Card>
 </div>
 
-@* Confirmation Modal for Revoke All Sessions *@
-@if (_showRevokeAllConfirmation)
-{
-    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @onclick="CancelRevokeAll">
-        <div class="bg-white dark:bg-secondary-800 rounded-lg p-6 max-w-md w-full mx-4" @onclick:stopPropagation>
-            <div class="flex items-center mb-4">
-                <div class="shrink-0 w-10 h-10 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center mr-3">
-                    <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                </div>
-                <h3 class="text-lg font-bold text-secondary-900 dark:text-white">Revoke All Sessions</h3>
-            </div>
-            
-            <p class="text-secondary-600 dark:text-secondary-400 mb-4">
-                Are you sure you want to revoke all sessions? This will log you out from all devices, <strong>including this one</strong>. You will need to log in again.
-            </p>
-            
-            <div class="flex justify-end gap-2">
-                <Button Variant="Button.ButtonVariant.Secondary" OnClick="CancelRevokeAll">
-                    Cancel
-                </Button>
-                <Button Variant="Button.ButtonVariant.Danger" OnClick="ConfirmRevokeAllSessions" Loading="_isRevokingAll" LoadingText="Revoking...">
-                    Revoke All & Log Out
-                </Button>
-            </div>
-        </div>
-    </div>
-}
-
 @code {
     private List<SessionInfo> _sessions = new();
     private bool _isLoading = true;
     private bool _isRevokingAll;
-    private bool _showRevokeAllConfirmation;
-    private string? _successMessage;
-    private string? _errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
@@ -126,7 +85,7 @@
         }
         catch (Exception ex)
         {
-            _errorMessage = $"Failed to load sessions: {ex.Message}";
+            Toast.Error($"Failed to load sessions: {ex.Message}");
         }
         finally
         {
@@ -142,47 +101,48 @@
             var result = await SessionsClient.RevokeSessionAsync(userId, sessionId);
             if (result)
             {
-                _successMessage = "Session revoked successfully";
+                Toast.Success("Session revoked successfully");
                 await LoadSessions();
             }
             else
             {
-                _errorMessage = "Failed to revoke session";
+                Toast.Error("Failed to revoke session");
             }
         }
         catch (Exception ex)
         {
-            _errorMessage = $"An error occurred: {ex.Message}";
+            Toast.Error($"An error occurred: {ex.Message}");
         }
     }
 
-    private void ShowRevokeAllConfirmation()
+    private async Task RevokeAllSessionsWithConfirmation()
     {
-        _showRevokeAllConfirmation = true;
-    }
+        var confirmed = await Dialog.ConfirmAsync(
+            "Are you sure you want to revoke all sessions? This will log you out from all devices, including this one. You will need to log in again.",
+            title: "Revoke All Sessions",
+            confirmText: "Revoke All & Log Out",
+            cancelText: "Cancel",
+            variant: Application.Client.Notifications.Models.DialogVariant.Danger);
 
-    private void CancelRevokeAll()
-    {
-        _showRevokeAllConfirmation = false;
-    }
+        if (!confirmed)
+        {
+            return;
+        }
 
-    private async Task ConfirmRevokeAllSessions()
-    {
         _isRevokingAll = true;
+        StateHasChanged();
 
         try
         {
             var userId = AuthStateProvider.CurrentState.UserId;
             await SessionsClient.RevokeAllSessionsAsync(userId);
             
-            // Clear auth state and redirect to login since current session is revoked
             await AuthStateProvider.ClearStateAsync();
             Navigation.NavigateTo("/auth/login");
         }
         catch (Exception ex)
         {
-            _errorMessage = $"An error occurred: {ex.Message}";
-            _showRevokeAllConfirmation = false;
+            Toast.Error($"An error occurred: {ex.Message}");
         }
         finally
         {

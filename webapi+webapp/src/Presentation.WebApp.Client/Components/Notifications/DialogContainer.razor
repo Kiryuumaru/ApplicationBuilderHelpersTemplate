@@ -1,0 +1,99 @@
+@using Application.Client.Notifications.Interfaces
+@using Application.Client.Notifications.Models
+@using Application.Client.Notifications.Services
+@inject IDialogService DialogService
+@implements IDisposable
+
+@if (_confirmRequest != null)
+{
+    <ConfirmDialog Request="_confirmRequest" OnResult="HandleConfirmResult" />
+}
+
+@if (_alertRequest != null)
+{
+    <AlertDialog Request="_alertRequest" OnResult="HandleAlertResult" />
+}
+
+@if (_promptRequest != null)
+{
+    <PromptDialog Request="_promptRequest" OnResult="HandlePromptResult" />
+}
+
+@code {
+    private ConfirmDialogRequest? _confirmRequest;
+    private AlertDialogRequest? _alertRequest;
+    private PromptDialogRequest? _promptRequest;
+
+    protected override void OnInitialized()
+    {
+        if (DialogService is DialogService service)
+        {
+            service.OnConfirmRequested += HandleConfirmRequested;
+            service.OnAlertRequested += HandleAlertRequested;
+            service.OnPromptRequested += HandlePromptRequested;
+        }
+    }
+
+    private void HandleConfirmRequested(ConfirmDialogRequest request)
+    {
+        InvokeAsync(() =>
+        {
+            _confirmRequest = request;
+            StateHasChanged();
+        });
+    }
+
+    private void HandleAlertRequested(AlertDialogRequest request)
+    {
+        InvokeAsync(() =>
+        {
+            _alertRequest = request;
+            StateHasChanged();
+        });
+    }
+
+    private void HandlePromptRequested(PromptDialogRequest request)
+    {
+        InvokeAsync(() =>
+        {
+            _promptRequest = request;
+            StateHasChanged();
+        });
+    }
+
+    private void HandleConfirmResult(bool result)
+    {
+        _confirmRequest?.TaskCompletionSource.TrySetResult(result);
+        _confirmRequest = null;
+        StateHasChanged();
+    }
+
+    private void HandleAlertResult()
+    {
+        _alertRequest?.TaskCompletionSource.TrySetResult();
+        _alertRequest = null;
+        StateHasChanged();
+    }
+
+    private void HandlePromptResult(string? result)
+    {
+        _promptRequest?.TaskCompletionSource.TrySetResult(result);
+        _promptRequest = null;
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        if (DialogService is DialogService service)
+        {
+            service.OnConfirmRequested -= HandleConfirmRequested;
+            service.OnAlertRequested -= HandleAlertRequested;
+            service.OnPromptRequested -= HandlePromptRequested;
+        }
+
+        // Complete any pending tasks to prevent hangs
+        _confirmRequest?.TaskCompletionSource.TrySetResult(false);
+        _alertRequest?.TaskCompletionSource.TrySetResult();
+        _promptRequest?.TaskCompletionSource.TrySetResult(null);
+    }
+}

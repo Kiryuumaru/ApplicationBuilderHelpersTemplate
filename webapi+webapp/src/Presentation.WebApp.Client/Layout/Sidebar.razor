@@ -3,7 +3,7 @@
 @using Presentation.WebApp.Client.Components.Authorization
 @inject IAuthStateProvider AuthStateProvider
 
-<aside id="logo-sidebar" class="fixed top-0 left-0 z-40 w-64 h-screen pt-20 transition-transform -translate-x-full bg-white border-r border-secondary-200 sm:translate-x-0 dark:bg-secondary-800 dark:border-secondary-700" aria-label="Sidebar">
+<aside id="logo-sidebar" class="@SidebarClasses" aria-label="Sidebar">
     <div class="h-full px-3 pb-4 overflow-y-auto bg-white dark:bg-secondary-800">
         <ul class="space-y-2 font-medium">
             <li>
@@ -115,6 +115,12 @@
 </aside>
 
 @code {
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
     private bool _isAuthenticated;
 
     // Admin section shows if user has ANY of these permissions
@@ -124,6 +130,10 @@
         PermissionIds.Api.Iam.Roles.Read.Identifier,
         PermissionIds.Api.Iam.Permissions.Write.Identifier
     ];
+
+    private string SidebarClasses => IsOpen
+        ? "fixed top-0 left-0 z-40 w-64 h-screen pt-20 transition-transform translate-x-0 bg-white border-r border-secondary-200 dark:bg-secondary-800 dark:border-secondary-700"
+        : "fixed top-0 left-0 z-40 w-64 h-screen pt-20 transition-transform -translate-x-full md:translate-x-0 bg-white border-r border-secondary-200 dark:bg-secondary-800 dark:border-secondary-700";
 
     protected override void OnInitialized()
     {

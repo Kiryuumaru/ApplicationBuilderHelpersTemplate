@@ -1,0 +1,64 @@
+@using Application.Client.Notifications.Services
+
+<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]" @onclick="Cancel" @onkeydown="HandleKeyDown" tabindex="-1">
+    <div class="bg-white dark:bg-secondary-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4" @onclick:stopPropagation>
+        @if (!string.IsNullOrEmpty(Request.Title))
+        {
+            <h3 class="text-lg font-semibold text-secondary-900 dark:text-white mb-4">@Request.Title</h3>
+        }
+
+        <p class="text-secondary-600 dark:text-secondary-400 mb-4">@Request.Message</p>
+
+        <input type="text"
+               @bind="_inputValue"
+               @bind:event="oninput"
+               placeholder="@Request.Placeholder"
+               class="w-full px-3 py-2 border border-secondary-300 dark:border-secondary-600 rounded-lg bg-white dark:bg-secondary-700 text-secondary-900 dark:text-white placeholder-secondary-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
+
+        <div class="flex justify-end gap-3 mt-6">
+            <Button Variant="Button.ButtonVariant.Secondary" OnClick="Cancel">
+                @Request.CancelText
+            </Button>
+            <Button Variant="Button.ButtonVariant.Primary" OnClick="Confirm">
+                @Request.ConfirmText
+            </Button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public PromptDialogRequest Request { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<string?> OnResult { get; set; }
+
+    private string _inputValue = "";
+
+    protected override void OnInitialized()
+    {
+        _inputValue = Request.DefaultValue ?? "";
+    }
+
+    private async Task Confirm()
+    {
+        await OnResult.InvokeAsync(_inputValue);
+    }
+
+    private async Task Cancel()
+    {
+        await OnResult.InvokeAsync(null);
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            await Cancel();
+        }
+        else if (e.Key == "Enter")
+        {
+            await Confirm();
+        }
+    }
+}

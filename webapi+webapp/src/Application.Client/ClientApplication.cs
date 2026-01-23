@@ -7,6 +7,8 @@ using Application.Client.Authorization.Services;
 using Application.Client.Common.Extensions;
 using Application.Client.Iam.Interfaces;
 using Application.Client.Iam.Services;
+using Application.Client.Notifications.Interfaces;
+using Application.Client.Notifications.Services;
 using ApplicationBuilderHelpers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,6 +20,12 @@ public class ClientApplication : Application
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
     {
         base.AddServices(applicationBuilder, services);
+
+        // Notification services (toast and dialogs)
+        services.AddSingleton<ToastService>();
+        services.AddSingleton<IToastService>(sp => sp.GetRequiredService<ToastService>());
+        services.AddSingleton<DialogService>();
+        services.AddSingleton<IDialogService>(sp => sp.GetRequiredService<DialogService>());
 
         // Token storage using local store (IndexedDB in browser)
         services.AddScoped<ITokenStorage, LocalStoreTokenStorage>();
