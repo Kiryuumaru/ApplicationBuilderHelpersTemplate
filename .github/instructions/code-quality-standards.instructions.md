@@ -173,6 +173,60 @@ Stacking unverified fixes creates cascading issues:
 
 ---
 
+## DRY: Don't Repeat Yourself
+
+**If you write similar code twice, you should have extracted it the first time.**
+
+### When to Extract
+
+1. **Same logic appears 2+ times** - If you copy-paste, extract it
+2. **Pattern emerges across files** - Similar try/catch, loops, conditionals
+3. **Magic values repeat** - Timeouts, URLs, constants
+4. **Error handling duplicated** - Same catch blocks, same fallback logic
+
+### Where to Put Shared Code
+
+| Code Type | Location |
+|-----------|----------|
+| Domain logic | `Domain/Shared/` or feature-specific folder |
+| Application utilities | `Application/Shared/` or `Application/{Feature}/Extensions/` |
+| Test helpers | Base test class or `TestHelpers/` folder |
+| Infrastructure utilities | `Infrastructure.{Provider}/Extensions/` |
+
+### Forbidden Patterns
+
+❌ Copy-paste with minor variations  
+❌ Inline magic values (hardcoded timeouts, strings, numbers)  
+❌ Duplicated validation logic across methods  
+❌ Same error handling pattern repeated  
+
+### Required Patterns
+
+✅ Extract repeated logic to helper methods  
+✅ Use constants for magic values  
+✅ Create base classes for shared behavior  
+✅ Use extension methods for common operations  
+
+```csharp
+// BAD: Same timeout repeated everywhere
+await element1.WaitForAsync(new() { Timeout = 10000 });
+await element2.WaitForAsync(new() { Timeout = 10000 });
+
+// GOOD: Single constant, reusable helper
+protected const int DefaultTimeoutMs = 10_000;
+
+protected async Task<ILocator> WaitForAsync(string selector)
+{
+    var locator = Page.Locator(selector);
+    await locator.WaitForAsync(new() { Timeout = DefaultTimeoutMs });
+    return locator;
+}
+```
+
+Every duplication is a maintenance burden. Extract early, extract often.
+
+---
+
 ## The Standard
 
 **If you wouldn't trust this code with your life, don't commit it.**
