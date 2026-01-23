@@ -1,5 +1,7 @@
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Application.Client.Authentication.Interfaces;
+using Application.Client.Authentication.Interfaces.Infrastructure;
 using Application.Client.Authentication.Models;
 using Application.Client.Json;
 
@@ -8,10 +10,12 @@ namespace Application.Client.Authentication.Services;
 internal class AuthenticationClient : IAuthenticationClient
 {
     private readonly HttpClient _httpClient;
+    private readonly ITokenStorage _tokenStorage;
 
-    public AuthenticationClient(HttpClient httpClient)
+    public AuthenticationClient(HttpClient httpClient, ITokenStorage tokenStorage)
     {
         _httpClient = httpClient;
+        _tokenStorage = tokenStorage;
     }
 
     public async Task<LoginResult> LoginAsync(string usernameOrEmail, string password, CancellationToken cancellationToken = default)
@@ -154,7 +158,15 @@ internal class AuthenticationClient : IAuthenticationClient
     {
         try
         {
-            await _httpClient.PostAsync("api/v1/auth/logout", null, cancellationToken);
+            var credentials = await _tokenStorage.GetCredentialsAsync();
+            if (credentials?.AccessToken == null)
+            {
+                return;
+            }
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, "api/v1/auth/logout");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", credentials.AccessToken);
+            await _httpClient.SendAsync(request, cancellationToken);
         }
         catch
         {
