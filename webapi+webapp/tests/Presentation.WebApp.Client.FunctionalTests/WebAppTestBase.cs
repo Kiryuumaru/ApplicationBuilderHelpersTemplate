@@ -337,6 +337,26 @@ public abstract class WebAppTestBase : IAsyncLifetime
     #region Wait Helpers
 
     /// <summary>
+    /// Wait for a specific element to appear on the page.
+    /// </summary>
+    protected async Task<ILocator> WaitForAsync(string selector, int? timeoutMs = null)
+    {
+        var locator = Page.Locator(selector);
+        await locator.WaitForAsync(new LocatorWaitForOptions { Timeout = timeoutMs ?? DefaultTimeoutMs });
+        return locator;
+    }
+
+    /// <summary>
+    /// Wait for an element containing specific text to appear.
+    /// </summary>
+    protected async Task<ILocator> WaitForTextAsync(string text, int? timeoutMs = null)
+    {
+        var locator = Page.GetByText(text);
+        await locator.WaitForAsync(new LocatorWaitForOptions { Timeout = timeoutMs ?? DefaultTimeoutMs });
+        return locator;
+    }
+
+    /// <summary>
     /// Wait for Blazor WASM to fully load and hydrate.
     /// </summary>
     protected async Task WaitForBlazorAsync(int timeoutMs = 30000)

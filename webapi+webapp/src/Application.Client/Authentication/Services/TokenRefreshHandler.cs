@@ -6,24 +6,29 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Application.Client.Authentication.Services;
 
+/// <summary>
+/// HTTP message handler that attaches Bearer tokens to requests and handles token refresh.
+/// Creates a scope to read from ITokenStorage (IndexedDB) for each request.
+/// </summary>
 internal class TokenRefreshHandler : DelegatingHandler
 {
-    private readonly IServiceProvider _serviceProvider;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
 
-    public TokenRefreshHandler(IServiceProvider serviceProvider)
+    public TokenRefreshHandler(IServiceScopeFactory scopeFactory)
     {
-        _serviceProvider = serviceProvider;
+        _scopeFactory = scopeFactory;
     }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        // Resolve scoped services at request time to ensure we get the correct instance
-        var tokenStorage = _serviceProvider.GetRequiredService<ITokenStorage>();
-        var authStateProvider = _serviceProvider.GetRequiredService<IAuthStateProvider>();
-
-        // Attach access token if available
-        var credentials = await tokenStorage.GetCredentialsAsync();
+        // Create scope to read from persistent token storage (IndexedDB)
+        Models.StoredCredentials? credentials;
+        using (var scope = _scopeFactory.CreateScope())
+        {
+            var tokenStorage = scope.ServiceProvider.GetRequiredService<ITokenStorage>();
+            credentials = await tokenStorage.GetCredentialsAsync();
+        }
         
         if (credentials != null && !string.IsNullOrEmpty(credentials.AccessToken))
         {
@@ -38,8 +43,11 @@ internal class TokenRefreshHandler : DelegatingHandler
             await _refreshLock.WaitAsync(cancellationToken);
             try
             {
-                // Re-check credentials (another thread might have refreshed)
+                // Re-check credentials (another request might have refreshed)
+                using var scope = _scopeFactory.CreateScope();
+                var tokenStorage = scope.ServiceProvider.GetRequiredService<ITokenStorage>();
                 var currentCredentials = await tokenStorage.GetCredentialsAsync();
+                
                 if (currentCredentials?.AccessToken != credentials.AccessToken)
                 {
                     // Token was already refreshed, retry with new token
@@ -47,8 +55,8 @@ internal class TokenRefreshHandler : DelegatingHandler
                     return await base.SendAsync(CloneRequest(request), cancellationToken);
                 }
 
-                // Resolve auth client for refresh (avoid circular dependency)
-                var authClient = _serviceProvider.GetRequiredService<IAuthenticationClient>();
+                var authClient = scope.ServiceProvider.GetRequiredService<IAuthenticationClient>();
+                var authStateProvider = scope.ServiceProvider.GetRequiredService<IAuthStateProvider>();
 
                 // Attempt token refresh
                 var refreshResult = await authClient.RefreshTokenAsync(credentials.RefreshToken, cancellationToken);

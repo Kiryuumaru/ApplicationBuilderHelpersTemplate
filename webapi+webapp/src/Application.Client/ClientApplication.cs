@@ -19,7 +19,7 @@ public class ClientApplication : Application
     {
         base.AddServices(applicationBuilder, services);
 
-        // Token storage using local store
+        // Token storage using local store (IndexedDB in browser)
         services.AddScoped<ITokenStorage, LocalStoreTokenStorage>();
 
         // Auth state provider - registered as both concrete and interface

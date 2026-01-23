@@ -6,12 +6,20 @@ using Application.LocalStore.Interfaces.Infrastructure;
 
 namespace Application.Client.Authentication.Services;
 
-internal sealed class LocalStoreTokenStorage(ILocalStoreService localStoreService) : ITokenStorage
+/// <summary>
+/// Token storage using ILocalStoreService (IndexedDB in browser).
+/// </summary>
+internal sealed class LocalStoreTokenStorage : ITokenStorage
 {
     private const string GroupName = "auth";
     private const string CredentialsId = "credentials";
 
-    private readonly ILocalStoreService _localStoreService = localStoreService;
+    private readonly ILocalStoreService _localStoreService;
+
+    public LocalStoreTokenStorage(ILocalStoreService localStoreService)
+    {
+        _localStoreService = localStoreService;
+    }
 
     public async Task StoreCredentialsAsync(StoredCredentials credentials)
     {

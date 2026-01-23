@@ -112,6 +112,46 @@ export function beforeWebStart() {
         },
 
         /**
+         * Commits a batch of operations atomically from a JSON string.
+         * @param {string} dbName - Database name
+         * @param {string} storeName - Object store name
+         * @param {number} version - Database version
+         * @param {string} operationsJson - JSON string of operations to commit
+         */
+        commitOperationsJson: async function (dbName, storeName, version, operationsJson) {
+            const operations = JSON.parse(operationsJson);
+            
+            if (!operations || operations.length === 0) {
+                return;
+            }
+
+            const db = await this.openDatabase(dbName, storeName, version);
+            try {
+                await new Promise((resolve, reject) => {
+                    const transaction = db.transaction(storeName, 'readwrite');
+                    const store = transaction.objectStore(storeName);
+
+                    transaction.onerror = () => reject(transaction.error);
+                    transaction.oncomplete = () => resolve();
+
+                    for (const op of operations) {
+                        if (op.type === 'set') {
+                            store.put({
+                                group: op.group,
+                                id: op.id,
+                                data: op.data
+                            });
+                        } else if (op.type === 'delete') {
+                            store.delete([op.group, op.id]);
+                        }
+                    }
+                });
+            } finally {
+                db.close();
+            }
+        },
+
+        /**
          * Commits a batch of operations atomically.
          * @param {string} dbName - Database name
          * @param {string} storeName - Object store name

@@ -1,6 +1,6 @@
 using Application.LocalStore.Interfaces.Infrastructure;
 using Microsoft.JSInterop;
-using System.Text.Json.Serialization;
+using System.Text.Json;
 
 namespace Infrastructure.Browser.IndexedDB.LocalStore.Services;
 
@@ -43,21 +43,23 @@ public sealed class IndexedDBLocalStoreService : ILocalStoreService
         var operations = _pendingOperations.ToArray();
         _pendingOperations.Clear();
 
-        var jsOperations = operations.Select(o => new JsOperation
-        {
-            Type = o.Type == OperationType.Set ? "set" : "delete",
-            Group = o.Group,
-            Id = o.Id,
-            Data = o.Data
-        }).ToArray();
+        // Serialize operations to JSON string to avoid AOT serialization issues with anonymous types
+        var jsOperations = operations.Select(o => new JsOperation(
+            o.Type == OperationType.Set ? "set" : "delete",
+            o.Group,
+            o.Id,
+            o.Data
+        )).ToArray();
+        
+        var operationsJson = JsonSerializer.Serialize(jsOperations, IndexedDBJsonContext.Default.JsOperationArray);
 
         await _jsRuntime.InvokeVoidAsync(
-            "indexedDBLocalStore.commitOperations",
+            "indexedDBLocalStore.commitOperationsJson",
             cancellationToken,
             DatabaseName,
             StoreName,
             DatabaseVersion,
-            jsOperations);
+            operationsJson);
     }
 
     public Task RollbackAsync(CancellationToken cancellationToken)
@@ -210,22 +212,19 @@ public sealed class IndexedDBLocalStoreService : ILocalStoreService
     }
 
     private sealed record PendingOperation(OperationType Type, string Group, string Id, string? Data);
+}
 
-    /// <summary>
-    /// DTO for JS interop - uses explicit JSON property names for trimmed WebAssembly compatibility.
-    /// </summary>
-    private sealed class JsOperation
-    {
-        [JsonPropertyName("type")]
-        public string Type { get; set; } = "";
+/// <summary>
+/// Operation to be committed to IndexedDB.
+/// </summary>
+internal sealed record JsOperation(string type, string group, string id, string? data);
 
-        [JsonPropertyName("group")]
-        public string Group { get; set; } = "";
-
-        [JsonPropertyName("id")]
-        public string Id { get; set; } = "";
-
-        [JsonPropertyName("data")]
-        public string? Data { get; set; }
-    }
+/// <summary>
+/// JSON serialization context for IndexedDB operations.
+/// Required for AOT compilation in Blazor WASM.
+/// </summary>
+[System.Text.Json.Serialization.JsonSerializable(typeof(JsOperation))]
+[System.Text.Json.Serialization.JsonSerializable(typeof(JsOperation[]))]
+internal sealed partial class IndexedDBJsonContext : System.Text.Json.Serialization.JsonSerializerContext
+{
 }

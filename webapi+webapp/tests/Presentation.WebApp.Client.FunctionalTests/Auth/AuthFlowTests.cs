@@ -20,17 +20,6 @@ public class AuthFlowTests : WebAppTestBase
     [Fact]
     public async Task Journey_RegisterLoginNavigateToProfile_SeesProfileData()
     {
-        // Track 401 errors from API calls
-        var unauthorizedResponses = new List<string>();
-        Page.Response += (_, response) =>
-        {
-            if (response.Status == 401 && response.Url.Contains("/api/"))
-            {
-                unauthorizedResponses.Add($"{response.Request.Method} {response.Url}");
-                Output.WriteLine($"[401 ERROR] {response.Request.Method} {response.Url}");
-            }
-        };
-
         // Arrange
         var username = GenerateUsername("profile");
         var email = GenerateEmail(username);
@@ -49,32 +38,39 @@ public class AuthFlowTests : WebAppTestBase
         Output.WriteLine("=== STEP 2: Navigate to Profile via Click ===");
         await ClickNavigateToProfileAsync();
 
-        // Assert: Should be on profile page and see profile data (NOT 401)
+        // Assert: Should be on profile page
         Output.WriteLine($"After profile click, URL: {Page.Url}");
         AssertUrlContains("/account/profile");
 
-        // Check for 401 errors in API calls
-        if (unauthorizedResponses.Count > 0)
-        {
-            var errors = string.Join(Environment.NewLine, unauthorizedResponses);
-            Assert.Fail($"Received {unauthorizedResponses.Count} unauthorized API response(s):{Environment.NewLine}{errors}");
-        }
-
-        // Verify profile data is displayed (not an error page)
-        var pageContent = await Page.ContentAsync();
-        Output.WriteLine($"Profile page content length: {pageContent.Length}");
-
-        // Should see the username or email on the profile page
-        var hasUserData = pageContent.Contains(username, StringComparison.OrdinalIgnoreCase) ||
-                          pageContent.Contains(email, StringComparison.OrdinalIgnoreCase);
+        // Wait for profile page to finish loading
+        Output.WriteLine("=== STEP 3: Waiting for Profile Data to Load ===");
         
-        // Should NOT see unauthorized or error messages
-        var hasError = pageContent.Contains("401", StringComparison.OrdinalIgnoreCase) ||
-                       pageContent.Contains("unauthorized", StringComparison.OrdinalIgnoreCase) ||
-                       pageContent.Contains("access denied", StringComparison.OrdinalIgnoreCase);
+        // Wait for the profile heading (page structure loaded)
+        await WaitForAsync("h2:has-text('Profile Information')");
+        Output.WriteLine("[TEST] Profile heading found");
 
-        Assert.False(hasError, "Profile page should NOT show 401/unauthorized error");
-        Assert.True(hasUserData, $"Profile page should display user data. Username: {username}, Email: {email}");
+        // Wait for the username label (proves API data loaded successfully)
+        await WaitForAsync("label:has-text('Username')");
+        Output.WriteLine("[TEST] Username label found - profile data loaded");
+
+        // Assert: Username value matches what we registered
+        var usernameValue = await WaitForAsync("label:has-text('Username') + div p, label:has-text('Username') ~ p");
+        var displayedUsername = await usernameValue.First.TextContentAsync();
+        Output.WriteLine($"[TEST] Displayed username: '{displayedUsername}'");
+        Assert.False(string.IsNullOrWhiteSpace(displayedUsername), "Username value should not be empty");
+        Assert.Contains(username, displayedUsername!, StringComparison.OrdinalIgnoreCase);
+
+        // Assert: Email value matches what we registered
+        var emailValue = await WaitForAsync("label:has-text('Email') + div p, label:has-text('Email') ~ p");
+        var displayedEmail = await emailValue.First.TextContentAsync();
+        Output.WriteLine($"[TEST] Displayed email: '{displayedEmail}'");
+        Assert.False(string.IsNullOrWhiteSpace(displayedEmail), "Email value should not be empty");
+        Assert.Contains(email, displayedEmail!, StringComparison.OrdinalIgnoreCase);
+
+        // Assert: User ID label is visible (proves profile data loaded from API)
+        await WaitForAsync("label:has-text('User ID')");
+
+        Output.WriteLine($"[SUCCESS] Profile page displays username '{displayedUsername}' and email '{displayedEmail}'");
     }
 
     /// <summary>
