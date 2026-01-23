@@ -1,10 +1,11 @@
 ﻿@page "/"
+@using Application.Client.Authentication.Interfaces
 @attribute [Authorize]
+@inject IAuthStateProvider AuthStateProvider
 
 <PageTitle>Dashboard</PageTitle>
 
-<AuthorizeView>
-    <Authorized>
+<AppAuthorizeView>
 
         <div class="space-y-6">
             <div class="flex justify-between items-center">
@@ -16,7 +17,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm text-secondary-500 dark:text-secondary-400">Welcome back</p>
-                            <p class="text-xl font-bold text-secondary-900 dark:text-white">@context.User.Identity?.Name</p>
+                            <p class="text-xl font-bold text-secondary-900 dark:text-white">@AuthStateProvider.CurrentState.Username</p>
                         </div>
                         <div class="text-3xl">👋</div>
                     </div>
@@ -26,7 +27,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm text-secondary-500 dark:text-secondary-400">Your Roles</p>
-                            <p class="text-xl font-bold text-secondary-900 dark:text-white">@GetRoleCount(context)</p>
+                            <p class="text-xl font-bold text-secondary-900 dark:text-white">@AuthStateProvider.CurrentState.Roles.Count</p>
                         </div>
                         <div class="text-3xl">🔐</div>
                     </div>
@@ -83,7 +84,7 @@
                 <Card>
                     <h2 class="text-lg font-bold text-secondary-900 dark:text-white mb-4">Your Roles</h2>
                     <div class="flex flex-wrap gap-2">
-                        @foreach (var role in GetRoles(context))
+                        @foreach (var role in AuthStateProvider.CurrentState.Roles)
                         {
                             <span
                                 class="px-3 py-1 text-sm rounded-full bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-300">
@@ -94,24 +95,9 @@
                 </Card>
             </div>
         </div>
-    </Authorized>
-</AuthorizeView>
+</AppAuthorizeView>
 
 @code {
     [Inject]
     private IApplicationConstants ApplicationConstants { get; set; } = null!;
-
-    private int GetRoleCount(AuthenticationState context)
-    {
-        return context.User.Claims
-        .Where(c => c.Type == System.Security.Claims.ClaimTypes.Role)
-        .Count();
-    }
-
-    private IEnumerable<string> GetRoles(AuthenticationState context)
-    {
-        return context.User.Claims
-        .Where(c => c.Type == System.Security.Claims.ClaimTypes.Role)
-        .Select(c => c.Value);
-    }
 }

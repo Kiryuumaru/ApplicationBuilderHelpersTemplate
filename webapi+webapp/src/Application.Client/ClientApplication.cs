@@ -2,6 +2,8 @@
 using Application.Client.Authentication.Interfaces;
 using Application.Client.Authentication.Interfaces.Infrastructure;
 using Application.Client.Authentication.Services;
+using Application.Client.Authorization.Interfaces;
+using Application.Client.Authorization.Services;
 using Application.Client.Common.Extensions;
 using Application.Client.Iam.Interfaces;
 using Application.Client.Iam.Services;
@@ -24,6 +26,9 @@ public class ClientApplication : Application
         // Concrete type used by RunPreparationAsync for initialization
         services.AddScoped<ClientAuthStateProvider>();
         services.AddScoped<IAuthStateProvider>(sp => sp.GetRequiredService<ClientAuthStateProvider>());
+
+        // Client-side permission evaluation service
+        services.AddScoped<IClientPermissionService, ClientPermissionService>();
 
         // Token refresh handler for authenticated requests
         services.AddTransient<TokenRefreshHandler>();

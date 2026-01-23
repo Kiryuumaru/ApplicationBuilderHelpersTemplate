@@ -41,14 +41,16 @@ dotnet publish src/Presentation.WebApp.Server -o publish
 
 **Always use the absolute path to the executable**, even when already in the publish directory.
 
+**Always use `0.0.0.0` (all interfaces) instead of `localhost`** to ensure the app is accessible from browsers and other tools that may not resolve loopback correctly.
+
 ```powershell
 Push-Location "C:\path\to\publish"; & "C:\path\to\publish\sampleapp.exe" --urls "http://0.0.0.0:5000"
 ```
 
 | Flag | Description |
 |------|-------------|
-| `--urls "http://0.0.0.0:5000"` | Listen on all network interfaces at port 5000 |
-| `--urls "http://localhost:5000"` | Listen only on localhost |
+| `--urls "http://0.0.0.0:5000"` | **Preferred** - Listen on all network interfaces at port 5000 |
+| `--urls "http://localhost:5000"` | Listen only on localhost (may cause issues with some tools) |
 | `--urls "http://0.0.0.0:80"` | Listen on all interfaces at port 80 (requires admin) |
 
 ### Stop a Running Instance

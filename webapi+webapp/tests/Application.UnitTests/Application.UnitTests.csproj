@@ -23,6 +23,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\src\Application\Application.csproj" />
+		<ProjectReference Include="..\..\src\Application.Client\Application.Client.csproj" />
 		<ProjectReference Include="..\..\src\Application.Server\Application.Server.csproj" />
 		<ProjectReference Include="..\..\src\Domain\Domain.csproj" />
 		<ProjectReference Include="..\..\src\Infrastructure.EFCore.Server.Identity\Infrastructure.EFCore.Server.Identity.csproj" />

@@ -1,10 +1,13 @@
 @page "/admin/permissions"
-@attribute [Authorize(Roles = "Admin")]
+@attribute [Authorize]
+@using Domain.Authorization.Constants
+@using Presentation.WebApp.Client.Components.Authorization
 @inject IPermissionsClient PermissionsClient
 
-<PageTitle>Permission Management</PageTitle>
+<PermissionPage Permission="@PermissionIds.Api.Iam.Permissions.Write.Identifier">
+    <PageTitle>Permission Management</PageTitle>
 
-<div class="space-y-6">
+    <div class="space-y-6">
     <div class="flex justify-between items-center">
         <h1 class="text-2xl font-bold text-secondary-900 dark:text-white">Permission Management</h1>
     </div>
@@ -34,6 +37,7 @@
         }
     </Card>
 </div>
+</PermissionPage>
 
 @code {
     private List<IamPermission> _permissions = new();
