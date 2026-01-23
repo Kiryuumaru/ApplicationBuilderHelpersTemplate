@@ -10,11 +10,11 @@ When updating process docs, update the `.github/instructions/*` files instead of
 - Terminal safety + auto-approval rules: `.github/instructions/vscode-avoid-piping-causing-approval.instructions.md`
 - Build/run commands + first-time setup: `.github/instructions/build-commands.instructions.md`
 - Architecture rules: `.github/instructions/architecture.instructions.md`
-- Docs-first navigation: `.github/instructions/check-docs-first.instructions.md`
+- Documentation (reading + syncing): `.github/instructions/documentation.instructions.md`
 - File organization rules: `.github/instructions/file-organization.instructions.md`
-- Code quality standards: `.github/instructions/code-quality-standards.instructions.md`
-- Documentation sync expectations: `.github/instructions/documentation-sync.instructions.md`
+- Code quality standards (+ fix hygiene): `.github/instructions/code-quality-standards.instructions.md`
 - Project status / breaking changes policy: `.github/instructions/project-status.instructions.md`
+- UI test practices: `.github/instructions/ui-test-practices.instructions.md`
 
 ## Quick Links
 

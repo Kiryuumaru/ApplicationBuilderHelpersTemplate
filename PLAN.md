@@ -1,369 +1,281 @@
-# UI Migration Plan: Old → New Presentation.WebApp
+# Permission-Based Admin Access Control Plan
 
-## Overview
+## Deep Code Analysis Summary
 
-This plan covers migrating the UI from the old standalone Blazor WebAssembly implementation (`src/Old/Presentation.WebApp.Client`) to the new unified Blazor Web App (`src/Presentation.WebApp` + `src/Presentation.WebApp.Client`).
+### ✅ Backend Infrastructure - ALREADY COMPLETE
 
-### Current State
+After thorough analysis of the codebase, the backend permission infrastructure is **fully implemented**:
 
-**Old Architecture (in `src/Old/`):**
-- `Presentation.WebApp` - Standalone ASP.NET Core server (API only)
-- `Presentation.WebApp.Client` - Standalone Blazor WebAssembly SPA
-- Two separate executables, two separate deployments
-- UI fully implemented with Tailwind CSS + Flowbite
+#### Domain Layer
+- **`Permission.cs`** - Complete permission model with hierarchical structure (Path, Children, IsRead/IsWrite)
+- **`ScopeDirective.cs`** - Allow/Deny directives with parameters (`allow;api:iam:users:_read;userId=abc`)
+- **`ScopeEvaluator.cs`** - `HasPermission()`, `HasAnyPermission()`, `HasAllPermissions()` methods
+- **`PermissionCache.cs`** - Cached lookups: ByPath, ReadLeafPaths, WriteLeafPaths, TreeRoots
+- **`Permissions.cs`** - Static permission tree with `api.iam.users.*`, `api.iam.roles.*`, `api.iam.permissions.*`
+- **`Roles.cs`** - Admin/User role definitions with ScopeTemplates
 
-**New Architecture:**
-- `Presentation.WebApp` - Unified ASP.NET Core server hosting:
-  - REST API endpoints (`/api/v1/*`)
-  - Blazor components (server-side rendering with WebAssembly interactivity)
-  - Static assets (Scalar API docs, etc.)
-- `Presentation.WebApp.Client` - Blazor WebAssembly components (referenced by server)
-- Single executable, single deployment
-- UI is minimal/placeholder
+#### Application.Server Layer
+- **`IPermissionService`** - `HasPermissionAsync()` for server-side checks
+- **`IUserAuthorizationService`** - `GetAuthorizationDataAsync()`, `GetEffectivePermissionsAsync()`
 
-### Goal
+#### Presentation.WebApp.Server Layer
+- **`RequiredPermissionAttribute`** - Already used on ALL IAM controllers
+- **`IamPermissionsController`** - `GET /api/v1/iam/permissions` (lists tree), `POST grant`, `POST revoke`
+- **`IamRolesController`** - Full CRUD + assign/remove with `[RequiredPermission(...)]`
+- **`IamUsersController`** - Full CRUD + permissions with `[RequiredPermission(...)]`
 
-Migrate all UI components, pages, layouts, and styles from the old implementation to the new unified architecture while:
-1. Maintaining the same user experience
-2. Preserving existing functionality
-3. Updating functional tests to point to the unified application
+#### Application.Client Layer
+- **`IPermissionsClient`** - `ListPermissionsAsync()`, `GrantPermissionAsync()`, `RevokePermissionAsync()`
+- **`IRolesClient`** - Full CRUD + assign/remove
+- **`IUsersClient`** - Full CRUD + `GetUserPermissionsAsync()`
+- **`IamPermission`** - Client model with Children hierarchy
+
+#### Token System
+- Permissions are stored as `scope` claims in JWT tokens
+- `AuthState.Permissions` is populated from JWT by `ClientAuthStateProvider`
+- `BlazorAuthStateProvider` converts these to `ClaimsPrincipal` claims
+
+### ❌ What's NOT Done - UI Layer Only
+
+The **only** issue is that Blazor UI pages use **role-based** checks instead of **permission-based**:
+
+| Component | Current (Wrong) | Should Be |
+|-----------|-----------------|-----------|
+| `Sidebar.razor` | `<AuthorizeView Roles="Admin">` | Permission-based visibility |
+| `Admin/Users.razor` | `[Authorize(Roles = "Admin")]` | Permission check for `api.iam.users` |
+| `Admin/Roles.razor` | `[Authorize(Roles = "Admin")]` | Permission check for `api.iam.roles` |
+| `Admin/Permissions.razor` | `[Authorize(Roles = "Admin")]` | Permission check for `api.iam.permissions` |
+
+**Also needed:**
+- `PermissionTreePicker.razor` - Interactive tree for selecting permissions to grant
+  - Used in: User details (direct grants), Role editor (ScopeTemplates)
+  - (Note: `PermissionTreeNode.razor` exists but is display-only, no selection)
+
+**Permission Sources (per user):**
+1. **Role-inherited** - User has Role → Role has ScopeTemplates → Permissions
+2. **Direct grants** - `POST /api/v1/iam/permissions/grant` assigns permission directly to user
+
+**Permission Directives:**
+- **Allow** (`allow;api:iam:users:list`) - Grants access to the permission
+- **Deny** (`deny;api:iam:users:list`) - Explicitly blocks access, even if another role would allow it
+- Deny takes precedence over Allow when evaluating access
+- Both roles and direct grants can use Allow or Deny directives
+
+**Constraints:**
+- The "User" role cannot be removed from any user (it's the base role everyone has)
 
 ---
 
-## Architecture Comparison
+## Design Decisions
+
+### Authorization Approach: Permission-Only (No Role Checks in UI)
+
+**Chosen approach:** The UI will **only check permissions**, never roles. This ensures:
+1. Consistency - All access control follows the same pattern
+2. Flexibility - Admins can grant specific permissions without full role assignment
+3. Separation - Roles are just "permission bundles", not a separate auth mechanism
+
+### Component Strategy
+
+Two custom components will handle authorization:
+
+1. **`AppAuthorizeView`** - For conditional rendering (navigation, buttons, sections)
+   - Wraps content that should only show if user has permission
+   - Used in: Sidebar navigation, action buttons, admin sections
+
+2. **`PermissionPage`** - Base component for protected pages
+   - Shows `AccessDenied` component when user lacks required permission
+   - Replaces `[Authorize(Roles = "Admin")]` attribute pattern
+
+3. **`AccessDenied`** - Displayed when user navigates to page without permission
+   - Friendly message explaining lack of access
+   - Link to go back or request access
+
+---
+
+## Revised Implementation Plan
+
+### Phase 1: Client-Side Permission Service (30 min)
+
+Create a client-side service to evaluate permissions from `AuthState.Permissions`:
 
 ```
-OLD (Two Separate Apps):                    NEW (Single Unified App):
-                                            
-┌─────────────────────┐                     ┌─────────────────────────────────────┐
-│ Presentation.WebApp │ ← API Server        │ Presentation.WebApp                 │
-│   (Port 5000)       │                     │   (Single Port: e.g., 5000)         │
-└─────────────────────┘                     │                                     │
-         ▲                                  │   ├── /api/v1/* → API Controllers   │
-         │ HTTP                             │   ├── /scalar/* → API Docs          │
-         │                                  │   ├── /* → Blazor UI (SSR + WASM)   │
-┌─────────────────────┐                     │                                     │
-│ Presentation.WebApp │                     │   References:                       │
-│     .Client         │ ← Blazor WASM       │     Presentation.WebApp.Client      │
-│   (Port 5001)       │                     │                                     │
-└─────────────────────┘                     └─────────────────────────────────────┘
+Application.Client/
+└── Authorization/
+    ├── Interfaces/
+    │   └── IClientPermissionService.cs
+    └── Services/
+        └── ClientPermissionService.cs
 ```
-
----
-
-## Files to Migrate
-
-### 1. Layout Components (`Layout/`)
-
-| Old Path | New Path | Notes |
-|----------|----------|-------|
-| `Old/.../Layout/MainLayout.razor` | `.../Client/Layout/MainLayout.razor` | Main app shell with navbar/sidebar |
-| `Old/.../Layout/AuthLayout.razor` | `.../Client/Layout/AuthLayout.razor` | Centered layout for auth pages |
-| `Old/.../Layout/Navbar.razor` | `.../Client/Layout/Navbar.razor` | Top navigation bar |
-| `Old/.../Layout/Sidebar.razor` | `.../Client/Layout/Sidebar.razor` | Side navigation menu |
-
-### 2. Pages (`Pages/`)
-
-| Old Path | New Path | Notes |
-|----------|----------|-------|
-| `Old/.../Pages/Home.razor` | `.../Client/Pages/Home.razor` | Dashboard home page |
-| `Old/.../Pages/Auth/Login.razor` | `.../Client/Pages/Auth/Login.razor` | Login form |
-| `Old/.../Pages/Auth/Register.razor` | `.../Client/Pages/Auth/Register.razor` | Registration form |
-| `Old/.../Pages/Auth/ForgotPassword.razor` | `.../Client/Pages/Auth/ForgotPassword.razor` | Password reset request |
-| `Old/.../Pages/Auth/ResetPassword.razor` | `.../Client/Pages/Auth/ResetPassword.razor` | Password reset form |
-| `Old/.../Pages/Auth/TwoFactor.razor` | `.../Client/Pages/Auth/TwoFactor.razor` | 2FA verification |
-| `Old/.../Pages/Account/Profile.razor` | `.../Client/Pages/Account/Profile.razor` | User profile |
-| `Old/.../Pages/Account/ChangePassword.razor` | `.../Client/Pages/Account/ChangePassword.razor` | Change password |
-| `Old/.../Pages/Account/Sessions.razor` | `.../Client/Pages/Account/Sessions.razor` | Active sessions |
-| `Old/.../Pages/Account/ApiKeys.razor` | `.../Client/Pages/Account/ApiKeys.razor` | API key management |
-| `Old/.../Pages/Account/TwoFactorSetup.razor` | `.../Client/Pages/Account/TwoFactorSetup.razor` | 2FA setup |
-| `Old/.../Pages/Admin/Users.razor` | `.../Client/Pages/Admin/Users.razor` | User management |
-| `Old/.../Pages/Admin/Roles.razor` | `.../Client/Pages/Admin/Roles.razor` | Role management |
-| `Old/.../Pages/Admin/Permissions.razor` | `.../Client/Pages/Admin/Permissions.razor` | Permission management |
-
-### 3. Components (`Components/`)
-
-| Old Path | New Path | Notes |
-|----------|----------|-------|
-| `Old/.../Components/Alert.razor` | `.../Client/Components/Alert.razor` | Alert/notification component |
-| `Old/.../Components/Button.razor` | `.../Client/Components/Button.razor` | Button component |
-| `Old/.../Components/Card.razor` | `.../Client/Components/Card.razor` | Card container |
-| `Old/.../Components/TextInput.razor` | `.../Client/Components/TextInput.razor` | Form text input |
-| `Old/.../Components/LoadingSpinner.razor` | `.../Client/Components/LoadingSpinner.razor` | Loading indicator |
-| `Old/.../Components/RedirectToLogin.razor` | `.../Client/Components/RedirectToLogin.razor` | Auth redirect helper |
-| `Old/.../Components/PermissionTreeNode.razor` | `.../Client/Components/PermissionTreeNode.razor` | Permission tree UI |
-
-### 4. Services (`Services/`)
-
-| Old Path | New Path | Notes |
-|----------|----------|-------|
-| `Old/.../Services/BlazorAuthStateProvider.cs` | `.../Client/Services/BlazorAuthStateProvider.cs` | Already exists, verify |
-| `Old/.../Services/LocalStorageTokenStorage.cs` | `.../Client/Services/...` | Token persistence |
-
-### 5. Static Assets (`wwwroot/`)
-
-| Old Path | New Path | Notes |
-|----------|----------|-------|
-| `Old/.../wwwroot/css/app.src.css` | `.../Client/wwwroot/css/app.src.css` | Tailwind source CSS |
-| `Old/.../wwwroot/css/app.css` | `.../Client/wwwroot/css/app.css` | Compiled Tailwind CSS |
-| `Old/.../wwwroot/index.html` | N/A | Not needed - server renders HTML |
-
-### 6. Configuration Files
-
-| Old Path | New Path | Notes |
-|----------|----------|-------|
-| `Old/.../tailwind.config.js` | `.../Client/tailwind.config.js` | Already exists, verify |
-| `Old/.../package.json` | `.../Client/package.json` | Already exists, verify |
-
-### 7. Root Files
-
-| Old Path | New Path | Notes |
-|----------|----------|-------|
-| `Old/.../App.razor` | `.../Client/Routes.razor` | Update routing config |
-| `Old/.../_Imports.razor` | `.../Client/_Imports.razor` | Update imports |
-
----
-
-## Migration Phases
-
-### Phase 1: Prepare Infrastructure ⬜
-- [ ] Verify Tailwind CSS + Flowbite setup in new project
-- [ ] Compare `package.json` and `tailwind.config.js`
-- [ ] Copy/update CSS files (`app.src.css`)
-- [ ] Ensure `npm run build:css` works
-
-### Phase 2: Migrate Components ⬜
-- [ ] Create `Components/` folder in Client project
-- [ ] Migrate `Alert.razor`
-- [ ] Migrate `Button.razor`
-- [ ] Migrate `Card.razor`
-- [ ] Migrate `TextInput.razor`
-- [ ] Migrate `LoadingSpinner.razor`
-- [ ] Migrate `RedirectToLogin.razor`
-- [ ] Migrate `PermissionTreeNode.razor`
-
-### Phase 3: Migrate Layouts ⬜
-- [ ] Replace basic `MainLayout.razor` with full implementation
-- [ ] Migrate `AuthLayout.razor`
-- [ ] Migrate `Navbar.razor`
-- [ ] Migrate `Sidebar.razor`
-
-### Phase 4: Migrate Pages ⬜
-
-#### 4.1: Home Page
-- [ ] Replace placeholder `Home.razor` with dashboard
-
-#### 4.2: Auth Pages
-- [ ] Create `Pages/Auth/` folder
-- [ ] Migrate `Login.razor`
-- [ ] Migrate `Register.razor`
-- [ ] Migrate `ForgotPassword.razor`
-- [ ] Migrate `ResetPassword.razor`
-- [ ] Migrate `TwoFactor.razor`
-
-#### 4.3: Account Pages
-- [ ] Create `Pages/Account/` folder
-- [ ] Migrate `Profile.razor`
-- [ ] Migrate `ChangePassword.razor`
-- [ ] Migrate `Sessions.razor`
-- [ ] Migrate `ApiKeys.razor`
-- [ ] Migrate `TwoFactorSetup.razor`
-
-#### 4.4: Admin Pages
-- [ ] Create `Pages/Admin/` folder
-- [ ] Migrate `Users.razor`
-- [ ] Migrate `Roles.razor`
-- [ ] Migrate `Permissions.razor`
-
-### Phase 5: Update Routes.razor ⬜
-- [ ] Update `Routes.razor` with `CascadingAuthenticationState`
-- [ ] Add `AuthorizeRouteView` with proper not-authorized handling
-- [ ] Add proper 404 handling
-
-### Phase 6: Update _Imports.razor ⬜
-- [ ] Add authorization usings
-- [ ] Add Application.Client usings
-- [ ] Add component usings
-
-### Phase 7: Verify Services ⬜
-- [ ] Compare `BlazorAuthStateProvider.cs` implementations
-- [ ] Compare token storage implementations
-- [ ] Ensure DI registration is complete in `Program.cs`
-
-### Phase 8: Update Server App.razor ⬜
-- [ ] Ensure proper render mode configuration
-- [ ] Add CSS references for Tailwind
-- [ ] Add Flowbite JS reference
-
----
-
-## Test Migration
-
-### Current Test Structure
-
-**API Functional Tests (`Presentation.WebApp.FunctionalTests/`):**
-- Tests API endpoints via HTTP
-- Uses `WebApiTestHost` to start the server process
-- Points to `Presentation.WebApp` (correct - no change needed)
-
-**UI Functional Tests (`Presentation.WebApp.Client.FunctionalTests/`):**
-- Tests UI via Playwright browser automation
-- Currently uses TWO hosts:
-  - `WebApiTestHost` - Starts API server
-  - `WebAppTestHost` - Starts static file server for WASM
-- **Needs update:** Single host since UI is now part of `Presentation.WebApp`
-
-### Test Migration Tasks
-
-#### Phase 9: Update UI Functional Tests ⬜
-
-- [ ] Update `WebAppTestHost.cs` - No longer needed as separate static server
-- [ ] Update `SharedTestFixture.cs` - Use single `WebApiTestHost` only
-- [ ] Update `WebAppTestBase.cs`:
-  - [ ] Change `WebAppUrl` to use same URL as `WebApiUrl`
-  - [ ] Remove separate WebApp host startup
-  - [ ] Update navigation helpers if paths changed
-- [ ] Remove API proxy logic from `WebAppTestHost.cs` (no longer needed)
-- [ ] Verify all auth flow tests still work
-- [ ] Verify all component tests still work
-
-#### Simplified Test Fixture (After Migration)
 
 ```csharp
-// SharedTestFixture.cs - AFTER migration
-public sealed class SharedTestFixture : IAsyncLifetime
+public interface IClientPermissionService
 {
-    private WebApiTestHost? _host;  // Single host for everything
-    private IPlaywright? _playwright;
-    private IBrowser? _browser;
-
-    public string BaseUrl => _host?.BaseUrl ?? throw new InvalidOperationException();
-    public HttpClient HttpClient => _host?.HttpClient ?? throw new InvalidOperationException();
-
-    public async Task InitializeAsync()
-    {
-        // Single host serves both API and UI
-        _host = new WebApiTestHost(new ConsoleLogAdapter());
-        await _host.StartAsync(TimeSpan.FromSeconds(30));
-
-        // Browser setup unchanged
-        _playwright = await Playwright.CreateAsync();
-        _browser = await _playwright.Chromium.LaunchAsync(...);
-    }
-    
-    // ... rest unchanged
+    bool HasPermission(string permissionPath);
+    bool HasAnyPermission(params string[] permissionPaths);
+    bool HasAllPermissions(params string[] permissionPaths);
 }
 ```
 
+Implementation uses `ScopeEvaluator.HasPermission()` from Domain with `AuthState.Permissions` parsed to `ScopeDirective` list.
+
+### Phase 2: Authorization Components (1 hour)
+
+Create reusable Blazor components:
+
+```
+Presentation.WebApp.Client/Components/Authorization/
+├── AppAuthorizeView.razor      # Permission-based content visibility
+├── PermissionPage.razor        # Base page with access denied handling
+└── AccessDenied.razor          # Access denied UI
+```
+
+**AppAuthorizeView.razor:**
+```razor
+@* Shows ChildContent only if user has required permission(s) *@
+<CascadingAuthenticationState>
+    @if (_hasPermission)
+    {
+        @ChildContent
+    }
+    else if (NotAuthorized != null)
+    {
+        @NotAuthorized
+    }
+</CascadingAuthenticationState>
+
+@code {
+    [Parameter] public string? Permission { get; set; }
+    [Parameter] public string[]? Permissions { get; set; }
+    [Parameter] public bool RequireAll { get; set; } = false;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? NotAuthorized { get; set; }
+}
+```
+
+**PermissionPage.razor:**
+```razor
+@* Wraps page content, shows AccessDenied if lacking permission *@
+@if (_hasPermission)
+{
+    @ChildContent
+}
+else
+{
+    <AccessDenied Permission="@Permission" />
+}
+
+@code {
+    [Parameter] public string Permission { get; set; } = "";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}
+```
+
+### Phase 3: Update Sidebar Navigation (30 min)
+
+Replace `<AuthorizeView Roles="Admin">` with `<AppAuthorizeView>`:
+
+```razor
+@* Before *@
+<AuthorizeView Roles="Admin">
+    <Authorized>
+        <li>Administration</li>
+        <NavLink href="admin/users">Users</NavLink>
+    </Authorized>
+</AuthorizeView>
+
+@* After *@
+<AppAuthorizeView Permissions="@_adminPermissions">
+    <li>Administration</li>
+</AppAuthorizeView>
+<AppAuthorizeView Permission="@PermissionIds.Api.Iam.Users.Read.Identifier">
+    <NavLink href="admin/users">Users</NavLink>
+</AppAuthorizeView>
+<AppAuthorizeView Permission="@PermissionIds.Api.Iam.Roles.Read.Identifier">
+    <NavLink href="admin/roles">Roles</NavLink>
+</AppAuthorizeView>
+<AppAuthorizeView Permission="@PermissionIds.Api.Iam.Permissions.Write.Identifier">
+    <NavLink href="admin/permissions">Permissions</NavLink>
+</AppAuthorizeView>
+```
+
+### Phase 4: Update Admin Pages (30 min)
+
+Replace `[Authorize(Roles = "Admin")]` with `PermissionPage` wrapper:
+
+```razor
+@* Before *@
+@page "/admin/users"
+@attribute [Authorize(Roles = "Admin")]
+
+<h1>User Management</h1>
+...
+
+@* After *@
+@page "/admin/users"
+@attribute [Authorize]
+
+<PermissionPage Permission="@PermissionIds.Api.Iam.Users.Read.Identifier">
+    <h1>User Management</h1>
+    ...
+</PermissionPage>
+```
+
+Pages to update:
+- `/admin/users` → `PermissionIds.Api.Iam.Users.Read.Identifier` (read scope)
+- `/admin/roles` → `PermissionIds.Api.Iam.Roles.Read.Identifier` (read scope)
+- `/admin/permissions` → `PermissionIds.Api.Iam.Permissions.Write.Identifier` (write scope - only has grant/revoke)
+
+### Phase 5: Permission Tree Picker Component (2 hours)
+
+Create `PermissionTreePicker.razor`:
+- Hierarchical tree with checkboxes
+- Selecting `_read`/`_write` scope selects all children
+- Search/filter functionality
+- `SelectedPermissions` two-way binding
+- Used in role editor and user permission grant modal
+
+### Phase 6: Permission Badge Component (30 min)
+
+Create `PermissionBadge.razor`:
+- Shows permission path with friendly formatting
+- Read/Write indicator
+- Optional remove button (X) for revocation
+
+### Phase 7: Integration (1 hour)
+
+- Add permission picker to role creation/edit modal (roles get permissions via ScopeTemplates)
+- Add permission grant/revoke to user details page (users get direct permissions)
+- Wire up to existing `IPermissionsClient` API calls
+
+**Permission Assignment Model:**
+- **Via Roles**: User gets role → Role has ScopeTemplates → User inherits permissions
+- **Direct Grant**: User gets permission directly via `POST /permissions/grant`
+- Both can be managed from the User Details page
+
 ---
 
-## Key Differences to Handle
+## File Changes Summary
 
-### 1. Render Mode
-
-**Old (Pure WASM):**
-```razor
-<!-- index.html bootstraps WASM directly -->
-<script src="_framework/blazor.webassembly.js"></script>
+**New Files:**
+```
+Application.Client/Authorization/Interfaces/IClientPermissionService.cs
+Application.Client/Authorization/Services/ClientPermissionService.cs
+Presentation.WebApp.Client/Components/Authorization/AppAuthorizeView.razor
+Presentation.WebApp.Client/Components/Authorization/PermissionPage.razor
+Presentation.WebApp.Client/Components/Authorization/AccessDenied.razor
+Presentation.WebApp.Client/Components/Shared/PermissionTreePicker.razor
+Presentation.WebApp.Client/Components/Shared/PermissionBadge.razor
 ```
 
-**New (Interactive WebAssembly with SSR):**
-```razor
-<!-- App.razor on server -->
-<Routes @rendermode="new InteractiveWebAssemblyRenderMode(prerender: false)" />
-<script src="@Assets["_framework/blazor.web.js"]"></script>
+**Modified Files:**
 ```
-
-### 2. Router Configuration
-
-**Old (App.razor):**
-```razor
-<Router AppAssembly="@typeof(App).Assembly">
+Presentation.WebApp.Client/Layout/Sidebar.razor - Permission-based nav visibility
+Presentation.WebApp.Client/Pages/Admin/Users.razor - PermissionPage wrapper + direct permission grant/revoke
+Presentation.WebApp.Client/Pages/Admin/Roles.razor - PermissionPage wrapper + ScopeTemplate picker
+Presentation.WebApp.Client/Pages/Admin/Permissions.razor - PermissionPage wrapper (or remove if integrated into Users)
+Application.Client/ClientApplication.cs - Register IClientPermissionService
 ```
-
-**New (Routes.razor in Client project):**
-```razor
-<Router AppAssembly="typeof(Program).Assembly">
-```
-
-### 3. CSS Loading
-
-**Old:**
-```html
-<!-- Static index.html -->
-<link href="css/app.css" rel="stylesheet" />
-```
-
-**New:**
-```razor
-<!-- Server-rendered App.razor -->
-<link rel="stylesheet" href="@Assets["app.css"]" />
-```
-
-### 4. API Base URL
-
-**Old (Standalone WASM):**
-- Configured via `appsettings.json` in WASM project
-- Needed absolute URL to external API
-
-**New (Unified):**
-- API is on same origin
-- Relative URLs work (`/api/v1/...`)
-- No CORS needed
-
----
-
-## Verification Checklist
-
-After migration, verify:
-
-### Build Verification
-- [ ] `dotnet build` succeeds with no warnings
-- [ ] `npm run build:css` in Client project succeeds
-- [ ] Solution builds completely
-
-### Runtime Verification
-- [ ] Application starts successfully
-- [ ] Home page loads with proper styling
-- [ ] Navbar and sidebar render correctly
-- [ ] Login page accessible at `/auth/login`
-- [ ] Registration page accessible at `/auth/register`
-- [ ] API docs accessible at `/scalar/v1`
-- [ ] API endpoints work at `/api/v1/*`
-
-### Authentication Flow
-- [ ] Can register new user
-- [ ] Can login with credentials
-- [ ] Auth state persists across navigation
-- [ ] Logout clears auth state
-- [ ] Protected pages redirect to login
-
-### Test Verification
-- [ ] `dotnet test tests/Presentation.WebApp.FunctionalTests` passes
-- [ ] `dotnet test tests/Presentation.WebApp.Client.FunctionalTests` passes
-- [ ] All auth flow tests pass
-- [ ] All UI component tests pass
-
----
-
-## Notes
-
-### Why Unified Architecture?
-
-1. **Simpler Deployment** - Single executable, single container
-2. **No CORS** - API and UI on same origin
-3. **Better SEO** - Server-side rendering option
-4. **Shared Resources** - Single DI container, single configuration
-5. **Easier Testing** - One host to manage
-
-### Files to Delete After Migration
-
-Once migration is verified:
-- [ ] `src/Old/` directory (entire folder)
-
-### Breaking Changes
-
-None expected - the UI behavior should remain identical. Only the hosting model changes.
 
 ---
 
@@ -371,11 +283,148 @@ None expected - the UI behavior should remain identical. Only the hosting model 
 
 | Phase | Estimated Time |
 |-------|----------------|
-| Phase 1: Infrastructure | 30 min |
-| Phase 2: Components | 1 hour |
-| Phase 3: Layouts | 1 hour |
-| Phase 4: Pages | 2 hours |
-| Phase 5-8: Configuration | 1 hour |
-| Phase 9: Tests | 2 hours |
-| Verification | 1 hour |
+| Phase 1: Client Permission Service | 30 min |
+| Phase 2: Authorization Components | 1 hour |
+| Phase 3: Sidebar Navigation | 30 min |
+| Phase 4: Admin Page Auth | 30 min |
+| Phase 5: Permission Tree Picker | 2 hours |
+| Phase 6: Permission Badge | 30 min |
+| Phase 7: Integration | 1 hour |
+| Phase 8: Tests | 2 hours |
 | **Total** | **~8 hours** |
+
+---
+
+## Key Insights
+
+1. **Backend is 100% complete** - This is a UI-only change
+2. **Permission-only approach** - No role checks in UI, only permission checks
+3. **`ScopeEvaluator` is reusable** - Domain layer is framework-agnostic, works client-side
+4. **Leverage `PermissionIds` generated constants** - Use `.Identifier` constant for type-safe permission references
+5. **Two-component pattern** - `AppAuthorizeView` for visibility, `PermissionPage` for page-level access
+
+---
+
+## Test Cases
+
+### Phase 8: 100% Coverage Tests
+
+#### Client Permission Service Tests
+
+| Test Case | Description | Expected |
+|-----------|-------------|----------|
+| `HasPermission_WithAllowDirective_ReturnsTrue` | User has `allow;api:iam:users:list` | Returns true for `api:iam:users:list` |
+| `HasPermission_WithDenyDirective_ReturnsFalse` | User has `deny;api:iam:users:list` | Returns false for `api:iam:users:list` |
+| `HasPermission_WithNoDirective_ReturnsFalse` | User has no matching directive | Returns false |
+| `HasPermission_DenyOverridesAllow` | User has both allow and deny for same permission | Returns false (deny wins) |
+| `HasPermission_WithReadScope_GrantsAllReadChildren` | User has `allow;api:iam:users:_read` | Returns true for `api:iam:users:list`, `api:iam:users:read` |
+| `HasPermission_WithWriteScope_GrantsAllWriteChildren` | User has `allow;api:iam:users:_write` | Returns true for `api:iam:users:update`, `api:iam:users:delete` |
+| `HasPermission_WithParameterizedScope_MatchesParameter` | User has `allow;api:iam:users:read;userId=abc` | Returns true only for userId=abc |
+| `HasAnyPermission_OneMatches_ReturnsTrue` | User has one of multiple permissions | Returns true |
+| `HasAnyPermission_NoneMatch_ReturnsFalse` | User has none of the permissions | Returns false |
+| `HasAllPermissions_AllMatch_ReturnsTrue` | User has all specified permissions | Returns true |
+| `HasAllPermissions_OneMissing_ReturnsFalse` | User missing one permission | Returns false |
+| `HasPermission_EmptyPermissions_ReturnsFalse` | User has no permissions at all | Returns false |
+| `HasPermission_NullPermissions_ReturnsFalse` | Permissions list is null | Returns false |
+
+#### AppAuthorizeView Component Tests
+
+| Test Case | Description | Expected |
+|-----------|-------------|----------|
+| `AppAuthorizeView_WithPermission_ShowsContent` | User has required permission | Renders ChildContent |
+| `AppAuthorizeView_WithoutPermission_HidesContent` | User lacks permission | Renders nothing (or NotAuthorized) |
+| `AppAuthorizeView_WithNotAuthorizedTemplate_ShowsTemplate` | User lacks permission, NotAuthorized set | Renders NotAuthorized template |
+| `AppAuthorizeView_WithMultiplePermissions_RequireAll_AllPresent` | RequireAll=true, user has all | Renders ChildContent |
+| `AppAuthorizeView_WithMultiplePermissions_RequireAll_OneMissing` | RequireAll=true, one missing | Renders nothing |
+| `AppAuthorizeView_WithMultiplePermissions_RequireAny_OnePresent` | RequireAll=false, user has one | Renders ChildContent |
+| `AppAuthorizeView_Unauthenticated_HidesContent` | User not logged in | Renders nothing |
+
+#### PermissionPage Component Tests
+
+| Test Case | Description | Expected |
+|-----------|-------------|----------|
+| `PermissionPage_WithPermission_ShowsContent` | User has required permission | Renders page content |
+| `PermissionPage_WithoutPermission_ShowsAccessDenied` | User lacks permission | Renders AccessDenied component |
+| `PermissionPage_Unauthenticated_ShowsAccessDenied` | User not logged in | Renders AccessDenied component |
+
+#### Sidebar Navigation Tests
+
+| Test Case | Description | Expected |
+|-----------|-------------|----------|
+| `Sidebar_AdminWithAllPermissions_ShowsAllAdminLinks` | Admin user | Shows Users, Roles, Permissions links |
+| `Sidebar_UserWithNoAdminPermissions_HidesAdminSection` | Regular user | Hides entire admin section |
+| `Sidebar_UserWithPartialPermissions_ShowsOnlyGranted` | User with only `api:iam:users:_read` | Shows only Users link |
+| `Sidebar_UserWithDenyOnUsers_HidesUsersLink` | User has deny on users | Hides Users link |
+
+#### Admin Page Access Tests
+
+| Test Case | Description | Expected |
+|-----------|-------------|----------|
+| `UsersPage_WithReadPermission_LoadsSuccessfully` | User has users read scope | Page loads, shows user list |
+| `UsersPage_WithoutReadPermission_ShowsAccessDenied` | User lacks users read scope | Shows AccessDenied |
+| `RolesPage_WithReadPermission_LoadsSuccessfully` | User has roles read scope | Page loads, shows role list |
+| `RolesPage_WithoutReadPermission_ShowsAccessDenied` | User lacks roles read scope | Shows AccessDenied |
+| `PermissionsPage_WithWritePermission_LoadsSuccessfully` | User has permissions write scope | Page loads |
+| `PermissionsPage_WithoutWritePermission_ShowsAccessDenied` | User lacks permissions write scope | Shows AccessDenied |
+
+#### Permission Tree Picker Tests
+
+| Test Case | Description | Expected |
+|-----------|-------------|----------|
+| `PermissionTreePicker_LoadsFullTree` | Component initializes | Shows full permission hierarchy |
+| `PermissionTreePicker_SelectLeaf_AddsToSelection` | Click leaf permission | Permission added to SelectedPermissions |
+| `PermissionTreePicker_SelectReadScope_SelectsAllReadChildren` | Select `_read` scope | All read children selected |
+| `PermissionTreePicker_DeselectParent_DeselectsChildren` | Deselect parent node | All children deselected |
+| `PermissionTreePicker_SearchFilter_ShowsMatchingOnly` | Type in search box | Only matching permissions visible |
+| `PermissionTreePicker_ToggleAllowDeny_SwitchesDirective` | Toggle allow/deny | Directive type changes |
+
+### Chaos & Edge Case Tests
+
+#### Permission Conflict Scenarios
+
+| Test Case | Description | Expected |
+|-----------|-------------|----------|
+| `Chaos_DenyAtParent_AllowAtChild` | Deny on `api:iam:users:_read`, Allow on `api:iam:users:list` | Deny wins (deny at any level blocks) |
+| `Chaos_AllowAtParent_DenyAtChild` | Allow on `api:iam:users:_read`, Deny on `api:iam:users:list` | `list` denied, other reads allowed |
+| `Chaos_MultipleRolesConflict` | Role A allows, Role B denies same permission | Deny wins |
+| `Chaos_DirectGrantOverridesRole` | Role allows, Direct grant denies | Deny wins |
+| `Chaos_RootReadScope_DenySpecificLeaf` | Allow `_read` (root), Deny `api:iam:users:list` | All reads except users:list |
+
+#### Malformed Data Scenarios
+
+| Test Case | Description | Expected |
+|-----------|-------------|----------|
+| `Chaos_MalformedDirective_InvalidFormat` | Directive: `invalid-format` | Gracefully ignored, no crash |
+| `Chaos_MalformedDirective_EmptyString` | Directive: `` | Gracefully ignored |
+| `Chaos_MalformedDirective_MissingPermission` | Directive: `allow;` | Gracefully ignored |
+| `Chaos_MalformedDirective_UnknownPermission` | Directive: `allow;nonexistent:permission` | No match, returns false |
+| `Chaos_MalformedDirective_SqlInjection` | Directive: `allow;'; DROP TABLE users;--` | Treated as literal string, no SQL execution |
+| `Chaos_MalformedDirective_XssAttempt` | Directive: `allow;<script>alert(1)</script>` | Rendered as text, no script execution |
+
+#### Boundary & Stress Scenarios
+
+| Test Case | Description | Expected |
+|-----------|-------------|----------|
+| `Chaos_UserWith1000Permissions` | User has 1000 scope directives | Still evaluates correctly, acceptable performance |
+| `Chaos_DeeplyNestedPermission` | Permission 10 levels deep | Correctly resolved |
+| `Chaos_ConcurrentPermissionChanges` | Permission changed while page loading | No race condition crash |
+| `Chaos_TokenExpiresMidSession` | JWT expires while on admin page | Redirects to login or shows auth error |
+| `Chaos_PermissionRevokedWhileOnPage` | Admin revokes own permission while on page | Next action shows access denied |
+
+#### Role Edge Cases
+
+| Test Case | Description | Expected |
+|-----------|-------------|----------|
+| `Chaos_RemoveUserRole_ShouldFail` | Attempt to remove "User" role | Operation blocked/error returned |
+| `Chaos_DeleteRoleWithAssignedUsers` | Delete role that users have | Role removed from users first or blocked |
+| `Chaos_CircularRoleInheritance` | Role A inherits B, B inherits A | Detected and prevented |
+| `Chaos_EmptyRole_NoPermissions` | Role with zero ScopeTemplates | Valid, user just has no permissions from this role |
+
+#### UI State Scenarios
+
+| Test Case | Description | Expected |
+|-----------|-------------|----------|
+| `Chaos_RapidNavigationBetweenAdminPages` | Quick clicks between Users/Roles/Permissions | No stale state, correct permission checks |
+| `Chaos_BrowserBackButton_AfterPermissionRevoked` | Navigate to page, permission revoked, press back | Shows access denied on return |
+| `Chaos_RefreshPage_PermissionStillValid` | F5 refresh on admin page | Permission re-evaluated, page loads if still valid |
+| `Chaos_MultipleTabsSameUser` | Open admin in two tabs, revoke in one | Other tab shows access denied on next action |
