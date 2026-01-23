@@ -113,7 +113,9 @@
                     AccessToken = result.AccessToken!,
                     RefreshToken = result.RefreshToken!,
                     AccessTokenExpiry = DateTimeOffset.UtcNow.AddSeconds(result.ExpiresIn),
-                    RefreshTokenExpiry = DateTimeOffset.UtcNow.AddDays(7)
+                    RefreshTokenExpiry = DateTimeOffset.UtcNow.AddDays(7),
+                    Roles = result.Roles.ToList(),
+                    Permissions = result.Permissions.ToList()
                 };
 
                 await AuthStateProvider.UpdateStateAsync(credentials);

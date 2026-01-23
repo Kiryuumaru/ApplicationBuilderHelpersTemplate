@@ -37,7 +37,12 @@ internal class AuthenticationClient : IAuthenticationClient
                     cancellationToken);
                 if (result != null)
                 {
-                    return LoginResult.Succeeded(result.AccessToken, result.RefreshToken, result.ExpiresIn);
+                    return LoginResult.Succeeded(
+                        result.AccessToken,
+                        result.RefreshToken,
+                        result.ExpiresIn,
+                        result.User?.Roles,
+                        result.User?.Permissions);
                 }
             }
 
@@ -86,7 +91,12 @@ internal class AuthenticationClient : IAuthenticationClient
                     cancellationToken);
                 if (result != null)
                 {
-                    return LoginResult.Succeeded(result.AccessToken, result.RefreshToken, result.ExpiresIn);
+                    return LoginResult.Succeeded(
+                        result.AccessToken,
+                        result.RefreshToken,
+                        result.ExpiresIn,
+                        result.User?.Roles,
+                        result.User?.Permissions);
                 }
             }
 
@@ -123,7 +133,12 @@ internal class AuthenticationClient : IAuthenticationClient
                     cancellationToken);
                 if (result != null)
                 {
-                    return LoginResult.Succeeded(result.AccessToken, result.RefreshToken, result.ExpiresIn);
+                    return LoginResult.Succeeded(
+                        result.AccessToken,
+                        result.RefreshToken,
+                        result.ExpiresIn,
+                        result.User?.Roles,
+                        result.User?.Permissions);
                 }
             }
 
@@ -218,7 +233,12 @@ internal class AuthenticationClient : IAuthenticationClient
                     cancellationToken);
                 if (result != null)
                 {
-                    return LoginResult.Succeeded(result.AccessToken, result.RefreshToken, result.ExpiresIn);
+                    return LoginResult.Succeeded(
+                        result.AccessToken,
+                        result.RefreshToken,
+                        result.ExpiresIn,
+                        result.User?.Roles,
+                        result.User?.Permissions);
                 }
             }
 

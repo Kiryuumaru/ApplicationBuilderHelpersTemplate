@@ -12,13 +12,17 @@ public sealed class LoginResult
     public int ExpiresIn { get; init; }
     public bool RequiresTwoFactor { get; init; }
     public string? TwoFactorToken { get; init; }
+    public IReadOnlyList<string> Roles { get; init; } = [];
+    public IReadOnlyList<string> Permissions { get; init; } = [];
 
-    public static LoginResult Succeeded(string accessToken, string refreshToken, int expiresIn) => new()
+    public static LoginResult Succeeded(string accessToken, string refreshToken, int expiresIn, IReadOnlyList<string>? roles = null, IReadOnlyList<string>? permissions = null) => new()
     {
         Success = true,
         AccessToken = accessToken,
         RefreshToken = refreshToken,
-        ExpiresIn = expiresIn
+        ExpiresIn = expiresIn,
+        Roles = roles ?? [],
+        Permissions = permissions ?? []
     };
 
     public static LoginResult Failed(string errorMessage) => new()

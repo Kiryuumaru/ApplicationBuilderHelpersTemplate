@@ -25,7 +25,7 @@ internal class ClientAuthStateProvider : IAuthStateProvider
         var credentials = await _tokenStorage.GetCredentialsAsync();
         if (credentials != null && credentials.IsValid)
         {
-            _currentState = ParseTokenToAuthState(credentials.AccessToken, credentials.AccessTokenExpiry);
+            _currentState = BuildAuthState(credentials);
         }
         OnStateChanged?.Invoke();
     }
@@ -33,7 +33,7 @@ internal class ClientAuthStateProvider : IAuthStateProvider
     public async Task UpdateStateAsync(StoredCredentials credentials)
     {
         await _tokenStorage.StoreCredentialsAsync(credentials);
-        _currentState = ParseTokenToAuthState(credentials.AccessToken, credentials.AccessTokenExpiry);
+        _currentState = BuildAuthState(credentials);
         OnStateChanged?.Invoke();
     }
 
@@ -44,17 +44,15 @@ internal class ClientAuthStateProvider : IAuthStateProvider
         OnStateChanged?.Invoke();
     }
 
-    private static AuthState ParseTokenToAuthState(string accessToken, DateTimeOffset tokenExpiry)
+    private static AuthState BuildAuthState(StoredCredentials credentials)
     {
         try
         {
-            var claims = ParseClaimsFromJwt(accessToken);
+            var claims = ParseClaimsFromJwt(credentials.AccessToken);
             
             var userIdStr = claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier || c.Type == "sub")?.Value;
             var username = claims.FirstOrDefault(c => c.Type == ClaimTypes.Name || c.Type == "name")?.Value;
             var email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email || c.Type == "email")?.Value;
-            var roles = claims.Where(c => c.Type == ClaimTypes.Role || c.Type == "role").Select(c => c.Value).ToList();
-            var permissions = claims.Where(c => c.Type == "permission" || c.Type == "scope").Select(c => c.Value).ToList();
             var twoFactorEnabled = claims.Any(c => c.Type == "amr" && c.Value == "mfa") ||
                                    claims.Any(c => c.Type == "2fa_enabled" && c.Value == "true");
 
@@ -66,9 +64,9 @@ internal class ClientAuthStateProvider : IAuthStateProvider
                 UserId = userId,
                 Username = username,
                 Email = email,
-                Roles = roles,
-                Permissions = permissions,
-                TokenExpiry = tokenExpiry,
+                Roles = credentials.Roles,
+                Permissions = credentials.Permissions,
+                TokenExpiry = credentials.AccessTokenExpiry,
                 TwoFactorEnabled = twoFactorEnabled
             };
         }

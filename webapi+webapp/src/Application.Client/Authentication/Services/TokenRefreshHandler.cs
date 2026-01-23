@@ -67,7 +67,9 @@ internal class TokenRefreshHandler : DelegatingHandler
                         AccessToken = refreshResult.AccessToken!,
                         RefreshToken = refreshResult.RefreshToken!,
                         AccessTokenExpiry = DateTimeOffset.UtcNow.AddSeconds(refreshResult.ExpiresIn),
-                        RefreshTokenExpiry = DateTimeOffset.UtcNow.AddDays(7) // Assume 7 day refresh token
+                        RefreshTokenExpiry = DateTimeOffset.UtcNow.AddDays(7), // Assume 7 day refresh token
+                        Roles = refreshResult.Roles.ToList(),
+                        Permissions = refreshResult.Permissions.ToList()
                     };
 
                     await authStateProvider.UpdateStateAsync(newCredentials);

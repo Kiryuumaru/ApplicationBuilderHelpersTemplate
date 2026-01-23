@@ -9,6 +9,7 @@ namespace Application.Client.Json;
 /// Uses source generators for trimming-safe JSON operations.
 /// </summary>
 [JsonSerializable(typeof(TokenResponse))]
+[JsonSerializable(typeof(TokenUserInfo))]
 [JsonSerializable(typeof(ErrorResponse))]
 [JsonSerializable(typeof(StoredCredentials))]
 [JsonSerializable(typeof(LoginRequest))]
@@ -78,6 +79,18 @@ public sealed class TokenResponse
     public string AccessToken { get; set; } = string.Empty;
     public string RefreshToken { get; set; } = string.Empty;
     public int ExpiresIn { get; set; }
+    public TokenUserInfo? User { get; set; }
+}
+
+/// <summary>User info included in token responses.</summary>
+public sealed class TokenUserInfo
+{
+    public Guid Id { get; set; }
+    public string? Username { get; set; }
+    public string? Email { get; set; }
+    public List<string> Roles { get; set; } = [];
+    public List<string> Permissions { get; set; } = [];
+    public bool IsAnonymous { get; set; }
 }
 
 /// <summary>Error response from API.</summary>
