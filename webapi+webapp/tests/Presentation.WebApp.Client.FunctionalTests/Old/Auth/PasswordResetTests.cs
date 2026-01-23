@@ -10,7 +10,7 @@ public class PasswordResetTests : WebAppTestBase
 {
     private const string NewPassword = "NewPassword456!";
 
-    public PasswordResetTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
+    public PasswordResetTests(PlaywrightFixture playwrightFixture, ITestOutputHelper output) : base(playwrightFixture, output)
     {
     }
 

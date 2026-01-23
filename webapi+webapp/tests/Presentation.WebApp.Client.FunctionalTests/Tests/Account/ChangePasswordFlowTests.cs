@@ -8,7 +8,7 @@ namespace Presentation.WebApp.Client.FunctionalTests.Tests.Account;
 /// </summary>
 public class ChangePasswordFlowTests : WebAppTestBase
 {
-    public ChangePasswordFlowTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
+    public ChangePasswordFlowTests(PlaywrightFixture playwrightFixture, ITestOutputHelper output) : base(playwrightFixture, output)
     {
     }
 

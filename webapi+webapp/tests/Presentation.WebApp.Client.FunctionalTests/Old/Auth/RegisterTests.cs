@@ -8,7 +8,7 @@ namespace Presentation.WebApp.Client.FunctionalTests.Old.Auth;
 /// </summary>
 public class RegisterTests : WebAppTestBase
 {
-    public RegisterTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
+    public RegisterTests(PlaywrightFixture playwrightFixture, ITestOutputHelper output) : base(playwrightFixture, output)
     {
     }
 

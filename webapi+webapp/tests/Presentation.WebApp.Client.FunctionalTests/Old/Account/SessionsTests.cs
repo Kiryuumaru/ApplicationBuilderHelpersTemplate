@@ -9,7 +9,7 @@ namespace Presentation.WebApp.Client.FunctionalTests.Old.Account;
 /// </summary>
 public class SessionsTests : WebAppTestBase
 {
-    public SessionsTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
+    public SessionsTests(PlaywrightFixture playwrightFixture, ITestOutputHelper output) : base(playwrightFixture, output)
     {
     }
 

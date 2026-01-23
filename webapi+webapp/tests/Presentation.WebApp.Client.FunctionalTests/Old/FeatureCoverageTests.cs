@@ -9,7 +9,7 @@ namespace Presentation.WebApp.Client.FunctionalTests.Old;
 /// </summary>
 public class FeatureCoverageTests : WebAppTestBase
 {
-    public FeatureCoverageTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
+    public FeatureCoverageTests(PlaywrightFixture playwrightFixture, ITestOutputHelper output) : base(playwrightFixture, output)
     {
     }
 

@@ -13,6 +13,7 @@ public class WebApiTestHost : IAsyncDisposable
     private readonly HttpClient _httpClient;
     private readonly int _port;
     private Process? _process;
+    private string? _publishDir;
 
     public string BaseUrl => $"http://localhost:{_port}";
     public HttpClient HttpClient => _httpClient;
@@ -43,57 +44,78 @@ public class WebApiTestHost : IAsyncDisposable
 
         _output.WriteLine($"[WEBAPI] Starting WebApi on {BaseUrl}...");
 
-        // Detect configuration from current test output directory (contains Debug or Release)
-        var configuration = AppContext.BaseDirectory.Contains("Release", StringComparison.OrdinalIgnoreCase)
-            ? "Release"
-            : "Debug";
-
-        var webApiOutputDir = Path.GetFullPath(Path.Combine(
+        // Find the WebApi server project directory
+        var webApiProjectDir = Path.GetFullPath(Path.Combine(
             AppContext.BaseDirectory,
             "..", "..", "..", "..", "..",
-            "src", "Presentation.WebApp.Server", "bin", configuration, "net10.0"));
+            "src", "Presentation.WebApp.Server"));
 
-        _output.WriteLine($"[WEBAPI] Output dir: {webApiOutputDir}");
-
-        if (!Directory.Exists(webApiOutputDir))
+        if (!Directory.Exists(webApiProjectDir))
         {
-            throw new DirectoryNotFoundException($"WebApi output directory not found at {webApiOutputDir}. Build the WebApi project first.");
+            throw new DirectoryNotFoundException($"WebApi project directory not found at {webApiProjectDir}.");
         }
 
-        var exePath = Directory.GetFiles(webApiOutputDir, "*.runtimeconfig.json")
-            .Select(rc => Path.GetFileName(rc).Replace(".runtimeconfig.json", ""))
-            .Select(name => Path.Combine(webApiOutputDir, name + ".exe"))
-            .FirstOrDefault(File.Exists);
+        // Publish to a unique temp directory for this test run
+        // Published output has all static assets bundled correctly
+        _publishDir = Path.Combine(Path.GetTempPath(), $"FunctionalTests_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(_publishDir);
 
-        if (exePath == null)
+        _output.WriteLine($"[WEBAPI] Publishing to: {_publishDir}");
+
+        var publishProcess = Process.Start(new ProcessStartInfo
         {
-            exePath = Directory.GetFiles(webApiOutputDir, "*.runtimeconfig.json")
-                .Select(rc => Path.GetFileName(rc).Replace(".runtimeconfig.json", ""))
-                .Select(name => Path.Combine(webApiOutputDir, name + ".dll"))
-                .FirstOrDefault(File.Exists);
+            FileName = "dotnet",
+            Arguments = $"publish \"{webApiProjectDir}\" -o \"{_publishDir}\" -c Release",
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        });
+
+        if (publishProcess == null)
+        {
+            throw new InvalidOperationException("Failed to start dotnet publish process");
         }
+
+        // Capture publish output for debugging
+        var publishOutput = await publishProcess.StandardOutput.ReadToEndAsync();
+        var publishError = await publishProcess.StandardError.ReadToEndAsync();
+        await publishProcess.WaitForExitAsync();
+
+        if (publishProcess.ExitCode != 0)
+        {
+            _output.WriteLine($"[WEBAPI] Publish stdout: {publishOutput}");
+            _output.WriteLine($"[WEBAPI] Publish stderr: {publishError}");
+            throw new InvalidOperationException($"dotnet publish failed with exit code {publishProcess.ExitCode}");
+        }
+
+        _output.WriteLine("[WEBAPI] Publish completed");
+
+        // Find the exe file in publish output
+        var exePath = Directory.GetFiles(_publishDir, "*.exe")
+            .FirstOrDefault(f => !Path.GetFileName(f).StartsWith("createdump", StringComparison.OrdinalIgnoreCase));
 
         if (exePath == null || !File.Exists(exePath))
         {
-            throw new FileNotFoundException($"WebApi executable not found in {webApiOutputDir}. Build the WebApi project first.");
+            throw new FileNotFoundException($"WebApi executable not found in {_publishDir}. Publish failed.");
         }
 
-        var isExe = exePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
-        var workDir = Path.GetDirectoryName(exePath);
-        var args = isExe ? $"--urls {BaseUrl}" : $"\"{exePath}\" --urls {BaseUrl}";
-        var fileName = isExe ? exePath : "dotnet";
+        // Per build-commands.instructions.md:
+        // Always cd to the directory AND run the executable with absolute path
+        var args = $"--urls {BaseUrl}";
 
-        _output.WriteLine($"[WEBAPI] Starting: {fileName} {args}");
+        _output.WriteLine($"[WEBAPI] Starting: {exePath} {args}");
+        _output.WriteLine($"[WEBAPI] Working directory: {_publishDir}");
 
         var startInfo = new ProcessStartInfo
         {
-            FileName = fileName,
+            FileName = exePath,
             Arguments = args,
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             CreateNoWindow = true,
-            WorkingDirectory = workDir
+            WorkingDirectory = _publishDir  // Critical: Must run FROM the publish directory
         };
 
         startInfo.Environment["ASPNETCORE_URLS"] = BaseUrl;
@@ -180,6 +202,20 @@ public class WebApiTestHost : IAsyncDisposable
 
         _process?.Dispose();
         _httpClient.Dispose();
+
+        // Clean up publish directory
+        if (_publishDir != null && Directory.Exists(_publishDir))
+        {
+            try
+            {
+                Directory.Delete(_publishDir, recursive: true);
+                _output.WriteLine($"[WEBAPI] Cleaned up publish directory: {_publishDir}");
+            }
+            catch (Exception ex)
+            {
+                _output.WriteLine($"[WEBAPI] Error cleaning up publish directory: {ex.Message}");
+            }
+        }
 
         _output.WriteLine("[WEBAPI] Stopped");
     }

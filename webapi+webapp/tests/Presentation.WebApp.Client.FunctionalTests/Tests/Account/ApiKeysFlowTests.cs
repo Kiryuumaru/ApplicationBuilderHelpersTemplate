@@ -8,7 +8,7 @@ namespace Presentation.WebApp.Client.FunctionalTests.Tests.Account;
 /// </summary>
 public class ApiKeysFlowTests : WebAppTestBase
 {
-    public ApiKeysFlowTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
+    public ApiKeysFlowTests(PlaywrightFixture playwrightFixture, ITestOutputHelper output) : base(playwrightFixture, output)
     {
     }
 

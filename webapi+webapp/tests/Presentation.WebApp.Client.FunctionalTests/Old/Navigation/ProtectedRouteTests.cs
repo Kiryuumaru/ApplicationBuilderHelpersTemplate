@@ -8,7 +8,7 @@ namespace Presentation.WebApp.Client.FunctionalTests.Old.Navigation;
 /// </summary>
 public class ProtectedRouteTests : WebAppTestBase
 {
-    public ProtectedRouteTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
+    public ProtectedRouteTests(PlaywrightFixture playwrightFixture, ITestOutputHelper output) : base(playwrightFixture, output)
     {
     }
 

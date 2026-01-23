@@ -8,7 +8,7 @@ namespace Presentation.WebApp.Client.FunctionalTests.Old.Layout;
 /// </summary>
 public class LayoutTests : WebAppTestBase
 {
-    public LayoutTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
+    public LayoutTests(PlaywrightFixture playwrightFixture, ITestOutputHelper output) : base(playwrightFixture, output)
     {
     }
 

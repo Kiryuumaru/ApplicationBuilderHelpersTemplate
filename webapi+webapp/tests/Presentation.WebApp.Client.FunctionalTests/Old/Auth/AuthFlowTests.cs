@@ -8,7 +8,7 @@ namespace Presentation.WebApp.Client.FunctionalTests.Old.Auth;
 /// </summary>
 public class AuthFlowTests : WebAppTestBase
 {
-    public AuthFlowTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
+    public AuthFlowTests(PlaywrightFixture playwrightFixture, ITestOutputHelper output) : base(playwrightFixture, output)
     {
     }
 

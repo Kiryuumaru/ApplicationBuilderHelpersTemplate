@@ -8,7 +8,7 @@ namespace Presentation.WebApp.Client.FunctionalTests.Old.Admin;
 /// </summary>
 public class RolesManagementTests : WebAppTestBase
 {
-    public RolesManagementTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
+    public RolesManagementTests(PlaywrightFixture playwrightFixture, ITestOutputHelper output) : base(playwrightFixture, output)
     {
     }
 

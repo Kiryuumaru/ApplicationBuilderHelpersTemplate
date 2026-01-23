@@ -8,7 +8,7 @@ namespace Presentation.WebApp.Client.FunctionalTests.Old.Navigation;
 /// </summary>
 public class BasicNavigationTests : WebAppTestBase
 {
-    public BasicNavigationTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
+    public BasicNavigationTests(PlaywrightFixture playwrightFixture, ITestOutputHelper output) : base(playwrightFixture, output)
     {
     }
 

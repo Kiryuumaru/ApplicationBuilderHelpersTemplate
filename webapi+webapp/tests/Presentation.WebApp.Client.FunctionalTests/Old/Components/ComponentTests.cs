@@ -8,7 +8,7 @@ namespace Presentation.WebApp.Client.FunctionalTests.Old.Components;
 /// </summary>
 public class ComponentTests : WebAppTestBase
 {
-    public ComponentTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
+    public ComponentTests(PlaywrightFixture playwrightFixture, ITestOutputHelper output) : base(playwrightFixture, output)
     {
     }
 

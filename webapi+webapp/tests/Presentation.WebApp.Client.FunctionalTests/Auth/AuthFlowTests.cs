@@ -9,7 +9,7 @@ namespace Presentation.WebApp.Client.FunctionalTests.Auth;
 /// </summary>
 public class AuthFlowTests : WebAppTestBase
 {
-    public AuthFlowTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
+    public AuthFlowTests(PlaywrightFixture playwrightFixture, ITestOutputHelper output) : base(playwrightFixture, output)
     {
     }
 
@@ -20,6 +20,17 @@ public class AuthFlowTests : WebAppTestBase
     [Fact]
     public async Task Journey_RegisterLoginNavigateToProfile_SeesProfileData()
     {
+        // Track 401 errors from API calls
+        var unauthorizedResponses = new List<string>();
+        Page.Response += (_, response) =>
+        {
+            if (response.Status == 401 && response.Url.Contains("/api/"))
+            {
+                unauthorizedResponses.Add($"{response.Request.Method} {response.Url}");
+                Output.WriteLine($"[401 ERROR] {response.Request.Method} {response.Url}");
+            }
+        };
+
         // Arrange
         var username = GenerateUsername("profile");
         var email = GenerateEmail(username);
@@ -41,6 +52,13 @@ public class AuthFlowTests : WebAppTestBase
         // Assert: Should be on profile page and see profile data (NOT 401)
         Output.WriteLine($"After profile click, URL: {Page.Url}");
         AssertUrlContains("/account/profile");
+
+        // Check for 401 errors in API calls
+        if (unauthorizedResponses.Count > 0)
+        {
+            var errors = string.Join(Environment.NewLine, unauthorizedResponses);
+            Assert.Fail($"Received {unauthorizedResponses.Count} unauthorized API response(s):{Environment.NewLine}{errors}");
+        }
 
         // Verify profile data is displayed (not an error page)
         var pageContent = await Page.ContentAsync();

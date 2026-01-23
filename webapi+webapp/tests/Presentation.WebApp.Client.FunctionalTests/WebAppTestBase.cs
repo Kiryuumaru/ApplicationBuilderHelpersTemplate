@@ -4,9 +4,13 @@ using Presentation.WebApp.Client.FunctionalTests.Fixtures;
 namespace Presentation.WebApp.Client.FunctionalTests;
 
 /// <summary>
-/// Base class for WebApp functional tests with parallel execution support.
-/// Uses a shared WebApi + WebApp host via collection fixture for efficiency.
-/// Each test gets its own isolated browser context.
+/// Base class for WebApp functional tests with COMPLETE TEST ISOLATION.
+/// 
+/// Each test gets:
+/// - Its OWN WebApiTestHost (unique port + unique in-memory SQLite database)
+/// - Its own browser context (via shared PlaywrightFixture - browser is OK to share)
+/// 
+/// This ensures ZERO cross-test interference. No shared state. No flaky tests.
 /// 
 /// IMPORTANT: All tests MUST use UI-only interactions (click, type, navigate).
 /// NO direct API calls. NO manual header injection. Like a real user.
@@ -19,7 +23,8 @@ public abstract class WebAppTestBase : IAsyncLifetime
     /// </summary>
     protected const int DefaultTimeoutMs = 15_000;
 
-    private readonly SharedTestFixture _fixture;
+    private readonly PlaywrightFixture _playwrightFixture;
+    private WebApiTestHost? _host;
     private IBrowserContext? _context;
     private IPage? _page;
 
@@ -29,17 +34,17 @@ public abstract class WebAppTestBase : IAsyncLifetime
     protected readonly ITestOutputHelper Output;
 
     /// <summary>
-    /// Base URL for the WebApp server.
+    /// Base URL for the WebApp server (unique per test).
     /// </summary>
-    protected string WebAppUrl => _fixture.WebAppUrl;
+    protected string WebAppUrl => _host?.BaseUrl ?? throw new InvalidOperationException("Host not initialized");
 
     /// <summary>
-    /// The browser context for this test class.
+    /// The browser context for this test.
     /// </summary>
     protected IBrowserContext Context => _context ?? throw new InvalidOperationException("Browser context not initialized");
 
     /// <summary>
-    /// The browser page for this test class.
+    /// The browser page for this test.
     /// </summary>
     protected IPage Page => _page ?? throw new InvalidOperationException("Page not initialized");
 
@@ -48,18 +53,25 @@ public abstract class WebAppTestBase : IAsyncLifetime
     /// </summary>
     protected const string TestPassword = "TestPassword123!";
 
-    protected WebAppTestBase(SharedTestFixture fixture, ITestOutputHelper output)
+    protected WebAppTestBase(PlaywrightFixture playwrightFixture, ITestOutputHelper output)
     {
-        _fixture = fixture;
+        _playwrightFixture = playwrightFixture;
         Output = output;
     }
 
     public virtual async Task InitializeAsync()
     {
+        Output.WriteLine("[TEST] Starting isolated WebApiTestHost...");
+
+        // Create ISOLATED host for THIS TEST ONLY (unique port + unique in-memory DB)
+        _host = new WebApiTestHost(Output);
+        await _host.StartAsync();
+
+        Output.WriteLine($"[TEST] Host started at {_host.BaseUrl}");
         Output.WriteLine("[TEST] Creating browser context...");
 
-        // Create isolated browser context from shared fixture
-        _context = await _fixture.CreateContextAsync();
+        // Create isolated browser context from shared Playwright fixture
+        _context = await _playwrightFixture.CreateContextAsync();
         _page = await _context.NewPageAsync();
 
         // Set default timeouts
@@ -83,7 +95,7 @@ public abstract class WebAppTestBase : IAsyncLifetime
 
     public virtual async Task DisposeAsync()
     {
-        Output.WriteLine("[TEST] Disposing browser context...");
+        Output.WriteLine("[TEST] Disposing test resources...");
 
         if (_page != null)
         {
@@ -95,7 +107,13 @@ public abstract class WebAppTestBase : IAsyncLifetime
             await _context.CloseAsync();
         }
 
-        Output.WriteLine("[TEST] Browser context disposed");
+        // Dispose the isolated host for this test
+        if (_host != null)
+        {
+            await _host.DisposeAsync();
+        }
+
+        Output.WriteLine("[TEST] Test resources disposed");
     }
 
     #region Navigation Helpers (UI-Only)

@@ -4,11 +4,12 @@ namespace Presentation.WebApp.Client.FunctionalTests;
 
 /// <summary>
 /// Test collection for WebApp functional tests.
-/// All test classes in this collection share a single WebApi host, WebApp host, and browser instance.
-/// Each test gets its own isolated browser context for test isolation.
+/// Shares ONLY the Playwright browser instance (expensive to start).
+/// Each test creates its own WebApiTestHost (unique port + unique in-memory DB).
+/// This ensures complete test isolation while keeping browser startup cost low.
 /// </summary>
 [CollectionDefinition(Name)]
-public class WebAppTestCollection : ICollectionFixture<SharedTestFixture>
+public class WebAppTestCollection : ICollectionFixture<PlaywrightFixture>
 {
-    public const string Name = "WebApp Integration Tests";
+    public const string Name = "WebApp Functional Tests";
 }

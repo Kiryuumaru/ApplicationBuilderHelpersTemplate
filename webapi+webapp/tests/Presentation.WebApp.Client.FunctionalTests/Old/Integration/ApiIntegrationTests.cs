@@ -8,7 +8,7 @@ namespace Presentation.WebApp.Client.FunctionalTests.Old.Integration;
 /// </summary>
 public class ApiIntegrationTests : WebAppTestBase
 {
-    public ApiIntegrationTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
+    public ApiIntegrationTests(PlaywrightFixture playwrightFixture, ITestOutputHelper output) : base(playwrightFixture, output)
     {
     }
 

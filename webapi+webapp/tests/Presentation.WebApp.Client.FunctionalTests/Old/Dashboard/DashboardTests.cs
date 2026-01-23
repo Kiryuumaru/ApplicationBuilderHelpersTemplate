@@ -9,7 +9,7 @@ namespace Presentation.WebApp.Client.FunctionalTests.Old.Dashboard;
 /// </summary>
 public class DashboardTests : WebAppTestBase
 {
-    public DashboardTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
+    public DashboardTests(PlaywrightFixture playwrightFixture, ITestOutputHelper output) : base(playwrightFixture, output)
     {
     }
 

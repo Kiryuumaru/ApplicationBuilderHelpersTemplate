@@ -8,7 +8,7 @@ namespace Presentation.WebApp.Client.FunctionalTests.Account;
 /// </summary>
 public class ProfileFlowTests : WebAppTestBase
 {
-    public ProfileFlowTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
+    public ProfileFlowTests(PlaywrightFixture playwrightFixture, ITestOutputHelper output) : base(playwrightFixture, output)
     {
     }
 

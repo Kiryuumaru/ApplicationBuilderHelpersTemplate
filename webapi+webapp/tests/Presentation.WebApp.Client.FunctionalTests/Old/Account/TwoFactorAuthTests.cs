@@ -8,7 +8,7 @@ namespace Presentation.WebApp.Client.FunctionalTests.Old.Account;
 /// </summary>
 public class TwoFactorAuthTests : WebAppTestBase
 {
-    public TwoFactorAuthTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
+    public TwoFactorAuthTests(PlaywrightFixture playwrightFixture, ITestOutputHelper output) : base(playwrightFixture, output)
     {
     }
 

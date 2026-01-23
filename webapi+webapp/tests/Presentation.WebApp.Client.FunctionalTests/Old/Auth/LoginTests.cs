@@ -9,7 +9,7 @@ namespace Presentation.WebApp.Client.FunctionalTests.Old.Auth;
 /// </summary>
 public class LoginTests : WebAppTestBase
 {
-    public LoginTests(SharedTestFixture fixture, ITestOutputHelper output) : base(fixture, output)
+    public LoginTests(PlaywrightFixture playwrightFixture, ITestOutputHelper output) : base(playwrightFixture, output)
     {
     }
 
