@@ -117,7 +117,7 @@
         await AuthClient.LogoutAsync();
         await AuthStateProvider.ClearStateAsync();
         _showUserMenu = false;
-        Navigation.NavigateTo("auth/login");
+        // Navigation handled by MainLayout reacting to auth state change
     }
 
     public void Dispose()

@@ -37,7 +37,16 @@
 
     private void HandleAuthStateChanged()
     {
+        var wasAuthenticated = _isAuthenticated;
         _isAuthenticated = AuthStateProvider.CurrentState.IsAuthenticated;
+        
+        // Redirect to login when auth state is cleared (session revoked, token expired, etc.)
+        if (wasAuthenticated && !_isAuthenticated)
+        {
+            var returnUrl = Uri.EscapeDataString(Navigation.Uri);
+            Navigation.NavigateTo($"auth/login?returnUrl={returnUrl}", forceLoad: false);
+        }
+        
         InvokeAsync(StateHasChanged);
     }
 

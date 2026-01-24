@@ -30,6 +30,9 @@ public class ClientApplication : Application
         // Token storage using local store (IndexedDB in browser)
         services.AddScoped<ITokenStorage, LocalStoreTokenStorage>();
 
+        // Auth state notifier (singleton to share state across scopes)
+        services.AddSingleton<AuthStateNotifier>();
+
         // Auth state provider - registered as both concrete and interface
         // Concrete type used by RunPreparationAsync for initialization
         services.AddScoped<ClientAuthStateProvider>();

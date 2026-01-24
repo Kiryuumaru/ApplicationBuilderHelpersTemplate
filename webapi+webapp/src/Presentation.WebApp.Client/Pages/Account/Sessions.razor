@@ -138,7 +138,7 @@
             await SessionsClient.RevokeAllSessionsAsync(userId);
             
             await AuthStateProvider.ClearStateAsync();
-            Navigation.NavigateTo("/auth/login");
+            // Navigation handled by MainLayout reacting to auth state change
         }
         catch (Exception ex)
         {

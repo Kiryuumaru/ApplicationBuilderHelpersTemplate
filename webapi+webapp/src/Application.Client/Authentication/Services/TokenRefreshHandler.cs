@@ -9,6 +9,7 @@ namespace Application.Client.Authentication.Services;
 /// <summary>
 /// HTTP message handler that attaches Bearer tokens to requests and handles token refresh.
 /// Creates a scope to read from ITokenStorage (IndexedDB) for each request.
+/// When token refresh fails or session is revoked, clears auth state (UI reacts via OnStateChanged).
 /// </summary>
 internal class TokenRefreshHandler : DelegatingHandler
 {
@@ -81,7 +82,7 @@ internal class TokenRefreshHandler : DelegatingHandler
                 }
                 else
                 {
-                    // Refresh failed - clear auth state
+                    // Refresh failed - clear auth state (UI will react via OnStateChanged)
                     await authStateProvider.ClearStateAsync();
                 }
             }
@@ -89,6 +90,13 @@ internal class TokenRefreshHandler : DelegatingHandler
             {
                 _refreshLock.Release();
             }
+        }
+        // Handle 401 when no refresh token available (already logged out or session revoked elsewhere)
+        else if (response.StatusCode == HttpStatusCode.Unauthorized && credentials != null)
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var authStateProvider = scope.ServiceProvider.GetRequiredService<IAuthStateProvider>();
+            await authStateProvider.ClearStateAsync();
         }
 
         return response;

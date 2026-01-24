@@ -7,17 +7,27 @@ using Application.Client.Json;
 
 namespace Application.Client.Authentication.Services;
 
+/// <summary>
+/// Scoped service that provides access to authentication state.
+/// Uses a singleton AuthStateNotifier to share state across scopes,
+/// allowing state changes from TokenRefreshHandler to be visible to UI.
+/// </summary>
 internal class ClientAuthStateProvider : IAuthStateProvider
 {
     private readonly ITokenStorage _tokenStorage;
-    private AuthState _currentState = AuthState.Anonymous;
+    private readonly AuthStateNotifier _notifier;
 
-    public AuthState CurrentState => _currentState;
-    public event Action? OnStateChanged;
+    public AuthState CurrentState => _notifier.CurrentState;
+    public event Action? OnStateChanged
+    {
+        add => _notifier.OnStateChanged += value;
+        remove => _notifier.OnStateChanged -= value;
+    }
 
-    public ClientAuthStateProvider(ITokenStorage tokenStorage)
+    public ClientAuthStateProvider(ITokenStorage tokenStorage, AuthStateNotifier notifier)
     {
         _tokenStorage = tokenStorage;
+        _notifier = notifier;
     }
 
     public async Task InitializeAsync()
@@ -25,23 +35,24 @@ internal class ClientAuthStateProvider : IAuthStateProvider
         var credentials = await _tokenStorage.GetCredentialsAsync();
         if (credentials != null && credentials.IsValid)
         {
-            _currentState = BuildAuthState(credentials);
+            _notifier.SetState(BuildAuthState(credentials));
         }
-        OnStateChanged?.Invoke();
+        else
+        {
+            _notifier.ClearState();
+        }
     }
 
     public async Task UpdateStateAsync(StoredCredentials credentials)
     {
         await _tokenStorage.StoreCredentialsAsync(credentials);
-        _currentState = BuildAuthState(credentials);
-        OnStateChanged?.Invoke();
+        _notifier.SetState(BuildAuthState(credentials));
     }
 
     public async Task ClearStateAsync()
     {
         await _tokenStorage.ClearCredentialsAsync();
-        _currentState = AuthState.Anonymous;
-        OnStateChanged?.Invoke();
+        _notifier.ClearState();
     }
 
     private static AuthState BuildAuthState(StoredCredentials credentials)
