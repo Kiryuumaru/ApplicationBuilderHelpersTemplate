@@ -1,13 +1,16 @@
 using Application.Server.Identity.Interfaces;
 using Application.Server.Identity.Interfaces.Infrastructure;
 using Application.Server.Identity.Models;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Server.Identity.Services;
 
 /// <summary>
 /// Service for managing user sessions.
 /// </summary>
-public sealed class SessionService(ISessionRepository sessionRepository) : ISessionService
+public sealed class SessionService(
+    ISessionRepository sessionRepository,
+    ILogger<SessionService> logger) : ISessionService
 {
     /// <inheritdoc />
     public async Task<SessionDto?> GetByIdAsync(Guid sessionId, CancellationToken cancellationToken)
@@ -20,13 +23,17 @@ public sealed class SessionService(ISessionRepository sessionRepository) : ISess
     public async Task<IReadOnlyCollection<SessionDto>> GetActiveByUserIdAsync(Guid userId, CancellationToken cancellationToken)
     {
         var sessions = await sessionRepository.GetActiveByUserIdAsync(userId, cancellationToken);
+        logger.LogInformation("GetActiveByUserIdAsync for user {UserId} returned {Count} sessions", userId, sessions.Count);
         return sessions.Select(MapToDto).ToList();
     }
 
     /// <inheritdoc />
     public async Task<bool> RevokeAsync(Guid sessionId, CancellationToken cancellationToken)
     {
-        return await sessionRepository.RevokeAsync(sessionId, cancellationToken);
+        logger.LogInformation("RevokeAsync called for session {SessionId}", sessionId);
+        var result = await sessionRepository.RevokeAsync(sessionId, cancellationToken);
+        logger.LogInformation("RevokeAsync for session {SessionId} returned {Result}", sessionId, result);
+        return result;
     }
 
     /// <inheritdoc />

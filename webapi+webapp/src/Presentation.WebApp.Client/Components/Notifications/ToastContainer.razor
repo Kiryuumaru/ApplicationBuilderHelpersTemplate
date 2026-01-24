@@ -4,7 +4,7 @@
 @inject IToastService ToastService
 @implements IDisposable
 
-<div class="fixed top-24 left-1/2 -translate-x-1/2 md:left-auto md:right-4 md:translate-x-0 z-[60] flex flex-col gap-3 w-full max-w-sm px-4 md:px-0">
+<div class="fixed top-12 left-1/2 -translate-x-1/2 md:left-auto md:right-4 md:translate-x-0 z-60 flex flex-col gap-3 w-full max-w-sm px-4 md:px-0">
     @foreach (var toast in _toasts)
     {
         <ToastItem Toast="toast" OnDismiss="RemoveToast" />
