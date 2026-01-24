@@ -5,24 +5,24 @@ using System.Text.Json;
 namespace Infrastructure.Browser.IndexedDB.LocalStore.Services;
 
 /// <summary>
-/// IndexedDB-based implementation of ILocalStoreService for browser persistence.
-/// Uses JavaScript interop to interact with the browser's IndexedDB API.
+/// IndexedDB-based local store service for browser environments.
+/// Uses lazy module loading for the JavaScript interop.
 /// </summary>
-public sealed class IndexedDBLocalStoreService : ILocalStoreService
+internal sealed class IndexedDBLocalStoreService(IJSRuntime jsRuntime) : ILocalStoreService, IAsyncDisposable
 {
     private const string DatabaseName = "LocalStoreDB";
     private const string StoreName = "LocalStore";
     private const int DatabaseVersion = 1;
-    
-    private readonly IJSRuntime _jsRuntime;
+
+    private static readonly string AssemblyName = typeof(IndexedDBLocalStoreService).Assembly.GetName().Name!;
+
+    private readonly Lazy<Task<IJSObjectReference>> _moduleTask = new(() =>
+        jsRuntime.InvokeAsync<IJSObjectReference>(
+            "import", $"./_content/{AssemblyName}/indexedDBLocalStore.js").AsTask());
+
     private readonly List<PendingOperation> _pendingOperations = [];
     private bool _isOpen;
     private bool _disposed;
-
-    public IndexedDBLocalStoreService(IJSRuntime jsRuntime)
-    {
-        _jsRuntime = jsRuntime ?? throw new ArgumentNullException(nameof(jsRuntime));
-    }
 
     public Task Open(CancellationToken cancellationToken)
     {
@@ -34,7 +34,7 @@ public sealed class IndexedDBLocalStoreService : ILocalStoreService
     public async Task CommitAsync(CancellationToken cancellationToken)
     {
         ThrowIfDisposed();
-        
+
         if (_pendingOperations.Count == 0)
         {
             return;
@@ -43,18 +43,18 @@ public sealed class IndexedDBLocalStoreService : ILocalStoreService
         var operations = _pendingOperations.ToArray();
         _pendingOperations.Clear();
 
-        // Serialize operations to JSON string to avoid AOT serialization issues with anonymous types
         var jsOperations = operations.Select(o => new JsOperation(
             o.Type == OperationType.Set ? "set" : "delete",
             o.Group,
             o.Id,
             o.Data
         )).ToArray();
-        
+
         var operationsJson = JsonSerializer.Serialize(jsOperations, IndexedDBJsonContext.Default.JsOperationArray);
 
-        await _jsRuntime.InvokeVoidAsync(
-            "indexedDBLocalStore.commitOperationsJson",
+        var module = await _moduleTask.Value;
+        await module.InvokeVoidAsync(
+            "commitOperationsJson",
             cancellationToken,
             DatabaseName,
             StoreName,
@@ -84,8 +84,9 @@ public sealed class IndexedDBLocalStoreService : ILocalStoreService
             }
         }
 
-        return await _jsRuntime.InvokeAsync<string?>(
-            "indexedDBLocalStore.get",
+        var module = await _moduleTask.Value;
+        return await module.InvokeAsync<string?>(
+            "get",
             cancellationToken,
             DatabaseName,
             StoreName,
@@ -99,8 +100,9 @@ public sealed class IndexedDBLocalStoreService : ILocalStoreService
         ThrowIfDisposed();
         await EnsureOpenAsync(cancellationToken);
 
-        var idsFromDb = await _jsRuntime.InvokeAsync<string[]>(
-            "indexedDBLocalStore.getIds",
+        var module = await _moduleTask.Value;
+        var idsFromDb = await module.InvokeAsync<string[]>(
+            "getIds",
             cancellationToken,
             DatabaseName,
             StoreName,
@@ -109,7 +111,7 @@ public sealed class IndexedDBLocalStoreService : ILocalStoreService
 
         // Apply pending operations to the result
         var resultSet = new HashSet<string>(idsFromDb);
-        
+
         foreach (var op in _pendingOperations.Where(o => o.Group == group))
         {
             if (op.Type == OperationType.Delete)
@@ -128,7 +130,7 @@ public sealed class IndexedDBLocalStoreService : ILocalStoreService
     public Task Set(string group, string id, string? data, CancellationToken cancellationToken)
     {
         ThrowIfDisposed();
-        
+
         if (data == null)
         {
             _pendingOperations.Add(new PendingOperation(OperationType.Delete, group, id, null));
@@ -156,8 +158,9 @@ public sealed class IndexedDBLocalStoreService : ILocalStoreService
             }
         }
 
-        return await _jsRuntime.InvokeAsync<bool>(
-            "indexedDBLocalStore.contains",
+        var module = await _moduleTask.Value;
+        return await module.InvokeAsync<bool>(
+            "contains",
             cancellationToken,
             DatabaseName,
             StoreName,
@@ -173,18 +176,21 @@ public sealed class IndexedDBLocalStoreService : ILocalStoreService
             return;
         }
 
-        // Auto-commit pending operations on dispose (matches EFCore behavior)
-        if (_pendingOperations.Count > 0 && _isOpen)
+        _pendingOperations.Clear();
+        _disposed = true;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_disposed)
         {
-            try
-            {
-                // Fire and forget - we can't await in Dispose
-                _ = CommitAsync(CancellationToken.None);
-            }
-            catch
-            {
-                // Ignore errors during dispose
-            }
+            return;
+        }
+
+        if (_moduleTask.IsValueCreated)
+        {
+            var module = await _moduleTask.Value;
+            await module.DisposeAsync();
         }
 
         _pendingOperations.Clear();

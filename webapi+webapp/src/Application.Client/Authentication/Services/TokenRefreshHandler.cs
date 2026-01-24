@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
 using Application.Client.Authentication.Interfaces;
-using Application.Client.Authentication.Interfaces.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Application.Client.Authentication.Services;

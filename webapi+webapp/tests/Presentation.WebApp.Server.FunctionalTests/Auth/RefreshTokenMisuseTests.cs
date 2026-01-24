@@ -1,9 +1,9 @@
-using Presentation.WebApp.FunctionalTests;
+using Presentation.WebApp.Server.FunctionalTests;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-namespace Presentation.WebApp.FunctionalTests.Auth;
+namespace Presentation.WebApp.Server.FunctionalTests.Auth;
 
 /// <summary>
 /// Deep token misuse tests that strengthen confidence in RBAC-based token separation.

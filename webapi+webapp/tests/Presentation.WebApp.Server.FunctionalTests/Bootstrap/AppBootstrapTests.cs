@@ -1,6 +1,7 @@
+using Presentation.WebApp.Server.FunctionalTests;
 using System.Net;
 
-namespace Presentation.WebApp.FunctionalTests.Bootstrap;
+namespace Presentation.WebApp.Server.FunctionalTests.Bootstrap;
 
 /// <summary>
 /// Tests that the WebApi application boots correctly.

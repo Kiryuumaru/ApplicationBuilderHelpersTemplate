@@ -1,5 +1,5 @@
 using System.Text.Json;
-using Application.Client.Authentication.Interfaces.Infrastructure;
+using Application.Client.Authentication.Interfaces;
 using Application.Client.Authentication.Models;
 using Application.Client.Json;
 using Application.LocalStore.Interfaces.Infrastructure;

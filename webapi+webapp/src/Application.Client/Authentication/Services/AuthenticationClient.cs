@@ -1,7 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Application.Client.Authentication.Interfaces;
-using Application.Client.Authentication.Interfaces.Infrastructure;
 using Application.Client.Authentication.Models;
 using Application.Client.Json;
 

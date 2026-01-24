@@ -1,9 +1,9 @@
-using Application.Client.Notifications.Interfaces;
-using Application.Client.Notifications.Models;
+using Presentation.WebApp.Client.Notifications.Interfaces;
+using Presentation.WebApp.Client.Notifications.Models;
 
-namespace Application.Client.Notifications.Services;
+namespace Presentation.WebApp.Client.Notifications.Services;
 
-public class ToastService : IToastService
+internal class ToastService : IToastService
 {
     public event Action<ToastMessage>? OnToastAdded;
     public event Action<Guid>? OnToastRemoved;

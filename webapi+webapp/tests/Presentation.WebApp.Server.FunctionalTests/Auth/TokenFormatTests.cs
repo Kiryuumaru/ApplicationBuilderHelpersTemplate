@@ -1,8 +1,9 @@
+using Presentation.WebApp.Server.FunctionalTests;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Json;
 using System.Text.Json;
 
-namespace Presentation.WebApp.FunctionalTests.Auth;
+namespace Presentation.WebApp.Server.FunctionalTests.Auth;
 
 /// <summary>
 /// Tests verifying the JWT token format uses correct claim types and inline role parameters.

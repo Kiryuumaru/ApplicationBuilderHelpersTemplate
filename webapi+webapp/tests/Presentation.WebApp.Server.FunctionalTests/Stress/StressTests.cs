@@ -1,10 +1,11 @@
+using Presentation.WebApp.Server.FunctionalTests;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-namespace Presentation.WebApp.FunctionalTests.Stress;
+namespace Presentation.WebApp.Server.FunctionalTests.Stress;
 
 /// <summary>
 /// Stress tests for concurrent operations, race conditions, and system stability under load.

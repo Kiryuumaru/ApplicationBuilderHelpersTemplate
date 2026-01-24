@@ -1,4 +1,4 @@
-namespace Presentation.WebApp.FunctionalTests.Fixtures;
+namespace Presentation.WebApp.Server.FunctionalTests.Fixtures;
 
 /// <summary>
 /// Configuration for test credentials.

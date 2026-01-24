@@ -1,9 +1,8 @@
-using Presentation.WebApp.FunctionalTests;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 
-namespace Presentation.WebApp.FunctionalTests.RegressionTests;
+namespace Presentation.WebApp.Server.FunctionalTests.RegressionTests;
 
 /// <summary>
 /// Regression tests to verify all issues documented in WHAT_YOU_DID_WRONG_FOUND_BY_DEV.md are fixed.

@@ -1,11 +1,11 @@
-using Presentation.WebApp.FunctionalTests;
+using Presentation.WebApp.Server.FunctionalTests;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 
-namespace Presentation.WebApp.FunctionalTests.Auth;
+namespace Presentation.WebApp.Server.FunctionalTests.Auth;
 
 /// <summary>
 /// Functional tests for Password Management API endpoints.

@@ -1,6 +1,6 @@
 using Application.Client.Authentication.Models;
 
-namespace Application.Client.Authentication.Interfaces.Infrastructure;
+namespace Application.Client.Authentication.Interfaces;
 
 /// <summary>
 /// Interface for storing and retrieving authentication tokens.

@@ -1,4 +1,4 @@
-namespace Presentation.WebApp.FunctionalTests;
+namespace Presentation.WebApp.Server.FunctionalTests;
 
 /// <summary>
 /// A Fact attribute with a 2-minute timeout.

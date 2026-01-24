@@ -29,12 +29,6 @@ internal static class EFCoreIdentityServiceCollectionExtensions
         services.AddScoped<IRoleRepository, EFCoreRoleRepository>();
         services.AddScoped<IApiKeyRepository, EFCoreApiKeyRepository>();
 
-        // Background worker for anonymous user cleanup
-        services.AddHostedService<AnonymousUserCleanupWorker>();
-
-        // Background worker for API key cleanup
-        services.AddHostedService<ApiKeyCleanupWorker>();
-
         return services;
     }
 }

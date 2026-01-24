@@ -4,7 +4,7 @@ using System.Net.Http.Headers;
 using System.Net.Sockets;
 using Microsoft.AspNetCore.SignalR.Client;
 
-namespace Presentation.WebApp.FunctionalTests.Fixtures;
+namespace Presentation.WebApp.Server.FunctionalTests.Fixtures;
 
 /// <summary>
 /// Test host that runs the WebApi application as a subprocess for functional testing.

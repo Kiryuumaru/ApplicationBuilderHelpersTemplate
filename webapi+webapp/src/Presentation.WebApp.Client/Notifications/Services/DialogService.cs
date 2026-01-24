@@ -1,9 +1,9 @@
-using Application.Client.Notifications.Interfaces;
-using Application.Client.Notifications.Models;
+using Presentation.WebApp.Client.Notifications.Interfaces;
+using Presentation.WebApp.Client.Notifications.Models;
 
-namespace Application.Client.Notifications.Services;
+namespace Presentation.WebApp.Client.Notifications.Services;
 
-public class DialogService : IDialogService
+internal class DialogService : IDialogService
 {
     public event Action<ConfirmDialogRequest>? OnConfirmRequested;
     public event Action<AlertDialogRequest>? OnAlertRequested;

@@ -1,8 +1,8 @@
 using System.Net.Http.Json;
 using System.Text.Json;
-using Presentation.WebApp.FunctionalTests.Fixtures;
+using Presentation.WebApp.Server.FunctionalTests.Fixtures;
 
-namespace Presentation.WebApp.FunctionalTests;
+namespace Presentation.WebApp.Server.FunctionalTests;
 
 /// <summary>
 /// Base class for WebApi functional tests that provides isolated test infrastructure.

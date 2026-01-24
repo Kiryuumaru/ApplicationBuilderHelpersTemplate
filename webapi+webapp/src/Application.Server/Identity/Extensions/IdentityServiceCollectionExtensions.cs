@@ -1,6 +1,7 @@
 using Application.Server.Authorization.Extensions;
 using Application.Server.Identity.Interfaces;
 using Application.Server.Identity.Services;
+using Application.Server.Identity.Workers;
 using Domain.Authorization.Models;
 using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
@@ -48,6 +49,12 @@ public static class IdentityServiceCollectionExtensions
         // OAuth service - using mock implementation by default
         // Replace with real implementation when configuring actual OAuth providers
         services.AddScoped<IOAuthService, MockOAuthService>();
+
+        // Background worker for anonymous user cleanup
+        services.AddHostedService<AnonymousUserCleanupWorker>();
+
+        // Background worker for API key cleanup
+        services.AddHostedService<ApiKeyCleanupWorker>();
 
         return services;
     }

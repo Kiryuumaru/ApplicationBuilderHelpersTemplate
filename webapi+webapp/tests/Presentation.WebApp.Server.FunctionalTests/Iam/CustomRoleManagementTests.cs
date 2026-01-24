@@ -1,10 +1,10 @@
-using Presentation.WebApp.FunctionalTests;
+using Presentation.WebApp.Server.FunctionalTests;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 
-namespace Presentation.WebApp.FunctionalTests.Iam;
+namespace Presentation.WebApp.Server.FunctionalTests.Iam;
 
 /// <summary>
 /// Comprehensive tests for the custom role management system.

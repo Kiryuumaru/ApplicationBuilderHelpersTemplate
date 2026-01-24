@@ -1,4 +1,4 @@
-using Presentation.WebApp.FunctionalTests;
+using Presentation.WebApp.Server.FunctionalTests;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http.Headers;
@@ -7,7 +7,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 
-namespace Presentation.WebApp.FunctionalTests.Auth;
+namespace Presentation.WebApp.Server.FunctionalTests.Auth;
 
 /// <summary>
 /// Tests for token expiration, validity, and session lifecycle.
