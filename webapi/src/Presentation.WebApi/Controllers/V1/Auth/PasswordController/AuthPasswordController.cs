@@ -1,4 +1,4 @@
-using Application.Common.Interfaces;
+using Application.Shared.Interfaces;
 using Application.Identity.Interfaces;
 using Asp.Versioning;
 using Domain.Authorization.Constants;

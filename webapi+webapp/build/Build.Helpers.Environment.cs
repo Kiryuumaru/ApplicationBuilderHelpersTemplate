@@ -1,4 +1,4 @@
-using Application.Common.Extensions;
+using Application.Shared.Extensions;
 using Domain.AppEnvironment.Constants;
 using Nuke.Common;
 using Nuke.Common.IO;

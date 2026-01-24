@@ -1,4 +1,4 @@
-﻿using ApplicationBuilderHelpers;
+using ApplicationBuilderHelpers;
 using Infrastructure.OpenTelemetry.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

@@ -1,6 +1,6 @@
-﻿using Application.Common.Interfaces;
-using Application.Common.Interfaces.Application;
-using Application.Common.Services;
+using Application.Shared.Interfaces;
+using Application.Shared.Interfaces.Application;
+using Application.Shared.Services;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Attributes;
 using Asp.Versioning;

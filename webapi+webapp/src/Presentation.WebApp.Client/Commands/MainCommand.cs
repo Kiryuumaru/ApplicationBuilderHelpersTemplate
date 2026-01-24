@@ -1,4 +1,4 @@
-﻿using Application.Client.Common.Extensions;
+using Application.Client.Shared.Extensions;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Attributes;
 using Microsoft.AspNetCore.Components.Authorization;

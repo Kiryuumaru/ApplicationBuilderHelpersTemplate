@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Infrastructure.EFCore.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,6 +8,7 @@ namespace Infrastructure.EFCore;
 /// Composable DbContext for EF Core infrastructure.
 /// Entity configurations are dynamically loaded from registered IEFCoreEntityConfiguration services.
 /// </summary>
+[RequiresUnreferencedCode("EF Core uses reflection for model building. Use compiled models for full NativeAOT support.")]
 public class EFCoreDbContext : DbContext
 {
     private readonly IEnumerable<IEFCoreEntityConfiguration> _configurations;

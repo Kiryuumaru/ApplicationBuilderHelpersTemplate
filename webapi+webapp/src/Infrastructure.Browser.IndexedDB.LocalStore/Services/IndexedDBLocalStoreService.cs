@@ -1,4 +1,6 @@
 using Application.LocalStore.Interfaces.Infrastructure;
+using Infrastructure.Browser.IndexedDB.LocalStore.Models;
+using Infrastructure.Browser.IndexedDB.LocalStore.Serialization;
 using Microsoft.JSInterop;
 using System.Text.Json;
 
@@ -214,12 +216,4 @@ internal sealed class IndexedDBLocalStoreService(IJSRuntime jsRuntime) : ILocalS
     }
 
     private sealed record PendingOperation(OperationType Type, string Group, string Id, string? Data);
-}
-
-internal sealed record JsOperation(string type, string group, string id, string? data);
-
-[System.Text.Json.Serialization.JsonSerializable(typeof(JsOperation))]
-[System.Text.Json.Serialization.JsonSerializable(typeof(JsOperation[]))]
-internal sealed partial class IndexedDBJsonContext : System.Text.Json.Serialization.JsonSerializerContext
-{
 }

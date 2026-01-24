@@ -1,4 +1,4 @@
-using Application.Common.Interfaces.Application;
+using Application.Shared.Interfaces.Application;
 using Application.Server.Authorization.Extensions;
 using Application.Server.Authorization.Interfaces;
 using Application.Server.Authorization.Models;

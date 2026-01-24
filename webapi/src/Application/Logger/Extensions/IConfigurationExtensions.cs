@@ -1,4 +1,4 @@
-using Application.Common.Extensions;
+using Application.Shared.Extensions;
 using Microsoft.Extensions.Configuration;
 
 namespace Application.Logger.Extensions;

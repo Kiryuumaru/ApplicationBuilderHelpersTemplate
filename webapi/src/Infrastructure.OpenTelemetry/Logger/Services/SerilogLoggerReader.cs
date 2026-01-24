@@ -1,6 +1,6 @@
 using AbsolutePathHelpers;
-using Application.Common.Configuration.Extensions;
-using Application.Common.Extensions;
+using Application.Shared.Configuration.Extensions;
+using Application.Shared.Extensions;
 using Infrastructure.OpenTelemetry.Logger.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Serilog;

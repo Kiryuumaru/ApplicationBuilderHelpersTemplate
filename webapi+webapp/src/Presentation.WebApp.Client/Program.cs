@@ -1,5 +1,5 @@
 using Application.Client;
-using Application.Common.Interfaces.Application;
+using Application.Shared.Interfaces.Application;
 using Infrastructure.Browser.IndexedDB.LocalStore;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Presentation.WebApp.Client.Commands;

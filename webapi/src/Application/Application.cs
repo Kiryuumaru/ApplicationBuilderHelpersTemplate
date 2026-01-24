@@ -1,6 +1,6 @@
 using Application.AppEnvironment.Extensions;
 using Application.Authorization.Extensions;
-using Application.Common.Extensions;
+using Application.Shared.Extensions;
 using Application.Credential.Extensions;
 using Application.Identity.Extensions;
 using Application.LocalStore.Extensions;

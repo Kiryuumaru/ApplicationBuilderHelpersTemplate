@@ -1,7 +1,7 @@
 using AbsolutePathHelpers;
 using Application.AppEnvironment.Services;
-using Application.Common.Extensions;
-using Application.Common.Interfaces.Application;
+using Application.Shared.Extensions;
+using Application.Shared.Interfaces.Application;
 using Application.Credential.Extensions;
 using Application.Logger.Extensions;
 using ApplicationBuilderHelpers;

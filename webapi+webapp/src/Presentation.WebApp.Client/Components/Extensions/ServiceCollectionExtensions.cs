@@ -1,4 +1,4 @@
-﻿using Presentation.WebApp.Client.Components.Theme.Extensions;
+using Presentation.WebApp.Client.Components.Theme.Extensions;
 using Presentation.WebApp.Client.Components.Theme.Interfaces;
 using Presentation.WebApp.Client.Components.Theme.Services;
 using Presentation.WebApp.Client.Notifications.Extensions;

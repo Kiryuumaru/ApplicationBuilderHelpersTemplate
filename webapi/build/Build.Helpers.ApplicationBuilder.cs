@@ -1,6 +1,6 @@
-﻿using Application.Common.Configuration.Extensions;
-using Application.Common.Extensions;
-using Application.Common.Interfaces.Application;
+using Application.Shared.Configuration.Extensions;
+using Application.Shared.Extensions;
+using Application.Shared.Interfaces.Application;
 using Application.Logger.Extensions;
 using Application.NativeCmd.Extensions;
 using ApplicationBuilderHelpers;

@@ -1,6 +1,6 @@
 using Application.AppEnvironment.Extensions;
 using Application.AppEnvironment.Services;
-using Application.Common.Extensions;
+using Application.Shared.Extensions;
 using Application.Credential.Extensions;
 using Application.LocalStore.Extensions;
 using Application.Logger.Extensions;

@@ -1,6 +1,6 @@
 using System.Security.Claims;
-using Application.Client.Authentication.Interfaces;
-using Application.Client.Authentication.Models;
+using Application.Client.Identity.Interfaces;
+using Application.Client.Identity.Models;
 using Microsoft.AspNetCore.Components.Authorization;
 
 namespace Presentation.WebApp.Client.Services;

@@ -1,4 +1,4 @@
-﻿using ApplicationBuilderHelpers;
+using ApplicationBuilderHelpers;
 using Microsoft.Extensions.Hosting;
 using Presentation.Commands;
 using System.Diagnostics.CodeAnalysis;

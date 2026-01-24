@@ -1,4 +1,4 @@
-using Application.Common.Interfaces.Application;
+using Application.Shared.Interfaces.Application;
 using ApplicationBuilderHelpers;
 using Fido2NetLib;
 using Infrastructure.Passkeys.Extensions;

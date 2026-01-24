@@ -1,5 +1,5 @@
 using AbsolutePathHelpers;
-using Application.Common.Extensions;
+using Application.Shared.Extensions;
 using ApplicationBuilderHelpers.Extensions;
 using Microsoft.Extensions.Configuration;
 

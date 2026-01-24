@@ -1,4 +1,4 @@
-﻿using Application.Common.Extensions;
+using Application.Shared.Extensions;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.Diagnostics.Metrics;
 using Microsoft.Extensions.FileProviders;

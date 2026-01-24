@@ -1,4 +1,4 @@
-using Application.Common.Configuration.Extensions;
+using Application.Shared.Configuration.Extensions;
 using Application.Logger.Extensions;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Extensions;

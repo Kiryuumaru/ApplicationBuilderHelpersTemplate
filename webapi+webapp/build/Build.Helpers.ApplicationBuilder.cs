@@ -1,5 +1,5 @@
-﻿using Application.Common.Interfaces.Application;
-using Application.Common.Extensions;
+﻿using Application.Shared.Interfaces.Application;
+using Application.Shared.Extensions;
 using Application.Logger.Extensions;
 using Application.NativeCmd.Extensions;
 using ApplicationBuilderHelpers;

@@ -15,7 +15,7 @@ using Infrastructure.EFCore.Identity.Extensions;
 using Infrastructure.Identity.Extensions;
 using Infrastructure.EFCore.Sqlite.Extensions;
 using Application.Authorization.Interfaces;
-using Application.Common.Interfaces.Application;
+using Application.Shared.Interfaces.Application;
 
 namespace Application.IntegrationTests.Identity;
 

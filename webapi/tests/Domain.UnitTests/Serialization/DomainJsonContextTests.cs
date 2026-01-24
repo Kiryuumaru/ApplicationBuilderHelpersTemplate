@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Domain.Authorization.Enums;
 using Domain.Authorization.Models;
-using Domain.Shared.Serialization;
+using Domain.Serialization;
 
 namespace Domain.UnitTests.Serialization;
 

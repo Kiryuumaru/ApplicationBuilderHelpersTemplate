@@ -1,4 +1,4 @@
-﻿using Presentation.WebApp.Client.Components.Theme.Interfaces;
+using Presentation.WebApp.Client.Components.Theme.Interfaces;
 using Presentation.WebApp.Client.Components.Theme.Services;
 
 namespace Presentation.WebApp.Client.Components.Theme.Extensions;

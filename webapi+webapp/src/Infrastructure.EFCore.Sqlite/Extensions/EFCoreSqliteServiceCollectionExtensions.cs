@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using ApplicationBuilderHelpers.Extensions;
 using Infrastructure.EFCore.Interfaces;
 using Infrastructure.EFCore.Sqlite.Services;
@@ -7,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.EFCore.Sqlite.Extensions;
 
+[UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode", Justification = "EF Core inherently uses reflection. NativeAOT support requires compiled models.")]
 internal static class EFCoreSqliteServiceCollectionExtensions
 {
     public static IServiceCollection AddEFCoreSqlite(this IServiceCollection services)

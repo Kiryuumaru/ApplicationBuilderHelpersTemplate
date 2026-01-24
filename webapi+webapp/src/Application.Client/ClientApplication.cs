@@ -1,11 +1,9 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using Application.Client.Authentication.Interfaces;
-using Application.Client.Authentication.Services;
+using System.Diagnostics.CodeAnalysis;
 using Application.Client.Authorization.Interfaces;
 using Application.Client.Authorization.Services;
-using Application.Client.Common.Extensions;
-using Application.Client.Iam.Interfaces;
-using Application.Client.Iam.Services;
+using Application.Client.Shared.Extensions;
+using Application.Client.Identity.Interfaces;
+using Application.Client.Identity.Services;
 using ApplicationBuilderHelpers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

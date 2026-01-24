@@ -1,4 +1,4 @@
-using Application.Client.Authentication.Interfaces;
+using Application.Client.Identity.Interfaces;
 using Application.Client.Authorization.Interfaces;
 using Domain.Authorization.Services;
 using Domain.Authorization.ValueObjects;

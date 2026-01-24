@@ -7,20 +7,17 @@ using Domain.Identity.Models;
 using Domain.Shared.Exceptions;
 using Fido2NetLib;
 using Fido2NetLib.Objects;
+using Infrastructure.Server.Passkeys.Serialization;
 using System.Text.Json;
 
 namespace Infrastructure.Server.Passkeys;
 
-/// <summary>
-/// Passkey service implementation using Fido2.AspNet library.
-/// </summary>
 internal class PasskeyService : IPasskeyService
 {
     private readonly IFido2 _fido2;
     private readonly IPasskeyRepository _passkeyRepository;
     private readonly IUserRepository _userRepository;
     private readonly IUserTokenService _userTokenService;
-    private readonly JsonSerializerOptions _jsonOptions;
 
     public PasskeyService(
         IFido2 fido2,
@@ -32,7 +29,6 @@ internal class PasskeyService : IPasskeyService
         _passkeyRepository = passkeyRepository ?? throw new ArgumentNullException(nameof(passkeyRepository));
         _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         _userTokenService = userTokenService ?? throw new ArgumentNullException(nameof(userTokenService));
-        _jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
     }
 
     public async Task<PasskeyCreationOptions> GetRegistrationOptionsAsync(
@@ -104,8 +100,8 @@ internal class PasskeyService : IPasskeyService
         var options = CredentialCreateOptions.FromJson(challenge.OptionsJson);
 
         // Parse the attestation response
-        var attestationResponse = JsonSerializer.Deserialize<AuthenticatorAttestationRawResponse>(
-            attestationResponseJson, _jsonOptions)
+        var attestationResponse = JsonSerializer.Deserialize(
+            attestationResponseJson, PasskeysJsonContext.Default.AuthenticatorAttestationRawResponse)
             ?? throw new ValidationException("Invalid attestation response");
 
         // Verify the attestation
@@ -205,8 +201,8 @@ internal class PasskeyService : IPasskeyService
         var options = AssertionOptions.FromJson(challenge.OptionsJson);
 
         // Parse the assertion response
-        var assertionResponse = JsonSerializer.Deserialize<AuthenticatorAssertionRawResponse>(
-            assertionResponseJson, _jsonOptions)
+        var assertionResponse = JsonSerializer.Deserialize(
+            assertionResponseJson, PasskeysJsonContext.Default.AuthenticatorAssertionRawResponse)
             ?? throw new ValidationException("Invalid assertion response");
 
         // Validate RawId is present

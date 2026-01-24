@@ -1,4 +1,4 @@
-using Application.Common.Services;
+using Application.Shared.Services;
 using Application.Identity.Interfaces;
 using Application.Identity.Models;
 using Presentation.WebApi.Controllers.V1.Auth.Shared.Responses;

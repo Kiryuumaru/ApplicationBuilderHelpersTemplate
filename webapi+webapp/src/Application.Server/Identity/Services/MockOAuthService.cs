@@ -1,7 +1,7 @@
 using Application.Server.Identity.Interfaces;
 using Application.Server.Identity.Interfaces.Infrastructure;
 using Application.Server.Identity.Models;
-using Application.Common.Services;
+using Application.Shared.Services;
 using Domain.Identity.Enums;
 using Domain.Identity.Exceptions;
 using System.Security.Cryptography;

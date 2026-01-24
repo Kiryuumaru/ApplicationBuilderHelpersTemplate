@@ -36,7 +36,7 @@ public sealed class UserTokenService(
 
         // Generate refresh token and hash
         var refreshToken = await GenerateRefreshTokenAsync(userId, authData.Username, sessionId, cancellationToken);
-        var tokenHash = Common.Services.TokenHasher.Hash(refreshToken);
+        var tokenHash = Shared.Services.TokenHasher.Hash(refreshToken);
 
         // Create session
         await sessionService.CreateSessionAsync(
@@ -69,7 +69,7 @@ public sealed class UserTokenService(
 
         // Generate new refresh token and hash
         var refreshToken = await GenerateRefreshTokenAsync(session.UserId, authData.Username, sessionId, cancellationToken);
-        var tokenHash = Common.Services.TokenHasher.Hash(refreshToken);
+        var tokenHash = Shared.Services.TokenHasher.Hash(refreshToken);
 
         // Update session with new token hash
         await sessionService.UpdateRefreshTokenAsync(

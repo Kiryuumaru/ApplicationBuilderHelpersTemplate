@@ -4,6 +4,7 @@ using Domain.Authorization.Exceptions;
 using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;
 using Infrastructure.EFCore.Extensions;
+using Infrastructure.EFCore.Server.Identity.Serialization;
 using Infrastructure.EFCore.Server.Identity.Models;
 using Microsoft.EntityFrameworkCore;
 using RolesConstants = Domain.Authorization.Constants.Roles;
@@ -16,11 +17,6 @@ namespace Infrastructure.EFCore.Server.Identity.Services;
 /// </summary>
 internal sealed class EFCoreRoleRepository(IDbContextFactory<EFCoreDbContext> contextFactory) : IRoleRepository
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = false
-    };
 
     public async Task<Role?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
@@ -212,7 +208,7 @@ internal sealed class EFCoreRoleRepository(IDbContextFactory<EFCoreDbContext> co
         
         if (!string.IsNullOrWhiteSpace(entity.ScopeTemplatesJson))
         {
-            var dtos = JsonSerializer.Deserialize<List<ScopeTemplateDto>>(entity.ScopeTemplatesJson, JsonOptions);
+            var dtos = JsonSerializer.Deserialize(entity.ScopeTemplatesJson, EFCoreServerIdentityJsonContext.Default.ListScopeTemplateDto);
             if (dtos is not null)
             {
                 scopeTemplates = dtos.Select(d => d.ToDomain());
@@ -236,7 +232,7 @@ internal sealed class EFCoreRoleRepository(IDbContextFactory<EFCoreDbContext> co
         if (role.ScopeTemplates.Count > 0)
         {
             var dtos = role.ScopeTemplates.Select(ScopeTemplateDto.FromDomain).ToList();
-            scopeTemplatesJson = JsonSerializer.Serialize(dtos, JsonOptions);
+            scopeTemplatesJson = JsonSerializer.Serialize(dtos, EFCoreServerIdentityJsonContext.Default.ListScopeTemplateDto);
         }
 
         return new RoleEntity

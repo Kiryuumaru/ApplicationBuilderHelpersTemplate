@@ -1,5 +1,5 @@
 using AbsolutePathHelpers;
-using Application.Common.Extensions;
+using Application.Shared.Extensions;
 using Application.Logger.Extensions;
 using Application.NativeCmd.Exceptions;
 using Application.NativeCmd.Extensions;

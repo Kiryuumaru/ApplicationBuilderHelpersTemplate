@@ -1,4 +1,4 @@
-﻿using ApplicationBuilderHelpers.Extensions;
+using ApplicationBuilderHelpers.Extensions;
 using Microsoft.Extensions.Configuration;
 
 namespace Infrastructure.EFCore.Sqlite.Extensions;

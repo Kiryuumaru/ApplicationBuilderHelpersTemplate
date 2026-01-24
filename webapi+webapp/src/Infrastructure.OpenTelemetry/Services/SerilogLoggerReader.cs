@@ -1,5 +1,5 @@
 using AbsolutePathHelpers;
-using Application.Common.Extensions;
+using Application.Shared.Extensions;
 using ApplicationBuilderHelpers.Common;
 using Infrastructure.OpenTelemetry.Interfaces;
 using Microsoft.Extensions.Configuration;

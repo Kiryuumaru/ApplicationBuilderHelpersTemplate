@@ -81,7 +81,7 @@ internal sealed class SessionService(ISessionRepository sessionRepository) : ISe
     /// <inheritdoc />
     public Task<SessionDto?> ValidateSessionWithTokenAsync(Guid sessionId, string refreshToken, CancellationToken cancellationToken)
     {
-        var tokenHash = Common.Services.TokenHasher.Hash(refreshToken);
+        var tokenHash = Shared.Services.TokenHasher.Hash(refreshToken);
         return ValidateSessionAsync(sessionId, tokenHash, cancellationToken);
     }
 

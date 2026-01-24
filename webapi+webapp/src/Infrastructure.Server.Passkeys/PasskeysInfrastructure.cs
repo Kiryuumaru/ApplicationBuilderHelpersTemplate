@@ -1,4 +1,4 @@
-using Application.Common.Interfaces.Application;
+using Application.Shared.Interfaces.Application;
 using ApplicationBuilderHelpers;
 using Fido2NetLib;
 using Infrastructure.Server.Passkeys.Extensions;
@@ -31,7 +31,8 @@ public class PasskeysInfrastructure : ApplicationDependency
             var originsSection = fido2Section.GetSection("Origins");
             if (originsSection.Exists())
             {
-                config.Origins = originsSection.Get<HashSet<string>>() ?? new HashSet<string> { "https://localhost" };
+                var origins = originsSection.GetChildren().Select(c => c.Value).Where(v => v is not null).Cast<string>();
+                config.Origins = origins.Any() ? new HashSet<string>(origins) : new HashSet<string> { "https://localhost" };
             }
             else
             {

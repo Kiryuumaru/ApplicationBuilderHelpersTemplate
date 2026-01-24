@@ -1,5 +1,5 @@
 using Application.AppEnvironment.Extensions;
-using Application.Common.Interfaces.Application;
+using Application.Shared.Interfaces.Application;
 using Application.LocalStore.Interfaces;
 using Microsoft.Extensions.Configuration;
 

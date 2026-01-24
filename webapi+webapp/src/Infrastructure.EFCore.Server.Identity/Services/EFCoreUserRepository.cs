@@ -6,6 +6,7 @@ using Domain.Identity.Models;
 using Domain.Identity.ValueObjects;
 using Domain.Shared.Exceptions;
 using Infrastructure.EFCore.Extensions;
+using Infrastructure.EFCore.Server.Identity.Serialization;
 using Infrastructure.EFCore.Server.Identity.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -426,7 +427,7 @@ internal sealed class EFCoreUserRepository(IDbContextFactory<EFCoreDbContext> co
 
         try
         {
-            return JsonSerializer.Deserialize<Dictionary<string, string?>>(json);
+            return JsonSerializer.Deserialize(json, EFCoreServerIdentityJsonContext.Default.DictionaryStringString);
         }
         catch
         {
@@ -441,6 +442,7 @@ internal sealed class EFCoreUserRepository(IDbContextFactory<EFCoreDbContext> co
             return null;
         }
 
-        return JsonSerializer.Serialize(parameterValues);
+        var dict = parameterValues as Dictionary<string, string?> ?? new Dictionary<string, string?>(parameterValues);
+        return JsonSerializer.Serialize(dict, EFCoreServerIdentityJsonContext.Default.DictionaryStringString);
     }
 }
