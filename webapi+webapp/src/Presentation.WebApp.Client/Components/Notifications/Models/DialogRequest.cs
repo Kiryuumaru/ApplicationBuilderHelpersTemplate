@@ -1,4 +1,6 @@
-namespace Presentation.WebApp.Client.Notifications.Models;
+using Presentation.WebApp.Client.Components.Notifications.Enums;
+
+namespace Presentation.WebApp.Client.Components.Notifications.Models;
 
 /// <summary>
 /// Request data for a confirmation dialog.

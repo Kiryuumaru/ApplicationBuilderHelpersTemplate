@@ -1,4 +1,4 @@
-namespace Presentation.WebApp.Client.Notifications.Models;
+namespace Presentation.WebApp.Client.Components.Notifications.Models;
 
 /// <summary>
 /// Represents a toast notification message.

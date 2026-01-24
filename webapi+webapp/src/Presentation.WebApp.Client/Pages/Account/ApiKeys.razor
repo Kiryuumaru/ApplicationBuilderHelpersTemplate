@@ -1,7 +1,12 @@
 @page "/account/api-keys"
 @attribute [Authorize]
+@using Presentation.WebApp.Client.Components.Shared.Dialogs
+@using Presentation.WebApp.Client.Components.Notifications.Interfaces
+@using Presentation.WebApp.Client.Components.Notifications.Models
 @inject IApiKeysClient ApiKeysClient
 @inject IAuthStateProvider AuthStateProvider
+@inject IToastService ToastService
+@inject IConfirmDialogService ConfirmDialog
 
 <PageTitle>API Keys</PageTitle>
 
@@ -9,31 +14,10 @@
     <Card>
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-xl font-bold text-secondary-900 dark:text-white">API Keys</h2>
-            <Button OnClick="() => _showCreateModal = true">
+            <Button OnClick="() => _showCreateDialog = true">
                 Create New Key
             </Button>
         </div>
-        
-        @if (!string.IsNullOrEmpty(_successMessage))
-        {
-            <Alert Type="Alert.AlertType.Success" Message="@_successMessage" Dismissible="true" OnDismissed="() => _successMessage = null" />
-        }
-        
-        @if (!string.IsNullOrEmpty(_errorMessage))
-        {
-            <Alert Type="Alert.AlertType.Error" Message="@_errorMessage" Dismissible="true" OnDismissed="() => _errorMessage = null" />
-        }
-        
-        @if (!string.IsNullOrEmpty(_newApiKey))
-        {
-            <Alert Type="Alert.AlertType.Warning" Title="Save your API key" Dismissible="false">
-                <p class="mb-2">This key will only be shown once. Make sure to copy it now.</p>
-                <span class="block p-2 bg-secondary-100 dark:bg-secondary-700 rounded font-mono text-sm break-all">@_newApiKey</span>
-                <Button Variant="Button.ButtonVariant.Secondary" Size="Button.ButtonSize.Small" class="mt-2" OnClick="CopyApiKey">
-                    Copy to Clipboard
-                </Button>
-            </Alert>
-        }
         
         @if (_isLoading)
         {
@@ -73,7 +57,7 @@
                                     @(key.ExpiresAt?.ToString("MMM dd, yyyy") ?? "Never")
                                 </td>
                                 <td class="px-6 py-4">
-                                    <Button Variant="Button.ButtonVariant.Danger" Size="Button.ButtonSize.Small" OnClick="() => RevokeKey(key.Id)">
+                                    <Button Variant="Button.ButtonVariant.Danger" Size="Button.ButtonSize.Small" OnClick="() => RevokeKey(key.Id, key.Name)">
                                         Revoke
                                     </Button>
                                 </td>
@@ -86,56 +70,15 @@
     </Card>
 </div>
 
-@* Create Modal *@
-@if (_showCreateModal)
-{
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-        <Card class="w-full max-w-md m-4">
-            <h3 class="text-lg font-bold text-secondary-900 dark:text-white mb-4">Create API Key</h3>
-            
-            <EditForm Model="_createModel" OnValidSubmit="HandleCreateKey" FormName="create-api-key">
-                <DataAnnotationsValidator />
-                
-                <TextInput Id="keyName" 
-                           Type="text" 
-                           Label="Key Name" 
-                           Placeholder="My API Key" 
-                           @bind-Value="_createModel.Name"
-                           Required="true"
-                           HelperText="A friendly name to identify this key" />
-                
-                <div class="mb-4">
-                    <label for="expiry" class="block mb-2 text-sm font-medium text-secondary-900 dark:text-white">Expiration</label>
-                    <select id="expiry" @bind="_createModel.ExpiryDays" class="bg-secondary-50 border border-secondary-300 text-secondary-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-secondary-700 dark:border-secondary-600 dark:placeholder-secondary-400 dark:text-white">
-                        <option value="30">30 days</option>
-                        <option value="90">90 days</option>
-                        <option value="365">1 year</option>
-                        <option value="0">Never</option>
-                    </select>
-                </div>
-                
-                <div class="flex justify-end space-x-2">
-                    <Button Variant="Button.ButtonVariant.Secondary" OnClick="() => _showCreateModal = false">
-                        Cancel
-                    </Button>
-                    <Button Type="submit" Loading="_isCreating" LoadingText="Creating...">
-                        Create Key
-                    </Button>
-                </div>
-            </EditForm>
-        </Card>
-    </div>
-}
+<CreateApiKeyDialog @bind-IsOpen="_showCreateDialog" OnResult="HandleCreateResult" />
+<SecretDialog @bind-IsOpen="_showSecretDialog" Secret="@_newApiKey" Title="API Key Created" Message="Your new API key has been created successfully." />
 
 @code {
-    private List<ApiKeyInfo> _apiKeys = new();
+    private List<ApiKeyInfo> _apiKeys = [];
     private bool _isLoading = true;
-    private bool _isCreating;
-    private bool _showCreateModal;
-    private string? _successMessage;
-    private string? _errorMessage;
-    private string? _newApiKey;
-    private CreateApiKeyModel _createModel = new();
+    private bool _showCreateDialog;
+    private bool _showSecretDialog;
+    private string _newApiKey = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -153,7 +96,7 @@
         }
         catch (Exception ex)
         {
-            _errorMessage = $"Failed to load API keys: {ex.Message}";
+            ToastService.Error($"Failed to load API keys: {ex.Message}");
         }
         finally
         {
@@ -161,77 +104,71 @@
         }
     }
 
-    private async Task HandleCreateKey()
+    private async Task HandleCreateResult(CreateApiKeyDialog.CreateApiKeyResult? result)
     {
-        _isCreating = true;
-        _newApiKey = null;
+        if (result == null)
+            return;
 
+        await CreateApiKey(result.Name, result.ExpiryDays);
+    }
+
+    private async Task CreateApiKey(string name, int expiryDays)
+    {
         try
         {
             var userId = AuthStateProvider.CurrentState.UserId;
-            DateTimeOffset? expiresAt = _createModel.ExpiryDays > 0 
-                ? DateTimeOffset.UtcNow.AddDays(_createModel.ExpiryDays) 
+            DateTimeOffset? expiresAt = expiryDays > 0 
+                ? DateTimeOffset.UtcNow.AddDays(expiryDays) 
                 : null;
 
-            var result = await ApiKeysClient.CreateApiKeyAsync(userId, _createModel.Name!, expiresAt);
+            var result = await ApiKeysClient.CreateApiKeyAsync(userId, name, expiresAt);
 
             if (result != null)
             {
                 _newApiKey = result.Key;
-                _successMessage = "API key created successfully";
-                _showCreateModal = false;
-                _createModel = new CreateApiKeyModel();
+                _showSecretDialog = true;
                 await LoadApiKeys();
             }
             else
             {
-                _errorMessage = "Failed to create API key";
+                ToastService.Error("Failed to create API key");
             }
         }
         catch (Exception ex)
         {
-            _errorMessage = $"An error occurred: {ex.Message}";
-        }
-        finally
-        {
-            _isCreating = false;
+            ToastService.Error($"An error occurred: {ex.Message}");
         }
     }
 
-    private async Task RevokeKey(Guid keyId)
+    private async Task RevokeKey(Guid keyId, string keyName)
     {
+        var confirmed = await ConfirmDialog.ConfirmAsync(
+            $"Are you sure you want to revoke the API key \"{keyName}\"? This action cannot be undone.",
+            title: "Revoke API Key",
+            confirmText: "Revoke",
+            cancelText: "Cancel",
+            variant: DialogVariant.Danger);
+
+        if (!confirmed)
+            return;
+
         try
         {
             var userId = AuthStateProvider.CurrentState.UserId;
             var result = await ApiKeysClient.RevokeApiKeyAsync(userId, keyId);
             if (result)
             {
-                _successMessage = "API key revoked successfully";
+                ToastService.Success("API key revoked successfully");
                 await LoadApiKeys();
             }
             else
             {
-                _errorMessage = "Failed to revoke API key";
+                ToastService.Error("Failed to revoke API key");
             }
         }
         catch (Exception ex)
         {
-            _errorMessage = $"An error occurred: {ex.Message}";
+            ToastService.Error($"An error occurred: {ex.Message}");
         }
-    }
-
-    private async Task CopyApiKey()
-    {
-        // Note: This requires JavaScript interop for clipboard access
-        _successMessage = "API key copied to clipboard";
-        await Task.CompletedTask;
-    }
-
-    private class CreateApiKeyModel
-    {
-        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Key name is required")]
-        public string? Name { get; set; }
-
-        public int ExpiryDays { get; set; } = 90;
     }
 }

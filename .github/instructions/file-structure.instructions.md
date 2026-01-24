@@ -125,3 +125,29 @@ src/Application/Identity/Services/UserService.cs
 - NEVER use nested public types
 - NEVER leave empty placeholder/stub files after refactoring
 - NEVER use file names that do not match the contained type
+- NEVER place a type in a folder that does not match its kind
+
+---
+
+## Type Placement by Kind
+
+Files MUST be placed in folders matching their type kind.
+
+| Type Kind | Required Folder | Example |
+|-----------|-----------------|---------|
+| Interface | `Interfaces/` | `Interfaces/IUserService.cs` |
+| Enum | `Enums/` | `Enums/OrderStatus.cs` |
+| Record (DTO/Model) | `Models/` | `Models/LoginRequest.cs` |
+| Service class | `Services/` | `Services/UserService.cs` |
+| Entity | `Entities/` | `Entities/User.cs` |
+| Value object | `ValueObjects/` | `ValueObjects/Email.cs` |
+| Exception | `Exceptions/` | `Exceptions/UserNotFoundException.cs` |
+| Extension class | `Extensions/` | `Extensions/ServiceCollectionExtensions.cs` |
+| Validator | `Validators/` | `Validators/LoginRequestValidator.cs` |
+| Configuration | `Configurations/` | `Configurations/UserConfiguration.cs` |
+| Constants class | `Constants/` | `Constants/ErrorMessages.cs` |
+
+**Verification:**
+- Before creating a file, identify its type kind
+- Place in the corresponding folder within the feature/component area
+- If folder does not exist, create it

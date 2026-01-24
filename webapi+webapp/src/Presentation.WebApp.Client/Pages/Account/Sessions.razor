@@ -1,8 +1,10 @@
 @page "/account/sessions"
 @attribute [Authorize]
+@using Presentation.WebApp.Client.Components.Notifications.Interfaces
+@using Presentation.WebApp.Client.Components.Notifications.Models
 @inject ISessionsClient SessionsClient
 @inject IAuthStateProvider AuthStateProvider
-@inject IDialogService Dialog
+@inject IConfirmDialogService ConfirmDialog
 @inject IToastService Toast
 @inject NavigationManager Navigation
 
@@ -117,7 +119,7 @@
 
     private async Task RevokeAllSessionsWithConfirmation()
     {
-        var confirmed = await Dialog.ConfirmAsync(
+        var confirmed = await ConfirmDialog.ConfirmAsync(
             "Are you sure you want to revoke all sessions? This will log you out from all devices, including this one. You will need to log in again.",
             title: "Revoke All Sessions",
             confirmText: "Revoke All & Log Out",

@@ -1,4 +1,4 @@
-namespace Presentation.WebApp.Client.Notifications.Models;
+namespace Presentation.WebApp.Client.Components.Notifications.Enums;
 
 /// <summary>
 /// Visual variant for dialog styling.
@@ -7,6 +7,9 @@ public enum DialogVariant
 {
     /// <summary>Default neutral styling.</summary>
     Default,
+
+    /// <summary>Primary theme color styling.</summary>
+    Primary,
 
     /// <summary>Danger/destructive action styling.</summary>
     Danger,

@@ -1,6 +1,6 @@
-using Presentation.WebApp.Client.Notifications.Models;
+using Presentation.WebApp.Client.Components.Notifications.Models;
 
-namespace Presentation.WebApp.Client.Notifications.Interfaces;
+namespace Presentation.WebApp.Client.Components.Notifications.Interfaces;
 
 /// <summary>
 /// Service for displaying toast notifications.

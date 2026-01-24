@@ -1,53 +1,46 @@
-@using Presentation.WebApp.Client.Notifications.Models
-@using Presentation.WebApp.Client.Notifications.Services
+@using Presentation.WebApp.Client.Components.Notifications.Models
 
-<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]" @onclick="Cancel" @onkeydown="HandleKeyDown" tabindex="-1">
-    <div class="bg-white dark:bg-secondary-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4" @onclick:stopPropagation>
-        <div class="flex items-start mb-4">
-            <div class="@IconContainerClass">
-                @switch (Request.Variant)
-                {
-                    case DialogVariant.Danger:
-                        <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        break;
-                    case DialogVariant.Warning:
-                        <svg class="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        break;
-                    case DialogVariant.Success:
-                        <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        break;
-                    default:
-                        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        break;
-                }
-            </div>
-            <div class="ml-3">
-                @if (!string.IsNullOrEmpty(Request.Title))
-                {
-                    <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">@Request.Title</h3>
-                }
-                <p class="@(Request.Title != null ? "mt-2" : "") text-secondary-600 dark:text-secondary-400">@Request.Message</p>
-            </div>
-        </div>
-
-        <div class="flex justify-end gap-3 mt-6">
-            <Button Variant="Button.ButtonVariant.Secondary" OnClick="Cancel">
-                @Request.CancelText
-            </Button>
-            <Button Variant="@ConfirmButtonVariant" OnClick="Confirm">
-                @Request.ConfirmText
-            </Button>
-        </div>
-    </div>
-</div>
+<DialogBase Title="@Request.Title"
+            Variant="@Request.Variant"
+            CloseOnBackdropClick="true"
+            OnClose="Cancel">
+    <Icon>
+        @switch (Request.Variant)
+        {
+            case DialogVariant.Danger:
+                <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                break;
+            case DialogVariant.Warning:
+                <svg class="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                break;
+            case DialogVariant.Success:
+                <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                break;
+            default:
+                <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                break;
+        }
+    </Icon>
+    <HeaderContent>
+        <p class="text-secondary-600 dark:text-secondary-400">@Request.Message</p>
+    </HeaderContent>
+    <FooterContent>
+        <Button Variant="Button.ButtonVariant.Secondary" OnClick="Cancel">
+            @Request.CancelText
+        </Button>
+        <Button Variant="@ConfirmButtonVariant" OnClick="Confirm">
+            @Request.ConfirmText
+        </Button>
+    </FooterContent>
+</DialogBase>
 
 @code {
     [Parameter, EditorRequired]
@@ -55,14 +48,6 @@
 
     [Parameter]
     public EventCallback<bool> OnResult { get; set; }
-
-    private string IconContainerClass => Request.Variant switch
-    {
-        DialogVariant.Danger => "shrink-0 w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center",
-        DialogVariant.Warning => "shrink-0 w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center",
-        DialogVariant.Success => "shrink-0 w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center",
-        _ => "shrink-0 w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center"
-    };
 
     private Button.ButtonVariant ConfirmButtonVariant => Request.Variant switch
     {
@@ -80,13 +65,5 @@
     private async Task Cancel()
     {
         await OnResult.InvokeAsync(false);
-    }
-
-    private async Task HandleKeyDown(KeyboardEventArgs e)
-    {
-        if (e.Key == "Escape")
-        {
-            await Cancel();
-        }
     }
 }

@@ -1,7 +1,9 @@
-@using Presentation.WebApp.Client.Notifications.Interfaces
-@using Presentation.WebApp.Client.Notifications.Models
-@using Presentation.WebApp.Client.Notifications.Services
-@inject IDialogService DialogService
+@using Presentation.WebApp.Client.Components.Notifications.Interfaces
+@using Presentation.WebApp.Client.Components.Notifications.Models
+@using Presentation.WebApp.Client.Components.Notifications.Services
+@inject IConfirmDialogService ConfirmDialogService
+@inject IAlertDialogService AlertDialogService
+@inject IPromptDialogService PromptDialogService
 @implements IDisposable
 
 @if (_confirmRequest != null)
@@ -26,11 +28,19 @@
 
     protected override void OnInitialized()
     {
-        if (DialogService is DialogService service)
+        if (ConfirmDialogService is ConfirmDialogService confirmService)
         {
-            service.OnConfirmRequested += HandleConfirmRequested;
-            service.OnAlertRequested += HandleAlertRequested;
-            service.OnPromptRequested += HandlePromptRequested;
+            confirmService.OnConfirmRequested += HandleConfirmRequested;
+        }
+
+        if (AlertDialogService is AlertDialogService alertService)
+        {
+            alertService.OnAlertRequested += HandleAlertRequested;
+        }
+
+        if (PromptDialogService is PromptDialogService promptService)
+        {
+            promptService.OnPromptRequested += HandlePromptRequested;
         }
     }
 
@@ -84,14 +94,21 @@
 
     public void Dispose()
     {
-        if (DialogService is DialogService service)
+        if (ConfirmDialogService is ConfirmDialogService confirmService)
         {
-            service.OnConfirmRequested -= HandleConfirmRequested;
-            service.OnAlertRequested -= HandleAlertRequested;
-            service.OnPromptRequested -= HandlePromptRequested;
+            confirmService.OnConfirmRequested -= HandleConfirmRequested;
         }
 
-        // Complete any pending tasks to prevent hangs
+        if (AlertDialogService is AlertDialogService alertService)
+        {
+            alertService.OnAlertRequested -= HandleAlertRequested;
+        }
+
+        if (PromptDialogService is PromptDialogService promptService)
+        {
+            promptService.OnPromptRequested -= HandlePromptRequested;
+        }
+
         _confirmRequest?.TaskCompletionSource.TrySetResult(false);
         _alertRequest?.TaskCompletionSource.TrySetResult();
         _promptRequest?.TaskCompletionSource.TrySetResult(null);

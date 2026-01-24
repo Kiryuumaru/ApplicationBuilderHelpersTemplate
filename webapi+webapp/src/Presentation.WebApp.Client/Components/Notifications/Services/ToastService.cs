@@ -1,7 +1,7 @@
-using Presentation.WebApp.Client.Notifications.Interfaces;
-using Presentation.WebApp.Client.Notifications.Models;
+using Presentation.WebApp.Client.Components.Notifications.Interfaces;
+using Presentation.WebApp.Client.Components.Notifications.Models;
 
-namespace Presentation.WebApp.Client.Notifications.Services;
+namespace Presentation.WebApp.Client.Components.Notifications.Services;
 
 internal class ToastService : IToastService
 {

@@ -1,29 +1,24 @@
-@using Presentation.WebApp.Client.Notifications.Services
+@using Presentation.WebApp.Client.Components.Notifications.Models
 
-<div class="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]" @onkeydown="HandleKeyDown" tabindex="-1">
-    <div class="bg-white dark:bg-secondary-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4" @onclick:stopPropagation>
-        <div class="flex items-start mb-4">
-            <div class="shrink-0 w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-                <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-            </div>
-            <div class="ml-3">
-                @if (!string.IsNullOrEmpty(Request.Title))
-                {
-                    <h3 class="text-lg font-semibold text-secondary-900 dark:text-white">@Request.Title</h3>
-                }
-                <p class="@(Request.Title != null ? "mt-2" : "") text-secondary-600 dark:text-secondary-400">@Request.Message</p>
-            </div>
-        </div>
-
-        <div class="flex justify-end mt-6">
-            <Button Variant="Button.ButtonVariant.Primary" OnClick="Acknowledge">
-                @Request.OkText
-            </Button>
-        </div>
-    </div>
-</div>
+<DialogBase Title="@Request.Title"
+            Variant="DialogVariant.Primary"
+            CloseOnBackdropClick="false"
+            CloseOnEscape="true"
+            OnClose="Acknowledge">
+    <Icon>
+        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+    </Icon>
+    <HeaderContent>
+        <p class="text-secondary-600 dark:text-secondary-400">@Request.Message</p>
+    </HeaderContent>
+    <FooterContent>
+        <Button Variant="Button.ButtonVariant.Primary" OnClick="Acknowledge">
+            @Request.OkText
+        </Button>
+    </FooterContent>
+</DialogBase>
 
 @code {
     [Parameter, EditorRequired]
@@ -35,13 +30,5 @@
     private async Task Acknowledge()
     {
         await OnResult.InvokeAsync();
-    }
-
-    private async Task HandleKeyDown(KeyboardEventArgs e)
-    {
-        if (e.Key == "Escape" || e.Key == "Enter")
-        {
-            await Acknowledge();
-        }
     }
 }
