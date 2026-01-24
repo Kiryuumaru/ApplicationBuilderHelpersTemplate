@@ -7,13 +7,16 @@ When updating process docs, update the `.github/instructions/*` files instead of
 
 ## Source of Truth
 
-- Terminal safety + auto-approval rules: `.github/instructions/vscode-avoid-piping-causing-approval.instructions.md`
-- Build/run commands + first-time setup: `.github/instructions/build-commands.instructions.md`
 - Architecture rules: `.github/instructions/architecture.instructions.md`
-- Documentation (reading + syncing): `.github/instructions/documentation.instructions.md`
-- File organization rules: `.github/instructions/file-organization.instructions.md`
-- Code quality standards (+ fix hygiene): `.github/instructions/code-quality-standards.instructions.md`
-- Project status / breaking changes policy: `.github/instructions/project-status.instructions.md`
+- File structure: `.github/instructions/file-structure.instructions.md`
+- Code quality: `.github/instructions/code-quality.instructions.md`
+- Code patterns: `.github/instructions/code-patterns.instructions.md`
+- Commenting: `.github/instructions/commenting.instructions.md`
+- Documentation: `.github/instructions/documentation.instructions.md`
+- Workflow: `.github/instructions/workflow.instructions.md`
+- Project context: `.github/instructions/project-context.instructions.md`
+- Build reference: `.github/instructions/build-reference.instructions.md`
+- Agent terminal: `.github/instructions/agent-terminal.instructions.md`
 - UI test practices: `.github/instructions/ui-test-practices.instructions.md`
 
 ## Quick Links
