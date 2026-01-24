@@ -4,10 +4,6 @@ using System.Text.Json;
 
 namespace Infrastructure.Browser.IndexedDB.LocalStore.Services;
 
-/// <summary>
-/// IndexedDB-based local store service for browser environments.
-/// Uses lazy module loading for the JavaScript interop.
-/// </summary>
 internal sealed class IndexedDBLocalStoreService(IJSRuntime jsRuntime) : ILocalStoreService, IAsyncDisposable
 {
     private const string DatabaseName = "LocalStoreDB";
@@ -220,15 +216,8 @@ internal sealed class IndexedDBLocalStoreService(IJSRuntime jsRuntime) : ILocalS
     private sealed record PendingOperation(OperationType Type, string Group, string Id, string? Data);
 }
 
-/// <summary>
-/// Operation to be committed to IndexedDB.
-/// </summary>
 internal sealed record JsOperation(string type, string group, string id, string? data);
 
-/// <summary>
-/// JSON serialization context for IndexedDB operations.
-/// Required for AOT compilation in Blazor WASM.
-/// </summary>
 [System.Text.Json.Serialization.JsonSerializable(typeof(JsOperation))]
 [System.Text.Json.Serialization.JsonSerializable(typeof(JsOperation[]))]
 internal sealed partial class IndexedDBJsonContext : System.Text.Json.Serialization.JsonSerializerContext

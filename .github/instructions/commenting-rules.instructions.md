@@ -118,6 +118,50 @@ var list = new List<string>();
 public const string Roles = "roles";
 ```
 
+## XML Documentation Strategy
+
+XML documentation (`///`) exists to help consumers understand how to use an API. Consumers interact with **interfaces**, not implementations. Therefore, documentation belongs where consumers look.
+
+### ❌ NEVER DO:
+
+1. **XML docs on implementation classes**
+   ```csharp
+   /// <summary>
+   /// IndexedDB-based local store service for browser environments.
+   /// </summary>
+   internal sealed class IndexedDBLocalStoreService : ILocalStoreService
+   ```
+
+2. **XML docs on implementation methods**
+   ```csharp
+   /// <summary>Gets a value from the store.</summary>
+   public async Task<string?> Get(string group, string id, CancellationToken cancellationToken)
+   ```
+
+### ✅ ALWAYS DO:
+
+1. **XML docs on interfaces**
+   ```csharp
+   /// <summary>
+   /// Provides key-value storage organized by group.
+   /// </summary>
+   public interface ILocalStoreService
+   {
+       /// <summary>Gets a value from the store.</summary>
+       Task<string?> Get(string group, string id, CancellationToken cancellationToken);
+   }
+   ```
+
+2. **Implementation stays clean**
+   ```csharp
+   internal sealed class IndexedDBLocalStoreService : ILocalStoreService
+   {
+       public async Task<string?> Get(string group, string id, CancellationToken cancellationToken)
+       {
+       }
+   }
+   ```
+
 ## The Standard
 
 **If a comment wouldn't make sense to someone reading the code 2 years from now with no context about how it was written, don't write it.**

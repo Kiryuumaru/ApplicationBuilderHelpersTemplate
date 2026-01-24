@@ -227,6 +227,31 @@ Every duplication is a maintenance burden. Extract early, extract often.
 
 ---
 
+## Service Implementation Accessibility
+
+Consumers depend on abstractions (interfaces), not concrete implementations. Making implementations `internal` enforces this at compile time and keeps the public API surface clean.
+
+### ❌ NEVER DO:
+
+```csharp
+public class ToastService : IToastService
+public class IndexedDBLocalStoreService : ILocalStoreService
+```
+
+### ✅ ALWAYS DO:
+
+```csharp
+public interface IToastService { }
+internal class ToastService : IToastService { }
+
+public interface ILocalStoreService { }
+internal sealed class IndexedDBLocalStoreService : ILocalStoreService { }
+```
+
+This pattern also eliminates CS1591 warnings (missing XML documentation) on implementations without needing to add XML docs - internal types don't require documentation.
+
+---
+
 ## The Standard
 
 **If you wouldn't trust this code with your life, don't commit it.**

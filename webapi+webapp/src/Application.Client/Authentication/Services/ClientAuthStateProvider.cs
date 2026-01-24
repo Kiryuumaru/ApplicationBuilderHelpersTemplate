@@ -6,11 +6,6 @@ using Application.Client.Json;
 
 namespace Application.Client.Authentication.Services;
 
-/// <summary>
-/// Scoped service that provides access to authentication state.
-/// Uses a singleton AuthStateNotifier to share state across scopes,
-/// allowing state changes from TokenRefreshHandler to be visible to UI.
-/// </summary>
 internal class ClientAuthStateProvider : IAuthStateProvider
 {
     private readonly ITokenStorage _tokenStorage;
