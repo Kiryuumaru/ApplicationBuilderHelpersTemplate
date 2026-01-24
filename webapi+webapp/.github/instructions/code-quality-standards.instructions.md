@@ -134,6 +134,124 @@ Before committing ANY code, verify:
 - [ ] All nullable types are intentionally nullable
 - [ ] All non-nullable types are guaranteed non-null
 
+---
+
+## Fix Hygiene: Undo Before Retry
+
+**If a fix attempt does not solve the problem, undo the changes from that specific fix before trying a different approach.**
+
+### Why This Matters
+
+Stacking unverified fixes creates cascading issues:
+- Each failed fix introduces unintended side effects
+- Subsequent fixes may mask root causes or introduce new bugs
+- Debugging becomes exponentially harder as layers accumulate
+- The codebase drifts further from a known-good state
+
+### Required Workflow
+
+1. **Apply fix** - Make changes to address the issue
+2. **Verify fix** - Build, test, or otherwise confirm the fix works
+3. **If fix fails** - Undo the changes from that fix before proceeding
+4. **Then retry** - Apply a different fix starting from a clean state
+
+### What "Undo" Means
+
+- Undo file modifications introduced by the failed fix
+- Remove any new files created for the failed fix
+- Restore any code deleted by the failed fix
+- Return to the state before that fix attempt began
+
+### Forbidden Fix Patterns
+
+❌ Applying fix B on top of failed fix A without undoing A  
+❌ Leaving partial changes from a failed fix "in case they help"  
+❌ Commenting out failed fix code instead of removing it  
+❌ Proceeding with additional changes when the current fix is broken  
+
+**Failed fix attempts leave no trace.**
+
+---
+
+## DRY: Don't Repeat Yourself
+
+**If you write similar code twice, you should have extracted it the first time.**
+
+### When to Extract
+
+1. **Same logic appears 2+ times** - If you copy-paste, extract it
+2. **Pattern emerges across files** - Similar try/catch, loops, conditionals
+3. **Magic values repeat** - Timeouts, URLs, constants
+4. **Error handling duplicated** - Same catch blocks, same fallback logic
+
+### Where to Put Shared Code
+
+| Code Type | Location |
+|-----------|----------|
+| Domain logic | `Domain/Shared/` or feature-specific folder |
+| Application utilities | `Application/Shared/` or `Application/{Feature}/Extensions/` |
+| Test helpers | Base test class or `TestHelpers/` folder |
+| Infrastructure utilities | `Infrastructure.{Provider}/Extensions/` |
+
+### Forbidden Patterns
+
+❌ Copy-paste with minor variations  
+❌ Inline magic values (hardcoded timeouts, strings, numbers)  
+❌ Duplicated validation logic across methods  
+❌ Same error handling pattern repeated  
+
+### Required Patterns
+
+✅ Extract repeated logic to helper methods  
+✅ Use constants for magic values  
+✅ Create base classes for shared behavior  
+✅ Use extension methods for common operations  
+
+```csharp
+// BAD: Same timeout repeated everywhere
+await element1.WaitForAsync(new() { Timeout = 10000 });
+await element2.WaitForAsync(new() { Timeout = 10000 });
+
+// GOOD: Single constant, reusable helper
+protected const int DefaultTimeoutMs = 10_000;
+
+protected async Task<ILocator> WaitForAsync(string selector)
+{
+    var locator = Page.Locator(selector);
+    await locator.WaitForAsync(new() { Timeout = DefaultTimeoutMs });
+    return locator;
+}
+```
+
+Every duplication is a maintenance burden. Extract early, extract often.
+
+---
+
+## Service Implementation Accessibility
+
+Consumers depend on abstractions (interfaces), not concrete implementations. Making implementations `internal` enforces this at compile time and keeps the public API surface clean.
+
+### ❌ NEVER DO:
+
+```csharp
+public class ToastService : IToastService
+public class IndexedDBLocalStoreService : ILocalStoreService
+```
+
+### ✅ ALWAYS DO:
+
+```csharp
+public interface IToastService { }
+internal class ToastService : IToastService { }
+
+public interface ILocalStoreService { }
+internal sealed class IndexedDBLocalStoreService : ILocalStoreService { }
+```
+
+This pattern also eliminates CS1591 warnings (missing XML documentation) on implementations without needing to add XML docs - internal types don't require documentation.
+
+---
+
 ## The Standard
 
 **If you wouldn't trust this code with your life, don't commit it.**
