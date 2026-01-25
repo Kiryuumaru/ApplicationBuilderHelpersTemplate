@@ -75,10 +75,10 @@ Comments exist for future readers with no conversation context. The codebase sta
 
 ### Comment Decision
 
-1. Is this obvious from the code? → No comment
-2. Does this reference conversation? → No comment
-3. Would future reader need this context? → Comment
-4. Is there non-obvious reasoning? → Comment
+1. Is this obvious from the code? -> No comment
+2. Does this reference conversation? -> No comment
+3. Would future reader need this context? -> Comment
+4. Is there non-obvious reasoning? -> Comment
 
 ---
 

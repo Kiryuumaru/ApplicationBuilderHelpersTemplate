@@ -42,145 +42,145 @@ Each file contains exactly one public type. File name matches the type name.
 
 ```
 Domain/
-├── Shared/
-│   ├── Interfaces/
-│   └── Extensions/
-└── {Feature}/
-    ├── Entities/
-    ├── ValueObjects/
-    ├── Enums/
-    ├── Events/
-    ├── Constants/
-    ├── Services/
-    └── Exceptions/
++-- Shared/
+|   +-- Interfaces/
+|   +-- Extensions/
++-- {Feature}/
+    +-- Entities/
+    +-- ValueObjects/
+    +-- Enums/
+    +-- Events/
+    +-- Constants/
+    +-- Services/
+    +-- Exceptions/
 ```
 
 ### Application Layer
 
 ```
 Application/
-├── Shared/
-│   ├── Interfaces/
-│   ├── Models/
-│   └── Extensions/
-└── {Feature}/
-    ├── Ports/
-    │   ├── In/
-    │   └── Out/
-    ├── Services/
-    ├── Models/
-    ├── Workers/
-    ├── Validators/
-    └── Extensions/
++-- Shared/
+|   +-- Interfaces/
+|   +-- Models/
+|   +-- Extensions/
++-- {Feature}/
+    +-- Ports/
+    |   +-- In/
+    |   +-- Out/
+    +-- Services/
+    +-- Models/
+    +-- Workers/
+    +-- Validators/
+    +-- Extensions/
 ```
 
 ### Application.Server Layer
 
 ```
 Application.Server/
-├── Shared/
-│   └── Interfaces/
-└── {Feature}/
-    ├── Ports/
-    │   ├── In/
-    │   └── Out/
-    ├── Services/
-    ├── Models/
-    └── Workers/
++-- Shared/
+|   +-- Interfaces/
++-- {Feature}/
+    +-- Ports/
+    |   +-- In/
+    |   +-- Out/
+    +-- Services/
+    +-- Models/
+    +-- Workers/
 ```
 
 ### Application.Client Layer
 
 ```
 Application.Client/
-├── Shared/
-│   └── Interfaces/
-└── {Feature}/
-    ├── Ports/
-    │   ├── In/
-    │   └── Out/
-    ├── Services/
-    └── Models/
++-- Shared/
+|   +-- Interfaces/
++-- {Feature}/
+    +-- Ports/
+    |   +-- In/
+    |   +-- Out/
+    +-- Services/
+    +-- Models/
 ```
 
 ### Infrastructure Layer
 
 ```
 Infrastructure.{Provider}/
-├── Adapters/
-├── Services/
-├── Repositories/
-├── Configurations/
-├── Extensions/
-└── Models/
++-- Adapters/
++-- Services/
++-- Repositories/
++-- Configurations/
++-- Extensions/
++-- Models/
 
 Infrastructure.{Provider}.{Feature}/
-├── Adapters/
-├── Repositories/
-├── Configurations/
-└── Extensions/
++-- Adapters/
++-- Repositories/
++-- Configurations/
++-- Extensions/
 ```
 
 ### Presentation Layer
 
 ```
 Presentation/
-├── Commands/
-│   └── BaseCommand.cs
-├── Contracts/
-│   └── {Feature}/
-│       ├── Requests/
-│       ├── Responses/
-│       └── Hubs/
-└── Shared/
-    ├── Components/
-    └── Extensions/
++-- Commands/
+|   +-- BaseCommand.cs
++-- Contracts/
+|   +-- {Feature}/
+|       +-- Requests/
+|       +-- Responses/
+|       +-- Hubs/
++-- Shared/
+    +-- Components/
+    +-- Extensions/
 
 Presentation.WebApp/
-├── Commands/
-│   └── BaseWebAppCommand.cs
-├── Components/
-│   ├── Layout/
-│   ├── Pages/
-│   └── Shared/
-├── Services/
-└── Models/
++-- Commands/
+|   +-- BaseWebAppCommand.cs
++-- Components/
+|   +-- Layout/
+|   +-- Pages/
+|   +-- Shared/
++-- Services/
++-- Models/
 
 Presentation.WebApp.Server/
-├── Program.cs
-├── Commands/
-│   └── MainCommand.cs
-├── Workers/
-├── Controllers/
-└── Extensions/
++-- Program.cs
++-- Commands/
+|   +-- MainCommand.cs
++-- Workers/
++-- Controllers/
++-- Extensions/
 
 Presentation.WebApp.Client/
-├── Program.cs
-├── Commands/
-│   └── MainCommand.cs
-├── Components/
-│   ├── Layout/
-│   ├── Pages/
-│   └── Shared/
-├── Services/
-└── Models/
++-- Program.cs
++-- Commands/
+|   +-- MainCommand.cs
++-- Components/
+|   +-- Layout/
+|   +-- Pages/
+|   +-- Shared/
++-- Services/
++-- Models/
 
 Presentation.WebApi/
-├── Program.cs
-├── Commands/
-│   └── MainCommand.cs
-├── Controllers/V{n}/
-├── Models/
-│   ├── Requests/
-│   └── Responses/
-├── Middleware/
-└── Filters/
++-- Program.cs
++-- Commands/
+|   +-- MainCommand.cs
++-- Controllers/V{n}/
++-- Models/
+|   +-- Requests/
+|   +-- Responses/
++-- Middleware/
++-- Filters/
 
 Presentation.Cli/
-├── Program.cs
-├── Commands/
-│   └── MainCommand.cs
-└── Services/
++-- Program.cs
++-- Commands/
+|   +-- MainCommand.cs
++-- Services/
 ```
 
 ---
@@ -189,54 +189,54 @@ Presentation.Cli/
 
 ```
 Domain/
-├── Domain.cs                               ← ApplicationDependency
-├── Serialization/
-│   ├── DomainJsonContext.cs
-│   └── Converters/
-├── Shared/
-│   └── Extensions/
-│       └── SharedServiceCollectionExtensions.cs
-└── {Feature}/
-    ├── Extensions/
-    │   └── {Feature}ServiceCollectionExtensions.cs
-    ├── Services/
-    ├── Entities/
-    └── ValueObjects/
++-- Domain.cs                               <- ApplicationDependency
++-- Serialization/
+|   +-- DomainJsonContext.cs
+|   +-- Converters/
++-- Shared/
+|   +-- Extensions/
+|       +-- SharedServiceCollectionExtensions.cs
++-- {Feature}/
+    +-- Extensions/
+    |   +-- {Feature}ServiceCollectionExtensions.cs
+    +-- Services/
+    +-- Entities/
+    +-- ValueObjects/
 
 Application/
-├── Application.cs                          ← ApplicationDependency
-├── Serialization/
-│   └── ApplicationJsonContext.cs
-├── Shared/
-│   └── Extensions/
-│       └── SharedServiceCollectionExtensions.cs
-└── {Feature}/
-    ├── Extensions/
-    │   └── {Feature}ServiceCollectionExtensions.cs
-    └── ...
++-- Application.cs                          <- ApplicationDependency
++-- Serialization/
+|   +-- ApplicationJsonContext.cs
++-- Shared/
+|   +-- Extensions/
+|       +-- SharedServiceCollectionExtensions.cs
++-- {Feature}/
+    +-- Extensions/
+    |   +-- {Feature}ServiceCollectionExtensions.cs
+    +-- ...
 
 Application.Server/
-├── ServerApplication.cs                    ← ApplicationDependency
-├── Serialization/
-│   └── ApplicationServerJsonContext.cs
-└── {Feature}/
-    └── Extensions/
-        └── {Feature}ServiceCollectionExtensions.cs
++-- ServerApplication.cs                    <- ApplicationDependency
++-- Serialization/
+|   +-- ApplicationServerJsonContext.cs
++-- {Feature}/
+    +-- Extensions/
+        +-- {Feature}ServiceCollectionExtensions.cs
 
 Application.Client/
-├── ClientApplication.cs                    ← ApplicationDependency
-├── Serialization/
-│   └── ApplicationClientJsonContext.cs
-└── {Feature}/
-    └── Extensions/
-        └── {Feature}ServiceCollectionExtensions.cs
++-- ClientApplication.cs                    <- ApplicationDependency
++-- Serialization/
+|   +-- ApplicationClientJsonContext.cs
++-- {Feature}/
+    +-- Extensions/
+        +-- {Feature}ServiceCollectionExtensions.cs
 
 Infrastructure.{Name}/
-├── {Name}Infrastructure.cs                 ← ApplicationDependency
-├── Serialization/
-│   └── {Name}JsonContext.cs
-└── Extensions/
-    └── {Name}ServiceCollectionExtensions.cs
++-- {Name}Infrastructure.cs                 <- ApplicationDependency
++-- Serialization/
+|   +-- {Name}JsonContext.cs
++-- Extensions/
+    +-- {Name}ServiceCollectionExtensions.cs
 ```
 
 ---
@@ -259,7 +259,7 @@ Namespace mirrors folder path from `src/`.
 
 ```
 src/Application/Identity/Services/UserService.cs
-→ namespace Application.Identity.Services;
+-> namespace Application.Identity.Services;
 ```
 
 ---

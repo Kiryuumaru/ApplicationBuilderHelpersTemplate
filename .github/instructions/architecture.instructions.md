@@ -7,43 +7,43 @@ applyTo: '**'
 
 ```
 Domain
-  ↑
+  ^
 Application
-  ↑
+  ^
 Application.Server    Application.Client
-  ↑                     ↑
+  ^                     ^
 Infrastructure.*      Infrastructure.*
-  ↑                     ↑
+  ^                     ^
 Presentation.*.Server Presentation.*.Client
 ```
 
 ```
-┌─────────────────────────────────────────┐
-│            PRESENTATION                 │
-│  References: Application, Domain        │
-│  Infrastructure: Program.cs only        │
-└─────────────────────────────────────────┘
-                    │
-                    ▼
-┌─────────────────────────────────────────┐
-│           INFRASTRUCTURE                │
-│  References: Application, Domain        │
-│  Implements: Application interfaces     │
-└─────────────────────────────────────────┘
-                    │
-                    ▼
-┌─────────────────────────────────────────┐
-│            APPLICATION                  │
-│  References: Domain only                │
-│  Defines: Interfaces, services          │
-└─────────────────────────────────────────┘
-                    │
-                    ▼
-┌─────────────────────────────────────────┐
-│              DOMAIN                     │
-│  References: Nothing                    │
-│  Contains: Entities, value objects      │
-└─────────────────────────────────────────┘
++-------------------------------------------+
+|            PRESENTATION                   |
+|  References: Application, Domain          |
+|  Infrastructure: Program.cs only          |
++-------------------------------------------+
+                    |
+                    v
++-------------------------------------------+
+|           INFRASTRUCTURE                  |
+|  References: Application, Domain          |
+|  Implements: Application interfaces       |
++-------------------------------------------+
+                    |
+                    v
++-------------------------------------------+
+|            APPLICATION                    |
+|  References: Domain only                  |
+|  Defines: Interfaces, services            |
++-------------------------------------------+
+                    |
+                    v
++-------------------------------------------+
+|              DOMAIN                       |
+|  References: Nothing                      |
+|  Contains: Entities, value objects        |
++-------------------------------------------+
 ```
 
 ---
@@ -123,11 +123,11 @@ Entry points:
 - Do not have DI lifetime in the traditional sense
 
 Entry points include:
-- Controllers — HTTP request entry point
-- Application Workers — Background task entry point
-- Blazor Components — UI interaction entry point
-- Queue Consumers — Message entry point
-- Event Listeners — Event entry point
+- Controllers - HTTP request entry point
+- Application Workers - Background task entry point
+- Blazor Components - UI interaction entry point
+- Queue Consumers - Message entry point
+- Event Listeners - Event entry point
 
 Services:
 - Are injectable units of logic
@@ -135,9 +135,9 @@ Services:
 - Are resolved by entry points or other services
 
 Services include:
-- Domain Services — Pure business logic (Singleton)
-- Application Services — Orchestration with I/O (Scoped)
-- Repositories — Data access (Scoped)
+- Domain Services - Pure business logic (Singleton)
+- Application Services - Orchestration with I/O (Scoped)
+- Repositories - Data access (Scoped)
 
 ---
 
@@ -186,9 +186,9 @@ Application workers:
 - Call Application services and Ports/Out directly
 
 Worker locations by scope:
-- `Application/{Feature}/Workers/` — Workers that run on all platforms (server and client)
-- `Application.Server/{Feature}/Workers/` — Server-only workers
-- `Application.Client/{Feature}/Workers/` — Client-only workers
+- `Application/{Feature}/Workers/` - Workers that run on all platforms (server and client)
+- `Application.Server/{Feature}/Workers/` - Server-only workers
+- `Application.Client/{Feature}/Workers/` - Client-only workers
 
 Examples: `TradeFiller`, `MarketListingSync`, `StaleAnonymousUserCleanup`, `OrderPlacedListener`.
 
@@ -467,24 +467,24 @@ Examples: `Domain`, `Application`, `ServerApplication`, `ClientApplication`, `EF
 
 Lifecycle methods execute in order:
 
-1. `CommandPreparation(ApplicationBuilder)` — Before command argument parsing
-2. `BuilderPreparation(ApplicationHostBuilder)` — After argument parsing, before host builder creation
-3. `AddConfigurations(ApplicationHostBuilder, IConfiguration)` — After builder creation
-4. `AddServices(ApplicationHostBuilder, IServiceCollection)` — After configuration
-5. `AddMiddlewares(ApplicationHost, IHost)` — After DI registration
-6. `AddMappings(ApplicationHost, IHost)` — After middleware
-7. `RunPreparation(ApplicationHost)` — After mappings (parallel across layers)
-8. `RunPreparationAsync(ApplicationHost, CancellationToken)` — After mappings (parallel across layers)
+1. `CommandPreparation(ApplicationBuilder)` - Before command argument parsing
+2. `BuilderPreparation(ApplicationHostBuilder)` - After argument parsing, before host builder creation
+3. `AddConfigurations(ApplicationHostBuilder, IConfiguration)` - After builder creation
+4. `AddServices(ApplicationHostBuilder, IServiceCollection)` - After configuration
+5. `AddMiddlewares(ApplicationHost, IHost)` - After DI registration
+6. `AddMappings(ApplicationHost, IHost)` - After middleware
+7. `RunPreparation(ApplicationHost)` - After mappings (parallel across layers)
+8. `RunPreparationAsync(ApplicationHost, CancellationToken)` - After mappings (parallel across layers)
 
 Method usage:
-- `CommandPreparation` — Add custom type parsers
-- `BuilderPreparation` — Prepare host builder
-- `AddConfigurations` — Add configuration providers, bind IOptions
-- `AddServices` — Register DI via ServiceCollectionExtensions only
-- `AddMiddlewares` — Configure middleware pipeline
-- `AddMappings` — Map endpoints, routes, SignalR hubs
-- `RunPreparation` — Synchronous initialization/bootstrap
-- `RunPreparationAsync` — Asynchronous initialization (database setup, etc.)
+- `CommandPreparation` - Add custom type parsers
+- `BuilderPreparation` - Prepare host builder
+- `AddConfigurations` - Add configuration providers, bind IOptions
+- `AddServices` - Register DI via ServiceCollectionExtensions only
+- `AddMiddlewares` - Configure middleware pipeline
+- `AddMappings` - Map endpoints, routes, SignalR hubs
+- `RunPreparation` - Synchronous initialization/bootstrap
+- `RunPreparationAsync` - Asynchronous initialization (database setup, etc.)
 
 ---
 
@@ -621,9 +621,9 @@ BaseCommandType by project family:
 | Cli | `Presentation.Commands.BaseCommand` or custom |
 
 Generated types in `Build` namespace:
-- `Build.Constants` — Static build constants
-- `Build.ApplicationConstants` — `IApplicationConstants` implementation
-- `Build.BaseCommand<T>` — Extends `BaseCommandType` with `ApplicationConstants` wired
+- `Build.Constants` - Static build constants
+- `Build.ApplicationConstants` - `IApplicationConstants` implementation
+- `Build.BaseCommand<T>` - Extends `BaseCommandType` with `ApplicationConstants` wired
 
 `IApplicationConstants` is registered in DI by `BaseCommand.AddServices()`. Inject anywhere via constructor or `@inject`.
 
@@ -632,13 +632,13 @@ Generated types in `Build` namespace:
 ## Command Hierarchy
 
 ```
-Presentation.Commands.BaseCommand<T>               ← Manual (shared)
-         ↑
-Presentation.WebApp.Commands.BaseWebAppCommand<T>  ← Manual (optional intermediate)
-         ↑
-Build.BaseCommand<T>                               ← Generated per-project
-         ↑
-MainCommand                                        ← Manual (leaf command)
+Presentation.Commands.BaseCommand<T>               <- Manual (shared)
+         ^
+Presentation.WebApp.Commands.BaseWebAppCommand<T>  <- Manual (optional intermediate)
+         ^
+Build.BaseCommand<T>                               <- Generated per-project
+         ^
+MainCommand                                        <- Manual (leaf command)
 ```
 
 Commands:
@@ -660,7 +660,7 @@ Commands:
 
 ## Command Attributes
 
-`[Command]` — Applied to classes to define command metadata.
+`[Command]` - Applied to classes to define command metadata.
 
 | Property | Type | Description |
 |----------|------|-------------|
@@ -668,18 +668,18 @@ Commands:
 | `Description` | `string?` | Help text for the command |
 
 Constructors:
-- `[Command("Description only")]` — Default/main command
-- `[Command("name", description: "Description")]` — Named subcommand
+- `[Command("Description only")]` - Default/main command
+- `[Command("name", description: "Description")]` - Named subcommand
 
-`[CommandOption]` — Applied to properties to define CLI options (flags).
+`[CommandOption]` - Applied to properties to define CLI options (flags).
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `Term` | `string?` | — | Long option name (`--log-level`) |
-| `ShortTerm` | `char?` | — | Short option name (`-l`) |
-| `EnvironmentVariable` | `string?` | — | Env var to read from |
+| `Term` | `string?` | - | Long option name (`--log-level`) |
+| `ShortTerm` | `char?` | - | Short option name (`-l`) |
+| `EnvironmentVariable` | `string?` | - | Env var to read from |
 | `Required` | `bool` | `false` | Whether required |
-| `Description` | `string?` | — | Help text |
+| `Description` | `string?` | - | Help text |
 | `FromAmong` | `object[]` | `[]` | Allowed values |
 | `CaseSensitive` | `bool` | `false` | Case sensitivity for allowed values |
 
@@ -687,12 +687,12 @@ Required can be specified via:
 - C# `required` keyword on property
 - `Required = true` in attribute
 
-`[CommandArgument]` — Applied to properties to define positional arguments.
+`[CommandArgument]` - Applied to properties to define positional arguments.
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `Name` | `string?` | — | Argument name |
-| `Description` | `string?` | — | Help text |
+| `Name` | `string?` | - | Argument name |
+| `Description` | `string?` | - | Help text |
 | `Position` | `int` | `0` | Positional order |
 | `Required` | `bool` | `false` | Whether required |
 | `FromAmong` | `object[]` | `[]` | Allowed values |

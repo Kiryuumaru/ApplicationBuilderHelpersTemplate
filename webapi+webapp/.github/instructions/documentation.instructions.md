@@ -60,8 +60,8 @@ Documentation index: `docs/index.md`
 
 ## Pre-Commit Documentation Check
 
-- Does this change any API endpoint? → Update feature doc
-- Does this change request/response format? → Update examples
-- Does this add/remove/rename tests? → Update test list
-- Does this change architecture? → Update architecture doc
-- Does this complete a TODO? → Update TODO.md
+- Does this change any API endpoint? -> Update feature doc
+- Does this change request/response format? -> Update examples
+- Does this add/remove/rename tests? -> Update test list
+- Does this change architecture? -> Update architecture doc
+- Does this complete a TODO? -> Update TODO.md

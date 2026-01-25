@@ -66,4 +66,4 @@ UI tests use mouse clicks and keyboard input only. No API calls, no header injec
 - MUST have zero `Authorization` header manipulation
 - MUST use only `ClickAsync()`, `FillAsync()`, `TypeAsync()` for actions
 - MUST use condition-based waits, not `Task.Delay()`
-- MUST verify Login → Profile → Data visible works without 401
+- MUST verify Login -> Profile -> Data visible works without 401

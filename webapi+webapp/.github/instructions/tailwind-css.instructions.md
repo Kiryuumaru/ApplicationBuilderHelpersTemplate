@@ -19,8 +19,8 @@ This project uses **Tailwind CSS v4** with a build-time compilation pipeline. CS
 ## How CSS Is Served
 
 The .NET static web assets system automatically serves files from both projects:
-- `css/app.css` → from `Presentation.WebApp/wwwroot/css/app.css`
-- `css/tailwind.generated.css` → from `Presentation.WebApp.Client/wwwroot/css/tailwind.generated.css`
+- `css/app.css` -> from `Presentation.WebApp/wwwroot/css/app.css`
+- `css/tailwind.generated.css` -> from `Presentation.WebApp.Client/wwwroot/css/tailwind.generated.css`
 
 **You do NOT need to manually copy CSS files between projects.** The build system handles this automatically.
 

@@ -71,7 +71,7 @@ Example:
 Tables are for **supporting information only**, not for rules.
 
 Use tables for:
-- Mappings (type → location)
+- Mappings (type -> location)
 - Reference data (commands, properties, examples)
 - Comparisons (before/after)
 
@@ -109,9 +109,9 @@ ASCII diagrams for:
 - Flow sequences
 
 Use box-drawing characters:
-- `─`, `│`, `┌`, `┐`, `└`, `┘` for boxes
-- `↑`, `↓`, `←`, `→` for arrows
-- `├`, `┤`, `┬`, `┴`, `┼` for tree structures
+- `-`, `|`, `+`, `+`, `+`, `+` for boxes
+- `^`, `v`, `<-`, `->` for arrows
+- `+`, `+`, `+`, `+`, `+` for tree structures
 
 ---
 
@@ -162,11 +162,11 @@ Instruction file names:
 
 ## Content Principles
 
-1. **Atomic rules** — One concept per bullet/section
-2. **No redundancy** — State each rule once, in one place
-3. **Concrete examples** — Show, don't just tell
-4. **Consistent terminology** — Same term for same concept
-5. **Scannable** — Tables and bullets over paragraphs
+1. **Atomic rules** - One concept per bullet/section
+2. **No redundancy** - State each rule once, in one place
+3. **Concrete examples** - Show, don't just tell
+4. **Consistent terminology** - Same term for same concept
+5. **Scannable** - Tables and bullets over paragraphs
 
 ---
 
