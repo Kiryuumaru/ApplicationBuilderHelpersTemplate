@@ -129,6 +129,45 @@ public static class EFCoreSqliteConfigurationExtensions
 
 ---
 
+### Serialization
+
+Each layer MAY have a `Serialization/` folder for source-generated JSON contexts (Native AOT support).
+
+JsonContext rules:
+- MUST be `partial class` extending `JsonSerializerContext`
+- MUST use `[JsonSourceGenerationOptions]` with `GenerationMode = Metadata`
+- MUST use `[JsonSerializable(typeof(T))]` for each type to serialize
+- MUST be named `{Layer}JsonContext`
+- MUST be `public` if shared across layers (Domain, Application)
+- MUST be `internal` if layer-internal only (Infrastructure)
+
+Converters:
+- MUST be in `Serialization/Converters/` subfolder
+- MUST be named `{Name}JsonConverter`
+- MUST extend `JsonConverter<T>`
+
+| Layer | Class Name | Accessibility |
+|-------|------------|---------------|
+| Domain | `DomainJsonContext` | `public` |
+| Application | `ApplicationJsonContext` | `public` |
+| Application.Client | `ApplicationClientJsonContext` | `public` |
+| Infrastructure.{Name} | `{Name}JsonContext` | `internal` |
+
+```csharp
+namespace Domain.Serialization;
+
+[JsonSourceGenerationOptions(
+    PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
+    GenerationMode = JsonSourceGenerationMode.Metadata)]
+[JsonSerializable(typeof(User))]
+[JsonSerializable(typeof(Role))]
+public partial class DomainJsonContext : JsonSerializerContext
+{
+}
+```
+
+---
+
 ### Presentation Commands
 
 Every Presentation leaf project MUST have:
@@ -278,6 +317,18 @@ return await ApplicationBuilder.Create()
 
 ---
 
+### Serialization File Placement
+
+| Layer | Location |
+|-------|----------|
+| Domain | `Domain/Serialization/DomainJsonContext.cs` |
+| Application | `Application/Serialization/ApplicationJsonContext.cs` |
+| Application.Client | `Application.Client/Serialization/ApplicationClientJsonContext.cs` |
+| Infrastructure.{Name} | `Infrastructure.{Name}/Serialization/{Name}JsonContext.cs` |
+| Converters | `{Layer}/Serialization/Converters/{Name}JsonConverter.cs` |
+
+---
+
 ### Command File Placement
 
 | Presentation | Location |
@@ -351,6 +402,8 @@ Presentation.WebApp.Client/
 | ApplicationDependency | Project root | `Application.cs` |
 | ServiceCollectionExtensions | `Extensions/` | `Extensions/LocalStoreServiceCollectionExtensions.cs` |
 | ConfigurationExtensions | `Extensions/` | `Extensions/EFCoreSqliteConfigurationExtensions.cs` |
+| JsonContext | `Serialization/` | `Serialization/DomainJsonContext.cs` |
+| JsonConverter | `Serialization/Converters/` | `Serialization/Converters/CamelCaseEnumConverter.cs` |
 | Command | `Commands/` | `Commands/MainCommand.cs` |
 
 ---
@@ -369,9 +422,11 @@ Presentation.WebApp.Client/
 | 8 | Add ApplicationDependency file placement | file-structure.instructions.md |
 | 9 | Add ServiceCollectionExtensions file placement | file-structure.instructions.md |
 | 10 | Add ConfigurationExtensions file placement | file-structure.instructions.md |
-| 11 | Add Command file placement | file-structure.instructions.md |
-| 12 | Update folder structure diagrams | file-structure.instructions.md |
-| 13 | Add type placement entries | file-structure.instructions.md |
+| 11 | Add Serialization section | architecture.instructions.md |
+| 12 | Add Serialization file placement | file-structure.instructions.md |
+| 13 | Add Command file placement | file-structure.instructions.md |
+| 14 | Update folder structure diagrams | file-structure.instructions.md |
+| 15 | Add type placement entries | file-structure.instructions.md |
 
 ---
 
