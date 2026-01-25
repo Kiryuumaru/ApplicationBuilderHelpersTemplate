@@ -3,7 +3,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace Infrastructure.EFCore.Sqlite.Extensions;
 
-public static class ConfigurationExtensions
+public static class EFCoreSqliteConfigurationExtensions
 {
     private const string SqliteConnectionStringKey = "SQLITE_CONNECTION_STRING";
 
