@@ -124,40 +124,9 @@ Infrastructure.{Provider}.{Feature}/
 ### Presentation Layer
 
 ```
-Presentation.WebApi/
-├── Controllers/V{n}/
-├── Models/
-│   ├── Requests/
-│   └── Responses/
-├── Middleware/
-└── Filters/
-
-Presentation.WebApp/
-├── Components/
-│   ├── Layout/
-│   ├── Pages/
-│   └── Shared/
-├── Services/
-└── Models/
-
-Presentation.WebApp.Server/
-├── Workers/
-├── Controllers/
-└── Extensions/
-
-Presentation.WebApp.Client/
-├── Components/
-│   ├── Layout/
-│   ├── Pages/
-│   └── Shared/
-├── Services/
-└── Models/
-```
-
-### Presentation Contracts
-
-```
 Presentation/
+├── Commands/
+│   └── BaseCommand.cs
 ├── Contracts/
 │   └── {Feature}/
 │       ├── Requests/
@@ -166,6 +135,108 @@ Presentation/
 └── Shared/
     ├── Components/
     └── Extensions/
+
+Presentation.WebApp/
+├── Commands/
+│   └── BaseWebAppCommand.cs
+├── Components/
+│   ├── Layout/
+│   ├── Pages/
+│   └── Shared/
+├── Services/
+└── Models/
+
+Presentation.WebApp.Server/
+├── Program.cs
+├── Commands/
+│   └── MainCommand.cs
+├── Workers/
+├── Controllers/
+└── Extensions/
+
+Presentation.WebApp.Client/
+├── Program.cs
+├── Commands/
+│   └── MainCommand.cs
+├── Components/
+│   ├── Layout/
+│   ├── Pages/
+│   └── Shared/
+├── Services/
+└── Models/
+
+Presentation.WebApi/
+├── Program.cs
+├── Commands/
+│   └── MainCommand.cs
+├── Controllers/V{n}/
+├── Models/
+│   ├── Requests/
+│   └── Responses/
+├── Middleware/
+└── Filters/
+
+Presentation.Cli/
+├── Program.cs
+├── Commands/
+│   └── MainCommand.cs
+└── Services/
+```
+
+---
+
+## ApplicationDependency and Serialization Structure
+
+```
+Domain/
+├── Domain.cs                               ← ApplicationDependency
+├── Serialization/
+│   ├── DomainJsonContext.cs
+│   └── Converters/
+├── Shared/
+│   └── Extensions/
+│       └── SharedServiceCollectionExtensions.cs
+└── {Feature}/
+    ├── Extensions/
+    │   └── {Feature}ServiceCollectionExtensions.cs
+    ├── Services/
+    ├── Entities/
+    └── ValueObjects/
+
+Application/
+├── Application.cs                          ← ApplicationDependency
+├── Serialization/
+│   └── ApplicationJsonContext.cs
+├── Shared/
+│   └── Extensions/
+│       └── SharedServiceCollectionExtensions.cs
+└── {Feature}/
+    ├── Extensions/
+    │   └── {Feature}ServiceCollectionExtensions.cs
+    └── ...
+
+Application.Server/
+├── ServerApplication.cs                    ← ApplicationDependency
+├── Serialization/
+│   └── ApplicationServerJsonContext.cs
+└── {Feature}/
+    └── Extensions/
+        └── {Feature}ServiceCollectionExtensions.cs
+
+Application.Client/
+├── ClientApplication.cs                    ← ApplicationDependency
+├── Serialization/
+│   └── ApplicationClientJsonContext.cs
+└── {Feature}/
+    └── Extensions/
+        └── {Feature}ServiceCollectionExtensions.cs
+
+Infrastructure.{Name}/
+├── {Name}Infrastructure.cs                 ← ApplicationDependency
+├── Serialization/
+│   └── {Name}JsonContext.cs
+└── Extensions/
+    └── {Name}ServiceCollectionExtensions.cs
 ```
 
 ---
@@ -227,6 +298,12 @@ Files MUST be placed in folders matching their type kind.
 | Constants class | `Constants/` | `Constants/ErrorMessages.cs` |
 | Application Worker | `Workers/` | `Workers/TradeFiller.cs` |
 | Presentation Worker Host | `Workers/` | `Workers/TradeFillerHost.cs` |
+| ApplicationDependency | Project root | `Application.cs` |
+| ServiceCollectionExtensions | `Extensions/` | `Extensions/LocalStoreServiceCollectionExtensions.cs` |
+| ConfigurationExtensions | `Extensions/` | `Extensions/EFCoreSqliteConfigurationExtensions.cs` |
+| JsonContext | `Serialization/` | `Serialization/DomainJsonContext.cs` |
+| JsonConverter | `Serialization/Converters/` | `Serialization/Converters/CamelCaseEnumConverter.cs` |
+| Command | `Commands/` | `Commands/MainCommand.cs` |
 
 **Verification:**
 - Before creating a file, identify its type kind
