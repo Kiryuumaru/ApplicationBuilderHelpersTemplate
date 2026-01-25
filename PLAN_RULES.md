@@ -8,9 +8,8 @@ This document outlines rules to add to `.github/instructions/` based on Applicat
 
 | File | Action |
 |------|--------|
-| `architecture.instructions.md` | Add ApplicationDependency, ServiceCollectionExtensions, and Command sections |
-| `file-structure.instructions.md` | Add ApplicationDependency, ServiceCollectionExtensions, and Command file placement |
-| `workflow.instructions.md` | Already has run/publish commands |
+| `architecture.instructions.md` | Add ApplicationDependency, ServiceCollectionExtensions, ConfigurationExtensions, Serialization, Command sections |
+| `file-structure.instructions.md` | Add file placement for all new types, update folder structure diagrams |
 
 ---
 
@@ -150,6 +149,7 @@ Converters:
 |-------|------------|---------------|
 | Domain | `DomainJsonContext` | `public` |
 | Application | `ApplicationJsonContext` | `public` |
+| Application.Server | `ApplicationServerJsonContext` | `public` |
 | Application.Client | `ApplicationClientJsonContext` | `public` |
 | Infrastructure.{Name} | `{Name}JsonContext` | `internal` |
 
@@ -241,6 +241,67 @@ Commands:
 
 ---
 
+### Command Attributes
+
+`[Command]` — Applied to classes to define command metadata.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `Term` | `string?` | Command name (e.g., `"migrate"`, `"serve"`) |
+| `Description` | `string?` | Help text for the command |
+
+Constructors:
+- `[Command("Description only")]` — Default/main command
+- `[Command("name", description: "Description")]` — Named subcommand
+
+---
+
+`[CommandOption]` — Applied to properties to define CLI options (flags).
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `Term` | `string?` | — | Long option name (`--log-level`) |
+| `ShortTerm` | `char?` | — | Short option name (`-l`) |
+| `EnvironmentVariable` | `string?` | — | Env var to read from |
+| `Required` | `bool` | `false` | Whether required |
+| `Description` | `string?` | — | Help text |
+| `FromAmong` | `object[]` | `[]` | Allowed values |
+| `CaseSensitive` | `bool` | `false` | Case sensitivity for allowed values |
+
+Required can be specified via:
+- C# `required` keyword on property
+- `Required = true` in attribute
+
+---
+
+`[CommandArgument]` — Applied to properties to define positional arguments (less commonly used).
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `Name` | `string?` | — | Argument name |
+| `Description` | `string?` | — | Help text |
+| `Position` | `int` | `0` | Positional order |
+| `Required` | `bool` | `false` | Whether required |
+| `FromAmong` | `object[]` | `[]` | Allowed values |
+| `CaseSensitive` | `bool` | `false` | Case sensitivity for allowed values |
+
+Required can be specified via:
+- C# `required` keyword on property
+- `Required = true` in attribute
+
+```csharp
+[CommandOption('l', "log-level", EnvironmentVariable = "LOG_LEVEL", Description = "Level of logs to show.")]
+public LogLevel LogLevel { get; set; } = LogLevel.Information;
+
+[CommandOption("credentials-override", EnvironmentVariable = "CREDENTIALS_OVERRIDE")]
+public string? CredentialsOverrideBase64 { get; set; }
+
+[CommandOption("api-key", Description = "API key for authentication.")]
+public required string ApiKey { get; set; }
+```
+
+---
+
 ### Program.cs Structure
 
 Program.cs MUST:
@@ -323,6 +384,7 @@ return await ApplicationBuilder.Create()
 |-------|----------|
 | Domain | `Domain/Serialization/DomainJsonContext.cs` |
 | Application | `Application/Serialization/ApplicationJsonContext.cs` |
+| Application.Server | `Application.Server/Serialization/ApplicationServerJsonContext.cs` |
 | Application.Client | `Application.Client/Serialization/ApplicationClientJsonContext.cs` |
 | Infrastructure.{Name} | `Infrastructure.{Name}/Serialization/{Name}JsonContext.cs` |
 | Converters | `{Layer}/Serialization/Converters/{Name}JsonConverter.cs` |
@@ -333,6 +395,8 @@ return await ApplicationBuilder.Create()
 
 | Presentation | Location |
 |--------------|----------|
+| Shared BaseCommand | `Presentation/Commands/BaseCommand.cs` |
+| WebApp BaseCommand | `Presentation.WebApp/Commands/BaseWebAppCommand.cs` |
 | WebApp.Server | `Presentation.WebApp.Server/Commands/{Name}Command.cs` |
 | WebApp.Client | `Presentation.WebApp.Client/Commands/{Name}Command.cs` |
 | WebApi | `Presentation.WebApi/Commands/{Name}Command.cs` |
@@ -345,6 +409,9 @@ return await ApplicationBuilder.Create()
 ```
 Domain/
 ├── Domain.cs                               ← ApplicationDependency
+├── Serialization/
+│   ├── DomainJsonContext.cs
+│   └── Converters/
 ├── Shared/
 │   └── Extensions/
 │       └── SharedServiceCollectionExtensions.cs
@@ -357,6 +424,8 @@ Domain/
 
 Application/
 ├── Application.cs                          ← ApplicationDependency
+├── Serialization/
+│   └── ApplicationJsonContext.cs
 ├── Shared/
 │   └── Extensions/
 │       └── SharedServiceCollectionExtensions.cs
@@ -367,18 +436,24 @@ Application/
 
 Application.Server/
 ├── ServerApplication.cs                    ← ApplicationDependency
+├── Serialization/
+│   └── ApplicationServerJsonContext.cs
 └── {Feature}/
     └── Extensions/
         └── {Feature}ServiceCollectionExtensions.cs
 
 Application.Client/
 ├── ClientApplication.cs                    ← ApplicationDependency
+├── Serialization/
+│   └── ApplicationClientJsonContext.cs
 └── {Feature}/
     └── Extensions/
         └── {Feature}ServiceCollectionExtensions.cs
 
 Infrastructure.{Name}/
 ├── {Name}Infrastructure.cs                 ← ApplicationDependency
+├── Serialization/
+│   └── {Name}JsonContext.cs
 └── Extensions/
     └── {Name}ServiceCollectionExtensions.cs
 
@@ -416,17 +491,18 @@ Presentation.WebApp.Client/
 | 2 | Add ApplicationDependency lifecycle section | architecture.instructions.md |
 | 3 | Add ServiceCollectionExtensions section | architecture.instructions.md |
 | 4 | Add ConfigurationExtensions section | architecture.instructions.md |
-| 5 | Add Presentation Commands section | architecture.instructions.md |
-| 6 | Add Program.cs structure section | architecture.instructions.md |
-| 7 | Add prohibited patterns | architecture.instructions.md |
-| 8 | Add ApplicationDependency file placement | file-structure.instructions.md |
-| 9 | Add ServiceCollectionExtensions file placement | file-structure.instructions.md |
-| 10 | Add ConfigurationExtensions file placement | file-structure.instructions.md |
-| 11 | Add Serialization section | architecture.instructions.md |
-| 12 | Add Serialization file placement | file-structure.instructions.md |
-| 13 | Add Command file placement | file-structure.instructions.md |
-| 14 | Update folder structure diagrams | file-structure.instructions.md |
-| 15 | Add type placement entries | file-structure.instructions.md |
+| 5 | Add Serialization section | architecture.instructions.md |
+| 6 | Add BuildConstantsGenerator section | architecture.instructions.md |
+| 7 | Add Command Hierarchy section | architecture.instructions.md |
+| 8 | Add Program.cs structure section | architecture.instructions.md |
+| 9 | Add prohibited patterns | architecture.instructions.md |
+| 10 | Add ApplicationDependency file placement | file-structure.instructions.md |
+| 11 | Add ServiceCollectionExtensions file placement | file-structure.instructions.md |
+| 12 | Add ConfigurationExtensions file placement | file-structure.instructions.md |
+| 13 | Add Serialization file placement | file-structure.instructions.md |
+| 14 | Add Command file placement | file-structure.instructions.md |
+| 15 | Update folder structure diagrams | file-structure.instructions.md |
+| 16 | Add type placement entries | file-structure.instructions.md |
 
 ---
 
