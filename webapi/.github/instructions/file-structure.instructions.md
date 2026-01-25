@@ -42,11 +42,16 @@ Each file contains exactly one public type. File name matches the type name.
 
 ```
 Domain/
+├── Shared/
+│   ├── Interfaces/
+│   └── Extensions/
 └── {Feature}/
     ├── Entities/
     ├── ValueObjects/
     ├── Enums/
     ├── Events/
+    ├── Constants/
+    ├── Services/
     └── Exceptions/
 ```
 
@@ -54,29 +59,116 @@ Domain/
 
 ```
 Application/
+├── Shared/
+│   ├── Interfaces/
+│   ├── Models/
+│   └── Extensions/
 └── {Feature}/
-    ├── Interfaces/
+    ├── Ports/
+    │   ├── In/
+    │   └── Out/
     ├── Services/
     ├── Models/
+    ├── Workers/
     ├── Validators/
     └── Extensions/
+```
+
+### Application.Server Layer
+
+```
+Application.Server/
+├── Shared/
+│   └── Interfaces/
+└── {Feature}/
+    ├── Ports/
+    │   ├── In/
+    │   └── Out/
+    ├── Services/
+    ├── Models/
+    └── Workers/
+```
+
+### Application.Client Layer
+
+```
+Application.Client/
+├── Shared/
+│   └── Interfaces/
+└── {Feature}/
+    ├── Ports/
+    │   ├── In/
+    │   └── Out/
+    ├── Services/
+    └── Models/
 ```
 
 ### Infrastructure Layer
 
 ```
 Infrastructure.{Provider}/
+├── Adapters/
 ├── Services/
 ├── Repositories/
 ├── Configurations/
 ├── Extensions/
 └── Models/
+
+Infrastructure.{Provider}.{Feature}/
+├── Adapters/
+├── Repositories/
+├── Configurations/
+└── Extensions/
 ```
 
 ### Presentation Layer
 
 ```
+Presentation/
+├── Commands/
+│   └── BaseCommand.cs
+├── Contracts/
+│   └── {Feature}/
+│       ├── Requests/
+│       ├── Responses/
+│       └── Hubs/
+└── Shared/
+    ├── Components/
+    └── Extensions/
+
+Presentation.WebApp/
+├── Commands/
+│   └── BaseWebAppCommand.cs
+├── Components/
+│   ├── Layout/
+│   ├── Pages/
+│   └── Shared/
+├── Services/
+└── Models/
+
+Presentation.WebApp.Server/
+├── Program.cs
+├── Commands/
+│   └── MainCommand.cs
+├── Workers/
+├── Controllers/
+└── Extensions/
+
+Presentation.WebApp.Client/
+├── Program.cs
+├── Commands/
+│   └── MainCommand.cs
+├── Components/
+│   ├── Layout/
+│   ├── Pages/
+│   └── Shared/
+├── Services/
+└── Models/
+
 Presentation.WebApi/
+├── Program.cs
+├── Commands/
+│   └── MainCommand.cs
 ├── Controllers/V{n}/
 ├── Models/
 │   ├── Requests/
@@ -84,13 +176,67 @@ Presentation.WebApi/
 ├── Middleware/
 └── Filters/
 
-Presentation.WebApp/
-├── Components/
-│   ├── Layout/
-│   ├── Pages/
-│   └── Shared/
-├── Services/
-└── Models/
+Presentation.Cli/
+├── Program.cs
+├── Commands/
+│   └── MainCommand.cs
+└── Services/
+```
+
+---
+
+## ApplicationDependency and Serialization Structure
+
+```
+Domain/
+├── Domain.cs                               ← ApplicationDependency
+├── Serialization/
+│   ├── DomainJsonContext.cs
+│   └── Converters/
+├── Shared/
+│   └── Extensions/
+│       └── SharedServiceCollectionExtensions.cs
+└── {Feature}/
+    ├── Extensions/
+    │   └── {Feature}ServiceCollectionExtensions.cs
+    ├── Services/
+    ├── Entities/
+    └── ValueObjects/
+
+Application/
+├── Application.cs                          ← ApplicationDependency
+├── Serialization/
+│   └── ApplicationJsonContext.cs
+├── Shared/
+│   └── Extensions/
+│       └── SharedServiceCollectionExtensions.cs
+└── {Feature}/
+    ├── Extensions/
+    │   └── {Feature}ServiceCollectionExtensions.cs
+    └── ...
+
+Application.Server/
+├── ServerApplication.cs                    ← ApplicationDependency
+├── Serialization/
+│   └── ApplicationServerJsonContext.cs
+└── {Feature}/
+    └── Extensions/
+        └── {Feature}ServiceCollectionExtensions.cs
+
+Application.Client/
+├── ClientApplication.cs                    ← ApplicationDependency
+├── Serialization/
+│   └── ApplicationClientJsonContext.cs
+└── {Feature}/
+    └── Extensions/
+        └── {Feature}ServiceCollectionExtensions.cs
+
+Infrastructure.{Name}/
+├── {Name}Infrastructure.cs                 ← ApplicationDependency
+├── Serialization/
+│   └── {Name}JsonContext.cs
+└── Extensions/
+    └── {Name}ServiceCollectionExtensions.cs
 ```
 
 ---
@@ -125,3 +271,41 @@ src/Application/Identity/Services/UserService.cs
 - NEVER use nested public types
 - NEVER leave empty placeholder/stub files after refactoring
 - NEVER use file names that do not match the contained type
+- NEVER place a type in a folder that does not match its kind
+
+---
+
+## Type Placement by Kind
+
+Files MUST be placed in folders matching their type kind.
+
+| Type Kind | Required Folder | Example |
+|-----------|-----------------|---------|
+| Interface | `Interfaces/` | `Interfaces/IUserService.cs` |
+| Port/In Interface | `Ports/In/` | `Ports/In/IOrderService.cs` |
+| Port/Out Interface | `Ports/Out/` | `Ports/Out/IOrderRepository.cs` |
+| Enum | `Enums/` | `Enums/OrderStatus.cs` |
+| Record (DTO/Model) | `Models/` | `Models/LoginRequest.cs` |
+| Service class | `Services/` | `Services/UserService.cs` |
+| Adapter class | `Adapters/` | `Adapters/BinanceExchangeAdapter.cs` |
+| Repository class | `Repositories/` | `Repositories/OrderRepository.cs` |
+| Entity | `Entities/` | `Entities/User.cs` |
+| Value object | `ValueObjects/` | `ValueObjects/Email.cs` |
+| Exception | `Exceptions/` | `Exceptions/UserNotFoundException.cs` |
+| Extension class | `Extensions/` | `Extensions/ServiceCollectionExtensions.cs` |
+| Validator | `Validators/` | `Validators/LoginRequestValidator.cs` |
+| Configuration | `Configurations/` | `Configurations/UserConfiguration.cs` |
+| Constants class | `Constants/` | `Constants/ErrorMessages.cs` |
+| Application Worker | `Workers/` | `Workers/TradeFiller.cs` |
+| Presentation Worker Host | `Workers/` | `Workers/TradeFillerHost.cs` |
+| ApplicationDependency | Project root | `Application.cs` |
+| ServiceCollectionExtensions | `Extensions/` | `Extensions/LocalStoreServiceCollectionExtensions.cs` |
+| ConfigurationExtensions | `Extensions/` | `Extensions/EFCoreSqliteConfigurationExtensions.cs` |
+| JsonContext | `Serialization/` | `Serialization/DomainJsonContext.cs` |
+| JsonConverter | `Serialization/Converters/` | `Serialization/Converters/CamelCaseEnumConverter.cs` |
+| Command | `Commands/` | `Commands/MainCommand.cs` |
+
+**Verification:**
+- Before creating a file, identify its type kind
+- Place in the corresponding folder within the feature/component area
+- If folder does not exist, create it
