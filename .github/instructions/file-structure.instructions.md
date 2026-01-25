@@ -42,11 +42,16 @@ Each file contains exactly one public type. File name matches the type name.
 
 ```
 Domain/
+├── Shared/
+│   ├── Interfaces/
+│   └── Extensions/
 └── {Feature}/
     ├── Entities/
     ├── ValueObjects/
     ├── Enums/
     ├── Events/
+    ├── Constants/
+    ├── Services/
     └── Exceptions/
 ```
 
@@ -54,23 +59,66 @@ Domain/
 
 ```
 Application/
+├── Shared/
+│   ├── Interfaces/
+│   ├── Models/
+│   └── Extensions/
 └── {Feature}/
-    ├── Interfaces/
+    ├── Ports/
+    │   ├── In/
+    │   └── Out/
     ├── Services/
     ├── Models/
+    ├── Workers/
     ├── Validators/
     └── Extensions/
+```
+
+### Application.Server Layer
+
+```
+Application.Server/
+├── Shared/
+│   └── Interfaces/
+└── {Feature}/
+    ├── Ports/
+    │   ├── In/
+    │   └── Out/
+    ├── Services/
+    ├── Models/
+    └── Workers/
+```
+
+### Application.Client Layer
+
+```
+Application.Client/
+├── Shared/
+│   └── Interfaces/
+└── {Feature}/
+    ├── Ports/
+    │   ├── In/
+    │   └── Out/
+    ├── Services/
+    └── Models/
 ```
 
 ### Infrastructure Layer
 
 ```
 Infrastructure.{Provider}/
+├── Adapters/
 ├── Services/
 ├── Repositories/
 ├── Configurations/
 ├── Extensions/
 └── Models/
+
+Infrastructure.{Provider}.{Feature}/
+├── Adapters/
+├── Repositories/
+├── Configurations/
+└── Extensions/
 ```
 
 ### Presentation Layer
@@ -91,6 +139,33 @@ Presentation.WebApp/
 │   └── Shared/
 ├── Services/
 └── Models/
+
+Presentation.WebApp.Server/
+├── Workers/
+├── Controllers/
+└── Extensions/
+
+Presentation.WebApp.Client/
+├── Components/
+│   ├── Layout/
+│   ├── Pages/
+│   └── Shared/
+├── Services/
+└── Models/
+```
+
+### Presentation Contracts
+
+```
+Presentation/
+├── Contracts/
+│   └── {Feature}/
+│       ├── Requests/
+│       ├── Responses/
+│       └── Hubs/
+└── Shared/
+    ├── Components/
+    └── Extensions/
 ```
 
 ---
@@ -136,9 +211,13 @@ Files MUST be placed in folders matching their type kind.
 | Type Kind | Required Folder | Example |
 |-----------|-----------------|---------|
 | Interface | `Interfaces/` | `Interfaces/IUserService.cs` |
+| Port/In Interface | `Ports/In/` | `Ports/In/IOrderService.cs` |
+| Port/Out Interface | `Ports/Out/` | `Ports/Out/IOrderRepository.cs` |
 | Enum | `Enums/` | `Enums/OrderStatus.cs` |
 | Record (DTO/Model) | `Models/` | `Models/LoginRequest.cs` |
 | Service class | `Services/` | `Services/UserService.cs` |
+| Adapter class | `Adapters/` | `Adapters/BinanceExchangeAdapter.cs` |
+| Repository class | `Repositories/` | `Repositories/OrderRepository.cs` |
 | Entity | `Entities/` | `Entities/User.cs` |
 | Value object | `ValueObjects/` | `ValueObjects/Email.cs` |
 | Exception | `Exceptions/` | `Exceptions/UserNotFoundException.cs` |
@@ -146,6 +225,8 @@ Files MUST be placed in folders matching their type kind.
 | Validator | `Validators/` | `Validators/LoginRequestValidator.cs` |
 | Configuration | `Configurations/` | `Configurations/UserConfiguration.cs` |
 | Constants class | `Constants/` | `Constants/ErrorMessages.cs` |
+| Application Worker | `Workers/` | `Workers/TradeFiller.cs` |
+| Presentation Worker Host | `Workers/` | `Workers/TradeFillerHost.cs` |
 
 **Verification:**
 - Before creating a file, identify its type kind

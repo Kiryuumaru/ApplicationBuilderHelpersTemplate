@@ -10,13 +10,11 @@ When updating process docs, update the `.github/instructions/*` files instead of
 - Architecture rules: `.github/instructions/architecture.instructions.md`
 - File structure: `.github/instructions/file-structure.instructions.md`
 - Code quality: `.github/instructions/code-quality.instructions.md`
-- Code patterns: `.github/instructions/code-patterns.instructions.md`
-- Commenting: `.github/instructions/commenting.instructions.md`
 - Documentation: `.github/instructions/documentation.instructions.md`
 - Workflow: `.github/instructions/workflow.instructions.md`
 - Project context: `.github/instructions/project-context.instructions.md`
-- Build reference: `.github/instructions/build-reference.instructions.md`
 - Agent terminal: `.github/instructions/agent-terminal.instructions.md`
+- Tailwind CSS: `.github/instructions/tailwind-css.instructions.md`
 - UI test practices: `.github/instructions/ui-test-practices.instructions.md`
 
 ## Quick Links

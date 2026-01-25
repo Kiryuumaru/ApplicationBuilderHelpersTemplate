@@ -6,6 +6,18 @@ applyTo: '**'
 ## Layer Dependencies
 
 ```
+Domain
+  ↑
+Application
+  ↑
+Application.Server    Application.Client
+  ↑                     ↑
+Infrastructure.*      Infrastructure.*
+  ↑                     ↑
+Presentation.*.Server Presentation.*.Client
+```
+
+```
 ┌─────────────────────────────────────────┐
 │            PRESENTATION                 │
 │  References: Application, Domain        │
@@ -36,6 +48,189 @@ applyTo: '**'
 
 ---
 
+## Layer Reference Rules
+
+Domain:
+- MUST NOT reference any other layer (Application, Infrastructure, or Presentation)
+- Is the innermost circle containing pure business logic
+- MUST NOT have framework attributes or external dependencies
+
+Application:
+- MUST only reference Domain
+- MUST NOT reference Infrastructure or Presentation
+- Defines ports and orchestrates business logic
+
+Application.Server:
+- MUST reference Application and Domain
+- MUST NOT reference Application.Client
+- Contains server-specific logic
+
+Application.Client:
+- MUST reference Application and Domain
+- MUST NOT reference Application.Server
+- Contains client-specific logic
+
+Application.Server and Application.Client are parallel branches, not hierarchical.
+
+Infrastructure:
+- MUST reference Application and Domain
+- MUST NOT reference Presentation
+- Implements ports defined in Application
+
+Presentation:
+- MUST reference Application and Domain
+- MUST NOT reference Infrastructure except in Program.cs
+- Drives the application through ports
+
+---
+
+## Ports and Adapters
+
+Ports are interfaces that define boundaries.
+
+Ports/In (incoming ports):
+- Define what the application offers to the outside world
+- Are implemented by Application services
+- Are called by Presentation layer
+- Examples: `IOrderService`, `IIdentityService`, `IMarketStreamerService`
+
+Ports/Out (outgoing ports):
+- Define what the application needs from the outside world
+- Are implemented by Infrastructure adapters
+- Are called by Application services
+- Examples: `IOrderRepository`, `IBrokerPort`, `IMarketDataPort`
+
+Incoming adapters:
+- Drive the application
+- Live in Presentation layer
+- Call Ports/In
+- Examples: Controllers, Worker hosts, Blazor components
+
+Outgoing adapters:
+- Are driven by the application
+- Live in Infrastructure layer
+- Implement Ports/Out
+- Examples: Repositories, HTTP clients, message bus clients
+
+---
+
+## Entry Points vs Services
+
+Entry points:
+- Are the initiators of application logic
+- Create scopes and resolve services
+- Are not injectable
+- Do not have DI lifetime in the traditional sense
+
+Entry points include:
+- Controllers — HTTP request entry point
+- Application Workers — Background task entry point
+- Blazor Components — UI interaction entry point
+- Queue Consumers — Message entry point
+- Event Listeners — Event entry point
+
+Services:
+- Are injectable units of logic
+- Are registered with DI lifetime
+- Are resolved by entry points or other services
+
+Services include:
+- Domain Services — Pure business logic (Singleton)
+- Application Services — Orchestration with I/O (Scoped)
+- Repositories — Data access (Scoped)
+
+---
+
+## Service Categories
+
+### Domain Services
+
+Domain services:
+- Contain pure business logic
+- MUST NOT perform I/O
+- MUST NOT depend on repositories, HTTP clients, or external services
+- Receive all required data as method parameters
+- Return calculated results
+- MUST be registered as Singleton
+- Are stateless calculators
+- Produce same output for same input
+
+Examples: `OrderPricingService`, `RiskAssessmentService`, `PasswordStrengthService`.
+
+### Application Services
+
+Application services:
+- Orchestrate business operations
+- Implement Ports/In interfaces
+- Call Domain services for business logic
+- Call Ports/Out for I/O operations
+- Coordinate transactions through IUnitOfWork
+- MUST be registered as Scoped
+- Depend on Scoped services like DbContext, ICurrentUser, and IUnitOfWork
+
+Examples: `OrderService`, `IdentityService`, `MarketStreamerService`.
+
+---
+
+## Application Workers
+
+Application workers:
+- Are background entry points
+- Are internal classes
+- Are not injectable
+- Consume services but are not consumed by others
+- Are like Controllers but for background tasks instead of HTTP requests
+- Create scopes and resolve services within those scopes
+- Handle their own execution loop, scheduling, or event listening
+- Contain business logic for background operations
+- Call Application services and Ports/Out directly
+
+Worker locations by scope:
+- `Application/{Feature}/Workers/` — Workers that run on all platforms (server and client)
+- `Application.Server/{Feature}/Workers/` — Server-only workers
+- `Application.Client/{Feature}/Workers/` — Client-only workers
+
+Examples: `TradeFiller`, `MarketListingSync`, `StaleAnonymousUserCleanup`, `OrderPlacedListener`.
+
+---
+
+## Presentation Worker Hosts
+
+Worker hosts:
+- Are BackgroundService wrappers in Presentation layer
+- Live in `Presentation.WebApp.Server/Workers/`
+- Are Singleton because .NET hosting requires one instance for the application lifetime
+- Handle the timer loop and error logging
+- Create scopes and call Application workers within those scopes
+- Contain no business logic
+- Only manage WHEN to run
+- Delegate WHAT to do to Application workers
+
+Examples: `TradeFillerHost`, `MarketListingSyncHost`, `StaleAnonymousUserCleanupHost`.
+
+---
+
+## Internal Interfaces
+
+Internal interfaces:
+- Are abstractions used within Application and Infrastructure layers only
+- MUST NOT be used by Presentation layer directly
+
+Internal interfaces locations:
+- Shared internal interfaces MUST be in `Application/Shared/Interfaces/`
+- Server shared internal interfaces MUST be in `Application.Server/Shared/Interfaces/`
+- Client shared internal interfaces MUST be in `Application.Client/Shared/Interfaces/`
+- Feature-specific internal interfaces MUST be in `Application/{Feature}/Interfaces/`
+
+Examples: `IAuthenticatedHttpClientFactory`, `IEventHandler<T>`, `IOfflineSyncManager`.
+
+When Presentation needs functionality that uses internal interfaces:
+- Create a Ports/In service that uses the internal interface
+- Presentation calls the Ports/In service
+- Presentation never touches the internal interface directly
+
+---
+
 ## Composition Root
 
 Infrastructure wiring occurs only in `Program.cs` of executable projects.
@@ -45,20 +240,7 @@ Presentation.WebApp/Program.cs
 Presentation.Cli/Program.cs
 ```
 
-Controllers, components, services, and commands NEVER import Infrastructure namespaces.
-
----
-
-## Dependency Direction
-
-- Domain layer MUST reference nothing
-- Domain layer MUST NOT reference Application, Infrastructure, or Presentation
-- Application layer MAY reference Domain only
-- Application layer MUST NOT reference Infrastructure or Presentation
-- Infrastructure layer MAY reference Application and Domain
-- Infrastructure layer MUST NOT reference Presentation
-- Presentation layer MAY reference Application and Domain
-- Presentation layer MUST NOT reference Infrastructure except in Program.cs
+Controllers, components, services, and commands MUST NOT import Infrastructure namespaces.
 
 ---
 
@@ -67,7 +249,6 @@ Controllers, components, services, and commands NEVER import Infrastructure name
 - Application services MUST depend on interfaces, not concrete types
 - Infrastructure MUST implement Application interfaces
 - Presentation MUST inject interfaces via DI
-- Domain entities MUST NOT have framework attributes or external dependencies
 
 ---
 
@@ -83,6 +264,33 @@ internal sealed class IndexedDBLocalStoreService : ILocalStoreService { }
 
 ---
 
+## Dependency Injection Lifetime Rules
+
+Singleton:
+- MUST only inject other Singleton services
+- MUST NOT inject Scoped services (captive dependency causes stale data, wrong user context, and concurrency bugs)
+- When needing request-specific data, MUST pass data as method parameters
+
+Scoped:
+- MAY inject Singleton and Scoped services
+
+Transient:
+- MAY inject Singleton, Scoped, and Transient services
+
+Entry points like Controllers and Application Workers do not follow these rules because they are not injectable. They create scopes and resolve services from those scopes.
+
+### Lifetimes by Layer
+
+Domain services MUST be Singleton. Domain services are stateless calculators with pure logic.
+
+Application services MAY be Singleton, Scoped, or Transient depending on their dependencies and state requirements.
+
+Infrastructure adapters are typically Scoped. Infrastructure adapters depend on DbContext for repositories. Infrastructure adapters depend on HttpClient for external APIs.
+
+Infrastructure utilities MAY be Singleton. Examples: clock adapters, configuration providers, stateless factories.
+
+---
+
 ## Infrastructure Separation
 
 Providers (SQLite, Postgres) and Features (LocalStore, Identity) are independent.
@@ -92,6 +300,18 @@ Providers (SQLite, Postgres) and Features (LocalStore, Identity) are independent
 - Feature projects MAY reference Application, Domain, and `IDbContextFactory<T>`
 - Feature projects MUST NOT reference Provider projects
 - Composition happens at Presentation layer only
+
+Infrastructure naming convention is `Infrastructure.{FeatureCollection}.{SpecificCategory}`.
+
+Feature collection projects:
+- Implement repository interfaces for a specific bounded context
+- Are ignorant of database providers
+- Examples: `Infrastructure.EFCore.Server.Identity`, `Infrastructure.EFCore.Server.Trading`
+
+Provider projects:
+- Configure specific database or service providers
+- Are ignorant of features
+- Examples: `Infrastructure.EFCore.Sqlite`, `Infrastructure.EFCore.Postgres`
 
 ---
 
@@ -114,6 +334,85 @@ Application layer classes reference only the abstractions they depend on. Infras
 
 ---
 
+## Search Before Create
+
+Before creating any type, utility, or pattern:
+
+1. MUST search the codebase for existing types with similar purpose
+2. MUST check these locations in order:
+   - `Domain/Shared/` for domain primitives and interfaces
+   - `Domain/{Feature}/ValueObjects/` for domain value types
+   - `Domain/{Feature}/Services/` for domain logic
+   - `Application/Shared/Models/` for shared DTOs and results
+   - `Application/{Feature}/Models/` for feature-specific DTOs
+   - `Application.Server/{Feature}/` for server-specific types
+   - `Application.Client/{Feature}/` for client-specific types
+3. If found: MUST use it or extend it
+4. If not found: MUST create in the appropriate shared location
+
+---
+
+## One Concept, One Type, One Location
+
+- If same type defined in multiple files, MUST keep one definition and delete others
+- If same concept has different names, MUST consolidate to single canonical name
+- If private type could be shared, MUST move to appropriate shared location
+- If anonymous type used for known concept, MUST use the existing named type
+
+---
+
+## No Duplication
+
+MUST extract when:
+- Same logic appears 2+ times
+- Same pattern emerges across files
+- Same constant value used in multiple locations
+- Same error handling repeated
+
+Shared code locations by layer:
+
+- Domain interfaces MUST go in `Domain/Shared/Interfaces/`
+- Domain services MUST go in `Domain/{Feature}/Services/`
+- Domain value objects MUST go in `Domain/{Feature}/ValueObjects/`
+- Domain logic MUST go in `Domain/Shared/` or `Domain/{Feature}/`
+- Application ports MUST go in `Application/{Feature}/Ports/In/` or `Application/{Feature}/Ports/Out/`
+- Application services MUST go in `Application/{Feature}/Services/`
+- Application models MUST go in `Application/{Feature}/Models/`
+- Application shared internal interfaces MUST go in `Application/Shared/Interfaces/`
+- Application feature-specific internal interfaces MUST go in `Application/{Feature}/Interfaces/`
+- Application utilities MUST go in `Application/Shared/` or `Application/{Feature}/Extensions/`
+- Application workers MUST go in `Application/{Feature}/Workers/`, `Application.Server/{Feature}/Workers/`, or `Application.Client/{Feature}/Workers/`
+- Infrastructure adapters MUST go in `Infrastructure.{Provider}.{Feature}/Adapters/`
+- Infrastructure utilities MUST go in `Infrastructure.{Provider}/Extensions/`
+- Presentation shared code MUST go in `Presentation/Shared/`
+- Presentation contracts MUST go in `Presentation/Contracts/{Feature}/`
+- Presentation worker hosts MUST go in `Presentation.WebApp.Server/Workers/`
+- Test helpers MUST go in base test class or `TestHelpers/`
+
+---
+
+## Constants Over Magic Values
+
+Every literal value used more than once MUST be a named constant.
+
+- Domain constants MUST be in `Domain/{Feature}/Constants/`
+- Application settings MUST be in Configuration or `Application/{Feature}/Constants/`
+- Test values MUST be in test base class or constants file
+
+---
+
+## Consolidation Workflow
+
+When duplicates are discovered:
+
+1. MUST identify canonical location based on layer rules (prefer `Application/Models` or `Domain/ValueObjects`)
+2. MUST keep the most complete definition
+3. MUST update all references to use the shared type
+4. MUST delete duplicate definitions
+5. MUST verify build succeeds
+
+---
+
 ## Prohibited Patterns
 
 - NEVER use `@inject DbContext` in components
@@ -123,3 +422,19 @@ Application layer classes reference only the abstractions they depend on. Infras
 - NEVER use static service locator patterns
 - NEVER hardcode connection strings or URLs in Application
 - NEVER use `if (type == X)` branching in Application layer
+- NEVER define Ports/In in Infrastructure layer
+- NEVER define Ports/Out in Infrastructure layer
+- NEVER implement Ports/In in Infrastructure layer
+- NEVER implement Ports/Out in Application layer
+- NEVER call Ports/Out directly from Presentation layer
+- NEVER call Infrastructure directly from Presentation layer (except DI registration)
+- NEVER place business logic in Presentation worker hosts
+- NEVER place I/O operations in Domain services
+- NEVER expose internal interfaces to Presentation layer
+- NEVER inject Application Workers into other services
+- NEVER copy-paste with minor variations
+- NEVER use inline magic values (hardcoded strings, numbers, timeouts)
+- NEVER duplicate validation logic
+- NEVER repeat error handling patterns
+- NEVER use anonymous types when named types exist
+- NEVER place shared types in server-only or client-only projects when both need them
