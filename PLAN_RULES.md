@@ -95,6 +95,40 @@ internal static class LocalStoreServiceCollectionExtensions
 
 ---
 
+### ConfigurationExtensions
+
+ConfigurationExtensions enable cross-layer configuration sharing.
+
+ConfigurationExtensions rules:
+- MUST be `public static` class
+- MUST have extension methods for IConfiguration
+- MUST be named `{Feature}ConfigurationExtensions`
+- MUST use private const string for key names
+- MUST have `Get{Key}` method to retrieve value
+- MUST have `Set{Key}` method to store value
+- MAY use `GetRefValue` for reference chain support (`@ref:` prefix)
+
+```csharp
+namespace Infrastructure.EFCore.Sqlite.Extensions;
+
+public static class EFCoreSqliteConfigurationExtensions
+{
+    private const string SqliteConnectionStringKey = "SQLITE_CONNECTION_STRING";
+
+    public static string GetSqliteConnectionString(this IConfiguration configuration)
+    {
+        return configuration.GetRefValue(SqliteConnectionStringKey);
+    }
+
+    public static void SetSqliteConnectionString(this IConfiguration configuration, string connectionString)
+    {
+        configuration[SqliteConnectionStringKey] = connectionString;
+    }
+}
+```
+
+---
+
 ### Presentation Commands
 
 Every Presentation leaf project MUST have:
@@ -231,6 +265,19 @@ return await ApplicationBuilder.Create()
 
 ---
 
+### ConfigurationExtensions File Placement
+
+| Layer | Location |
+|-------|----------|
+| Domain | `Domain/{Feature}/Extensions/{Feature}ConfigurationExtensions.cs` |
+| Application | `Application/{Feature}/Extensions/{Feature}ConfigurationExtensions.cs` |
+| Application.Server | `Application.Server/{Feature}/Extensions/{Feature}ConfigurationExtensions.cs` |
+| Application.Client | `Application.Client/{Feature}/Extensions/{Feature}ConfigurationExtensions.cs` |
+| Infrastructure | `Infrastructure.{Name}/Extensions/{Name}ConfigurationExtensions.cs` |
+| Shared | `{Layer}/Shared/Extensions/SharedConfigurationExtensions.cs` |
+
+---
+
 ### Command File Placement
 
 | Presentation | Location |
@@ -303,6 +350,7 @@ Presentation.WebApp.Client/
 |-----------|-----------------|---------|
 | ApplicationDependency | Project root | `Application.cs` |
 | ServiceCollectionExtensions | `Extensions/` | `Extensions/LocalStoreServiceCollectionExtensions.cs` |
+| ConfigurationExtensions | `Extensions/` | `Extensions/EFCoreSqliteConfigurationExtensions.cs` |
 | Command | `Commands/` | `Commands/MainCommand.cs` |
 
 ---
@@ -314,14 +362,16 @@ Presentation.WebApp.Client/
 | 1 | Add ApplicationDependency section | architecture.instructions.md |
 | 2 | Add ApplicationDependency lifecycle section | architecture.instructions.md |
 | 3 | Add ServiceCollectionExtensions section | architecture.instructions.md |
-| 4 | Add Presentation Commands section | architecture.instructions.md |
-| 5 | Add Program.cs structure section | architecture.instructions.md |
-| 6 | Add prohibited patterns | architecture.instructions.md |
-| 7 | Add ApplicationDependency file placement | file-structure.instructions.md |
-| 8 | Add ServiceCollectionExtensions file placement | file-structure.instructions.md |
-| 9 | Add Command file placement | file-structure.instructions.md |
-| 10 | Update folder structure diagrams | file-structure.instructions.md |
-| 11 | Add type placement entries | file-structure.instructions.md |
+| 4 | Add ConfigurationExtensions section | architecture.instructions.md |
+| 5 | Add Presentation Commands section | architecture.instructions.md |
+| 6 | Add Program.cs structure section | architecture.instructions.md |
+| 7 | Add prohibited patterns | architecture.instructions.md |
+| 8 | Add ApplicationDependency file placement | file-structure.instructions.md |
+| 9 | Add ServiceCollectionExtensions file placement | file-structure.instructions.md |
+| 10 | Add ConfigurationExtensions file placement | file-structure.instructions.md |
+| 11 | Add Command file placement | file-structure.instructions.md |
+| 12 | Update folder structure diagrams | file-structure.instructions.md |
+| 13 | Add type placement entries | file-structure.instructions.md |
 
 ---
 
