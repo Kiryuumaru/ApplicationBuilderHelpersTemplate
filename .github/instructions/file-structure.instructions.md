@@ -40,10 +40,14 @@ Each file contains exactly one public type. File name matches the type name.
 
 ### Domain Layer
 
+Domain references DI helpers only (`Microsoft.Extensions.DependencyInjection.Abstractions`, `ApplicationBuilderHelpers`, `Domain.SourceGenerators`). Contains pure business logic, entities, and value objects.
+
+`Interfaces/` in Domain contains marker interfaces only (`IDomainEvent`, `IAggregateRoot`), not ports.
+
 ```
 Domain/
 +-- Shared/
-|   +-- Interfaces/
+|   +-- Interfaces/              <- Marker interfaces only (not ports)
 |   +-- Extensions/
 +-- {Feature}/
     +-- Entities/
@@ -51,63 +55,91 @@ Domain/
     +-- Enums/
     +-- Events/
     +-- Constants/
-    +-- Services/
+    +-- Services/                <- Domain services (pure logic, Singleton)
     +-- Exceptions/
 ```
 
 ### Application Layer
 
+Application references Domain only. MAY reference core abstractions (`Microsoft.Extensions.Logging.Abstractions`, `Microsoft.Extensions.Hosting.Abstractions`) and DI helpers.
+
+- `Interfaces/In/` - Incoming ports (callable by any layer, implemented by Application*)
+- `Interfaces/Out/` - Outgoing ports (callable by Application*/Infrastructure*, implemented by Infrastructure*)
+- `Interfaces/` - Internal abstractions (callable by Application* only)
+
 ```
 Application/
 +-- Shared/
-|   +-- Interfaces/
+|   +-- Interfaces/              <- Internal abstractions
+|   |   +-- In/                  <- Incoming ports
+|   |   +-- Out/                 <- Outgoing ports
 |   +-- Models/
+|   +-- Services/                <- Application services
 |   +-- Extensions/
 +-- {Feature}/
-    +-- Ports/
+    +-- Interfaces/
     |   +-- In/
     |   +-- Out/
     +-- Services/
     +-- Models/
-    +-- Workers/
+    +-- Workers/                 <- Background entry points
     +-- Validators/
+    +-- EventHandlers/
     +-- Extensions/
 ```
 
 ### Application.Server Layer
 
+Application.Server references Application and Domain. MAY reference the same core abstractions and DI helpers as Application. Contains server-specific logic.
+
+MUST NOT reference Application.Client.
+
 ```
 Application.Server/
 +-- Shared/
 |   +-- Interfaces/
+|   |   +-- In/
+|   |   +-- Out/
 +-- {Feature}/
-    +-- Ports/
+    +-- Interfaces/
     |   +-- In/
     |   +-- Out/
     +-- Services/
     +-- Models/
-    +-- Workers/
+    +-- Workers/                 <- Server-only workers
+    +-- EventHandlers/
 ```
 
 ### Application.Client Layer
+
+Application.Client references Application and Domain. MAY reference the same core abstractions and DI helpers as Application. Contains client-specific logic.
+
+MUST NOT reference Application.Server.
 
 ```
 Application.Client/
 +-- Shared/
 |   +-- Interfaces/
+|   |   +-- In/
+|   |   +-- Out/
 +-- {Feature}/
-    +-- Ports/
+    +-- Interfaces/
     |   +-- In/
     |   +-- Out/
     +-- Services/
     +-- Models/
+    +-- EventHandlers/
 ```
 
 ### Infrastructure Layer
 
+Infrastructure references Application and Domain. Implements Interfaces/Out ports.
+
+MUST NOT reference Presentation.
+
 ```
 Infrastructure.{Provider}/
-+-- Adapters/
++-- Adapters/                    <- Outgoing adapters (implement Interfaces/Out)
 +-- Services/
 +-- Repositories/
 +-- Configurations/
@@ -122,6 +154,12 @@ Infrastructure.{Provider}.{Feature}/
 ```
 
 ### Presentation Layer
+
+Presentation references Application and Domain. Drives the application through Interfaces/In ports.
+
+MUST NOT reference Infrastructure except in Program.cs for DI registration.
+
+MUST NOT call Interfaces/Out directly.
 
 ```
 Presentation/
@@ -147,18 +185,17 @@ Presentation.WebApp/
 +-- Models/
 
 Presentation.WebApp.Server/
-+-- Program.cs
++-- Program.cs                   <- Composition root (Infrastructure wiring here only)
 +-- Commands/
 |   +-- MainCommand.cs
-+-- Workers/
-+-- Controllers/
++-- Controllers/                 <- Incoming adapters
 +-- Extensions/
 
 Presentation.WebApp.Client/
-+-- Program.cs
++-- Program.cs                   <- Composition root
 +-- Commands/
 |   +-- MainCommand.cs
-+-- Components/
++-- Components/                  <- Incoming adapters (Blazor)
 |   +-- Layout/
 |   +-- Pages/
 |   +-- Shared/
@@ -166,10 +203,10 @@ Presentation.WebApp.Client/
 +-- Models/
 
 Presentation.WebApi/
-+-- Program.cs
++-- Program.cs                   <- Composition root
 +-- Commands/
 |   +-- MainCommand.cs
-+-- Controllers/V{n}/
++-- Controllers/V{n}/            <- Incoming adapters
 +-- Models/
 |   +-- Requests/
 |   +-- Responses/
@@ -177,7 +214,7 @@ Presentation.WebApi/
 +-- Filters/
 
 Presentation.Cli/
-+-- Program.cs
++-- Program.cs                   <- Composition root
 +-- Commands/
 |   +-- MainCommand.cs
 +-- Services/
@@ -264,26 +301,15 @@ src/Application/Identity/Services/UserService.cs
 
 ---
 
-## Prohibited Patterns
-
-- NEVER have multiple public types in one file
-- NEVER define DTOs inside controller files
-- NEVER use nested public types
-- NEVER leave empty placeholder/stub files after refactoring
-- NEVER use file names that do not match the contained type
-- NEVER place a type in a folder that does not match its kind
-
----
-
 ## Type Placement by Kind
 
 Files MUST be placed in folders matching their type kind.
 
 | Type Kind | Required Folder | Example |
 |-----------|-----------------|---------|
-| Interface | `Interfaces/` | `Interfaces/IUserService.cs` |
-| Port/In Interface | `Ports/In/` | `Ports/In/IOrderService.cs` |
-| Port/Out Interface | `Ports/Out/` | `Ports/Out/IOrderRepository.cs` |
+| Interface (internal) | `Interfaces/` | `Interfaces/IDomainEventDispatcher.cs` |
+| Interface (In) | `Interfaces/In/` | `Interfaces/In/IOrderService.cs` |
+| Interface (Out) | `Interfaces/Out/` | `Interfaces/Out/IOrderRepository.cs` |
 | Enum | `Enums/` | `Enums/OrderStatus.cs` |
 | Record (DTO/Model) | `Models/` | `Models/LoginRequest.cs` |
 | Service class | `Services/` | `Services/UserService.cs` |
@@ -298,6 +324,8 @@ Files MUST be placed in folders matching their type kind.
 | Constants class | `Constants/` | `Constants/ErrorMessages.cs` |
 | Application Worker | `Workers/` | `Workers/TradeFiller.cs` |
 | Presentation Worker Host | `Workers/` | `Workers/TradeFillerHost.cs` |
+| Domain Event | `Events/` | `Events/OrderPlacedEvent.cs` |
+| Event Handler | `EventHandlers/` | `EventHandlers/SendWelcomeEmailHandler.cs` |
 | ApplicationDependency | Project root | `Application.cs` |
 | ServiceCollectionExtensions | `Extensions/` | `Extensions/LocalStoreServiceCollectionExtensions.cs` |
 | ConfigurationExtensions | `Extensions/` | `Extensions/EFCoreSqliteConfigurationExtensions.cs` |

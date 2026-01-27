@@ -3,6 +3,16 @@ applyTo: '**'
 ---
 # Code Quality Rules
 
+## Fix Hygiene
+
+**Failed fix = full revert.**
+
+- NEVER leave non-working code from failed fix attempts
+- NEVER apply fix B on top of failed fix A
+- NEVER comment out failed code instead of removing
+
+---
+
 ## Zero Warnings
 
 Build MUST complete with 0 warnings and 0 errors. Every warning is a potential bug.
@@ -39,6 +49,41 @@ Nullable handling patterns:
 - MUST use stable, documented APIs
 - MUST avoid implementation-specific tricks
 - MUST document reasoning, not mechanics
+
+---
+
+## Primary Constructors
+
+When a constructor only stores parameters without additional logic, USE primary constructors (C# 12).
+
+Traditional constructor (avoid when only storing):
+```csharp
+internal sealed class DomainEventDispatcher : IDomainEventDispatcher
+{
+    private readonly IEnumerable<IDomainEventHandler> _handlers;
+
+    public DomainEventDispatcher(IEnumerable<IDomainEventHandler> handlers)
+    {
+        _handlers = handlers;
+    }
+
+    public void DoWork() => _handlers.ToList();
+}
+```
+
+Primary constructor (preferred):
+```csharp
+internal sealed class DomainEventDispatcher(IEnumerable<IDomainEventHandler> handlers) : IDomainEventDispatcher
+{
+    public void DoWork() => handlers.ToList();
+}
+```
+
+Primary constructor rules:
+- USE when constructor only assigns parameters to fields
+- USE parameter name directly in methods (no underscore prefix)
+- KEEP traditional constructor when validation or transformation logic is needed
+- KEEP traditional constructor when multiple constructors are required
 
 ---
 

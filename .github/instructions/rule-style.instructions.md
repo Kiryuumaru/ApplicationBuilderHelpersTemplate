@@ -10,10 +10,10 @@ This document defines the style and accent for writing rules in `.github/instruc
 ## File Structure
 
 Every instruction file MUST have:
-1. YAML frontmatter with `applyTo` pattern
-2. H1 title matching file purpose
-3. H2 sections separated by horizontal rules (`---`)
-4. H3 subsections when needed
+- YAML frontmatter with `applyTo` pattern
+- H1 title matching file purpose
+- H2 sections separated by horizontal rules (`---`)
+- H3 subsections when needed
 
 ---
 

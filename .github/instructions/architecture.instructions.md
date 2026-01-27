@@ -41,7 +41,7 @@ Presentation.*.Server Presentation.*.Client
                     v
 +-------------------------------------------+
 |              DOMAIN                       |
-|  References: Nothing                      |
+|  References: DI helpers only              |
 |  Contains: Entities, value objects        |
 +-------------------------------------------+
 ```
@@ -53,21 +53,26 @@ Presentation.*.Server Presentation.*.Client
 Domain:
 - MUST NOT reference any other layer (Application, Infrastructure, or Presentation)
 - Is the innermost circle containing pure business logic
-- MUST NOT have framework attributes or external dependencies
+- MAY reference DI helpers: `Microsoft.Extensions.DependencyInjection.Abstractions`, `ApplicationBuilderHelpers`, `Domain.SourceGenerators`
+- MUST NOT have framework attributes or external dependencies beyond DI helpers
 
 Application:
 - MUST only reference Domain
 - MUST NOT reference Infrastructure or Presentation
+- MAY reference core abstractions: `Microsoft.Extensions.Logging.Abstractions`, `Microsoft.Extensions.Hosting.Abstractions`, `Microsoft.Extensions.DependencyInjection.Abstractions`
+- MAY reference DI helpers: `ApplicationBuilderHelpers`, `Domain.SourceGenerators`
 - Defines ports and orchestrates business logic
 
 Application.Server:
 - MUST reference Application and Domain
 - MUST NOT reference Application.Client
+- MAY reference the same core abstractions and DI helpers as Application
 - Contains server-specific logic
 
 Application.Client:
 - MUST reference Application and Domain
 - MUST NOT reference Application.Server
+- MAY reference the same core abstractions and DI helpers as Application
 - Contains client-specific logic
 
 Application.Server and Application.Client are parallel branches, not hierarchical.
@@ -84,32 +89,77 @@ Presentation:
 
 ---
 
-## Ports and Adapters
+## Interface Folders
 
-Ports are interfaces that define boundaries.
+Interfaces are organized into three folder categories with distinct access rules.
 
-Ports/In (incoming ports):
+### Interfaces/In/ (Incoming Ports)
+
+Interfaces/In:
 - Define what the application offers to the outside world
-- Are implemented by Application services
-- Are called by Presentation layer
-- Examples: `IOrderService`, `IIdentityService`, `IMarketStreamerService`
+- Are implemented by Application* services
+- MAY be called by any layer
+- Examples: `IOrderService`, `IIdentityService`, `IHelloWorldService`
 
-Ports/Out (outgoing ports):
+### Interfaces/Out/ (Outgoing Ports)
+
+Interfaces/Out:
 - Define what the application needs from the outside world
-- Are implemented by Infrastructure adapters
-- Are called by Application services
+- Are implemented by Infrastructure* adapters
+- MAY be called by Application* and Infrastructure* only
+- MUST NOT be called by Presentation
 - Examples: `IOrderRepository`, `IBrokerPort`, `IMarketDataPort`
+
+### Interfaces/ (Internal)
+
+Interfaces (without subfolder):
+- Are internal abstractions within Application layer
+- Are implemented by Application* services
+- MAY be called by Application* only
+- MUST NOT be called by Presentation or Infrastructure
+- Examples: `IDomainEventDispatcher`, `IDomainEventHandler`, `IOfflineSyncManager`
+
+### Interface Access Rules
+
+| Interface Location | Who Can Use | Who Implements |
+|--------------------|-------------|----------------|
+| `Interfaces/In/` | Any layer | Application* |
+| `Interfaces/Out/` | Application*, Infrastructure* | Infrastructure* |
+| `Interfaces/` | Application* | Application* |
+
+Application* includes: `Application`, `Application.Server`, `Application.Client`
+Infrastructure* includes: `Infrastructure.*` (all Infrastructure projects)
+
+### Interface Placement
+
+- Shared internal interfaces MUST be in `Application/Shared/Interfaces/`
+- Shared Interfaces/In MUST be in `Application/Shared/Interfaces/In/`
+- Shared Interfaces/Out MUST be in `Application/Shared/Interfaces/Out/`
+- Server shared interfaces MUST be in `Application.Server/Shared/Interfaces/`
+- Client shared interfaces MUST be in `Application.Client/Shared/Interfaces/`
+- Feature internal interfaces MUST be in `Application/{Feature}/Interfaces/`
+- Feature Interfaces/In MUST be in `Application/{Feature}/Interfaces/In/`
+- Feature Interfaces/Out MUST be in `Application/{Feature}/Interfaces/Out/`
+
+When Presentation needs functionality that uses internal interfaces:
+- Create an Interfaces/In service that uses the internal interface
+- Presentation calls the Interfaces/In service
+- Presentation never touches the internal interface directly
+
+---
+
+## Adapters
 
 Incoming adapters:
 - Drive the application
 - Live in Presentation layer
-- Call Ports/In
+- Call Interfaces/In
 - Examples: Controllers, Worker hosts, Blazor components
 
 Outgoing adapters:
 - Are driven by the application
 - Live in Infrastructure layer
-- Implement Ports/Out
+- Implement Interfaces/Out
 - Examples: Repositories, HTTP clients, message bus clients
 
 ---
@@ -161,14 +211,88 @@ Examples: `OrderPricingService`, `RiskAssessmentService`, `PasswordStrengthServi
 
 Application services:
 - Orchestrate business operations
-- Implement Ports/In interfaces
+- Implement Interfaces/In interfaces
 - Call Domain services for business logic
-- Call Ports/Out for I/O operations
+- Call Interfaces/Out for I/O operations
 - Coordinate transactions through IUnitOfWork
-- MUST be registered as Scoped
-- Depend on Scoped services like DbContext, ICurrentUser, and IUnitOfWork
+- Are typically Scoped when depending on DbContext, ICurrentUser, or IUnitOfWork
+- MAY be Singleton if stateless and not depending on Scoped services
 
 Examples: `OrderService`, `IdentityService`, `MarketStreamerService`.
+
+---
+
+## Domain Events
+
+Domain events decouple side effects from domain operations.
+
+### Event Flow
+
+1. Entity raises event via `AddDomainEvent()`
+2. SaveChanges triggers dispatch (post-commit)
+3. Handlers execute in parallel (independent side effects)
+
+### Domain Layer Types
+
+Domain event types:
+- `IDomainEvent` - Marker interface for all domain events
+- `IAggregateRoot` - Entity that can raise domain events
+- `DomainEvent` - Base record for domain events
+- `Entity` - Base class with `AddDomainEvent()` method
+
+Domain event locations:
+- `Domain/Shared/Interfaces/IDomainEvent.cs`
+- `Domain/Shared/Interfaces/IAggregateRoot.cs`
+- `Domain/Shared/Models/DomainEvent.cs`
+- `Domain/Shared/Models/Entity.cs`
+- `Domain/{Feature}/Events/{Entity}{Action}Event.cs`
+
+### Application Layer Types
+
+Application event types:
+- `IDomainEventHandler` - Interface for event handlers
+- `IDomainEventDispatcher` - Interface for dispatching events
+- `DomainEventHandler<T>` - Base class for typed handlers
+- `DomainEventDispatcher` - Default dispatcher implementation
+
+Application event locations:
+- `Application/Shared/Interfaces/IDomainEventHandler.cs`
+- `Application/Shared/Interfaces/IDomainEventDispatcher.cs`
+- `Application/Shared/Models/DomainEventHandler.cs`
+- `Application/Shared/Services/DomainEventDispatcher.cs`
+- `Application/{Feature}/EventHandlers/{Action}Handler.cs`
+
+### Infrastructure Layer Types
+
+Infrastructure event types:
+- `DomainEventInterceptor` - EF Core interceptor for post-commit dispatch
+
+Infrastructure event locations:
+- `Infrastructure.EFCore/Adapters/DomainEventInterceptor.cs`
+
+### Naming Conventions
+
+| Type | Pattern | Example |
+|------|---------|---------|
+| Event | `{Entity}{Action}Event` | `UserCreatedEvent`, `OrderPlacedEvent` |
+| Handler | `{Action}Handler` | `SendWelcomeEmailHandler`, `LogGreetingHandler` |
+
+### Handler Rules
+
+Domain event handlers:
+- MUST extend `DomainEventHandler<TEvent>`
+- MUST be registered as `IDomainEventHandler` in DI
+- MUST be independent (no order dependencies)
+- MAY execute in parallel with other handlers
+- MUST handle their own exceptions
+
+### Dispatch Rules
+
+Domain event dispatch:
+- MUST occur after successful commit (post-commit)
+- MUST dispatch all events from all modified aggregates
+- MUST clear events from entities after dispatch
+- MUST aggregate exceptions from parallel handlers
 
 ---
 
@@ -183,7 +307,7 @@ Application workers:
 - Create scopes and resolve services within those scopes
 - Handle their own execution loop, scheduling, or event listening
 - Contain business logic for background operations
-- Call Application services and Ports/Out directly
+- Call Application services and Interfaces/Out directly
 
 Worker locations by scope:
 - `Application/{Feature}/Workers/` - Workers that run on all platforms (server and client)
@@ -207,27 +331,6 @@ Worker hosts:
 - Delegate WHAT to do to Application workers
 
 Examples: `TradeFillerHost`, `MarketListingSyncHost`, `StaleAnonymousUserCleanupHost`.
-
----
-
-## Internal Interfaces
-
-Internal interfaces:
-- Are abstractions used within Application and Infrastructure layers only
-- MUST NOT be used by Presentation layer directly
-
-Internal interfaces locations:
-- Shared internal interfaces MUST be in `Application/Shared/Interfaces/`
-- Server shared internal interfaces MUST be in `Application.Server/Shared/Interfaces/`
-- Client shared internal interfaces MUST be in `Application.Client/Shared/Interfaces/`
-- Feature-specific internal interfaces MUST be in `Application/{Feature}/Interfaces/`
-
-Examples: `IAuthenticatedHttpClientFactory`, `IEventHandler<T>`, `IOfflineSyncManager`.
-
-When Presentation needs functionality that uses internal interfaces:
-- Create a Ports/In service that uses the internal interface
-- Presentation calls the Ports/In service
-- Presentation never touches the internal interface directly
 
 ---
 
@@ -375,13 +478,17 @@ Shared code locations by layer:
 - Domain services MUST go in `Domain/{Feature}/Services/`
 - Domain value objects MUST go in `Domain/{Feature}/ValueObjects/`
 - Domain logic MUST go in `Domain/Shared/` or `Domain/{Feature}/`
-- Application ports MUST go in `Application/{Feature}/Ports/In/` or `Application/{Feature}/Ports/Out/`
+- Application service interfaces (Interfaces/In) MUST go in `Application/{Feature}/Interfaces/In/`
+- Application infrastructure interfaces (Interfaces/Out) MUST go in `Application/{Feature}/Interfaces/Out/`
 - Application services MUST go in `Application/{Feature}/Services/`
 - Application models MUST go in `Application/{Feature}/Models/`
 - Application shared internal interfaces MUST go in `Application/Shared/Interfaces/`
-- Application feature-specific internal interfaces MUST go in `Application/{Feature}/Interfaces/`
+- Application shared Interfaces/In MUST go in `Application/Shared/Interfaces/In/`
+- Application shared Interfaces/Out MUST go in `Application/Shared/Interfaces/Out/`
+- Application feature internal interfaces MUST go in `Application/{Feature}/Interfaces/`
 - Application utilities MUST go in `Application/Shared/` or `Application/{Feature}/Extensions/`
 - Application workers MUST go in `Application/{Feature}/Workers/`, `Application.Server/{Feature}/Workers/`, or `Application.Client/{Feature}/Workers/`
+- Application event handlers MUST go in `Application/{Feature}/EventHandlers/`, `Application.Server/{Feature}/EventHandlers/`, or `Application.Client/{Feature}/EventHandlers/`
 - Infrastructure adapters MUST go in `Infrastructure.{Provider}.{Feature}/Adapters/`
 - Infrastructure utilities MUST go in `Infrastructure.{Provider}/Extensions/`
 - Presentation shared code MUST go in `Presentation/Shared/`
@@ -422,11 +529,11 @@ When duplicates are discovered:
 - NEVER use static service locator patterns
 - NEVER hardcode connection strings or URLs in Application
 - NEVER use `if (type == X)` branching in Application layer
-- NEVER define Ports/In in Infrastructure layer
-- NEVER define Ports/Out in Infrastructure layer
-- NEVER implement Ports/In in Infrastructure layer
-- NEVER implement Ports/Out in Application layer
-- NEVER call Ports/Out directly from Presentation layer
+- NEVER define Interfaces/In in Infrastructure layer
+- NEVER define Interfaces/Out in Infrastructure layer
+- NEVER implement Interfaces/In in Infrastructure layer
+- NEVER implement Interfaces/Out in Application layer
+- NEVER call Interfaces/Out directly from Presentation layer
 - NEVER call Infrastructure directly from Presentation layer (except DI registration)
 - NEVER place business logic in Presentation worker hosts
 - NEVER place I/O operations in Domain services
@@ -438,6 +545,13 @@ When duplicates are discovered:
 - NEVER repeat error handling patterns
 - NEVER use anonymous types when named types exist
 - NEVER place shared types in server-only or client-only projects when both need them
+- NEVER have multiple public types in one file
+- NEVER define DTOs inside controller files
+- NEVER use nested public types
+- NEVER leave empty placeholder/stub files after refactoring
+- NEVER use file names that do not match the contained type
+- NEVER place a type in a folder that does not match its kind
+
 ---
 
 ## ApplicationDependency
@@ -601,15 +715,15 @@ csproj configuration:
 
 ```xml
 <PropertyGroup>
-    <GenerateBuildConstants>true</GenerateBuildConstants>
     <BaseCommandType>Presentation.WebApp.Commands.BaseWebAppCommand</BaseCommandType>
+    <OutputType>Exe</OutputType>
 </PropertyGroup>
 ```
 
 | Property | Required | Description |
 |----------|----------|-------------|
-| `GenerateBuildConstants` | Yes | Set to `true` to enable generation |
-| `BaseCommandType` | No | Fully qualified name of intermediate base command |
+| `BaseCommandType` | Yes | Fully qualified name of intermediate base command. Setting this automatically enables `GenerateBuildConstants` |
+| `OutputType` | Yes | Must be `Exe` for executable projects |
 
 BaseCommandType by project family:
 

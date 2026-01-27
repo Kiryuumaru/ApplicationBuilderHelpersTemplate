@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<BaseCommandType>Presentation.Commands.BaseCommand</BaseCommandType>
+		<OutputType>Exe</OutputType>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<Copyright>Copyright (C) 2025 Sample</Copyright>
+		<Company>Sample Company</Company>
+		<AssemblyTitle>Plain CLI Template</AssemblyTitle>
+		<AssemblyName>sampleapp</AssemblyName>
+		<Description>A simple CLI application template demonstrating DDD domain events with clean architecture.</Description>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Application\Application.csproj" />
+		<ProjectReference Include="..\Presentation\Presentation.csproj" />
+	</ItemGroup>
+
+</Project>
