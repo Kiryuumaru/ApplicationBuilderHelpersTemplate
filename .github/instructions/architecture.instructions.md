@@ -733,6 +733,32 @@ return await ApplicationBuilder.Create()
 
 ---
 
+## CLI Command Exit
+
+CLI commands that perform one-shot operations MUST call `cancellationTokenSource.Cancel()` at the end of the `Run` method to signal completion and allow the application to exit properly.
+
+```csharp
+protected override async ValueTask Run(ApplicationHost<HostApplicationBuilder> applicationHost, CancellationTokenSource cancellationTokenSource)
+{
+    await base.Run(applicationHost, cancellationTokenSource);
+
+    // Perform work...
+
+    // Signal completion to exit the application
+    cancellationTokenSource.Cancel();
+}
+```
+
+One-shot commands:
+- MUST call `cancellationTokenSource.Cancel()` after completing work
+- MUST NOT leave the application running indefinitely
+
+Long-running commands (servers, watchers):
+- MUST NOT call `cancellationTokenSource.Cancel()` manually
+- MUST allow external cancellation (Ctrl+C) to stop the application
+
+---
+
 ## Prohibited Patterns (ApplicationBuilderHelpers)
 
 - NEVER register services directly in ApplicationDependency
@@ -744,3 +770,4 @@ return await ApplicationBuilder.Create()
 - NEVER make ServiceCollectionExtensions public
 - NEVER register DI from another layer (all layers converge in Program.cs)
 - NEVER forget `.RunAsync(args)` in Program.cs
+- NEVER forget `cancellationTokenSource.Cancel()` in one-shot CLI commands
