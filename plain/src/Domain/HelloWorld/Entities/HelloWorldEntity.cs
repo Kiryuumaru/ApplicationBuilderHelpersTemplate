@@ -1,10 +1,9 @@
 using Domain.HelloWorld.Events;
-using Domain.Shared.Interfaces;
 using Domain.Shared.Models;
 
 namespace Domain.HelloWorld.Entities;
 
-public sealed class HelloWorldEntity : Entity, IAggregateRoot
+public sealed class HelloWorldEntity : AggregateRoot
 {
     public string Message { get; private set; }
 

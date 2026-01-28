@@ -4,5 +4,5 @@ public interface IEntity
 {
     Guid Id { get; }
 
-    Guid RevId { get; set; }
+    Guid RevId { get; }
 }
