@@ -1,4 +1,4 @@
-namespace Application.Shared.Interfaces.In;
+namespace Application.Shared.Interfaces.Inbound;
 
 /// <summary>
 /// Defines constants for application metadata and configuration.

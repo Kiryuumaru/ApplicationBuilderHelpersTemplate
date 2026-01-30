@@ -1,4 +1,4 @@
-using Application.Shared.Interfaces.In;
+using Application.Shared.Interfaces.Inbound;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Attributes;
 using Microsoft.Extensions.DependencyInjection;

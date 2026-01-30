@@ -1,4 +1,4 @@
-using Application.HelloWorld.Interfaces.In;
+using Application.HelloWorld.Interfaces.Inbound;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Attributes;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,7 +37,7 @@ internal class MainCommand : Build.BaseCommand<HostApplicationBuilder>
         using var scope = applicationHost.Services.CreateScope();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<MainCommand>>();
 
-        // Presentation calls Application service (Interfaces/In) - no direct entity manipulation
+        // Presentation calls Application service (Interfaces/Inbound) - no direct entity manipulation
         var helloWorldService = scope.ServiceProvider.GetRequiredService<IHelloWorldService>();
 
         logger.LogInformation("Calling HelloWorld service with message: {Message}", Message);

@@ -127,16 +127,16 @@ Application/
 |   +-- ApplicationJsonContext.cs
 +-- Shared/
 |   +-- Interfaces/                         <- Internal abstractions
-|   |   +-- In/                             <- Incoming ports
-|   |   +-- Out/                            <- Outgoing ports
+|   |   +-- Inbound/                        <- Incoming ports
+|   |   +-- Outbound/                       <- Outgoing ports
 |   +-- Models/
 |   +-- Services/
 |   +-- Extensions/
 |       +-- SharedServiceCollectionExtensions.cs
 +-- {Feature}/
     +-- Interfaces/
-    |   +-- In/
-    |   +-- Out/
+    |   +-- Inbound/
+    |   +-- Outbound/
     +-- Services/
     +-- Models/
     +-- Workers/                            <- Background entry points
@@ -155,12 +155,12 @@ Application.Server/
 |   +-- ApplicationServerJsonContext.cs
 +-- Shared/
 |   +-- Interfaces/
-|   |   +-- In/
-|   |   +-- Out/
+|   |   +-- Inbound/
+|   |   +-- Outbound/
 +-- {Feature}/
     +-- Interfaces/
-    |   +-- In/
-    |   +-- Out/
+    |   +-- Inbound/
+    |   +-- Outbound/
     +-- Services/
     +-- Models/
     +-- Workers/                            <- Server-only workers
@@ -178,12 +178,12 @@ Application.Client/
 |   +-- ApplicationClientJsonContext.cs
 +-- Shared/
 |   +-- Interfaces/
-|   |   +-- In/
-|   |   +-- Out/
+|   |   +-- Inbound/
+|   |   +-- Outbound/
 +-- {Feature}/
     +-- Interfaces/
-    |   +-- In/
-    |   +-- Out/
+    |   +-- Inbound/
+    |   +-- Outbound/
     +-- Services/
     +-- Models/
     +-- EventHandlers/
@@ -281,17 +281,17 @@ Presentation.Cli/
 
 Interfaces are organized into three folder categories with distinct access rules.
 
-### Interfaces/In/ (Incoming Ports)
+### Interfaces/Inbound/ (Incoming Ports)
 
-Interfaces/In:
+Interfaces/Inbound:
 - Define what the application offers to the outside world
 - Are implemented by Application* services
 - MAY be called by any layer
 - Examples: `IOrderService`, `IIdentityService`, `IHelloWorldService`
 
-### Interfaces/Out/ (Outgoing Ports)
+### Interfaces/Outbound/ (Outgoing Ports)
 
-Interfaces/Out:
+Interfaces/Outbound:
 - Define what the application needs from the outside world
 - Are implemented by Infrastructure* adapters
 - MAY be called by Application* and Infrastructure* only
@@ -312,8 +312,8 @@ Interfaces (without subfolder):
 
 | Interface Location | Who Can Use | Who Implements |
 |--------------------|-------------|----------------|
-| `Interfaces/In/` | Any layer | Application* |
-| `Interfaces/Out/` | Application*, Infrastructure* | Infrastructure* |
+| `Interfaces/Inbound/` | Any layer | Application* |
+| `Interfaces/Outbound/` | Application*, Infrastructure* | Infrastructure* |
 | `Interfaces/` | Application*, Infrastructure* | Application* |
 
 Application* includes: `Application`, `Application.Server`, `Application.Client`
@@ -322,17 +322,17 @@ Infrastructure* includes: `Infrastructure.*` (all Infrastructure projects)
 ### Interface Placement
 
 - Shared internal interfaces MUST be in `Application/Shared/Interfaces/`
-- Shared Interfaces/In MUST be in `Application/Shared/Interfaces/In/`
-- Shared Interfaces/Out MUST be in `Application/Shared/Interfaces/Out/`
+- Shared Interfaces/Inbound MUST be in `Application/Shared/Interfaces/Inbound/`
+- Shared Interfaces/Outbound MUST be in `Application/Shared/Interfaces/Outbound/`
 - Server shared interfaces MUST be in `Application.Server/Shared/Interfaces/`
 - Client shared interfaces MUST be in `Application.Client/Shared/Interfaces/`
 - Feature internal interfaces MUST be in `Application/{Feature}/Interfaces/`
-- Feature Interfaces/In MUST be in `Application/{Feature}/Interfaces/In/`
-- Feature Interfaces/Out MUST be in `Application/{Feature}/Interfaces/Out/`
+- Feature Interfaces/Inbound MUST be in `Application/{Feature}/Interfaces/Inbound/`
+- Feature Interfaces/Outbound MUST be in `Application/{Feature}/Interfaces/Outbound/`
 
 When Presentation needs functionality that uses internal interfaces:
-- Create an Interfaces/In service that uses the internal interface
-- Presentation calls the Interfaces/In service
+- Create an Interfaces/Inbound service that uses the internal interface
+- Presentation calls the Interfaces/Inbound service
 - Presentation never touches the internal interface directly
 
 ---
@@ -342,7 +342,7 @@ When Presentation needs functionality that uses internal interfaces:
 Incoming adapters:
 - Drive the application
 - Live in Presentation layer
-- Call Interfaces/In
+- Call Interfaces/Inbound
 - Examples: Controllers, Worker hosts, Blazor components
 
 Outgoing adapters:
@@ -400,9 +400,9 @@ Examples: `OrderPricingService`, `RiskAssessmentService`, `PasswordStrengthServi
 
 Application services:
 - Orchestrate business operations
-- Implement Interfaces/In interfaces
+- Implement Interfaces/Inbound interfaces
 - Call Domain services for business logic
-- Call Interfaces/Out for I/O operations
+- Call Interfaces/Outbound for I/O operations
 - Coordinate transactions through IUnitOfWork
 - Are typically Scoped when depending on DbContext, ICurrentUser, or IUnitOfWork
 - MAY be Singleton if stateless and not depending on Scoped services
@@ -590,7 +590,7 @@ Application workers:
 - Create scopes and resolve services within those scopes
 - Handle their own execution loop, scheduling, or event listening
 - Contain business logic for background operations
-- Call Application services and Interfaces/Out directly
+- Call Application services and Interfaces/Outbound directly
 
 Worker locations by scope:
 - `Application/{Feature}/Workers/` - Workers that run on all platforms (server and client)
@@ -766,13 +766,13 @@ Shared code locations by layer:
 - Domain services MUST go in `Domain/{Feature}/Services/`
 - Domain value objects MUST go in `Domain/{Feature}/ValueObjects/`
 - Domain logic MUST go in `Domain/Shared/` or `Domain/{Feature}/`
-- Application service interfaces (Interfaces/In) MUST go in `Application/{Feature}/Interfaces/In/`
-- Application infrastructure interfaces (Interfaces/Out) MUST go in `Application/{Feature}/Interfaces/Out/`
+- Application service interfaces (Interfaces/Inbound) MUST go in `Application/{Feature}/Interfaces/Inbound/`
+- Application infrastructure interfaces (Interfaces/Outbound) MUST go in `Application/{Feature}/Interfaces/Outbound/`
 - Application services MUST go in `Application/{Feature}/Services/`
 - Application models MUST go in `Application/{Feature}/Models/`
 - Application shared internal interfaces MUST go in `Application/Shared/Interfaces/`
-- Application shared Interfaces/In MUST go in `Application/Shared/Interfaces/In/`
-- Application shared Interfaces/Out MUST go in `Application/Shared/Interfaces/Out/`
+- Application shared Interfaces/Inbound MUST go in `Application/Shared/Interfaces/Inbound/`
+- Application shared Interfaces/Outbound MUST go in `Application/Shared/Interfaces/Outbound/`
 - Application feature internal interfaces MUST go in `Application/{Feature}/Interfaces/`
 - Application utilities MUST go in `Application/Shared/` or `Application/{Feature}/Extensions/`
 - Application workers MUST go in `Application/{Feature}/Workers/`, `Application.Server/{Feature}/Workers/`, or `Application.Client/{Feature}/Workers/`
@@ -871,8 +871,8 @@ Files MUST be placed in folders matching their type kind.
 | Type Kind | Required Folder | Example |
 |-----------|-----------------|---------|
 | Interface (internal) | `Interfaces/` | `Interfaces/IDomainEventDispatcher.cs` |
-| Interface (In) | `Interfaces/In/` | `Interfaces/In/IOrderService.cs` |
-| Interface (Out) | `Interfaces/Out/` | `Interfaces/Out/IOrderRepository.cs` |
+| Interface (Inbound) | `Interfaces/Inbound/` | `Interfaces/Inbound/IOrderService.cs` |
+| Interface (Outbound) | `Interfaces/Outbound/` | `Interfaces/Outbound/IOrderRepository.cs` |
 | Enum | `Enums/` | `Enums/OrderStatus.cs` |
 | Record (DTO/Model) | `Models/` | `Models/LoginRequest.cs` |
 | Service class | `Services/` | `Services/UserService.cs` |
@@ -912,11 +912,11 @@ Verification:
 - NEVER use static service locator patterns
 - NEVER hardcode connection strings or URLs in Application
 - NEVER use `if (type == X)` branching in Application layer
-- NEVER define Interfaces/In in Infrastructure layer
-- NEVER define Interfaces/Out in Infrastructure layer
-- NEVER implement Interfaces/In in Infrastructure layer
-- NEVER implement Interfaces/Out in Application layer
-- NEVER call Interfaces/Out directly from Presentation layer
+- NEVER define Interfaces/Inbound in Infrastructure layer
+- NEVER define Interfaces/Outbound in Infrastructure layer
+- NEVER implement Interfaces/Inbound in Infrastructure layer
+- NEVER implement Interfaces/Outbound in Application layer
+- NEVER call Interfaces/Outbound directly from Presentation layer
 - NEVER call Infrastructure directly from Presentation layer (except DI registration)
 - NEVER place business logic in Presentation worker hosts
 - NEVER place I/O operations in Domain services

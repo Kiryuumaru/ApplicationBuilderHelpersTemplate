@@ -1,6 +1,6 @@
 using Application.HelloWorld.Models;
 
-namespace Application.HelloWorld.Interfaces.In;
+namespace Application.HelloWorld.Interfaces.Inbound;
 
 /// <summary>
 /// Application service for HelloWorld operations.

@@ -1,5 +1,5 @@
 using Application.HelloWorld.EventHandlers;
-using Application.HelloWorld.Interfaces.In;
+using Application.HelloWorld.Interfaces.Inbound;
 using Application.HelloWorld.Services;
 using Application.Shared.Extensions;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,7 +10,7 @@ internal static class HelloWorldServiceCollectionExtensions
 {
     internal static IServiceCollection AddHelloWorldServices(this IServiceCollection services)
     {
-        // Application service (Interfaces/In)
+        // Application service (Interfaces/Inbound)
         services.AddScoped<IHelloWorldService, HelloWorldService>();
 
         // Event handlers - all registered independently, executed in parallel

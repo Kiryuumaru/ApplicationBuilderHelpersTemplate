@@ -176,9 +176,9 @@ public sealed class BuildConstantsGenerator : IIncrementalGenerator
         sb.AppendLine("        public const string BuildPayload = \"\";");
         sb.AppendLine("    }");
         sb.AppendLine();
-        sb.AppendLine("    internal class ApplicationConstants : global::Application.Shared.Interfaces.In.IApplicationConstants");
+        sb.AppendLine("    internal class ApplicationConstants : global::Application.Shared.Interfaces.Inbound.IApplicationConstants");
         sb.AppendLine("    {");
-        sb.AppendLine("        public static global::Application.Shared.Interfaces.In.IApplicationConstants Instance { get; } = new global::Build.ApplicationConstants();");
+        sb.AppendLine("        public static global::Application.Shared.Interfaces.Inbound.IApplicationConstants Instance { get; } = new global::Build.ApplicationConstants();");
         sb.AppendLine("        public string AppName { get; } = global::Build.Constants.AppName;");
         sb.AppendLine("        public string AppTitle { get; } = global::Build.Constants.AppTitle;");
         sb.AppendLine("        public string AppDescription { get; } = global::Build.Constants.AppDescription;");
@@ -190,7 +190,7 @@ public sealed class BuildConstantsGenerator : IIncrementalGenerator
         sb.AppendLine("    internal abstract class BaseCommand<[global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(global::System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] THostApplicationBuilder> : " + resolvedBaseCommandType + "<THostApplicationBuilder>");
         sb.AppendLine("        where THostApplicationBuilder : global::Microsoft.Extensions.Hosting.IHostApplicationBuilder");
         sb.AppendLine("    {");
-        sb.AppendLine("        public override global::Application.Shared.Interfaces.In.IApplicationConstants ApplicationConstants { get; } = global::Build.ApplicationConstants.Instance;");
+        sb.AppendLine("        public override global::Application.Shared.Interfaces.Inbound.IApplicationConstants ApplicationConstants { get; } = global::Build.ApplicationConstants.Instance;");
         sb.AppendLine("    }");
         sb.AppendLine("}");
 
@@ -271,10 +271,10 @@ public sealed class BuildConstantsGenerator : IIncrementalGenerator
         sb.AppendLine("    }");
         sb.AppendLine();
         sb.AppendLine("    /// <inheritdoc/>");
-        sb.AppendLine("    internal class ApplicationConstants : global::Application.Shared.Interfaces.In.IApplicationConstants");
+        sb.AppendLine("    internal class ApplicationConstants : global::Application.Shared.Interfaces.Inbound.IApplicationConstants");
         sb.AppendLine("    {");
         sb.AppendLine("        /// <inheritdoc/>");
-        sb.AppendLine("        public static global::Application.Shared.Interfaces.In.IApplicationConstants Instance { get; } = new global::Build.ApplicationConstants();");
+        sb.AppendLine("        public static global::Application.Shared.Interfaces.Inbound.IApplicationConstants Instance { get; } = new global::Build.ApplicationConstants();");
         sb.AppendLine();
         sb.AppendLine("        /// <inheritdoc/>");
         sb.AppendLine("        public string AppName { get; } = global::Build.Constants.AppName;");
@@ -308,7 +308,7 @@ public sealed class BuildConstantsGenerator : IIncrementalGenerator
         sb.AppendLine("        where THostApplicationBuilder : global::Microsoft.Extensions.Hosting.IHostApplicationBuilder");
         sb.AppendLine("    {");
         sb.AppendLine("        /// <inheritdoc/>");
-        sb.AppendLine("        public override global::Application.Shared.Interfaces.In.IApplicationConstants ApplicationConstants { get; } = global::Build.ApplicationConstants.Instance;");
+        sb.AppendLine("        public override global::Application.Shared.Interfaces.Inbound.IApplicationConstants ApplicationConstants { get; } = global::Build.ApplicationConstants.Instance;");
         sb.AppendLine("    }");
         sb.AppendLine("}");
 

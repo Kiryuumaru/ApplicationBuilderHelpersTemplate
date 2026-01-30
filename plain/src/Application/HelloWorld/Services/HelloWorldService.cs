@@ -1,31 +1,29 @@
-using Application.HelloWorld.Interfaces.In;
+using Application.HelloWorld.Interfaces.Inbound;
+using Application.HelloWorld.Interfaces.Outbound;
 using Application.HelloWorld.Models;
-using Application.Shared.Interfaces;
+using Application.Shared.Interfaces.Outbound;
 using Domain.HelloWorld.Entities;
 using Microsoft.Extensions.Logging;
 
 namespace Application.HelloWorld.Services;
 
 internal sealed class HelloWorldService(
-    IDomainEventDispatcher eventDispatcher,
+    IHelloWorldRepository repository,
+    IUnitOfWork unitOfWork,
     ILogger<HelloWorldService> logger) : IHelloWorldService
 {
     public async Task<HelloWorldResult> CreateGreetingAsync(string message, CancellationToken cancellationToken = default)
     {
         logger.LogInformation("Creating greeting with message: {Message}", message);
 
-        // Domain operation - entity raises events internally
+        // 1. Domain operation - entity raises events internally
         var entity = HelloWorldEntity.Create(message);
 
-        // In a real app, this would be:
-        // 1. Save to repository (via Interfaces/Out interface)
-        // 2. Commit transaction (UnitOfWork)
-        // 3. Events dispatched by EF Core interceptor after SaveChanges
+        // 2. Save to repository (via Interfaces/Outbound interface)
+        repository.Add(entity);
 
-        // For this demo without persistence, we dispatch events directly
-        // This simulates what DomainEventInterceptor would do post-commit
-        await eventDispatcher.DispatchAsync(entity.DomainEvents, cancellationToken);
-        entity.ClearDomainEvents();
+        // 3. Commit transaction - events dispatched post-commit by UnitOfWork
+        await unitOfWork.CommitAsync(cancellationToken);
 
         logger.LogInformation("Greeting created with Id: {EntityId}", entity.Id);
 

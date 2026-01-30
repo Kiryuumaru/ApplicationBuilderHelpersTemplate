@@ -49,7 +49,7 @@
 	<Allowed From="Presentation.*" To="Domain.*" />
 	<Allowed From="Presentation.*" To="Application.*" />
 	<Allowed From="Presentation.*" To="Presentation.*" />
-	<Disallowed From="Presentation.*" To="*.Interfaces.Out.*" />
+	<Disallowed From="Presentation.*" To="*.Interfaces.Outbound.*" />
 	<Disallowed From="Presentation.*" To="Application.Shared.Interfaces" />
 	<Disallowed From="Presentation.*" To="Application.*.Interfaces" />
 	<Disallowed From="Domain.*" To="Application.*" />
