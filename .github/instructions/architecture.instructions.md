@@ -1096,35 +1096,156 @@ public static class SharedServiceCollectionExtensions
 
 ## ConfigurationExtensions
 
-ConfigurationExtensions enable cross-layer configuration sharing.
+ConfigurationExtensions enable cross-layer configuration sharing. Any layer can set or read values.
 
-ConfigurationExtensions rules:
-- MUST be `public static` class
-- MUST have extension methods for IConfiguration
+### ApplicationBuilderHelpers Library Methods
+
+The `ApplicationBuilderHelpers` library provides base methods with `@ref:` reference chain support:
+
+| Method | Purpose |
+|--------|---------|
+| `GetRefValue(key)` | Get value, follows `@ref:` chains, throws if not found |
+| `GetRefValueOrDefault(key, default)` | Get value or default, follows `@ref:` chains |
+| `TryGetRefValue(key, out value)` | Try-pattern version |
+| `ContainsRefValue(key)` | Check if value exists |
+
+Reference chain example:
+```
+# Direct value - returned as-is
+DB_HOST = "localhost"
+config.GetRefValue("DB_HOST") → "localhost"
+
+# Reference value - follows the chain
+DB_HOST = "@ref:PROD_DB_HOST"
+PROD_DB_HOST = "db.example.com"
+config.GetRefValue("DB_HOST") → "db.example.com"
+
+# Chained references - follows until reaching a value
+DB_HOST = "@ref:ENV_DB_HOST"
+ENV_DB_HOST = "@ref:PROD_DB_HOST"
+PROD_DB_HOST = "db.example.com"
+config.GetRefValue("DB_HOST") → "db.example.com"
+```
+
+### Shared Type Helpers
+
+`Application/Shared/Extensions/ConfigurationExtensions.cs` provides type-specific helpers:
+
+| Method | Purpose |
+|--------|---------|
+| `GetBoolean(key)` | Parse with flexible formats (enabled/true/yes/1) |
+| `GetBooleanOrDefault(key, default)` | Boolean with default |
+| `SetBoolean(key, value)` | Store as "true"/"false" |
+
+### Feature-Specific Extensions
+
+Each feature defines its own ConfigurationExtensions for its settings.
+
+ConfigurationExtensions provide a unified way to share settings across layers regardless of source. Whether a value comes from CLI arguments, environment variables, config files, or hardcoded defaults - consumers read it the same way via extension methods.
+
+### When to Create ConfigurationExtensions
+
+| Scenario | Create ConfigurationExtensions? |
+|----------|--------------------------------|
+| Setting needs to be shared across layers | Yes |
+| Setting comes from any source (CLI, env var, config file, code) | Yes |
+
+### Accessibility by Location
+
+| Extension Location | Accessible By |
+|-------------------|---------------|
+| `Application/{Feature}/Extensions/` | All layers (Application, Infrastructure, Presentation) |
+| `Application.Server/{Feature}/Extensions/` | Application.Server, server Infrastructure, server Presentation |
+| `Application.Client/{Feature}/Extensions/` | Application.Client, client Infrastructure, client Presentation |
+
+### Creation Steps
+
+1. Create file at `Application/{Feature}/Extensions/{Feature}ConfigurationExtensions.cs`
+2. Define key as `private const string` with `RUNTIME_` prefix
+3. Add Get method using:
+   - `GetRefValueOrDefault` - for optional settings with sensible defaults
+   - `GetRefValue` - for required settings that throw if not configured
+4. Add Set method storing value to configuration
+5. Caller sets value from any source (CLI option, env var, hardcoded, etc.)
+6. Any layer reads via Get method when needed
+
+### ConfigurationExtensions Rules
+
+- MUST be `public static` class with `extension(IConfiguration)` block
 - MUST be named `{Feature}ConfigurationExtensions`
 - MUST use private const string for key names
-- MUST have `Get{Key}` method to retrieve value
-- MUST have `Set{Key}` method to store value
-- MAY use `GetRefValue` for reference chain support (`@ref:` prefix)
+- MUST have property with getter and setter
+- MUST use `GetRefValueOrDefault` for reference chain support
 
 ```csharp
-namespace Infrastructure.EFCore.Sqlite.Extensions;
+// Application/Logger/Extensions/LoggerConfigurationExtensions.cs
+namespace Application.Logger.Extensions;
 
-public static class EFCoreSqliteConfigurationExtensions
+public static class LoggerConfigurationExtensions
 {
-    private const string SqliteConnectionStringKey = "SQLITE_CONNECTION_STRING";
+    private const string LoggerLevelKey = "RUNTIME_LOGGER_LEVEL";
 
-    public static string GetSqliteConnectionString(this IConfiguration configuration)
+    extension(IConfiguration configuration)
     {
-        return configuration.GetRefValue(SqliteConnectionStringKey);
-    }
-
-    public static void SetSqliteConnectionString(this IConfiguration configuration, string connectionString)
-    {
-        configuration[SqliteConnectionStringKey] = connectionString;
+        public LogLevel LoggerLevel
+        {
+            get
+            {
+                var loggerLevel = configuration.GetRefValueOrDefault(LoggerLevelKey, LogLevel.Information.ToString());
+                return Enum.Parse<LogLevel>(loggerLevel);
+            }
+            set => configuration[LoggerLevelKey] = value.ToString();
+        }
     }
 }
 ```
+
+### Usage Example
+
+```csharp
+// Presentation/Commands/BaseCommand.cs - Setting the value
+public override void AddConfigurations(ApplicationHostBuilder applicationBuilder, IConfiguration configuration)
+{
+    base.AddConfigurations(applicationBuilder, configuration);
+    
+    // Set from CLI option (or any source: env var, hardcoded, etc.)
+    configuration.LoggerLevel = LogLevel;
+}
+
+// Presentation/Commands/BaseCommand.cs - Reading the value (fallback logging)
+public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
+{
+    services.AddLogging(builder =>
+    {
+        builder.SetMinimumLevel(applicationBuilder.Configuration.LoggerLevel);
+        builder.AddConsole();
+    });
+}
+
+// Infrastructure.OpenTelemetry - Reading the same value
+public override void AddConfigurations(ApplicationHostBuilder applicationBuilder, IConfiguration configuration)
+{
+    var logLevel = configuration.LoggerLevel;  // Reads what Presentation set
+    // Configure Serilog with this level...
+}
+```
+
+### Configuration Flow
+
+```
+Presentation (BaseCommand.AddConfigurations)
+    ↓
+configuration.SetLoggerLevel(LogLevel)        ← Store setting
+    ↓
+Infrastructure (OpenTelemetryInfrastructure.AddConfigurations)
+    ↓
+configuration.GetLoggerLevel()                ← Read setting
+```
+
+This pattern allows:
+- Presentation to set values from CLI options/environment variables
+- Infrastructure to read values without knowing their source
+- Either layer to be absent without breaking the other
 
 ---
 

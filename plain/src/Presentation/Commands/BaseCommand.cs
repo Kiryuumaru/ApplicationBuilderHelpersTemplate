@@ -1,6 +1,8 @@
+using Application.Logger.Extensions;
 using Application.Shared.Interfaces.Inbound;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Attributes;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -19,11 +21,25 @@ public abstract class BaseCommand<[DynamicallyAccessedMembers(DynamicallyAccesse
         Description = "Level of logs to show.")]
     public LogLevel LogLevel { get; set; } = LogLevel.Information;
 
+    public override void AddConfigurations(ApplicationHostBuilder applicationBuilder, IConfiguration configuration)
+    {
+        base.AddConfigurations(applicationBuilder, configuration);
+
+        configuration.LoggerLevel = LogLevel;
+    }
+
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
     {
         services.AddSingleton(ApplicationConstants);
 
         services.Configure<ConsoleLifetimeOptions>(opts => opts.SuppressStatusMessages = true);
+
+        // Default fallback logging - Infrastructure can ClearProviders() and replace
+        services.AddLogging(builder =>
+        {
+            builder.SetMinimumLevel(applicationBuilder.Configuration.LoggerLevel);
+            builder.AddConsole();
+        });
 
         base.AddServices(applicationBuilder, services);
     }

@@ -19,17 +19,6 @@ internal class MainCommand : Build.BaseCommand<HostApplicationBuilder>
         return new ValueTask<HostApplicationBuilder>(builder);
     }
 
-    public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
-    {
-        base.AddServices(applicationBuilder, services);
-
-        services.AddLogging(builder =>
-        {
-            builder.SetMinimumLevel(LogLevel);
-            builder.AddConsole();
-        });
-    }
-
     protected override async ValueTask Run(ApplicationHost<HostApplicationBuilder> applicationHost, CancellationTokenSource cancellationTokenSource)
     {
         await base.Run(applicationHost, cancellationTokenSource);
