@@ -1,13 +1,13 @@
+using Application.HelloWorld.Interfaces.Outbound;
 using Application.Shared.Interfaces;
-using Application.Shared.Interfaces.Outbound;
 using Domain.Shared.Interfaces;
 using Infrastructure.InMemory.Interfaces;
 
 namespace Infrastructure.InMemory.Adapters;
 
-internal sealed class InMemoryUnitOfWork(
+internal sealed class InMemoryHelloWorldUnitOfWork(
     IDomainEventDispatcher eventDispatcher,
-    IEnumerable<ITrackableRepository> trackableRepositories) : IUnitOfWork
+    IEnumerable<ITrackableRepository> trackableRepositories) : IHelloWorldUnitOfWork
 {
     public async Task CommitAsync(CancellationToken cancellationToken = default)
     {

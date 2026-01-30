@@ -2,7 +2,6 @@ using Infrastructure.InMemory.Adapters;
 using Infrastructure.InMemory.Interfaces;
 using Infrastructure.InMemory.Repositories;
 using Application.HelloWorld.Interfaces.Outbound;
-using Application.Shared.Interfaces.Outbound;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.InMemory.Extensions;
@@ -11,8 +10,8 @@ internal static class InMemoryServiceCollectionExtensions
 {
     internal static IServiceCollection AddInMemoryServices(this IServiceCollection services)
     {
-        // Shared adapters
-        services.AddScoped<IUnitOfWork, InMemoryUnitOfWork>();
+        // HelloWorld feature UnitOfWork
+        services.AddScoped<IHelloWorldUnitOfWork, InMemoryHelloWorldUnitOfWork>();
 
         // Repositories (registered as both the Application interface and the internal trackable interface)
         services.AddScoped<InMemoryHelloWorldRepository>();

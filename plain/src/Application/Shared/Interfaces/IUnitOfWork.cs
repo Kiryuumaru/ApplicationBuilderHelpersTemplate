@@ -1,7 +1,8 @@
-namespace Application.Shared.Interfaces.Outbound;
+namespace Application.Shared.Interfaces;
 
 /// <summary>
-/// Unit of work abstraction for coordinating persistence and domain event dispatch.
+/// Base unit of work abstraction for coordinating persistence and domain event dispatch.
+/// Feature-specific UnitOfWork interfaces should inherit from this interface.
 /// </summary>
 public interface IUnitOfWork
 {

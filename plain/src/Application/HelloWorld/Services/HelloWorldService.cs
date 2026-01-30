@@ -1,7 +1,6 @@
 using Application.HelloWorld.Interfaces.Inbound;
 using Application.HelloWorld.Interfaces.Outbound;
 using Application.HelloWorld.Models;
-using Application.Shared.Interfaces.Outbound;
 using Domain.HelloWorld.Entities;
 using Microsoft.Extensions.Logging;
 
@@ -9,7 +8,7 @@ namespace Application.HelloWorld.Services;
 
 internal sealed class HelloWorldService(
     IHelloWorldRepository repository,
-    IUnitOfWork unitOfWork,
+    IHelloWorldUnitOfWork unitOfWork,
     ILogger<HelloWorldService> logger) : IHelloWorldService
 {
     public async Task<HelloWorldResult> CreateGreetingAsync(string message, CancellationToken cancellationToken = default)

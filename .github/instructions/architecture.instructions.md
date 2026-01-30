@@ -321,6 +321,8 @@ Infrastructure* includes: `Infrastructure.*` (all Infrastructure projects)
 
 ### Interface Placement
 
+- Base `IUnitOfWork` MUST be in `Application/Shared/Interfaces/`
+- Feature UnitOfWork interfaces MUST be in `Application/{Feature}/Interfaces/Outbound/`
 - Shared internal interfaces MUST be in `Application/Shared/Interfaces/`
 - Shared Interfaces/Inbound MUST be in `Application/Shared/Interfaces/Inbound/`
 - Shared Interfaces/Outbound MUST be in `Application/Shared/Interfaces/Outbound/`
@@ -408,6 +410,64 @@ Application services:
 - MAY be Singleton if stateless and not depending on Scoped services
 
 Examples: `OrderService`, `IdentityService`, `MarketStreamerService`.
+
+---
+
+## Unit of Work Pattern
+
+Unit of Work coordinates persistence and domain event dispatch across repositories within an atomicity boundary.
+
+### Base Interface
+
+`IUnitOfWork` is an internal interface in `Application/Shared/Interfaces/`:
+- Defines the `CommitAsync()` contract
+- Is NOT directly implemented by Infrastructure
+- Is inherited by feature-specific UnitOfWork interfaces
+
+### Feature-Specific Interfaces
+
+Each feature defines its own UnitOfWork interface in `Interfaces/Outbound/`:
+- Inherits from base `IUnitOfWork`
+- Declares the atomicity boundary for that feature
+- Is implemented by Infrastructure adapters
+
+```csharp
+// Application/Shared/Interfaces/IUnitOfWork.cs
+public interface IUnitOfWork
+{
+    Task CommitAsync(CancellationToken cancellationToken = default);
+}
+
+// Application/Trading/Interfaces/Outbound/ITradingUnitOfWork.cs
+public interface ITradingUnitOfWork : IUnitOfWork;
+
+// Application/Identity/Interfaces/Outbound/IIdentityUnitOfWork.cs
+public interface IIdentityUnitOfWork : IUnitOfWork;
+```
+
+### UnitOfWork Rules
+
+- Base `IUnitOfWork` MUST be in `Application/Shared/Interfaces/`
+- Feature UnitOfWork interfaces MUST be in `Application/{Feature}/Interfaces/Outbound/`
+- Feature UnitOfWork interfaces MUST inherit from `IUnitOfWork`
+- Infrastructure MUST implement feature-specific interfaces, NOT base `IUnitOfWork`
+- Services MUST inject feature-specific interfaces, NOT base `IUnitOfWork`
+- One feature UnitOfWork = one atomicity boundary
+- Repositories sharing a UnitOfWork are atomic together
+
+### Infrastructure Implementation
+
+Infrastructure decides how to implement each feature UnitOfWork:
+
+| Application Declares | Infrastructure May Implement |
+|---------------------|------------------------------|
+| `ITradingUnitOfWork` | Same DbContext as Identity |
+| `ITradingUnitOfWork` | Separate TradingDbContext |
+| `ITradingUnitOfWork` | Redis + Kafka |
+| `IIdentityUnitOfWork` | PostgreSQL |
+| `IInventoryUnitOfWork` | MongoDB |
+
+Application declares atomicity intent. Infrastructure decides mechanism.
 
 ---
 
