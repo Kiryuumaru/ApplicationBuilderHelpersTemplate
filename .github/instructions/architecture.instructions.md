@@ -996,10 +996,10 @@ Method usage:
 
 ## ServiceCollectionExtensions
 
-Every feature and Shared MUST have its own internal ServiceCollectionExtensions class.
+Every feature and Shared MUST have its own ServiceCollectionExtensions class.
 
 ServiceCollectionExtensions rules:
-- MUST be `internal static` class
+- Feature-specific extensions MUST be `internal static` class
 - MUST have extension methods for IServiceCollection
 - MUST be named `{Feature}ServiceCollectionExtensions`
 - MUST have methods named `Add{Feature}Services`
@@ -1007,17 +1007,25 @@ ServiceCollectionExtensions rules:
 
 Shared ServiceCollectionExtensions:
 - MUST be in `{Layer}/Shared/Extensions/SharedServiceCollectionExtensions.cs`
-- MUST have method named `AddSharedServices`
-- MAY have `AddSharedConfigurations` or `AddSharedMiddlewares`
+- MUST be `public static` class (accessible to Application.Server/Client)
+- MUST have method named `AddSharedServices` (internal - called by ApplicationDependency)
+- MAY have public utility methods for cross-layer use (e.g., `AddDomainEventHandler<T>`)
 
 ```csharp
-namespace Application.LocalStore.Extensions;
+namespace Application.Shared.Extensions;
 
-internal static class LocalStoreServiceCollectionExtensions
+public static class SharedServiceCollectionExtensions
 {
-    internal static IServiceCollection AddLocalStoreServices(this IServiceCollection services)
+    internal static IServiceCollection AddSharedServices(this IServiceCollection services)
     {
-        services.AddScoped<ILocalStoreFactory, LocalStoreFactory>();
+        services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
+        return services;
+    }
+
+    public static IServiceCollection AddDomainEventHandler<THandler>(this IServiceCollection services)
+        where THandler : class, IDomainEventHandler
+    {
+        services.AddScoped<IDomainEventHandler, THandler>();
         return services;
     }
 }
@@ -1273,7 +1281,7 @@ Long-running commands (servers, watchers):
 - NEVER use constructor injection in Commands
 - NEVER call lifecycle methods out of order
 - NEVER add ApplicationDependency without corresponding ServiceCollectionExtensions
-- NEVER make ServiceCollectionExtensions public
+- NEVER make feature-specific ServiceCollectionExtensions public
 - NEVER register DI from another layer (all layers converge in Program.cs)
 - NEVER forget `.RunAsync(args)` in Program.cs
 - NEVER forget `cancellationTokenSource.Cancel()` in one-shot CLI commands

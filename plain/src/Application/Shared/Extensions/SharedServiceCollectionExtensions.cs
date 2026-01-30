@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Application.Shared.Extensions;
 
-internal static class SharedServiceCollectionExtensions
+public static class SharedServiceCollectionExtensions
 {
     internal static IServiceCollection AddSharedServices(this IServiceCollection services)
     {
@@ -13,7 +13,7 @@ internal static class SharedServiceCollectionExtensions
         return services;
     }
 
-    internal static IServiceCollection AddDomainEventHandler<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(this IServiceCollection services)
+    public static IServiceCollection AddDomainEventHandler<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler>(this IServiceCollection services)
         where THandler : class, IDomainEventHandler
     {
         services.AddScoped<IDomainEventHandler, THandler>();
