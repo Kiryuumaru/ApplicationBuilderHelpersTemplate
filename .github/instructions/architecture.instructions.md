@@ -89,6 +89,194 @@ Presentation:
 
 ---
 
+## Layer Folder Structures
+
+### Domain Layer
+
+`Interfaces/` in Domain contains marker interfaces only (`IDomainEvent`, `IAggregateRoot`), not ports.
+
+```
+Domain/
++-- Domain.cs                               <- ApplicationDependency
++-- Serialization/
+|   +-- DomainJsonContext.cs
+|   +-- Converters/
++-- Shared/
+|   +-- Interfaces/                         <- Marker interfaces only
+|   +-- Models/
+|   +-- Extensions/
+|       +-- SharedServiceCollectionExtensions.cs
++-- {Feature}/
+    +-- Entities/
+    +-- ValueObjects/
+    +-- Enums/
+    +-- Events/
+    +-- Constants/
+    +-- Services/                           <- Domain services (pure logic)
+    +-- Exceptions/
+    +-- Extensions/
+        +-- {Feature}ServiceCollectionExtensions.cs
+```
+
+### Application Layer
+
+```
+Application/
++-- Application.cs                          <- ApplicationDependency
++-- Serialization/
+|   +-- ApplicationJsonContext.cs
++-- Shared/
+|   +-- Interfaces/                         <- Internal abstractions
+|   |   +-- In/                             <- Incoming ports
+|   |   +-- Out/                            <- Outgoing ports
+|   +-- Models/
+|   +-- Services/
+|   +-- Extensions/
+|       +-- SharedServiceCollectionExtensions.cs
++-- {Feature}/
+    +-- Interfaces/
+    |   +-- In/
+    |   +-- Out/
+    +-- Services/
+    +-- Models/
+    +-- Workers/                            <- Background entry points
+    +-- Validators/
+    +-- EventHandlers/
+    +-- Extensions/
+        +-- {Feature}ServiceCollectionExtensions.cs
+```
+
+### Application.Server Layer
+
+```
+Application.Server/
++-- ServerApplication.cs                    <- ApplicationDependency
++-- Serialization/
+|   +-- ApplicationServerJsonContext.cs
++-- Shared/
+|   +-- Interfaces/
+|   |   +-- In/
+|   |   +-- Out/
++-- {Feature}/
+    +-- Interfaces/
+    |   +-- In/
+    |   +-- Out/
+    +-- Services/
+    +-- Models/
+    +-- Workers/                            <- Server-only workers
+    +-- EventHandlers/
+    +-- Extensions/
+        +-- {Feature}ServiceCollectionExtensions.cs
+```
+
+### Application.Client Layer
+
+```
+Application.Client/
++-- ClientApplication.cs                    <- ApplicationDependency
++-- Serialization/
+|   +-- ApplicationClientJsonContext.cs
++-- Shared/
+|   +-- Interfaces/
+|   |   +-- In/
+|   |   +-- Out/
++-- {Feature}/
+    +-- Interfaces/
+    |   +-- In/
+    |   +-- Out/
+    +-- Services/
+    +-- Models/
+    +-- EventHandlers/
+    +-- Extensions/
+        +-- {Feature}ServiceCollectionExtensions.cs
+```
+
+### Infrastructure Layer
+
+```
+Infrastructure.{Provider}/
++-- {Name}Infrastructure.cs                 <- ApplicationDependency
++-- Serialization/
+|   +-- {Name}JsonContext.cs
++-- Adapters/                               <- Outgoing adapters
++-- Services/
++-- Repositories/
++-- Configurations/
++-- Extensions/
+    +-- {Name}ServiceCollectionExtensions.cs
++-- Models/
+
+Infrastructure.{Provider}.{Feature}/
++-- Adapters/
++-- Repositories/
++-- Configurations/
++-- Extensions/
+```
+
+### Presentation Layer
+
+```
+Presentation/
++-- Commands/
+|   +-- BaseCommand.cs
++-- Contracts/
+|   +-- {Feature}/
+|       +-- Requests/
+|       +-- Responses/
+|       +-- Hubs/
++-- Shared/
+    +-- Components/
+    +-- Extensions/
+
+Presentation.WebApp/
++-- Commands/
+|   +-- BaseWebAppCommand.cs
++-- Components/
+|   +-- Layout/
+|   +-- Pages/
+|   +-- Shared/
++-- Services/
++-- Models/
+
+Presentation.WebApp.Server/
++-- Program.cs                              <- Composition root
++-- Commands/
+|   +-- MainCommand.cs
++-- Controllers/                            <- Incoming adapters
++-- Workers/                                <- Worker hosts
++-- Extensions/
+
+Presentation.WebApp.Client/
++-- Program.cs                              <- Composition root
++-- Commands/
+|   +-- MainCommand.cs
++-- Components/                             <- Incoming adapters (Blazor)
+|   +-- Layout/
+|   +-- Pages/
+|   +-- Shared/
++-- Services/
++-- Models/
+
+Presentation.WebApi/
++-- Program.cs                              <- Composition root
++-- Commands/
+|   +-- MainCommand.cs
++-- Controllers/V{n}/                       <- Incoming adapters
++-- Models/
+|   +-- Requests/
+|   +-- Responses/
++-- Middleware/
++-- Filters/
+
+Presentation.Cli/
++-- Program.cs                              <- Composition root
++-- Commands/
+|   +-- MainCommand.cs
++-- Services/
+```
+
+---
+
 ## Interface Folders
 
 Interfaces are organized into three folder categories with distinct access rules.
@@ -330,9 +518,9 @@ Domain events decouple side effects from domain operations.
 
 Domain event types:
 - `IDomainEvent` - Marker interface for all domain events
-- `IAggregateRoot` - Entity that can raise domain events
+- `IAggregateRoot` - Interface for entities that can raise domain events
 - `DomainEvent` - Base record for domain events
-- `Entity` - Base class with `AddDomainEvent()` method
+- `AggregateRoot` - Base class with `AddDomainEvent()` method
 
 Domain event locations:
 - `Domain/Shared/Interfaces/IDomainEvent.cs`
@@ -433,7 +621,9 @@ Examples: `TradeFillerHost`, `MarketListingSyncHost`, `StaleAnonymousUserCleanup
 Infrastructure wiring occurs only in `Program.cs` of executable projects.
 
 ```
-Presentation.WebApp/Program.cs
+Presentation.WebApp.Server/Program.cs
+Presentation.WebApp.Client/Program.cs
+Presentation.WebApi/Program.cs
 Presentation.Cli/Program.cs
 ```
 
@@ -458,6 +648,9 @@ Implementations: `internal sealed`
 public interface ILocalStoreService { }
 internal sealed class IndexedDBLocalStoreService : ILocalStoreService { }
 ```
+
+Domain types (entities, value objects, events) are `public` because they are shared across layers.
+Infrastructure and Application service implementations are `internal sealed` because they are resolved via DI.
 
 ---
 
@@ -611,6 +804,101 @@ When duplicates are discovered:
 3. MUST update all references to use the shared type
 4. MUST delete duplicate definitions
 5. MUST verify build succeeds
+
+---
+
+## One Type Per File
+
+Each file contains exactly one public type. File name matches the type name.
+
+| Type Kind | File Name Format | Example |
+|-----------|------------------|---------|
+| Class | `{ClassName}.cs` | `UserService.cs` |
+| Interface | `I{Name}.cs` | `IUserService.cs` |
+| Record | `{RecordName}.cs` | `LoginRequest.cs` |
+| Enum | `{EnumName}.cs` | `OrderStatus.cs` |
+
+Exceptions:
+- Private nested types within the containing type's file
+- File-scoped types using `file` modifier
+
+---
+
+## Naming Conventions
+
+| Element | Convention | Example |
+|---------|------------|---------|
+| Classes, Records, Structs | PascalCase | `UserService`, `LoginRequest` |
+| Interfaces | `I` + PascalCase | `IUserService`, `ITokenProvider` |
+| Methods | PascalCase | `GetUserAsync`, `ValidateToken` |
+| Properties | PascalCase | `UserId`, `IsAuthenticated` |
+| Private fields | `_camelCase` | `_userService`, `_logger` |
+| Local variables | camelCase | `userId`, `tokenResult` |
+| Constants | PascalCase | `DefaultTimeout`, `MaxRetries` |
+| Parameters | camelCase | `userId`, `cancellationToken` |
+| Async methods | Suffix `Async` | `GetUserAsync`, `SaveAsync` |
+
+---
+
+## Member Ordering Within Files
+
+1. Constants
+2. Static fields
+3. Instance fields
+4. Constructors
+5. Properties
+6. Public methods
+7. Private methods
+
+---
+
+## Namespace Convention
+
+Namespace mirrors folder path from `src/`.
+
+```
+src/Application/Identity/Services/UserService.cs
+-> namespace Application.Identity.Services;
+```
+
+---
+
+## Type Placement by Kind
+
+Files MUST be placed in folders matching their type kind.
+
+| Type Kind | Required Folder | Example |
+|-----------|-----------------|---------|
+| Interface (internal) | `Interfaces/` | `Interfaces/IDomainEventDispatcher.cs` |
+| Interface (In) | `Interfaces/In/` | `Interfaces/In/IOrderService.cs` |
+| Interface (Out) | `Interfaces/Out/` | `Interfaces/Out/IOrderRepository.cs` |
+| Enum | `Enums/` | `Enums/OrderStatus.cs` |
+| Record (DTO/Model) | `Models/` | `Models/LoginRequest.cs` |
+| Service class | `Services/` | `Services/UserService.cs` |
+| Adapter class | `Adapters/` | `Adapters/BinanceExchangeAdapter.cs` |
+| Repository class | `Repositories/` | `Repositories/OrderRepository.cs` |
+| Entity | `Entities/` | `Entities/User.cs` |
+| Value object | `ValueObjects/` | `ValueObjects/Email.cs` |
+| Exception | `Exceptions/` | `Exceptions/UserNotFoundException.cs` |
+| Extension class | `Extensions/` | `Extensions/ServiceCollectionExtensions.cs` |
+| Validator | `Validators/` | `Validators/LoginRequestValidator.cs` |
+| Configuration | `Configurations/` | `Configurations/UserConfiguration.cs` |
+| Constants class | `Constants/` | `Constants/ErrorMessages.cs` |
+| Application Worker | `Workers/` | `Workers/TradeFiller.cs` |
+| Presentation Worker Host | `Workers/` | `Workers/TradeFillerHost.cs` |
+| Domain Event | `Events/` | `Events/OrderPlacedEvent.cs` |
+| Event Handler | `EventHandlers/` | `EventHandlers/SendWelcomeEmailHandler.cs` |
+| ApplicationDependency | Project root | `Application.cs` |
+| ServiceCollectionExtensions | `Extensions/` | `Extensions/LocalStoreServiceCollectionExtensions.cs` |
+| ConfigurationExtensions | `Extensions/` | `Extensions/EFCoreSqliteConfigurationExtensions.cs` |
+| JsonContext | `Serialization/` | `Serialization/DomainJsonContext.cs` |
+| JsonConverter | `Serialization/Converters/` | `Serialization/Converters/CamelCaseEnumConverter.cs` |
+| Command | `Commands/` | `Commands/MainCommand.cs` |
+
+Verification:
+- Before creating a file, identify its type kind
+- Place in the corresponding folder within the feature/component area
+- If folder does not exist, create it
 
 ---
 
