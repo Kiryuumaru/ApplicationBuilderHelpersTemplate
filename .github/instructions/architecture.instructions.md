@@ -304,7 +304,8 @@ Interfaces (without subfolder):
 - Are internal abstractions within Application layer
 - Are implemented by Application* services
 - MAY be called by Application* only
-- MUST NOT be called by Presentation or Infrastructure
+- MAY be called by Infrastructure* for integration points (e.g., `IDomainEventDispatcher` called by EF Core interceptor)
+- MUST NOT be called by Presentation
 - Examples: `IDomainEventDispatcher`, `IDomainEventHandler`, `IOfflineSyncManager`
 
 ### Interface Access Rules
@@ -313,7 +314,7 @@ Interfaces (without subfolder):
 |--------------------|-------------|----------------|
 | `Interfaces/In/` | Any layer | Application* |
 | `Interfaces/Out/` | Application*, Infrastructure* | Infrastructure* |
-| `Interfaces/` | Application* | Application* |
+| `Interfaces/` | Application*, Infrastructure* | Application* |
 
 Application* includes: `Application`, `Application.Server`, `Application.Client`
 Infrastructure* includes: `Infrastructure.*` (all Infrastructure projects)
