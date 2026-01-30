@@ -104,6 +104,8 @@ Domain/
 +-- Shared/
 |   +-- Interfaces/                         <- Marker interfaces only
 |   +-- Models/
+|   +-- Constants/                          <- Shared constants (EmptyCollections, etc.)
+|   +-- Exceptions/                         <- Base exceptions (DomainException, etc.)
 |   +-- Extensions/
 |       +-- SharedServiceCollectionExtensions.cs
 +-- {Feature}/
@@ -565,6 +567,41 @@ ValueObject implementation rules:
 
 ---
 
+## Domain Exceptions
+
+Domain exceptions provide a hierarchy for domain-level error handling.
+
+### Exception Hierarchy
+
+```
+Exception
+  └── DomainException              <- Base for all domain errors
+        ├── EntityNotFoundException   <- Entity lookup failures
+        └── ValidationException       <- Validation failures
+```
+
+### Base Exception
+
+`DomainException` in `Domain/Shared/Exceptions/`:
+- Base class for all domain-specific exceptions
+- Provides standard constructors (message, message+inner)
+- Feature-specific exceptions SHOULD extend this
+
+### Built-in Exceptions
+
+| Exception | Purpose | Properties |
+|-----------|---------|------------|
+| `DomainException` | Base domain error | - |
+| `EntityNotFoundException` | Entity not found | `EntityType`, `EntityIdentifier` |
+| `ValidationException` | Validation failure | `PropertyName` |
+
+### Exception Placement
+
+- Base exceptions MUST be in `Domain/Shared/Exceptions/`
+- Feature-specific exceptions MUST be in `Domain/{Feature}/Exceptions/`
+
+---
+
 ## Domain Events
 
 Domain events decouple side effects from domain operations.
@@ -850,9 +887,24 @@ Shared code locations by layer:
 
 Every literal value used more than once MUST be a named constant.
 
+- Shared constants MUST be in `Domain/Shared/Constants/` (e.g., `EmptyCollections`)
 - Domain constants MUST be in `Domain/{Feature}/Constants/`
 - Application settings MUST be in Configuration or `Application/{Feature}/Constants/`
 - Test values MUST be in test base class or constants file
+
+### EmptyCollections Pattern
+
+`EmptyCollections` in `Domain/Shared/Constants/` provides shared empty collection instances to avoid redundant allocations:
+
+```csharp
+public static class EmptyCollections
+{
+    public static IReadOnlyList<string> StringList { get; } = Array.Empty<string>();
+    public static IReadOnlyList<Guid> GuidList { get; } = Array.Empty<Guid>();
+    public static IReadOnlyDictionary<string, string> StringStringDictionary { get; } =
+        new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(0, StringComparer.Ordinal));
+}
+```
 
 ---
 

@@ -1,11 +1,14 @@
 using System.Collections.Concurrent;
+using System.Text.Json;
 using Domain.HelloWorld.Entities;
+using Domain.Serialization;
 using Domain.Shared.Interfaces;
 using Infrastructure.InMemory.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.InMemory.Repositories;
 
-internal sealed class InMemoryHelloWorldRepository : Application.HelloWorld.Interfaces.Outbound.IHelloWorldRepository, ITrackableRepository
+internal sealed class InMemoryHelloWorldRepository(ILogger<InMemoryHelloWorldRepository> logger) : Application.HelloWorld.Interfaces.Outbound.IHelloWorldRepository, ITrackableRepository
 {
     // Shared storage across scopes (simulates database persistence)
     private static readonly ConcurrentDictionary<Guid, HelloWorldEntity> _storage = new();
@@ -17,6 +20,10 @@ internal sealed class InMemoryHelloWorldRepository : Application.HelloWorld.Inte
     {
         _storage[entity.Id] = entity;
         _trackedAggregates.Add(entity);
+
+        // Demonstrate AOT-compatible serialization using source-generated context
+        var serialized = JsonSerializer.Serialize(entity, DomainJsonContext.Default.HelloWorldEntity);
+        logger.LogInformation("[InMemoryRepository] Entity serialized: {Json}", serialized);
     }
 
     public Task<HelloWorldEntity?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
