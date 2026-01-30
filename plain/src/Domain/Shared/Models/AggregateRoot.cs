@@ -6,10 +6,6 @@ public abstract class AggregateRoot : Entity, IAggregateRoot
 {
     private readonly List<IDomainEvent> _domainEvents = [];
 
-    protected AggregateRoot()
-    {
-    }
-
     protected AggregateRoot(Guid id) : base(id)
     {
     }

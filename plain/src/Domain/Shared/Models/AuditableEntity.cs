@@ -6,10 +6,6 @@ public abstract class AuditableEntity : Entity
 
     public DateTimeOffset LastModified { get; private set; } = DateTimeOffset.UtcNow;
 
-    protected AuditableEntity()
-    {
-    }
-
     protected AuditableEntity(Guid id) : base(id)
     {
     }

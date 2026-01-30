@@ -222,6 +222,100 @@ Examples: `OrderService`, `IdentityService`, `MarketStreamerService`.
 
 ---
 
+## Domain Base Models
+
+Base models are in `Domain/Shared/Models/`.
+
+| Base Class | Purpose |
+|------------|---------|
+| `Entity` | Identity with `Id` and `RevId` |
+| `AggregateRoot` | Entity with domain events |
+| `AuditableEntity` | Entity with `Created`/`LastModified` |
+| `ValueObject` | Immutable equality-by-components |
+
+---
+
+## Entity Implementation
+
+Entities use protected constructors for EF Core hydration and subclass inheritance, and static factory methods for creation.
+
+```csharp
+public class OrderEntity : AggregateRoot
+{
+    public string CustomerName { get; private set; }
+    public decimal Total { get; private set; }
+
+    protected OrderEntity(Guid id, string customerName, decimal total) : base(id)
+    {
+        CustomerName = customerName;
+        Total = total;
+    }
+
+    public static OrderEntity Create(string customerName, decimal total)
+    {
+        var entity = new OrderEntity(
+            Guid.NewGuid(),
+            customerName ?? throw new ArgumentNullException(nameof(customerName)),
+            total);
+        entity.AddDomainEvent(new OrderCreatedEvent(entity.Id));
+        return entity;
+    }
+}
+```
+
+Entity implementation rules:
+- MUST extend `Entity`, `AggregateRoot`, or `AuditableEntity`
+- MUST use `private set` on all properties
+- MUST use `protected` constructor with all properties as parameters
+- MUST only assign values in constructor
+- MUST use static factory methods for business creation
+- MUST raise domain events only in factory methods
+- MUST validate parameters only in factory methods
+
+---
+
+## ValueObject Implementation
+
+Value objects use protected constructors for subclass inheritance, and static factory methods for creation.
+
+```csharp
+public class Money : ValueObject
+{
+    public decimal Amount { get; }
+    public string Currency { get; }
+
+    protected Money(decimal amount, string currency)
+    {
+        Amount = amount;
+        Currency = currency;
+    }
+
+    public static Money Create(decimal amount, string currency)
+    {
+        if (string.IsNullOrWhiteSpace(currency))
+            throw new ArgumentException("Currency cannot be empty", nameof(currency));
+        return new Money(amount, currency);
+    }
+
+    protected override IEnumerable<object?> GetEqualityComponents()
+    {
+        yield return Amount;
+        yield return Currency;
+    }
+}
+```
+
+ValueObject implementation rules:
+- MUST extend `ValueObject`
+- MUST override `GetEqualityComponents()`
+- MUST use read-only properties (`{ get; }`)
+- MUST use `protected` constructor
+- MUST only assign values in constructor
+- MUST use static factory methods for business creation
+- MUST validate parameters only in factory methods
+
+---
+
 ## Domain Events
 
 Domain events decouple side effects from domain operations.
@@ -551,6 +645,16 @@ When duplicates are discovered:
 - NEVER leave empty placeholder/stub files after refactoring
 - NEVER use file names that do not match the contained type
 - NEVER place a type in a folder that does not match its kind
+- NEVER create new base entity classes
+- NEVER use `public set` on entity properties
+- NEVER use `public` constructors on entities
+- NEVER use `public` constructors on value objects
+- NEVER add parameterless constructors to entities
+- NEVER raise domain events in constructors
+- NEVER validate in constructors
+- NEVER add logic in constructors
+- NEVER add `Id` to `ValueObject`
+- NEVER use mutable properties in `ValueObject`
 
 ---
 

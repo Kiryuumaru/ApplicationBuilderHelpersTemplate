@@ -6,52 +6,39 @@ namespace Domain.UnitTests.HelloWorld.Entities;
 public class HelloWorldEntityTests
 {
     [Fact]
-    public void Constructor_WithValidParameters_CreatesEntity()
+    public void Create_WithValidParameters_CreatesEntity()
     {
-        var id = Guid.NewGuid();
         var message = "Test message";
 
-        var entity = new HelloWorldEntity(id, message);
+        var entity = HelloWorldEntity.Create(message);
 
-        Assert.Equal(id, entity.Id);
+        Assert.NotEqual(Guid.Empty, entity.Id);
         Assert.Equal(message, entity.Message);
     }
 
     [Fact]
-    public void Constructor_WithEmptyId_ThrowsArgumentException()
+    public void Create_WithNullMessage_ThrowsArgumentNullException()
     {
-        var id = Guid.Empty;
-        var message = "Test message";
-
-        Assert.Throws<ArgumentException>(() => new HelloWorldEntity(id, message));
+        Assert.Throws<ArgumentNullException>(() => HelloWorldEntity.Create(null!));
     }
 
     [Fact]
-    public void Constructor_WithNullMessage_ThrowsArgumentNullException()
+    public void Create_RaisesHelloWorldCreatedEvent()
     {
-        var id = Guid.NewGuid();
-
-        Assert.Throws<ArgumentNullException>(() => new HelloWorldEntity(id, null!));
-    }
-
-    [Fact]
-    public void Constructor_RaisesHelloWorldCreatedEvent()
-    {
-        var id = Guid.NewGuid();
         var message = "Test message";
 
-        var entity = new HelloWorldEntity(id, message);
+        var entity = HelloWorldEntity.Create(message);
 
         Assert.Single(entity.DomainEvents);
         var domainEvent = Assert.IsType<HelloWorldCreatedEvent>(entity.DomainEvents.First());
-        Assert.Equal(id, domainEvent.EntityId);
+        Assert.Equal(entity.Id, domainEvent.EntityId);
         Assert.Equal(message, domainEvent.Message);
     }
 
     [Fact]
     public void ClearDomainEvents_RemovesAllEvents()
     {
-        var entity = new HelloWorldEntity(Guid.NewGuid(), "Test");
+        var entity = HelloWorldEntity.Create("Test");
 
         entity.ClearDomainEvents();
 

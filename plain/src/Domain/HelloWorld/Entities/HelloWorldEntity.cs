@@ -3,13 +3,21 @@ using Domain.Shared.Models;
 
 namespace Domain.HelloWorld.Entities;
 
-public sealed class HelloWorldEntity : AggregateRoot
+public class HelloWorldEntity : AggregateRoot
 {
     public string Message { get; private set; }
 
-    public HelloWorldEntity(Guid id, string message) : base(id)
+    protected HelloWorldEntity(Guid id, string message) : base(id)
     {
-        Message = message ?? throw new ArgumentNullException(nameof(message));
-        AddDomainEvent(new HelloWorldCreatedEvent(Id, Message));
+        Message = message;
+    }
+
+    public static HelloWorldEntity Create(string message)
+    {
+        var entity = new HelloWorldEntity(
+            Guid.NewGuid(),
+            message ?? throw new ArgumentNullException(nameof(message)));
+        entity.AddDomainEvent(new HelloWorldCreatedEvent(entity.Id, entity.Message));
+        return entity;
     }
 }

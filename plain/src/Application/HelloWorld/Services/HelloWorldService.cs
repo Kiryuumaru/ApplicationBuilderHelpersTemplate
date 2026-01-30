@@ -15,7 +15,7 @@ internal sealed class HelloWorldService(
         logger.LogInformation("Creating greeting with message: {Message}", message);
 
         // Domain operation - entity raises events internally
-        var entity = new HelloWorldEntity(Guid.NewGuid(), message);
+        var entity = HelloWorldEntity.Create(message);
 
         // In a real app, this would be:
         // 1. Save to repository (via Interfaces/Out interface)

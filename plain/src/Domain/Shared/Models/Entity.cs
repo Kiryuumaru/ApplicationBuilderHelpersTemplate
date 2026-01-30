@@ -9,18 +9,8 @@ public abstract class Entity : IEntity
 
     protected void UpdateRevision() => RevId = Guid.NewGuid();
 
-    // For ORM hydration
-    protected Entity()
-    {
-    }
-
     protected Entity(Guid id)
     {
-        if (id == Guid.Empty)
-        {
-            throw new ArgumentException("Id cannot be empty", nameof(id));
-        }
-
         Id = id;
     }
 }
