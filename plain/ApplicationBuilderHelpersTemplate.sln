@@ -29,6 +29,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Application.UnitTests", "te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure.InMemory", "src\Infrastructure.InMemory\Infrastructure.InMemory.csproj", "{DA100C90-0740-4580-8790-7E64FFAAD505}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "_build", "build\_build.csproj", "{4056BD12-5FA8-4D2E-274A-7E85E858A5FC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -135,6 +137,18 @@ Global
 		{DA100C90-0740-4580-8790-7E64FFAAD505}.Release|x64.Build.0 = Release|Any CPU
 		{DA100C90-0740-4580-8790-7E64FFAAD505}.Release|x86.ActiveCfg = Release|Any CPU
 		{DA100C90-0740-4580-8790-7E64FFAAD505}.Release|x86.Build.0 = Release|Any CPU
+		{4056BD12-5FA8-4D2E-274A-7E85E858A5FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4056BD12-5FA8-4D2E-274A-7E85E858A5FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4056BD12-5FA8-4D2E-274A-7E85E858A5FC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4056BD12-5FA8-4D2E-274A-7E85E858A5FC}.Debug|x64.Build.0 = Debug|Any CPU
+		{4056BD12-5FA8-4D2E-274A-7E85E858A5FC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4056BD12-5FA8-4D2E-274A-7E85E858A5FC}.Debug|x86.Build.0 = Debug|Any CPU
+		{4056BD12-5FA8-4D2E-274A-7E85E858A5FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4056BD12-5FA8-4D2E-274A-7E85E858A5FC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4056BD12-5FA8-4D2E-274A-7E85E858A5FC}.Release|x64.ActiveCfg = Release|Any CPU
+		{4056BD12-5FA8-4D2E-274A-7E85E858A5FC}.Release|x64.Build.0 = Release|Any CPU
+		{4056BD12-5FA8-4D2E-274A-7E85E858A5FC}.Release|x86.ActiveCfg = Release|Any CPU
+		{4056BD12-5FA8-4D2E-274A-7E85E858A5FC}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
