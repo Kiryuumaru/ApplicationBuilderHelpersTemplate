@@ -1,15 +1,13 @@
-using Application.AppEnvironment.Services;
+using Application.AppEnvironment.Interfaces;
 using Application.Credential.Extensions;
 using Application.Credential.Interfaces;
 using Application.Credential.Models;
 using Domain.Shared.Extensions;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-
 
 namespace Application.Credential.Services;
 
-internal class CredentialService(AppEnvironmentService appEnvironmentService, IConfiguration configuration) : ICredentialService
+internal sealed class CredentialService(IAppEnvironmentService appEnvironmentService, IConfiguration configuration) : ICredentialService
 {
     public async Task<Models.Credentials> GetCredentials(CancellationToken cancellationToken)
     {

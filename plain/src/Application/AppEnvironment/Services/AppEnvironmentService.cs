@@ -1,20 +1,21 @@
 using Application.AppEnvironment.Extensions;
+using Application.AppEnvironment.Interfaces;
 using Application.Shared.Interfaces.Inbound;
 using Microsoft.Extensions.Configuration;
 
 namespace Application.AppEnvironment.Services;
 
-public class AppEnvironmentService(
+internal sealed class AppEnvironmentService(
     IConfiguration configuration,
-    IApplicationConstants applicationConstants)
+    IApplicationConstants applicationConstants) : IAppEnvironmentService
 {
-    public async Task<Domain.AppEnvironment.Models.AppEnvironment> GetEnvironment(CancellationToken cancellationToken = default)
+    public Task<Domain.AppEnvironment.Models.AppEnvironment> GetEnvironment(CancellationToken cancellationToken = default)
     {
         string? appTag = configuration.GetAppTagOverride();
         if (string.IsNullOrEmpty(appTag))
         {
             appTag = applicationConstants.AppTag;
         }
-        return Domain.AppEnvironment.Constants.AppEnvironments.GetByTag(appTag);
+        return Task.FromResult(Domain.AppEnvironment.Constants.AppEnvironments.GetByTag(appTag));
     }
 }

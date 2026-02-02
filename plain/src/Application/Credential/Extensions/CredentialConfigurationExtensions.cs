@@ -1,18 +1,13 @@
 using ApplicationBuilderHelpers.Extensions;
 using Domain.Shared.Extensions;
 using Microsoft.Extensions.Configuration;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json.Nodes;
-using System.Threading.Tasks;
 
 namespace Application.Credential.Extensions;
 
-public static class IConfigurationExtensions
+public static class CredentialConfigurationExtensions
 {
-    private const string CredentialsKey = "VEG_RUNTIME_CREDENTIALS";
+    private const string CredentialsKey = "RUNTIME_CREDENTIALS";
 
     public static JsonObject GetCredentials(this IConfiguration configuration)
     {
