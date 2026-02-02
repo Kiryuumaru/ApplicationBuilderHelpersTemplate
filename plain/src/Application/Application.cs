@@ -1,3 +1,5 @@
+using Application.AppEnvironment.Extensions;
+using Application.Credential.Extensions;
 using Application.HelloWorld.Extensions;
 using Application.Shared.Extensions;
 using ApplicationBuilderHelpers;
@@ -11,6 +13,8 @@ public class Application : ApplicationDependency
     {
         base.AddServices(applicationBuilder, services);
 
+        services.AddAppEnvironmentServices();
+        services.AddCredentialServices();
         services.AddSharedServices();
         services.AddHelloWorldServices();
     }

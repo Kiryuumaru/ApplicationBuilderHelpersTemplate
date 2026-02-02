@@ -2,7 +2,10 @@ using Domain.AppEnvironment.Constants;
 using Nuke.Common;
 using Nuke.Common.IO;
 using Serilog;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 partial class Build
 {
@@ -39,6 +42,44 @@ partial class Build
     Target Init => _ => _
         .Executes(() =>
         {
-            Log.Information("Plain template initialized. No credentials required.");
+            GenerateCredsJson();
         });
+
+    // ─────────────────────────────────────────────────────────────
+    // creds.json Generation
+    // ─────────────────────────────────────────────────────────────
+
+    void GenerateCredsJson()
+    {
+        var credsPath = RootDirectory / "creds.json";
+
+        if (File.Exists(credsPath))
+        {
+            Log.Information("creds.json already exists at {path}", credsPath);
+            return;
+        }
+
+        Log.Information("Generating creds.json at {path}", credsPath);
+
+        var credsEnvObject = new JsonObject();
+        var credsObject = new JsonObject()
+        {
+            ["shared"] = new JsonObject(),
+            ["environments"] = credsEnvObject,
+        };
+
+        foreach (var env in AppEnvironments.AllValues)
+        {
+            credsEnvObject[env.Tag] = new JsonObject();
+        }
+
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true
+        };
+
+        File.WriteAllText(credsPath, credsObject.ToJsonString(options));
+
+        Log.Information("creds.json generated successfully with branches: {branches}", string.Join(", ", AppEnvironments.AllValues.Select(e => e.Tag)));
+    }
 }
