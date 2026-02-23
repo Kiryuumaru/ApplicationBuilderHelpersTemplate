@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using Application.Authorization.Interfaces.Infrastructure;
+using Application.Authorization.Interfaces.Outbound;
 using Application.Authorization.Interfaces;
 using Application.Identity.Interfaces;
 using Application.Identity.Models;

@@ -1,7 +1,7 @@
 using Application.Authorization.Models;
 using System.Security.Claims;
 
-namespace Application.Authorization.Interfaces.Infrastructure;
+namespace Application.Authorization.Interfaces.Outbound;
 
 /// <summary>
 /// Provider for token generation and validation operations.

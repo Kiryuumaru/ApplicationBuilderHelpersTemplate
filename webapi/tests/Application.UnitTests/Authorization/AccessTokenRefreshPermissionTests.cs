@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using Application.Authorization.Interfaces.Infrastructure;
+using Application.Authorization.Interfaces.Outbound;
 using Application.Authorization.Services;
 using Application.Identity.Interfaces;
 using Application.Identity.Services;
@@ -38,7 +38,7 @@ public class AccessTokenRefreshPermissionTests
         // Setup role repository with USER role
         var roleRepo = new InMemoryRoleRepository();
         var userRole = Roles.User.Instantiate();
-        await roleRepo.SaveAsync(userRole, CancellationToken.None);
+        roleRepo.Add(userRole);
 
         var tokenProvider = Substitute.For<ITokenProvider>();
         var service = new PermissionService(tokenProvider, roleRepo);
@@ -79,7 +79,7 @@ public class AccessTokenRefreshPermissionTests
             .Returns(principal);
 
         var roleRepo = new InMemoryRoleRepository();
-        await roleRepo.SaveAsync(Roles.User.Instantiate(), CancellationToken.None);
+        roleRepo.Add(Roles.User.Instantiate());
 
         var permissionService = new PermissionService(tokenProvider, roleRepo);
         var service = new UserTokenService(userAuthorizationService, sessionService, permissionService, tokenProvider);

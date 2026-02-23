@@ -1,6 +1,6 @@
-using Application.Authorization.Interfaces.Infrastructure;
-using Application.Identity.Interfaces.Infrastructure;
+using Domain.Authorization.Interfaces;
 using Domain.Authorization.Models;
+using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
 using Infrastructure.EFCore.Identity.Configurations;
 using Infrastructure.EFCore.Identity.Services;
@@ -21,6 +21,10 @@ public static class EFCoreIdentityServiceCollectionExtensions
         // ASP.NET Core Identity stores (required for UserManager/SignInManager)
         services.AddScoped<IUserStore<User>, EFCoreAspNetUserStore>();
         services.AddScoped<IRoleStore<Role>, EFCoreAspNetRoleStore>();
+
+        // Unit of Work implementations
+        services.AddScoped<IIdentityUnitOfWork, EFCoreIdentityUnitOfWork>();
+        services.AddScoped<IAuthorizationUnitOfWork, EFCoreAuthorizationUnitOfWork>();
 
         // Internal repositories for Application layer
         services.AddScoped<IUserRepository, EFCoreUserRepository>();

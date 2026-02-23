@@ -14,7 +14,8 @@ public class RoleServiceTests
     public async Task ListAsync_IncludesStaticRolesWithoutDynamicData()
     {
         var repository = new InMemoryRoleRepository();
-        var service = new RoleService(repository);
+        var unitOfWork = new InMemoryAuthorizationUnitOfWork();
+        var service = new RoleService(repository, unitOfWork);
 
         var roles = await service.ListAsync(CancellationToken.None);
 
@@ -26,7 +27,8 @@ public class RoleServiceTests
     public async Task CreateRoleAsync_ThrowsForReservedSystemCode()
     {
         var repository = new InMemoryRoleRepository();
-        var service = new RoleService(repository);
+        var unitOfWork = new InMemoryAuthorizationUnitOfWork();
+        var service = new RoleService(repository, unitOfWork);
 
         var descriptor = new RoleDescriptor(
             Code: RolesConstants.Admin.Code,
@@ -42,7 +44,8 @@ public class RoleServiceTests
     public async Task CreateRoleAsync_PreventsDuplicateCodes()
     {
         var repository = new InMemoryRoleRepository();
-        var service = new RoleService(repository);
+        var unitOfWork = new InMemoryAuthorizationUnitOfWork();
+        var service = new RoleService(repository, unitOfWork);
 
         var descriptor = new RoleDescriptor(
             Code: "portfolio_manager",
@@ -63,7 +66,8 @@ public class RoleServiceTests
     public async Task ReplaceScopeTemplatesAsync_UpdatesRoleScopeTemplates()
     {
         var repository = new InMemoryRoleRepository();
-        var service = new RoleService(repository);
+        var unitOfWork = new InMemoryAuthorizationUnitOfWork();
+        var service = new RoleService(repository, unitOfWork);
 
         var descriptor = new RoleDescriptor(
             Code: "analyst",

@@ -1,13 +1,15 @@
 using Application.Identity.Interfaces;
-using Application.Identity.Interfaces.Infrastructure;
 using Application.Identity.Models;
+using Domain.Identity.Interfaces;
 
 namespace Application.Identity.Services;
 
 /// <summary>
-/// Service for managing user sessions.
+/// Service for managing user sessions using repositories and UnitOfWork.
 /// </summary>
-internal sealed class SessionService(ISessionRepository sessionRepository) : ISessionService
+internal sealed class SessionService(
+    ISessionRepository sessionRepository,
+    IIdentityUnitOfWork unitOfWork) : ISessionService
 {
     /// <inheritdoc />
     public async Task<SessionDto?> GetByIdAsync(Guid sessionId, CancellationToken cancellationToken)
@@ -26,7 +28,16 @@ internal sealed class SessionService(ISessionRepository sessionRepository) : ISe
     /// <inheritdoc />
     public async Task<bool> RevokeAsync(Guid sessionId, CancellationToken cancellationToken)
     {
-        return await sessionRepository.RevokeAsync(sessionId, cancellationToken);
+        var session = await sessionRepository.GetByIdAsync(sessionId, cancellationToken);
+        if (session is null)
+        {
+            return false;
+        }
+
+        session.Revoke();
+        sessionRepository.Update(session);
+        await unitOfWork.CommitAsync(cancellationToken);
+        return true;
     }
 
     /// <inheritdoc />
@@ -37,7 +48,11 @@ internal sealed class SessionService(ISessionRepository sessionRepository) : ISe
         {
             return false;
         }
-        return await sessionRepository.RevokeAsync(sessionId, cancellationToken);
+
+        session.Revoke();
+        sessionRepository.Update(session);
+        await unitOfWork.CommitAsync(cancellationToken);
+        return true;
     }
 
     /// <inheritdoc />
@@ -71,7 +86,9 @@ internal sealed class SessionService(ISessionRepository sessionRepository) : ISe
         if (refreshTokenHash is not null && !string.Equals(session.RefreshTokenHash, refreshTokenHash, StringComparison.Ordinal))
         {
             // Token mismatch - potential theft, revoke the session
-            await sessionRepository.RevokeAsync(sessionId, cancellationToken);
+            session.Revoke();
+            sessionRepository.Update(session);
+            await unitOfWork.CommitAsync(cancellationToken);
             return null;
         }
 
@@ -95,7 +112,8 @@ internal sealed class SessionService(ISessionRepository sessionRepository) : ISe
         }
 
         session.RotateRefreshToken(newRefreshTokenHash, newExpiresAt);
-        await sessionRepository.UpdateAsync(session, cancellationToken);
+        sessionRepository.Update(session);
+        await unitOfWork.CommitAsync(cancellationToken);
     }
 
     /// <inheritdoc />
@@ -134,7 +152,8 @@ internal sealed class SessionService(ISessionRepository sessionRepository) : ISe
                 loginSession.RevokedAt);
         }
 
-        await sessionRepository.CreateAsync(loginSession, cancellationToken);
+        sessionRepository.Add(loginSession);
+        await unitOfWork.CommitAsync(cancellationToken);
         return loginSession.Id;
     }
 

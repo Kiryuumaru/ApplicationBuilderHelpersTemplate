@@ -1,4 +1,4 @@
-using Application.Identity.Interfaces.Infrastructure;
+using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
 using Infrastructure.EFCore.Extensions;
 using Infrastructure.EFCore.Identity.Models;
@@ -7,26 +7,27 @@ using Microsoft.EntityFrameworkCore;
 namespace Infrastructure.EFCore.Identity.Services;
 
 /// <summary>
-/// EF Core implementation of IApiKeyRepository.
+/// EF Core implementation of IApiKeyRepository using scoped DbContext.
+/// Changes are tracked but not persisted until IIdentityUnitOfWork.CommitAsync() is called.
 /// </summary>
-internal sealed class EFCoreApiKeyRepository(IDbContextFactory<EFCoreDbContext> contextFactory) : IApiKeyRepository
+internal sealed class EFCoreApiKeyRepository(EFCoreDbContext context) : IApiKeyRepository
 {
+    private readonly EFCoreDbContext _context = context;
+
+    // Query methods
+
     public async Task<ApiKey?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
     {
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-        var entity = await context.Set<ApiKeyEntity>().FindAsync([id], cancellationToken);
+        var entity = await _context.Set<ApiKeyEntity>().FindAsync([id], cancellationToken);
         return entity is null ? null : MapToDomain(entity);
     }
 
     public async Task<IReadOnlyList<ApiKey>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken)
     {
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-
-        var entities = await context.Set<ApiKeyEntity>()
+        var entities = await _context.Set<ApiKeyEntity>()
             .Where(k => k.UserId == userId && !k.IsRevoked)
             .ToListAsync(cancellationToken);
 
-        // SQLite doesn't support DateTimeOffset in ORDER BY, so sort in memory
         return entities
             .OrderByDescending(k => k.CreatedAt)
             .Select(MapToDomain)
@@ -35,50 +36,54 @@ internal sealed class EFCoreApiKeyRepository(IDbContextFactory<EFCoreDbContext> 
 
     public async Task<int> GetActiveCountByUserIdAsync(Guid userId, CancellationToken cancellationToken)
     {
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-
-        return await context.Set<ApiKeyEntity>()
+        return await _context.Set<ApiKeyEntity>()
             .CountAsync(k => k.UserId == userId && !k.IsRevoked, cancellationToken);
     }
 
-    public async Task CreateAsync(ApiKey apiKey, CancellationToken cancellationToken)
+    // Change tracking methods - changes are persisted on UnitOfWork.CommitAsync()
+
+    public void Add(ApiKey apiKey)
     {
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         var entity = MapToEntity(apiKey);
-        context.Set<ApiKeyEntity>().Add(entity);
-        await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
+        _context.Set<ApiKeyEntity>().Add(entity);
     }
 
-    public async Task UpdateAsync(ApiKey apiKey, CancellationToken cancellationToken)
+    public void Update(ApiKey apiKey)
     {
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-
-        var entity = await context.Set<ApiKeyEntity>().FindAsync([apiKey.Id], cancellationToken);
-        if (entity is null)
+        var entity = _context.Set<ApiKeyEntity>().Local.FirstOrDefault(e => e.Id == apiKey.Id);
+        if (entity is not null)
         {
-            return;
+            entity.LastUsedAt = apiKey.LastUsedAt;
+            entity.IsRevoked = apiKey.IsRevoked;
+            entity.RevokedAt = apiKey.RevokedAt;
         }
-
-        entity.LastUsedAt = apiKey.LastUsedAt;
-        entity.IsRevoked = apiKey.IsRevoked;
-        entity.RevokedAt = apiKey.RevokedAt;
-
-        await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
+        else
+        {
+            entity = MapToEntity(apiKey);
+            _context.Set<ApiKeyEntity>().Attach(entity);
+            _context.Entry(entity).State = EntityState.Modified;
+        }
     }
+
+    public void Remove(ApiKey apiKey)
+    {
+        var entity = _context.Set<ApiKeyEntity>().Local.FirstOrDefault(e => e.Id == apiKey.Id)
+            ?? MapToEntity(apiKey);
+        _context.Set<ApiKeyEntity>().Remove(entity);
+    }
+
+    // Bulk operation - executes immediately for efficiency (background cleanup)
 
     public async Task<int> DeleteExpiredOrRevokedAsync(
         DateTimeOffset expiredBefore,
         DateTimeOffset revokedBefore,
         CancellationToken cancellationToken)
     {
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-
-        // Query expired keys and revoked keys separately to avoid complex expression translation issues
-        var expiredKeys = await context.Set<ApiKeyEntity>()
+        var expiredKeys = await _context.Set<ApiKeyEntity>()
             .Where(k => k.ExpiresAt != null && k.ExpiresAt < expiredBefore)
             .ToListAsync(cancellationToken);
         
-        var revokedKeys = await context.Set<ApiKeyEntity>()
+        var revokedKeys = await _context.Set<ApiKeyEntity>()
             .Where(k => k.IsRevoked && k.RevokedAt != null && k.RevokedAt < revokedBefore)
             .ToListAsync(cancellationToken);
         
@@ -89,10 +94,12 @@ internal sealed class EFCoreApiKeyRepository(IDbContextFactory<EFCoreDbContext> 
             return 0;
         }
 
-        context.Set<ApiKeyEntity>().RemoveRange(keysToDelete);
-        await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
+        _context.Set<ApiKeyEntity>().RemoveRange(keysToDelete);
+        await _context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
         return keysToDelete.Count;
     }
+
+    // Helper methods
 
     private static ApiKeyEntity MapToEntity(ApiKey apiKey) => new()
     {

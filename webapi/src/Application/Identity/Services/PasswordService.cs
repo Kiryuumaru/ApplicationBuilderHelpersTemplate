@@ -1,5 +1,5 @@
 using Application.Identity.Interfaces;
-using Application.Identity.Interfaces.Infrastructure;
+using Application.Identity.Interfaces.Outbound;
 using Domain.Identity.Exceptions;
 using Domain.Identity.Interfaces;
 using Domain.Shared.Exceptions;
@@ -7,16 +7,18 @@ using Domain.Shared.Exceptions;
 namespace Application.Identity.Services;
 
 /// <summary>
-/// Implementation of IPasswordService using repositories directly.
+/// Implementation of IPasswordService using repositories and UnitOfWork.
 /// </summary>
 internal sealed class PasswordService(
     IUserRepository userRepository,
+    IIdentityUnitOfWork unitOfWork,
     IPasswordVerifier passwordVerifier,
     IPasswordHashService passwordHashService,
     IPasswordStrengthValidator passwordStrengthValidator,
     IPasswordResetTokenService passwordResetTokenService) : IPasswordService
 {
     private readonly IUserRepository _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+    private readonly IIdentityUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
     private readonly IPasswordVerifier _passwordVerifier = passwordVerifier ?? throw new ArgumentNullException(nameof(passwordVerifier));
     private readonly IPasswordHashService _passwordHashService = passwordHashService ?? throw new ArgumentNullException(nameof(passwordHashService));
     private readonly IPasswordStrengthValidator _passwordStrengthValidator = passwordStrengthValidator ?? throw new ArgumentNullException(nameof(passwordStrengthValidator));
@@ -45,7 +47,8 @@ internal sealed class PasswordService(
         }
 
         user.SetPasswordHash(_passwordHashService.Hash(user, newPassword));
-        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+        _userRepository.Update(user);
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public async Task ResetPasswordAsync(Guid userId, string newPassword, CancellationToken cancellationToken)
@@ -60,7 +63,8 @@ internal sealed class PasswordService(
         }
 
         user.SetPasswordHash(_passwordHashService.Hash(user, newPassword));
-        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+        _userRepository.Update(user);
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public async Task LinkPasswordAsync(Guid userId, string username, string password, string? email, CancellationToken cancellationToken)
@@ -114,7 +118,8 @@ internal sealed class PasswordService(
         }
 
         user.SetPasswordHash(_passwordHashService.Hash(user, password));
-        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+        _userRepository.Update(user);
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<string?> GeneratePasswordResetTokenAsync(string email, CancellationToken cancellationToken)

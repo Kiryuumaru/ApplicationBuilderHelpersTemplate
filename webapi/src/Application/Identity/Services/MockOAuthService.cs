@@ -1,7 +1,7 @@
 using Application.Identity.Interfaces;
-using Application.Identity.Interfaces.Infrastructure;
 using Application.Identity.Models;
 using Domain.Identity.Enums;
+using Domain.Identity.Interfaces;
 using Domain.Identity.Exceptions;
 using System.Security.Cryptography;
 
@@ -14,9 +14,11 @@ namespace Application.Identity.Services;
 /// </summary>
 internal sealed class MockOAuthService(
     IUserRepository userRepository,
+    IIdentityUnitOfWork unitOfWork,
     IUserRegistrationService registrationService) : IOAuthService
 {
     private readonly IUserRepository _userRepository = userRepository;
+    private readonly IIdentityUnitOfWork _unitOfWork = unitOfWork;
     private readonly IUserRegistrationService _registrationService = registrationService;
 
     private static readonly Dictionary<ExternalLoginProvider, OAuthProviderConfig> _providers = new()
@@ -229,13 +231,13 @@ internal sealed class MockOAuthService(
             if (userByEmail is not null)
             {
                 // Link the external login to existing user
-                await _userRepository.AddLoginAsync(
+                _userRepository.AddLogin(
                     userByEmail.Id,
                     userInfo.Provider,
                     userInfo.ProviderSubject,
                     userInfo.Name,
-                    userInfo.Email,
-                    cancellationToken);
+                    userInfo.Email);
+                await _unitOfWork.CommitAsync(cancellationToken);
 
                 return OAuthLoginResult.ExistingUser(userByEmail.Id, userByEmail.UserName!);
             }

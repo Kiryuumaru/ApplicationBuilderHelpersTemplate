@@ -1,13 +1,14 @@
 using Domain.Authorization.Models;
 
-namespace Application.Authorization.Interfaces.Infrastructure;
+namespace Domain.Authorization.Interfaces;
 
 /// <summary>
-/// Internal repository for role persistence operations.
-/// Absorbs functionality from both IRoleRepository (public) and IRoleLookup (deleted).
+/// Repository for role persistence operations.
+/// Changes are tracked but not persisted until IAuthorizationUnitOfWork.CommitAsync() is called.
 /// </summary>
 public interface IRoleRepository
 {
+    // Query methods
     Task<Role?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
     Task<Role?> GetByCodeAsync(string code, CancellationToken cancellationToken);
@@ -18,7 +19,10 @@ public interface IRoleRepository
 
     Task<IReadOnlyCollection<Role>> ListAsync(CancellationToken cancellationToken);
 
-    Task SaveAsync(Role role, CancellationToken cancellationToken);
+    // Change tracking methods - changes are persisted on UnitOfWork.CommitAsync()
+    void Add(Role role);
 
-    Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken);
+    void Update(Role role);
+
+    void Remove(Role role);
 }

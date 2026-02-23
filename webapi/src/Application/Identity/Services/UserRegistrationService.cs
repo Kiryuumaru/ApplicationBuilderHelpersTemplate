@@ -1,27 +1,30 @@
 using Application.Authorization.Interfaces;
-using Application.Authorization.Interfaces.Infrastructure;
 using Application.Authorization.Services;
 using Application.Identity.Interfaces;
-using Application.Identity.Interfaces.Infrastructure;
+using Application.Identity.Interfaces.Outbound;
 using Application.Identity.Models;
+using Domain.Authorization.Interfaces;
 using Domain.Identity.Exceptions;
+using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
 using Domain.Shared.Exceptions;
 
 namespace Application.Identity.Services;
 
 /// <summary>
-/// Implementation of IUserRegistrationService using repositories directly.
+/// Implementation of IUserRegistrationService using repositories and UnitOfWork.
 /// </summary>
 internal sealed class UserRegistrationService(
     IUserRepository userRepository,
     IRoleRepository roleRepository,
+    IIdentityUnitOfWork unitOfWork,
     IUserRoleResolver userRoleResolver,
     IPasswordHashService passwordHashService,
     IPasswordStrengthValidator passwordStrengthValidator) : IUserRegistrationService
 {
     private readonly IUserRepository _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
     private readonly IRoleRepository _roleRepository = roleRepository ?? throw new ArgumentNullException(nameof(roleRepository));
+    private readonly IIdentityUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
     private readonly IUserRoleResolver _userRoleResolver = userRoleResolver ?? throw new ArgumentNullException(nameof(userRoleResolver));
     private readonly IPasswordHashService _passwordHashService = passwordHashService ?? throw new ArgumentNullException(nameof(passwordHashService));
     private readonly IPasswordStrengthValidator _passwordStrengthValidator = passwordStrengthValidator ?? throw new ArgumentNullException(nameof(passwordStrengthValidator));
@@ -101,7 +104,8 @@ internal sealed class UserRegistrationService(
         var userRoleId = Domain.Authorization.Constants.Roles.User.Id;
         user.AssignRole(userRoleId, new Dictionary<string, string?> { ["roleUserId"] = user.Id.ToString() });
 
-        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+        _userRepository.Add(user);
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
 
         var externalLogins = await _userRepository.GetLoginsAsync(user.Id, cancellationToken).ConfigureAwait(false);
         var roleResolutions = await _userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
@@ -133,16 +137,17 @@ internal sealed class UserRegistrationService(
         var userRoleId = Domain.Authorization.Constants.Roles.User.Id;
         user.AssignRole(userRoleId, new Dictionary<string, string?> { ["roleUserId"] = user.Id.ToString() });
 
-        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+        _userRepository.Add(user);
 
         // Add external login
-        await _userRepository.AddLoginAsync(
+        _userRepository.AddLogin(
             user.Id,
             request.Provider,
             request.ProviderSubject,
             request.ProviderDisplayName,
-            request.ProviderEmail,
-            cancellationToken).ConfigureAwait(false);
+            request.ProviderEmail);
+
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
 
         var externalLogins = await _userRepository.GetLoginsAsync(user.Id, cancellationToken).ConfigureAwait(false);
         var roleResolutions = await _userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
@@ -163,7 +168,8 @@ internal sealed class UserRegistrationService(
 
         // For passkey upgrade, we don't need a username - just mark as non-anonymous
         user.UpgradeFromAnonymousWithPasskey();
-        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+        _userRepository.Update(user);
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public async Task DeleteUserAsync(Guid userId, CancellationToken cancellationToken)
@@ -171,6 +177,7 @@ internal sealed class UserRegistrationService(
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
-        await _userRepository.DeleteAsync(userId, cancellationToken).ConfigureAwait(false);
+        _userRepository.Remove(user);
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 }

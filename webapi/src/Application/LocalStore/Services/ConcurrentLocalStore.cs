@@ -1,5 +1,5 @@
 using Application.LocalStore.Common;
-using Application.LocalStore.Interfaces.Infrastructure;
+using Application.LocalStore.Interfaces.Outbound;
 using DisposableHelpers.Attributes;
 
 namespace Application.LocalStore.Services;

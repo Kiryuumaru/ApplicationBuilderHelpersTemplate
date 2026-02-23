@@ -1,7 +1,8 @@
-namespace Application.Shared.Interfaces;
+namespace Application.Shared.Interfaces.Outbound;
 
 /// <summary>
 /// Service for sending emails.
+/// Implemented by Infrastructure layer.
 /// </summary>
 public interface IEmailService
 {

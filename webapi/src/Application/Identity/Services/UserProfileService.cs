@@ -1,20 +1,22 @@
 using Application.Authorization.Interfaces;
 using Application.Identity.Interfaces;
-using Application.Identity.Interfaces.Infrastructure;
 using Application.Identity.Models;
+using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
 using Domain.Shared.Exceptions;
 
 namespace Application.Identity.Services;
 
 /// <summary>
-/// Implementation of IUserProfileService using repositories directly.
+/// Implementation of IUserProfileService using repositories and UnitOfWork.
 /// </summary>
 internal sealed class UserProfileService(
     IUserRepository userRepository,
+    IIdentityUnitOfWork unitOfWork,
     IUserRoleResolver userRoleResolver) : IUserProfileService
 {
     private readonly IUserRepository _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+    private readonly IIdentityUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
     private readonly IUserRoleResolver _userRoleResolver = userRoleResolver ?? throw new ArgumentNullException(nameof(userRoleResolver));
 
     public async Task<UserDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
@@ -88,7 +90,8 @@ internal sealed class UserProfileService(
             user.SetLockoutEnabled(request.LockoutEnabled.Value);
         }
 
-        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+        _userRepository.Update(user);
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public async Task ChangeUsernameAsync(Guid userId, string newUsername, CancellationToken cancellationToken)
@@ -105,7 +108,8 @@ internal sealed class UserProfileService(
 
         user.SetUserName(newUsername);
         user.SetNormalizedUserName(newUsername.ToUpperInvariant());
-        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+        _userRepository.Update(user);
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public async Task ChangeEmailAsync(Guid userId, string newEmail, CancellationToken cancellationToken)
@@ -121,7 +125,8 @@ internal sealed class UserProfileService(
         }
 
         user.SetEmail(newEmail);
-        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+        _userRepository.Update(user);
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public async Task LinkEmailAsync(Guid userId, string email, CancellationToken cancellationToken)
@@ -137,7 +142,8 @@ internal sealed class UserProfileService(
         }
 
         user.SetEmail(email);
-        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+        _userRepository.Update(user);
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public async Task UnlinkEmailAsync(Guid userId, CancellationToken cancellationToken)
@@ -146,7 +152,8 @@ internal sealed class UserProfileService(
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
         user.SetEmail(null);
-        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+        _userRepository.Update(user);
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public async Task UnlinkExternalLoginAsync(Guid userId, Domain.Identity.Enums.ExternalLoginProvider provider, CancellationToken cancellationToken)
@@ -154,7 +161,8 @@ internal sealed class UserProfileService(
         var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
-        await _userRepository.RemoveLoginAsync(userId, provider, cancellationToken).ConfigureAwait(false);
+        _userRepository.RemoveLogin(userId, provider);
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<UserDto> MapToUserDtoAsync(User user, CancellationToken cancellationToken)

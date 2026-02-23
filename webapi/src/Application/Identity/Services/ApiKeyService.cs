@@ -1,10 +1,10 @@
 using System.Security.Claims;
 using Application.Authorization.Interfaces;
 using Application.Identity.Interfaces;
-using Application.Identity.Interfaces.Infrastructure;
 using Application.Identity.Models;
 using Domain.Authorization.Constants;
 using Domain.Authorization.ValueObjects;
+using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
 using TokenClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 using TokenType = Domain.Identity.Enums.TokenType;
@@ -12,10 +12,11 @@ using TokenType = Domain.Identity.Enums.TokenType;
 namespace Application.Identity.Services;
 
 /// <summary>
-/// Service for managing user API keys.
+/// Service for managing user API keys using repositories and UnitOfWork.
 /// </summary>
 internal sealed class ApiKeyService(
     IApiKeyRepository apiKeyRepository,
+    IIdentityUnitOfWork unitOfWork,
     IUserAuthorizationService userAuthorizationService,
     IPermissionService permissionService) : IApiKeyService
 {
@@ -56,7 +57,8 @@ internal sealed class ApiKeyService(
         var token = await GenerateApiKeyTokenAsync(userId, keyId, expiresAt, cancellationToken);
 
         // Store metadata in DB
-        await apiKeyRepository.CreateAsync(apiKey, cancellationToken);
+        apiKeyRepository.Add(apiKey);
+        await unitOfWork.CommitAsync(cancellationToken);
 
         // Return DTO and token
         var dto = MapToDto(apiKey);
@@ -92,7 +94,8 @@ internal sealed class ApiKeyService(
 
         apiKey.IsRevoked = true;
         apiKey.RevokedAt = DateTimeOffset.UtcNow;
-        await apiKeyRepository.UpdateAsync(apiKey, cancellationToken);
+        apiKeyRepository.Update(apiKey);
+        await unitOfWork.CommitAsync(cancellationToken);
         return true;
     }
 
@@ -127,7 +130,8 @@ internal sealed class ApiKeyService(
         if (apiKey is not null && !apiKey.IsRevoked)
         {
             apiKey.LastUsedAt = DateTimeOffset.UtcNow;
-            await apiKeyRepository.UpdateAsync(apiKey, cancellationToken);
+            apiKeyRepository.Update(apiKey);
+            await unitOfWork.CommitAsync(cancellationToken);
         }
     }
 

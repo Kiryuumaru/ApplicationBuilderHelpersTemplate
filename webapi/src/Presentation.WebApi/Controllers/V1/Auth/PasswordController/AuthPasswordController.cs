@@ -1,4 +1,4 @@
-using Application.Shared.Interfaces;
+using Application.Shared.Interfaces.Outbound;
 using Application.Identity.Interfaces;
 using Asp.Versioning;
 using Domain.Authorization.Constants;

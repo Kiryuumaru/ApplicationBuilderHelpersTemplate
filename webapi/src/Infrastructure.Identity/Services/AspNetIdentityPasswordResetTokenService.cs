@@ -1,4 +1,4 @@
-using Application.Identity.Interfaces.Infrastructure;
+using Application.Identity.Interfaces.Outbound;
 using Domain.Identity.Models;
 using Microsoft.AspNetCore.Identity;
 

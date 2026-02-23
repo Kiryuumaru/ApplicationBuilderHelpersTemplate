@@ -1,7 +1,11 @@
 using Domain.Identity.Models;
 
-namespace Application.Identity.Interfaces.Infrastructure;
+namespace Application.Identity.Interfaces.Outbound;
 
+/// <summary>
+/// Service for validating password strength.
+/// Implemented by Infrastructure layer.
+/// </summary>
 public interface IPasswordStrengthValidator
 {
     Task<IReadOnlyCollection<string>> ValidateAsync(User user, string password, CancellationToken cancellationToken);

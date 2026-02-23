@@ -1,7 +1,11 @@
 using Domain.Identity.Models;
 
-namespace Application.Identity.Interfaces.Infrastructure;
+namespace Application.Identity.Interfaces.Outbound;
 
+/// <summary>
+/// Service for generating and validating password reset tokens.
+/// Implemented by Infrastructure layer.
+/// </summary>
 public interface IPasswordResetTokenService
 {
     Task<string> GenerateResetTokenAsync(User user, CancellationToken cancellationToken);

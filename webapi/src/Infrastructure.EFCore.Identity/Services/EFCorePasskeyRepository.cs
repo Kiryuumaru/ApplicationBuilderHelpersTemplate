@@ -1,7 +1,6 @@
-using Application.Identity.Interfaces.Infrastructure;
 using Domain.Identity.Enums;
+using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
-using Domain.Shared.Exceptions;
 using Infrastructure.EFCore.Extensions;
 using Infrastructure.EFCore.Identity.Models;
 using Microsoft.EntityFrameworkCore;
@@ -9,25 +8,18 @@ using Microsoft.EntityFrameworkCore;
 namespace Infrastructure.EFCore.Identity.Services;
 
 /// <summary>
-/// EF Core implementation of IPasskeyRepository.
-/// Merges functionality from IPasskeyCredentialStore and IPasskeyChallengeStore.
+/// EF Core implementation of IPasskeyRepository using scoped DbContext.
+/// Changes are tracked but not persisted until IIdentityUnitOfWork.CommitAsync() is called.
 /// </summary>
-internal sealed class EFCorePasskeyRepository(IDbContextFactory<EFCoreDbContext> contextFactory) : IPasskeyRepository
+internal sealed class EFCorePasskeyRepository(EFCoreDbContext context) : IPasskeyRepository
 {
-    // Credential operations (from IPasskeyCredentialStore)
+    private readonly EFCoreDbContext _context = context;
 
-    public async Task SaveCredentialAsync(PasskeyCredential credential, CancellationToken cancellationToken)
-    {
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-        var entity = MapCredentialToEntity(credential);
-        context.Set<PasskeyCredentialEntity>().Add(entity);
-        await context.SaveChangesWithExceptionHandlingAsync("PasskeyCredential", credential.Id.ToString(), cancellationToken);
-    }
+    // Credential query methods
 
     public async Task<IReadOnlyCollection<PasskeyCredential>> GetCredentialsByUserIdAsync(Guid userId, CancellationToken cancellationToken)
     {
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-        var entities = await context.Set<PasskeyCredentialEntity>()
+        var entities = await _context.Set<PasskeyCredentialEntity>()
             .Where(c => c.UserId == userId)
             .ToListAsync(cancellationToken);
 
@@ -36,15 +28,13 @@ internal sealed class EFCorePasskeyRepository(IDbContextFactory<EFCoreDbContext>
 
     public async Task<PasskeyCredential?> GetCredentialByIdAsync(Guid credentialId, CancellationToken cancellationToken)
     {
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-        var entity = await context.Set<PasskeyCredentialEntity>().FindAsync([credentialId], cancellationToken);
+        var entity = await _context.Set<PasskeyCredentialEntity>().FindAsync([credentialId], cancellationToken);
         return entity is null ? null : MapCredentialToDomain(entity);
     }
 
     public async Task<PasskeyCredential?> GetCredentialByCredentialIdAsync(byte[] credentialId, CancellationToken cancellationToken)
     {
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-        var entity = await context.Set<PasskeyCredentialEntity>()
+        var entity = await _context.Set<PasskeyCredentialEntity>()
             .FirstOrDefaultAsync(c => c.CredentialId == credentialId, cancellationToken);
 
         return entity is null ? null : MapCredentialToDomain(entity);
@@ -52,16 +42,13 @@ internal sealed class EFCorePasskeyRepository(IDbContextFactory<EFCoreDbContext>
 
     public async Task<IReadOnlyCollection<PasskeyCredential>> GetCredentialsByCredentialIdsAsync(IEnumerable<byte[]> credentialIds, CancellationToken cancellationToken)
     {
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         var idList = credentialIds.ToList();
         if (idList.Count == 0)
         {
             return [];
         }
 
-        // EF Core may not support Contains for byte arrays directly
-        // We'll fetch all and filter in memory for now
-        var entities = await context.Set<PasskeyCredentialEntity>().ToListAsync(cancellationToken);
+        var entities = await _context.Set<PasskeyCredentialEntity>().ToListAsync(cancellationToken);
         var matching = entities
             .Where(e => idList.Any(id => id.SequenceEqual(e.CredentialId)))
             .Select(MapCredentialToDomain)
@@ -72,78 +59,81 @@ internal sealed class EFCorePasskeyRepository(IDbContextFactory<EFCoreDbContext>
 
     public async Task<IReadOnlyCollection<PasskeyCredential>> GetCredentialsByUserHandleAsync(byte[] userHandle, CancellationToken cancellationToken)
     {
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-        var entities = await context.Set<PasskeyCredentialEntity>()
+        var entities = await _context.Set<PasskeyCredentialEntity>()
             .Where(c => c.UserHandle == userHandle)
             .ToListAsync(cancellationToken);
 
         return entities.Select(MapCredentialToDomain).ToList();
     }
 
-    public async Task UpdateCredentialAsync(PasskeyCredential credential, CancellationToken cancellationToken)
+    // Credential change tracking - changes are persisted on UnitOfWork.CommitAsync()
+
+    public void AddCredential(PasskeyCredential credential)
     {
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-        var entity = await context.Set<PasskeyCredentialEntity>().FindAsync([credential.Id], cancellationToken)
-            ?? throw new EntityNotFoundException(nameof(PasskeyCredential), credential.Id.ToString());
-
-        entity.Name = credential.Name;
-        entity.SignCount = credential.SignCount;
-        entity.LastUsedAt = credential.LastUsedAt;
-
-        await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
+        var entity = MapCredentialToEntity(credential);
+        _context.Set<PasskeyCredentialEntity>().Add(entity);
     }
 
-    public async Task DeleteCredentialAsync(Guid credentialId, CancellationToken cancellationToken)
+    public void UpdateCredential(PasskeyCredential credential)
     {
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-        var entity = await context.Set<PasskeyCredentialEntity>().FindAsync([credentialId], cancellationToken);
+        var entity = _context.Set<PasskeyCredentialEntity>().Local.FirstOrDefault(e => e.Id == credential.Id);
         if (entity is not null)
         {
-            context.Set<PasskeyCredentialEntity>().Remove(entity);
-            await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
+            entity.Name = credential.Name;
+            entity.SignCount = credential.SignCount;
+            entity.LastUsedAt = credential.LastUsedAt;
+        }
+        else
+        {
+            entity = MapCredentialToEntity(credential);
+            _context.Set<PasskeyCredentialEntity>().Attach(entity);
+            _context.Entry(entity).State = EntityState.Modified;
         }
     }
 
-    // Challenge operations (from IPasskeyChallengeStore)
-
-    public async Task SaveChallengeAsync(PasskeyChallenge challenge, CancellationToken cancellationToken)
+    public void RemoveCredential(PasskeyCredential credential)
     {
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-        var entity = MapChallengeToEntity(challenge);
-        context.Set<PasskeyChallengeEntity>().Add(entity);
-        await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
+        var entity = _context.Set<PasskeyCredentialEntity>().Local.FirstOrDefault(e => e.Id == credential.Id)
+            ?? MapCredentialToEntity(credential);
+        _context.Set<PasskeyCredentialEntity>().Remove(entity);
     }
+
+    // Challenge query methods
 
     public async Task<PasskeyChallenge?> GetChallengeByIdAsync(Guid challengeId, CancellationToken cancellationToken)
     {
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-        var entity = await context.Set<PasskeyChallengeEntity>().FindAsync([challengeId], cancellationToken);
+        var entity = await _context.Set<PasskeyChallengeEntity>().FindAsync([challengeId], cancellationToken);
         return entity is null ? null : MapChallengeToDomain(entity);
     }
 
-    public async Task DeleteChallengeAsync(Guid challengeId, CancellationToken cancellationToken)
+    // Challenge change tracking - changes are persisted on UnitOfWork.CommitAsync()
+
+    public void AddChallenge(PasskeyChallenge challenge)
     {
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-        var entity = await context.Set<PasskeyChallengeEntity>().FindAsync([challengeId], cancellationToken);
-        if (entity is not null)
-        {
-            context.Set<PasskeyChallengeEntity>().Remove(entity);
-            await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
-        }
+        var entity = MapChallengeToEntity(challenge);
+        _context.Set<PasskeyChallengeEntity>().Add(entity);
     }
+
+    public void RemoveChallenge(PasskeyChallenge challenge)
+    {
+        var entity = _context.Set<PasskeyChallengeEntity>().Local.FirstOrDefault(e => e.Id == challenge.Id)
+            ?? MapChallengeToEntity(challenge);
+        _context.Set<PasskeyChallengeEntity>().Remove(entity);
+    }
+
+    // Bulk operation - executes immediately for efficiency (background cleanup)
 
     public async Task DeleteExpiredChallengesAsync(CancellationToken cancellationToken)
     {
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
         var now = DateTimeOffset.UtcNow;
-        var expired = await context.Set<PasskeyChallengeEntity>()
+        var expired = await _context.Set<PasskeyChallengeEntity>()
             .Where(c => c.ExpiresAt <= now)
             .ToListAsync(cancellationToken);
 
         if (expired.Count > 0)
         {
-            context.Set<PasskeyChallengeEntity>().RemoveRange(expired);
-            await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
+            _context.Set<PasskeyChallengeEntity>().RemoveRange(expired);
+            await _context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
         }
     }
 

@@ -1,9 +1,9 @@
 using Application.Identity.Interfaces;
-using Application.Identity.Interfaces.Infrastructure;
 using Application.Identity.Models;
+using Domain.Identity.Interfaces;
+using Domain.Identity.Models;
 using Domain.Identity.Enums;
 using Domain.Identity.Exceptions;
-using Domain.Identity.Models;
 using Domain.Shared.Exceptions;
 using Fido2NetLib;
 using Fido2NetLib.Objects;
@@ -12,13 +12,14 @@ using System.Text.Json;
 namespace Infrastructure.Passkeys;
 
 /// <summary>
-/// Passkey service implementation using Fido2.AspNet library.
+/// Passkey service implementation using Fido2.AspNet library and UnitOfWork.
 /// </summary>
 internal class PasskeyService : IPasskeyService
 {
     private readonly IFido2 _fido2;
     private readonly IPasskeyRepository _passkeyRepository;
     private readonly IUserRepository _userRepository;
+    private readonly IIdentityUnitOfWork _unitOfWork;
     private readonly IUserTokenService _userTokenService;
     private readonly JsonSerializerOptions _jsonOptions;
 
@@ -26,11 +27,13 @@ internal class PasskeyService : IPasskeyService
         IFido2 fido2,
         IPasskeyRepository passkeyRepository,
         IUserRepository userRepository,
+        IIdentityUnitOfWork unitOfWork,
         IUserTokenService userTokenService)
     {
         _fido2 = fido2 ?? throw new ArgumentNullException(nameof(fido2));
         _passkeyRepository = passkeyRepository ?? throw new ArgumentNullException(nameof(passkeyRepository));
         _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+        _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         _userTokenService = userTokenService ?? throw new ArgumentNullException(nameof(userTokenService));
         _jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
     }
@@ -74,7 +77,8 @@ internal class PasskeyService : IPasskeyService
             options.ToJson(),
             credentialName);
 
-        await _passkeyRepository.SaveChallengeAsync(challenge, cancellationToken);
+        _passkeyRepository.AddChallenge(challenge);
+        await _unitOfWork.CommitAsync(cancellationToken);
 
         return new PasskeyCreationOptions(challenge.Id, options.ToJson());
     }
@@ -93,7 +97,8 @@ internal class PasskeyService : IPasskeyService
 
         if (challenge.IsExpired())
         {
-            await _passkeyRepository.DeleteChallengeAsync(challengeId, cancellationToken);
+            _passkeyRepository.RemoveChallenge(challenge);
+            await _unitOfWork.CommitAsync(cancellationToken);
             throw new PasskeyException("Challenge has expired", challengeId: challengeId);
         }
 
@@ -136,10 +141,11 @@ internal class PasskeyService : IPasskeyService
             result.User.Id,
             result.AttestationFormat);
 
-        await _passkeyRepository.SaveCredentialAsync(credential, cancellationToken);
+        _passkeyRepository.AddCredential(credential);
 
         // Delete the used challenge
-        await _passkeyRepository.DeleteChallengeAsync(challengeId, cancellationToken);
+        _passkeyRepository.RemoveChallenge(challenge);
+        await _unitOfWork.CommitAsync(cancellationToken);
 
         return new PasskeyRegistrationResult(credential.Id, credential.Name);
     }
@@ -178,7 +184,8 @@ internal class PasskeyService : IPasskeyService
             PasskeyChallengeType.Authentication,
             options.ToJson());
 
-        await _passkeyRepository.SaveChallengeAsync(challenge, cancellationToken);
+        _passkeyRepository.AddChallenge(challenge);
+        await _unitOfWork.CommitAsync(cancellationToken);
 
         return new PasskeyRequestOptions(challenge.Id, options.ToJson());
     }
@@ -197,7 +204,8 @@ internal class PasskeyService : IPasskeyService
 
         if (challenge.IsExpired())
         {
-            await _passkeyRepository.DeleteChallengeAsync(challengeId, cancellationToken);
+            _passkeyRepository.RemoveChallenge(challenge);
+            await _unitOfWork.CommitAsync(cancellationToken);
             throw new PasskeyException("Challenge has expired", challengeId: challengeId);
         }
 
@@ -237,13 +245,14 @@ internal class PasskeyService : IPasskeyService
         }, cancellationToken);
 
         // If we get here, the assertion was valid (otherwise an exception would be thrown)
-        
+
         // Update the sign count
         credential.UpdateSignCount(result.SignCount);
-        await _passkeyRepository.UpdateCredentialAsync(credential, cancellationToken);
+        _passkeyRepository.UpdateCredential(credential);
 
         // Delete the used challenge
-        await _passkeyRepository.DeleteChallengeAsync(challengeId, cancellationToken);
+        _passkeyRepository.RemoveChallenge(challenge);
+        await _unitOfWork.CommitAsync(cancellationToken);
 
         // Delegate to IUserTokenService for proper token generation
         var tokenResult = await _userTokenService.CreateSessionWithTokensAsync(
@@ -296,7 +305,8 @@ internal class PasskeyService : IPasskeyService
             throw new UnauthorizedAccessException("You can only rename your own passkeys");
 
         credential.Rename(newName);
-        await _passkeyRepository.UpdateCredentialAsync(credential, cancellationToken);
+        _passkeyRepository.UpdateCredential(credential);
+        await _unitOfWork.CommitAsync(cancellationToken);
     }
 
     public async Task RevokePasskeyAsync(
@@ -310,6 +320,7 @@ internal class PasskeyService : IPasskeyService
         if (credential.UserId != userId)
             throw new UnauthorizedAccessException("You can only revoke your own passkeys");
 
-        await _passkeyRepository.DeleteCredentialAsync(credentialId, cancellationToken);
+        _passkeyRepository.RemoveCredential(credential);
+        await _unitOfWork.CommitAsync(cancellationToken);
     }
 }

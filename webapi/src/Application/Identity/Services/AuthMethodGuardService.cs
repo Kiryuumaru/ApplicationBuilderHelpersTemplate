@@ -1,5 +1,5 @@
 using Application.Identity.Interfaces;
-using Application.Identity.Interfaces.Infrastructure;
+using Domain.Identity.Interfaces;
 
 namespace Application.Identity.Services;
 

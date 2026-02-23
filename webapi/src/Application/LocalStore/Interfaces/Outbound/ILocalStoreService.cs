@@ -1,5 +1,9 @@
-namespace Application.LocalStore.Interfaces.Infrastructure;
+namespace Application.LocalStore.Interfaces.Outbound;
 
+/// <summary>
+/// Service for local key-value storage operations.
+/// Implemented by Infrastructure layer.
+/// </summary>
 public interface ILocalStoreService : IDisposable
 {
     Task<string?> Get(string group, string id, CancellationToken cancellationToken);

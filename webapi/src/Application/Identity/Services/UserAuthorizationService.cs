@@ -1,24 +1,26 @@
 using Application.Authorization.Interfaces;
-using Application.Authorization.Interfaces.Infrastructure;
 using Application.Authorization.Services;
 using Application.Identity.Interfaces;
-using Application.Identity.Interfaces.Infrastructure;
 using Application.Identity.Models;
+using Domain.Authorization.Interfaces;
+using Domain.Identity.Interfaces;
 using Domain.Identity.ValueObjects;
 using Domain.Shared.Exceptions;
 
 namespace Application.Identity.Services;
 
 /// <summary>
-/// Implementation of IUserAuthorizationService using repositories directly.
+/// Implementation of IUserAuthorizationService using repositories and UnitOfWork.
 /// </summary>
 internal sealed class UserAuthorizationService(
     IUserRepository userRepository,
     IRoleRepository roleRepository,
+    IIdentityUnitOfWork unitOfWork,
     IUserRoleResolver userRoleResolver) : IUserAuthorizationService
 {
     private readonly IUserRepository _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
     private readonly IRoleRepository _roleRepository = roleRepository ?? throw new ArgumentNullException(nameof(roleRepository));
+    private readonly IIdentityUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
     private readonly IUserRoleResolver _userRoleResolver = userRoleResolver ?? throw new ArgumentNullException(nameof(userRoleResolver));
 
     public async Task AssignRoleAsync(Guid userId, RoleAssignmentRequest assignment, CancellationToken cancellationToken)
@@ -35,7 +37,8 @@ internal sealed class UserAuthorizationService(
         RoleValidationHelper.ValidateRoleParameters(role, assignment.ParameterValues);
 
         user.AssignRole(role.Id, assignment.ParameterValues);
-        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+        _userRepository.Update(user);
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public async Task RemoveRoleAsync(Guid userId, Guid roleId, CancellationToken cancellationToken)
@@ -44,7 +47,8 @@ internal sealed class UserAuthorizationService(
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
         user.RemoveRole(roleId);
-        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+        _userRepository.Update(user);
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<IReadOnlyCollection<string>> GetEffectivePermissionsAsync(Guid userId, CancellationToken cancellationToken)
@@ -87,7 +91,8 @@ internal sealed class UserAuthorizationService(
             ? UserPermissionGrant.Allow(permissionIdentifier, description, grantedBy)
             : UserPermissionGrant.Deny(permissionIdentifier, description, grantedBy);
         user.GrantPermission(grant);
-        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+        _userRepository.Update(user);
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<bool> RevokePermissionAsync(Guid userId, string permissionIdentifier, CancellationToken cancellationToken)
@@ -100,7 +105,8 @@ internal sealed class UserAuthorizationService(
         var revoked = user.RevokePermission(permissionIdentifier);
         if (revoked)
         {
-            await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+            _userRepository.Update(user);
+            await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
         }
 
         return revoked;

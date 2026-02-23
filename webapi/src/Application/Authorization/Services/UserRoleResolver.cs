@@ -1,5 +1,5 @@
 using Application.Authorization.Interfaces;
-using Application.Authorization.Interfaces.Infrastructure;
+using Domain.Authorization.Interfaces;
 using Domain.Identity.Models;
 
 namespace Application.Authorization.Services;

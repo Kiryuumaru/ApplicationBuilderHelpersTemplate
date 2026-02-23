@@ -1,7 +1,7 @@
 using Application.Authorization.Interfaces;
-using Application.Authorization.Interfaces.Infrastructure;
 using Application.Authorization.Models;
 using Domain.Authorization.Exceptions;
+using Domain.Authorization.Interfaces;
 using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;
 using Domain.Shared.Exceptions;
@@ -9,9 +9,12 @@ using RolesConstants = Domain.Authorization.Constants.Roles;
 
 namespace Application.Authorization.Services;
 
-internal sealed class RoleService(IRoleRepository repository) : IRoleService
+internal sealed class RoleService(
+    IRoleRepository repository,
+    IAuthorizationUnitOfWork unitOfWork) : IRoleService
 {
     private readonly IRoleRepository _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+    private readonly IAuthorizationUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
 
     public async Task<Role> CreateRoleAsync(RoleDescriptor descriptor, CancellationToken cancellationToken)
     {
@@ -31,7 +34,8 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
 
         var role = Role.Create(descriptor.Code, descriptor.Name, descriptor.Description, descriptor.IsSystemRole);
         role.ReplaceScopeTemplates(descriptor.ScopeTemplates ?? []);
-        await _repository.SaveAsync(role, cancellationToken).ConfigureAwait(false);
+        _repository.Add(role);
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
         return role;
     }
 
@@ -55,7 +59,9 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
             throw new SystemRoleException("Cannot delete a system role.", roleId);
         }
 
-        return await _repository.DeleteAsync(roleId, cancellationToken).ConfigureAwait(false);
+        _repository.Remove(role);
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
+        return true;
     }
 
     public Task<Role?> GetByCodeAsync(string code, CancellationToken cancellationToken)
@@ -125,7 +131,8 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
         }
 
         role.ReplaceScopeTemplates(scopeTemplates);
-        await _repository.SaveAsync(role, cancellationToken).ConfigureAwait(false);
+        _repository.Update(role);
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
         return role;
     }
 
@@ -145,8 +152,9 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
         }
 
         role.UpdateMetadata(name, description);
-        
-        await _repository.SaveAsync(role, cancellationToken).ConfigureAwait(false);
+
+        _repository.Update(role);
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
         return role;
     }
 }

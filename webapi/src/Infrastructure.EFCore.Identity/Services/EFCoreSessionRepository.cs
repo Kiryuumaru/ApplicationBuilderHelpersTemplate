@@ -1,6 +1,5 @@
-using Application.Identity.Interfaces.Infrastructure;
+using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
-using Domain.Shared.Exceptions;
 using Infrastructure.EFCore.Extensions;
 using Infrastructure.EFCore.Identity.Models;
 using Microsoft.EntityFrameworkCore;
@@ -8,31 +7,24 @@ using Microsoft.EntityFrameworkCore;
 namespace Infrastructure.EFCore.Identity.Services;
 
 /// <summary>
-/// EF Core implementation of ISessionRepository.
-/// Renamed from EFCoreSessionStore to follow repository naming convention.
+/// EF Core implementation of ISessionRepository using scoped DbContext.
+/// Changes are tracked but not persisted until IIdentityUnitOfWork.CommitAsync() is called.
 /// </summary>
-internal sealed class EFCoreSessionRepository(IDbContextFactory<EFCoreDbContext> contextFactory) : ISessionRepository
+internal sealed class EFCoreSessionRepository(EFCoreDbContext context) : ISessionRepository
 {
-    public async Task CreateAsync(LoginSession session, CancellationToken cancellationToken)
-    {
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-        var entity = MapToEntity(session);
-        context.Set<LoginSessionEntity>().Add(entity);
-        await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
-    }
+    private readonly EFCoreDbContext _context = context;
+
+    // Query methods
 
     public async Task<LoginSession?> GetByIdAsync(Guid sessionId, CancellationToken cancellationToken)
     {
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-        var entity = await context.Set<LoginSessionEntity>().FindAsync([sessionId], cancellationToken);
+        var entity = await _context.Set<LoginSessionEntity>().FindAsync([sessionId], cancellationToken);
         return entity is null ? null : MapToDomain(entity);
     }
 
     public async Task<IReadOnlyCollection<LoginSession>> GetActiveByUserIdAsync(Guid userId, CancellationToken cancellationToken)
     {
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-        
-        var entities = await context.Set<LoginSessionEntity>()
+        var entities = await _context.Set<LoginSessionEntity>()
             .Where(s => s.UserId == userId && !s.IsRevoked)
             .ToListAsync(cancellationToken);
 
@@ -44,43 +36,45 @@ internal sealed class EFCoreSessionRepository(IDbContextFactory<EFCoreDbContext>
             .ToList();
     }
 
-    public async Task UpdateAsync(LoginSession session, CancellationToken cancellationToken)
+    // Change tracking methods - changes are persisted on UnitOfWork.CommitAsync()
+
+    public void Add(LoginSession session)
     {
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-        
-        var entity = await context.Set<LoginSessionEntity>().FindAsync([session.Id], cancellationToken)
-            ?? throw new EntityNotFoundException(nameof(LoginSession), session.Id.ToString());
-
-        entity.RefreshTokenHash = session.RefreshTokenHash;
-        entity.LastUsedAt = session.LastUsedAt;
-        entity.ExpiresAt = session.ExpiresAt;
-        entity.IsRevoked = session.IsRevoked;
-        entity.RevokedAt = session.RevokedAt;
-
-        await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
+        var entity = MapToEntity(session);
+        _context.Set<LoginSessionEntity>().Add(entity);
     }
 
-    public async Task<bool> RevokeAsync(Guid sessionId, CancellationToken cancellationToken)
+    public void Update(LoginSession session)
     {
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-        
-        var entity = await context.Set<LoginSessionEntity>().FindAsync([sessionId], cancellationToken);
-        if (entity is null || entity.IsRevoked)
+        var entity = _context.Set<LoginSessionEntity>().Local.FirstOrDefault(e => e.Id == session.Id);
+        if (entity is not null)
         {
-            return false;
+            entity.RefreshTokenHash = session.RefreshTokenHash;
+            entity.LastUsedAt = session.LastUsedAt;
+            entity.ExpiresAt = session.ExpiresAt;
+            entity.IsRevoked = session.IsRevoked;
+            entity.RevokedAt = session.RevokedAt;
         }
-
-        entity.IsRevoked = true;
-        entity.RevokedAt = DateTimeOffset.UtcNow;
-        await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
-        return true;
+        else
+        {
+            entity = MapToEntity(session);
+            _context.Set<LoginSessionEntity>().Attach(entity);
+            _context.Entry(entity).State = EntityState.Modified;
+        }
     }
+
+    public void Remove(LoginSession session)
+    {
+        var entity = _context.Set<LoginSessionEntity>().Local.FirstOrDefault(e => e.Id == session.Id)
+            ?? MapToEntity(session);
+        _context.Set<LoginSessionEntity>().Remove(entity);
+    }
+
+    // Bulk operations - execute immediately for efficiency
 
     public async Task<int> RevokeAllForUserAsync(Guid userId, CancellationToken cancellationToken)
     {
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-        
-        var sessions = await context.Set<LoginSessionEntity>()
+        var sessions = await _context.Set<LoginSessionEntity>()
             .Where(s => s.UserId == userId && !s.IsRevoked)
             .ToListAsync(cancellationToken);
 
@@ -91,15 +85,13 @@ internal sealed class EFCoreSessionRepository(IDbContextFactory<EFCoreDbContext>
             session.RevokedAt = now;
         }
 
-        await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
+        await _context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
         return sessions.Count;
     }
 
     public async Task<int> RevokeAllExceptAsync(Guid userId, Guid exceptSessionId, CancellationToken cancellationToken)
     {
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-        
-        var sessions = await context.Set<LoginSessionEntity>()
+        var sessions = await _context.Set<LoginSessionEntity>()
             .Where(s => s.UserId == userId && !s.IsRevoked && s.Id != exceptSessionId)
             .ToListAsync(cancellationToken);
 
@@ -110,25 +102,25 @@ internal sealed class EFCoreSessionRepository(IDbContextFactory<EFCoreDbContext>
             session.RevokedAt = now;
         }
 
-        await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
+        await _context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
         return sessions.Count;
     }
 
     public async Task<int> DeleteExpiredAsync(DateTimeOffset olderThan, CancellationToken cancellationToken)
     {
-        await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-        
-        var expiredSessions = await context.Set<LoginSessionEntity>()
+        var expiredSessions = await _context.Set<LoginSessionEntity>()
             .ToListAsync(cancellationToken);
 
         var toDelete = expiredSessions
             .Where(s => (s.IsRevoked && s.RevokedAt < olderThan) || s.ExpiresAt < olderThan)
             .ToList();
 
-        context.Set<LoginSessionEntity>().RemoveRange(toDelete);
-        await context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
+        _context.Set<LoginSessionEntity>().RemoveRange(toDelete);
+        await _context.SaveChangesWithExceptionHandlingAsync(cancellationToken);
         return toDelete.Count;
     }
+
+    // Helper methods
 
     private static LoginSessionEntity MapToEntity(LoginSession session)
     {

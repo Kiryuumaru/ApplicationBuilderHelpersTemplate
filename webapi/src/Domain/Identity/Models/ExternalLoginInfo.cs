@@ -1,4 +1,4 @@
-namespace Application.Identity.Models;
+namespace Domain.Identity.Models;
 
 /// <summary>
 /// Information about a linked external login provider.

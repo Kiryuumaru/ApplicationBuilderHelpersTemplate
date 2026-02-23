@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-using Application.Authorization.Interfaces.Infrastructure;
+using Domain.Authorization.Interfaces;
 using Domain.Authorization.Models;
 
 namespace Application.UnitTests.Authorization.Fakes;
@@ -44,31 +44,27 @@ internal sealed class InMemoryRoleRepository : IRoleRepository
         return Task.FromResult<IReadOnlyCollection<Role>>(snapshot);
     }
 
-    public Task SaveAsync(Role role, CancellationToken cancellationToken)
+    public void Add(Role role)
     {
-        cancellationToken.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(role);
-
         _roles[role.Id] = role;
         _codeIndex[role.Code] = role.Id;
-        return Task.CompletedTask;
     }
 
-    public Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken)
+    public void Update(Role role)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        if (!_roles.TryRemove(id, out var removed))
-        {
-            return Task.FromResult(false);
-        }
+        ArgumentNullException.ThrowIfNull(role);
+        _roles[role.Id] = role;
+        _codeIndex[role.Code] = role.Id;
+    }
 
-        var code = removed.Code;
-        if (!string.IsNullOrWhiteSpace(code))
+    public void Remove(Role role)
+    {
+        ArgumentNullException.ThrowIfNull(role);
+        if (_roles.TryRemove(role.Id, out _) && !string.IsNullOrWhiteSpace(role.Code))
         {
-            _codeIndex.TryRemove(code, out _);
+            _codeIndex.TryRemove(role.Code, out _);
         }
-
-        return Task.FromResult(true);
     }
 
     public Task<IReadOnlyCollection<Role>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken)

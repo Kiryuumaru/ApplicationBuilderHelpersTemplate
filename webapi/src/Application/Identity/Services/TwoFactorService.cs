@@ -1,7 +1,7 @@
 using Application.Identity.Interfaces;
-using Application.Identity.Interfaces.Infrastructure;
 using Application.Identity.Models;
 using Domain.Identity.Exceptions;
+using Domain.Identity.Interfaces;
 using Domain.Shared.Exceptions;
 using System.Security.Cryptography;
 using System.Text;
@@ -9,12 +9,14 @@ using System.Text;
 namespace Application.Identity.Services;
 
 /// <summary>
-/// Implementation of ITwoFactorService using repositories directly.
+/// Implementation of ITwoFactorService using repositories and UnitOfWork.
 /// </summary>
 internal sealed class TwoFactorService(
-    IUserRepository userRepository) : ITwoFactorService
+    IUserRepository userRepository,
+    IIdentityUnitOfWork unitOfWork) : ITwoFactorService
 {
     private readonly IUserRepository _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+    private readonly IIdentityUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
     private const int RecoveryCodeCount = 10;
     private const int RecoveryCodeLength = 8;
 
@@ -26,7 +28,8 @@ internal sealed class TwoFactorService(
         // Generate authenticator key
         var key = GenerateAuthenticatorKey();
         user.SetAuthenticatorKey(key);
-        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+        _userRepository.Update(user);
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
 
         // Create URI for QR code
         var issuer = "ApplicationBuilder";
@@ -60,7 +63,8 @@ internal sealed class TwoFactorService(
         var recoveryCodes = GenerateRecoveryCodes();
         user.SetRecoveryCodes(string.Join(";", recoveryCodes));
 
-        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+        _userRepository.Update(user);
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
 
         return recoveryCodes;
     }
@@ -79,7 +83,8 @@ internal sealed class TwoFactorService(
         user.SetAuthenticatorKey(null);
         user.SetRecoveryCodes(null);
 
-        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+        _userRepository.Update(user);
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<bool> Verify2faCodeAsync(Guid userId, string code, CancellationToken cancellationToken)
@@ -106,7 +111,8 @@ internal sealed class TwoFactorService(
             {
                 recoveryCodes.Remove(code);
                 user.SetRecoveryCodes(recoveryCodes.Count > 0 ? string.Join(";", recoveryCodes) : null);
-                await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+                _userRepository.Update(user);
+                await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
                 return true;
             }
         }
@@ -127,7 +133,8 @@ internal sealed class TwoFactorService(
         var recoveryCodes = GenerateRecoveryCodes();
         user.SetRecoveryCodes(string.Join(";", recoveryCodes));
 
-        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+        _userRepository.Update(user);
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
 
         return recoveryCodes;
     }
