@@ -28,21 +28,22 @@ Presentation.*.Server Presentation.*.Client
 +-------------------------------------------+
 |           INFRASTRUCTURE                  |
 |  References: Application, Domain          |
-|  Implements: Application interfaces       |
+|  Implements: Domain interfaces (repos)    |
+|  Implements: Application interfaces (ext) |
 +-------------------------------------------+
                     |
                     v
 +-------------------------------------------+
 |            APPLICATION                    |
 |  References: Domain only                  |
-|  Defines: Interfaces, services            |
+|  Defines: Service interfaces, handlers    |
 +-------------------------------------------+
                     |
                     v
 +-------------------------------------------+
 |              DOMAIN                       |
 |  References: DI helpers only              |
-|  Contains: Entities, value objects        |
+|  Contains: Entities, repos, value objects |
 +-------------------------------------------+
 ```
 
@@ -80,7 +81,8 @@ Application.Server and Application.Client are parallel branches, not hierarchica
 Infrastructure:
 - MUST reference Application and Domain
 - MUST NOT reference Presentation
-- Implements ports defined in Application
+- Implements repository and UnitOfWork interfaces defined in Domain
+- Implements external service interfaces defined in Application
 
 Presentation:
 - MUST reference Application and Domain
@@ -93,7 +95,7 @@ Presentation:
 
 ### Domain Layer
 
-`Interfaces/` in Domain contains marker interfaces only (`IDomainEvent`, `IAggregateRoot`), not ports.
+`Interfaces/` in Domain contains marker interfaces (`IDomainEvent`, `IAggregateRoot`) and persistence contracts (repositories, UnitOfWork).
 
 ```
 Domain/
@@ -102,7 +104,11 @@ Domain/
 |   +-- DomainJsonContext.cs
 |   +-- Converters/
 +-- Shared/
-|   +-- Interfaces/                         <- Marker interfaces only
+|   +-- Interfaces/                         <- Base contracts
+|   |   +-- IAggregateRoot.cs               <- Marker interface
+|   |   +-- IDomainEvent.cs                 <- Marker interface
+|   |   +-- IEntity.cs                      <- Marker interface
+|   |   +-- IUnitOfWork.cs                  <- Base UoW contract
 |   +-- Models/
 |   +-- Constants/                          <- Shared constants (EmptyCollections, etc.)
 |   +-- Exceptions/                         <- Base exceptions (DomainException, etc.)
@@ -113,6 +119,9 @@ Domain/
     +-- ValueObjects/
     +-- Enums/
     +-- Events/
+    +-- Interfaces/                         <- Feature persistence contracts
+    |   +-- I{Feature}Repository.cs         <- Repository interface
+    |   +-- I{Feature}UnitOfWork.cs         <- Feature UoW interface
     +-- Constants/
     +-- Services/                           <- Domain services (pure logic)
     +-- Exceptions/
@@ -298,7 +307,7 @@ Interfaces/Outbound:
 - Are implemented by Infrastructure* adapters
 - MAY be called by Application* and Infrastructure* only
 - MUST NOT be called by Presentation
-- Examples: `IOrderRepository`, `IBrokerPort`, `IMarketDataPort`
+- Examples: `IEmailSender`, `ITokenProvider`, `IDateTimeProvider`
 
 ### Interfaces/ (Internal)
 
@@ -314,17 +323,20 @@ Interfaces (without subfolder):
 
 | Interface Location | Who Can Use | Who Implements |
 |--------------------|-------------|----------------|
-| `Interfaces/Inbound/` | Any layer | Application* |
-| `Interfaces/Outbound/` | Application*, Infrastructure* | Infrastructure* |
-| `Interfaces/` | Application*, Infrastructure* | Application* |
+| `Domain/{Feature}/Interfaces/` | Application*, Infrastructure* | Infrastructure* |
+| `Domain/Shared/Interfaces/` | Application*, Infrastructure* | Infrastructure* (except markers) |
+| `Application/Interfaces/Inbound/` | Any layer | Application* |
+| `Application/Interfaces/Outbound/` | Application*, Infrastructure* | Infrastructure* |
+| `Application/Interfaces/` | Application*, Infrastructure* | Application* |
 
 Application* includes: `Application`, `Application.Server`, `Application.Client`
 Infrastructure* includes: `Infrastructure.*` (all Infrastructure projects)
 
 ### Interface Placement
 
-- Base `IUnitOfWork` MUST be in `Application/Shared/Interfaces/`
-- Feature UnitOfWork interfaces MUST be in `Application/{Feature}/Interfaces/Outbound/`
+- Base `IUnitOfWork` MUST be in `Domain/Shared/Interfaces/`
+- Feature UnitOfWork interfaces MUST be in `Domain/{Feature}/Interfaces/`
+- Feature repository interfaces MUST be in `Domain/{Feature}/Interfaces/`
 - Shared internal interfaces MUST be in `Application/Shared/Interfaces/`
 - Shared Interfaces/Inbound MUST be in `Application/Shared/Interfaces/Inbound/`
 - Shared Interfaces/Outbound MUST be in `Application/Shared/Interfaces/Outbound/`
@@ -352,7 +364,8 @@ Incoming adapters:
 Outgoing adapters:
 - Are driven by the application
 - Live in Infrastructure layer
-- Implement Interfaces/Out
+- Implement Domain interfaces (repositories, UnitOfWork)
+- Implement Application Interfaces/Outbound (external services)
 - Examples: Repositories, HTTP clients, message bus clients
 
 ---
@@ -421,36 +434,36 @@ Unit of Work coordinates persistence and domain event dispatch across repositori
 
 ### Base Interface
 
-`IUnitOfWork` is an internal interface in `Application/Shared/Interfaces/`:
+`IUnitOfWork` is a base interface in `Domain/Shared/Interfaces/`:
 - Defines the `CommitAsync()` contract
 - Is NOT directly implemented by Infrastructure
 - Is inherited by feature-specific UnitOfWork interfaces
 
 ### Feature-Specific Interfaces
 
-Each feature defines its own UnitOfWork interface in `Interfaces/Outbound/`:
+Each feature defines its own UnitOfWork interface in `Domain/{Feature}/Interfaces/`:
 - Inherits from base `IUnitOfWork`
 - Declares the atomicity boundary for that feature
 - Is implemented by Infrastructure adapters
 
 ```csharp
-// Application/Shared/Interfaces/IUnitOfWork.cs
+// Domain/Shared/Interfaces/IUnitOfWork.cs
 public interface IUnitOfWork
 {
     Task CommitAsync(CancellationToken cancellationToken = default);
 }
 
-// Application/Trading/Interfaces/Outbound/ITradingUnitOfWork.cs
+// Domain/Trading/Interfaces/ITradingUnitOfWork.cs
 public interface ITradingUnitOfWork : IUnitOfWork;
 
-// Application/Identity/Interfaces/Outbound/IIdentityUnitOfWork.cs
+// Domain/Identity/Interfaces/IIdentityUnitOfWork.cs
 public interface IIdentityUnitOfWork : IUnitOfWork;
 ```
 
 ### UnitOfWork Rules
 
-- Base `IUnitOfWork` MUST be in `Application/Shared/Interfaces/`
-- Feature UnitOfWork interfaces MUST be in `Application/{Feature}/Interfaces/Outbound/`
+- Base `IUnitOfWork` MUST be in `Domain/Shared/Interfaces/`
+- Feature UnitOfWork interfaces MUST be in `Domain/{Feature}/Interfaces/`
 - Feature UnitOfWork interfaces MUST inherit from `IUnitOfWork`
 - Infrastructure MUST implement feature-specific interfaces, NOT base `IUnitOfWork`
 - Services MUST inject feature-specific interfaces, NOT base `IUnitOfWork`
@@ -461,15 +474,15 @@ public interface IIdentityUnitOfWork : IUnitOfWork;
 
 Infrastructure decides how to implement each feature UnitOfWork:
 
-| Application Declares | Infrastructure May Implement |
-|---------------------|------------------------------|
+| Domain Declares | Infrastructure May Implement |
+|-----------------|------------------------------|
 | `ITradingUnitOfWork` | Same DbContext as Identity |
 | `ITradingUnitOfWork` | Separate TradingDbContext |
 | `ITradingUnitOfWork` | Redis + Kafka |
 | `IIdentityUnitOfWork` | PostgreSQL |
 | `IInventoryUnitOfWork` | MongoDB |
 
-Application declares atomicity intent. Infrastructure decides mechanism.
+Domain declares atomicity intent. Infrastructure decides mechanism.
 
 ---
 
