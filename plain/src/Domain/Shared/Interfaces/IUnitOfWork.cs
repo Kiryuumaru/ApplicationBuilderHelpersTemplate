@@ -1,4 +1,4 @@
-namespace Application.Shared.Interfaces;
+namespace Domain.Shared.Interfaces;
 
 /// <summary>
 /// Base unit of work abstraction for coordinating persistence and domain event dispatch.

@@ -1,6 +1,6 @@
-using Application.Shared.Interfaces;
+using Domain.Shared.Interfaces;
 
-namespace Application.HelloWorld.Interfaces.Outbound;
+namespace Domain.HelloWorld.Interfaces;
 
 /// <summary>
 /// Unit of work for HelloWorld feature atomicity boundary.

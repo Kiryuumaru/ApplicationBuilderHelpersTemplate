@@ -1,5 +1,5 @@
-using Application.HelloWorld.Interfaces.Outbound;
 using Application.Shared.Interfaces;
+using Domain.HelloWorld.Interfaces;
 using Domain.Shared.Interfaces;
 using Infrastructure.InMemory.Interfaces;
 

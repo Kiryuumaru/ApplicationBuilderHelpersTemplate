@@ -1,6 +1,6 @@
 using Domain.HelloWorld.Entities;
 
-namespace Application.HelloWorld.Interfaces.Outbound;
+namespace Domain.HelloWorld.Interfaces;
 
 /// <summary>
 /// Repository for HelloWorld entities.

@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
 using Domain.HelloWorld.Entities;
+using Domain.HelloWorld.Interfaces;
 using Domain.Serialization;
 using Domain.Shared.Interfaces;
 using Infrastructure.InMemory.Interfaces;
@@ -8,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.InMemory.Repositories;
 
-internal sealed class InMemoryHelloWorldRepository(ILogger<InMemoryHelloWorldRepository> logger) : Application.HelloWorld.Interfaces.Outbound.IHelloWorldRepository, ITrackableRepository
+internal sealed class InMemoryHelloWorldRepository(ILogger<InMemoryHelloWorldRepository> logger) : IHelloWorldRepository, ITrackableRepository
 {
     // Shared storage across scopes (simulates database persistence)
     private static readonly ConcurrentDictionary<Guid, HelloWorldEntity> _storage = new();

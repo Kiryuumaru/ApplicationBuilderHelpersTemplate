@@ -1,7 +1,7 @@
 using Application.HelloWorld.Interfaces.Inbound;
-using Application.HelloWorld.Interfaces.Outbound;
 using Application.HelloWorld.Models;
 using Domain.HelloWorld.Entities;
+using Domain.HelloWorld.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace Application.HelloWorld.Services;

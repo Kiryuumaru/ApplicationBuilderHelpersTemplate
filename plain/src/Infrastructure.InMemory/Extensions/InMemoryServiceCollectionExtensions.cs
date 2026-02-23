@@ -1,7 +1,7 @@
+using Domain.HelloWorld.Interfaces;
 using Infrastructure.InMemory.Adapters;
 using Infrastructure.InMemory.Interfaces;
 using Infrastructure.InMemory.Repositories;
-using Application.HelloWorld.Interfaces.Outbound;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.InMemory.Extensions;
