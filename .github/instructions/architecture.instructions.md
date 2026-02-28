@@ -359,7 +359,7 @@ Incoming adapters:
 - Drive the application
 - Live in Presentation layer
 - Call Interfaces/Inbound
-- Examples: Controllers, Worker hosts, Blazor components
+- Examples: Controllers, Blazor components, Presentation workers
 
 Outgoing adapters:
 - Are driven by the application
@@ -692,38 +692,32 @@ Domain event dispatch:
 ## Application Workers
 
 Application workers:
-- Are background entry points
+- Are `BackgroundService` implementations for business-related background tasks
+- Decide WHEN to run (scheduling, intervals, event triggers)
+- Call Domain repositories and Application services for HOW to execute
 - Are internal classes
 - Are not injectable
-- Consume services but are not consumed by others
-- Are like Controllers but for background tasks instead of HTTP requests
 - Create scopes and resolve services within those scopes
-- Handle their own execution loop, scheduling, or event listening
-- Contain business logic for background operations
-- Call Application services and Interfaces/Outbound directly
+- Are registered as hosted services via `AddHostedService<T>()`
 
 Worker locations by scope:
 - `Application/{Feature}/Workers/` - Workers that run on all platforms (server and client)
 - `Application.Server/{Feature}/Workers/` - Server-only workers
 - `Application.Client/{Feature}/Workers/` - Client-only workers
 
-Examples: `TradeFiller`, `MarketListingSync`, `StaleAnonymousUserCleanup`, `OrderPlacedListener`.
+Examples: `AnonymousUserCleanupWorker`, `ApiKeyCleanupWorker`, `OrderExpirationWorker`, `MarketDataSyncWorker`.
 
 ---
 
-## Presentation Worker Hosts
+## Presentation Workers
 
-Worker hosts:
-- Are BackgroundService wrappers in Presentation layer
-- Live in `Presentation.WebApp.Server/Workers/`
-- Are Singleton because .NET hosting requires one instance for the application lifetime
-- Handle the timer loop and error logging
-- Create scopes and call Application workers within those scopes
-- Contain no business logic
-- Only manage WHEN to run
-- Delegate WHAT to do to Application workers
+Presentation workers:
+- Are `BackgroundService` implementations for UI/presentation-specific background tasks
+- Handle presentation concerns only (not business logic)
+- Live in `Presentation.*/Workers/`
+- Are internal classes
 
-Examples: `TradeFillerHost`, `MarketListingSyncHost`, `StaleAnonymousUserCleanupHost`.
+Examples: SignalR reconnection handlers, UI state polling, notification listeners, real-time update subscribers.
 
 ---
 
@@ -891,7 +885,7 @@ Shared code locations by layer:
 - Infrastructure utilities MUST go in `Infrastructure.{Provider}/Extensions/`
 - Presentation shared code MUST go in `Presentation/Shared/`
 - Presentation contracts MUST go in `Presentation/Contracts/{Feature}/`
-- Presentation worker hosts MUST go in `Presentation.WebApp.Server/Workers/`
+- Presentation workers MUST go in `Presentation.*/Workers/`
 - Test helpers MUST go in base test class or `TestHelpers/`
 
 ---
@@ -1043,7 +1037,7 @@ Verification:
 - NEVER implement Interfaces/Outbound in Application layer
 - NEVER call Interfaces/Outbound directly from Presentation layer
 - NEVER call Infrastructure directly from Presentation layer (except DI registration)
-- NEVER place business logic in Presentation worker hosts
+- NEVER place business logic in Presentation workers
 - NEVER place I/O operations in Domain services
 - NEVER expose internal interfaces to Presentation layer
 - NEVER inject Application Workers into other services
