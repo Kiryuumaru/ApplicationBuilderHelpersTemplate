@@ -1,4 +1,4 @@
-using Application.Authorization.Interfaces;
+using Application.Authorization.Interfaces.Inbound;
 using Application.Authorization.Models;
 using Domain.Authorization.Exceptions;
 using Domain.Authorization.Interfaces;

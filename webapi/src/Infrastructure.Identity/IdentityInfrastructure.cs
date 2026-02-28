@@ -1,6 +1,6 @@
 using Application.Authorization.Models;
 using Application.Authorization.Services;
-using Application.Credential.Interfaces;
+using Application.Credential.Interfaces.Inbound;
 using ApplicationBuilderHelpers;
 using Domain.Shared.Extensions;
 using Infrastructure.Identity.Extensions;

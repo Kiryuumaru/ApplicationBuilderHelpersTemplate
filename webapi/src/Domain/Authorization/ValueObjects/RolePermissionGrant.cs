@@ -5,7 +5,7 @@ using Domain.Shared.Models;
 
 namespace Domain.Authorization.ValueObjects;
 
-public sealed class RolePermissionTemplate : ValueObject
+public class RolePermissionTemplate : ValueObject
 {
     private static readonly Regex PlaceholderRegex = new("\\{([a-zA-Z0-9_]+)\\}", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
@@ -13,7 +13,7 @@ public sealed class RolePermissionTemplate : ValueObject
     public string? Description { get; }
     public IReadOnlyCollection<string> RequiredParameters { get; }
 
-    private RolePermissionTemplate(string template, IEnumerable<string>? requiredParameters, string? description)
+    protected RolePermissionTemplate(string template, IEnumerable<string>? requiredParameters, string? description)
     {
         IdentifierTemplate = NormalizeTemplate(template);
         Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();

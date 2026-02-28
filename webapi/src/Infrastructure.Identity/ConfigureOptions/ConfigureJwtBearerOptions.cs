@@ -1,6 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using Application.Identity.Enums;
-using Application.Identity.Interfaces;
+using Application.Identity.Interfaces.Inbound;
 using Infrastructure.Identity.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
@@ -10,10 +10,7 @@ using Microsoft.IdentityModel.JsonWebTokens;
 
 namespace Infrastructure.Identity.ConfigureOptions;
 
-/// <summary>
-/// Configures JWT Bearer authentication options using the IJwtTokenService.
-/// </summary>
-internal class ConfigureJwtBearerOptions(IServiceProvider serviceProvider) : IConfigureNamedOptions<JwtBearerOptions>
+internal sealed class ConfigureJwtBearerOptions(IServiceProvider serviceProvider) : IConfigureNamedOptions<JwtBearerOptions>
 {
     public void Configure(JwtBearerOptions options)
     {

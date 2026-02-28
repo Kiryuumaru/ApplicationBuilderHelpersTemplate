@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using Application.Authorization.Interfaces.Outbound;
-using Application.Authorization.Interfaces;
-using Application.Identity.Interfaces;
+using Application.Authorization.Interfaces.Inbound;
+using Application.Identity.Interfaces.Inbound;
 using Application.Identity.Models;
 using Domain.Authorization.Constants;
 using Domain.Authorization.ValueObjects;
@@ -11,11 +11,7 @@ using TokenClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 
 namespace Application.Identity.Services;
 
-/// <summary>
-/// Service for user authentication token generation and rotation.
-/// Coordinates token generation with session management atomically.
-/// </summary>
-public sealed class UserTokenService(
+internal sealed class UserTokenService(
     IUserAuthorizationService userAuthorizationService,
     ISessionService sessionService,
     IPermissionService permissionService,

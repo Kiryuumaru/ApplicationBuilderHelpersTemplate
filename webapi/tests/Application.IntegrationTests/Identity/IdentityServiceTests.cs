@@ -1,7 +1,7 @@
 using Application.Authorization.Extensions;
 using Application.Authorization.Models;
 using Application.Identity.Extensions;
-using Application.Identity.Interfaces;
+using Application.Identity.Interfaces.Inbound;
 using Application.Identity.Models;
 using Domain.Authorization.Constants;
 using Domain.Authorization.ValueObjects;
@@ -14,8 +14,8 @@ using Infrastructure.EFCore.Extensions;
 using Infrastructure.EFCore.Identity.Extensions;
 using Infrastructure.Identity.Extensions;
 using Infrastructure.EFCore.Sqlite.Extensions;
-using Application.Authorization.Interfaces;
-using Application.Shared.Interfaces.Application;
+using Application.Authorization.Interfaces.Inbound;
+using Application.Shared.Interfaces.Inbound;
 
 namespace Application.IntegrationTests.Identity;
 

@@ -14,7 +14,7 @@ using TokenClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 
 namespace Infrastructure.Identity.Services;
 
-internal class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguration>>> jwtConfigurationFactory) : IJwtTokenService
+internal sealed class JwtTokenService(Lazy<Func<CancellationToken, Task<JwtConfiguration>>> jwtConfigurationFactory) : IJwtTokenService
 {
     public async Task<string> GenerateToken(
         string userId,

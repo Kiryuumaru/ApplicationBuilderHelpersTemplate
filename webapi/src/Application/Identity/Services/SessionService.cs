@@ -1,12 +1,9 @@
-using Application.Identity.Interfaces;
+using Application.Identity.Interfaces.Inbound;
 using Application.Identity.Models;
 using Domain.Identity.Interfaces;
 
 namespace Application.Identity.Services;
 
-/// <summary>
-/// Service for managing user sessions using repositories and UnitOfWork.
-/// </summary>
 internal sealed class SessionService(
     ISessionRepository sessionRepository,
     IIdentityUnitOfWork unitOfWork) : ISessionService

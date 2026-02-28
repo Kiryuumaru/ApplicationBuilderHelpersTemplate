@@ -19,7 +19,7 @@ public class Application : ApplicationDependency
     {
         base.AddServices(applicationBuilder, services);
 
-        services.AddCommonServices();
+        services.AddSharedServices();
         services.AddAppEnvironmentServices();
         services.AddAuthorizationServices();
         services.AddNativeCmdServices();

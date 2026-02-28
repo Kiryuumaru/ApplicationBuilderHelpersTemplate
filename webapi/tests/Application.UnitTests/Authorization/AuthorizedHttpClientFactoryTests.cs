@@ -1,4 +1,4 @@
-using Application.Authorization.Interfaces;
+using Application.Authorization.Interfaces.Inbound;
 using Application.Authorization.Services;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;

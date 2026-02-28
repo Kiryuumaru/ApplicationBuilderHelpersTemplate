@@ -4,7 +4,7 @@ using Domain.Shared.Models;
 
 namespace Domain.Identity.Models;
 
-public sealed class UserSession : ValueObject
+public class UserSession : ValueObject
 {
     public Guid UserId { get; }
     public string? Username { get; }
@@ -24,7 +24,7 @@ public sealed class UserSession : ValueObject
     /// </summary>
     public bool IsAnonymous { get; }
 
-    private UserSession(
+    protected UserSession(
         Guid userId,
         string? username,
         IReadOnlyCollection<ScopeDirective> scope,

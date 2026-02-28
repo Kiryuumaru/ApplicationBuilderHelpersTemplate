@@ -1,4 +1,5 @@
 using Domain.Identity.Models;
+using Domain.Identity.Entities;
 
 namespace Application.Authorization.Interfaces;
 

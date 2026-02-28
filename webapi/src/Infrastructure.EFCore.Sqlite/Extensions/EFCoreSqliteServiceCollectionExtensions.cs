@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.EFCore.Sqlite.Extensions;
 
-public static class EFCoreSqliteServiceCollectionExtensions
+internal static class EFCoreSqliteServiceCollectionExtensions
 {
     private const string DefaultConnectionString = "Data Source=app.db";
 

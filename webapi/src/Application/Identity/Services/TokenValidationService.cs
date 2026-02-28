@@ -1,15 +1,11 @@
 using System.Security.Claims;
 using Application.Identity.Enums;
-using Application.Identity.Interfaces;
+using Application.Identity.Interfaces.Inbound;
 using Application.Identity.Models;
 using Domain.Identity.Constants;
 
 namespace Application.Identity.Services;
 
-/// <summary>
-/// Unified token validation service for all JWT types.
-/// Orchestrates ISessionService and IApiKeyService for post-signature validation.
-/// </summary>
 internal sealed class TokenValidationService(
     ISessionService sessionService,
     IApiKeyService apiKeyService) : ITokenValidationService

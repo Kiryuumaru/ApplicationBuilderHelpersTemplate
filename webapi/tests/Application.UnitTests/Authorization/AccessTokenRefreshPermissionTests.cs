@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using Application.Authorization.Interfaces.Outbound;
 using Application.Authorization.Services;
-using Application.Identity.Interfaces;
+using Application.Identity.Interfaces.Inbound;
 using Application.Identity.Services;
 using Application.UnitTests.Authorization.Fakes;
 using Domain.Authorization.Constants;

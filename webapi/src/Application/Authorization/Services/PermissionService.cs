@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using Domain.Authorization.Constants;
 using Domain.Shared.Constants;
 using Domain.Shared.Exceptions;
-using Application.Authorization.Interfaces;
+using Application.Authorization.Interfaces.Inbound;
 using Application.Authorization.Interfaces.Outbound;
 using Domain.Authorization.Enums;
 using Domain.Authorization.Interfaces;
@@ -20,7 +20,7 @@ using TokenClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 
 namespace Application.Authorization.Services;
 
-public sealed class PermissionService(
+internal sealed class PermissionService(
     ITokenProvider tokenProvider,
     IRoleRepository roleRepository) : IPermissionService
 {

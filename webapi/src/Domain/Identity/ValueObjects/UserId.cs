@@ -2,11 +2,11 @@ using Domain.Shared.Models;
 
 namespace Domain.Identity.ValueObjects;
 
-public sealed class UserId : ValueObject
+public class UserId : ValueObject
 {
     public Guid Value { get; }
 
-    public UserId(Guid value)
+    protected UserId(Guid value)
     {
         if (value == Guid.Empty)
         {

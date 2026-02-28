@@ -1,14 +1,11 @@
 using Domain.Identity.Models;
+using Domain.Identity.Entities;
 using Infrastructure.EFCore.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.EFCore.Identity.Services;
 
-/// <summary>
-/// ASP.NET Core Identity user store implementation using EF Core.
-/// Required for UserManager and SignInManager to work with our User entity.
-/// </summary>
 internal sealed class EFCoreAspNetUserStore(IDbContextFactory<EFCoreDbContext> contextFactory) :
     IUserStore<User>,
     IUserPasswordStore<User>,

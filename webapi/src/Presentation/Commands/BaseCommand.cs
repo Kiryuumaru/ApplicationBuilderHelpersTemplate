@@ -1,8 +1,8 @@
 using AbsolutePathHelpers;
-using Application.AppEnvironment.Services;
+using Application.AppEnvironment.Interfaces.Inbound;
 using Application.Authorization.Extensions;
 using Application.Shared.Configuration.Extensions;
-using Application.Shared.Interfaces.Application;
+using Application.Shared.Interfaces.Inbound;
 using Application.Credential.Extensions;
 using Application.Logger.Extensions;
 using ApplicationBuilderHelpers;
@@ -78,7 +78,7 @@ public abstract class BaseCommand<[DynamicallyAccessedMembers(DynamicallyAccesse
     {
         using var scope = applicationHost.Services.CreateScope();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<BaseCommand<THostApplicationBuilder>>>();
-        var appEnvironmentService = scope.ServiceProvider.GetRequiredService<AppEnvironmentService>();
+        var appEnvironmentService = scope.ServiceProvider.GetRequiredService<IAppEnvironmentService>();
 
         using var _ = logger.BeginScopeMap();
 

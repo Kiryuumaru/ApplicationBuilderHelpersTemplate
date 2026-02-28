@@ -372,8 +372,7 @@ public class LoginApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         }
         else
         {
-            // Unicode usernames might be disallowed or cause validation errors
-            // TODO: Consider adding proper unicode username validation
+            // Unicode usernames might be disallowed or cause validation errors depending on validation rules
             Assert.True(
                 registerResponse.StatusCode == HttpStatusCode.BadRequest ||
                 registerResponse.StatusCode == HttpStatusCode.InternalServerError,

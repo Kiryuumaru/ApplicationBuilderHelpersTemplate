@@ -1,6 +1,7 @@
 using Application.Authorization.Interfaces;
 using Domain.Authorization.Interfaces;
 using Domain.Identity.Models;
+using Domain.Identity.Entities;
 
 namespace Application.Authorization.Services;
 

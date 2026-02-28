@@ -191,6 +191,7 @@ public static class JsonExtensions
     {
         try
         {
+            // Safe: GetValueOrThrow throws if null - non-null on success
             value = GetValueOrThrow<TValue>(node, propertyNames)!;
             return true;
         }
@@ -205,6 +206,7 @@ public static class JsonExtensions
     {
         try
         {
+            // Safe: GetValueOrThrow throws if null - non-null on success
             value = GetValueOrThrow<TValue>(element, propertyNames)!;
             return true;
         }
@@ -239,6 +241,7 @@ public static class JsonExtensions
     {
         try
         {
+            // Safe: GetArrayValueOrThrow throws if null - non-null on success
             value = GetArrayValueOrThrow<TValue>(node, propertyNames)!;
             return true;
         }

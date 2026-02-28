@@ -1,5 +1,6 @@
 using Domain.Identity.Enums;
 using Domain.Identity.Models;
+using Domain.Identity.Entities;
 
 namespace Domain.Identity.Interfaces;
 

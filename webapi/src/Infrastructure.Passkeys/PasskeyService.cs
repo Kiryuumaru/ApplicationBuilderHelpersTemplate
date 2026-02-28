@@ -1,7 +1,8 @@
-using Application.Identity.Interfaces;
+using Application.Identity.Interfaces.Inbound;
 using Application.Identity.Models;
 using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
+using Domain.Identity.Entities;
 using Domain.Identity.Enums;
 using Domain.Identity.Exceptions;
 using Domain.Shared.Exceptions;
@@ -11,10 +12,7 @@ using System.Text.Json;
 
 namespace Infrastructure.Passkeys;
 
-/// <summary>
-/// Passkey service implementation using Fido2.AspNet library and UnitOfWork.
-/// </summary>
-internal class PasskeyService : IPasskeyService
+internal sealed class PasskeyService : IPasskeyService
 {
     private readonly IFido2 _fido2;
     private readonly IPasskeyRepository _passkeyRepository;

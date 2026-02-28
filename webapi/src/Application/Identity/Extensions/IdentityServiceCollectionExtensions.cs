@@ -1,6 +1,7 @@
 using Application.Authorization.Extensions;
-using Application.Identity.Interfaces;
+using Application.Identity.Interfaces.Inbound;
 using Application.Identity.Services;
+using Application.Identity.Workers;
 using Domain.Identity.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -39,8 +40,9 @@ internal static class IdentityServiceCollectionExtensions
         services.AddScoped<IApiKeyService, ApiKeyService>();
         services.AddScoped<ITokenValidationService, TokenValidationService>();
         
-        services.AddScoped<IAnonymousUserCleanupService, AnonymousUserCleanupService>();
-        services.AddScoped<IApiKeyCleanupService, ApiKeyCleanupService>();
+        // Background workers
+        services.AddHostedService<AnonymousUserCleanupWorker>();
+        services.AddHostedService<ApiKeyCleanupWorker>();
 
         // OAuth service - using mock implementation by default
         // Replace with real implementation when configuring actual OAuth providers

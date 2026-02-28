@@ -85,6 +85,7 @@ public static class CancellationTokenExtensions
             // Register disposal callback - this keeps trackingKey alive until cancellation
             var registration = resultToken.Register(state =>
             {
+                // Safe: state is trackingKey which is always non-null (new object())
                 var key = state!;
                 if (_trackers.TryGetValue(key, out var trackerToDispose))
                 {

@@ -1,24 +1,18 @@
-using Application.Identity.Interfaces;
+using Application.Identity.Interfaces.Inbound;
 using Domain.Identity.Interfaces;
 
 namespace Application.Identity.Services;
 
-/// <summary>
-/// Guard service implementation for validating authentication method operations.
-/// </summary>
 internal sealed class AuthMethodGuardService(
     IUserRepository userRepository,
     IPasskeyRepository passkeyRepository) : IAuthMethodGuardService
 {
-    private readonly IUserRepository _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
-    private readonly IPasskeyRepository _passkeyRepository = passkeyRepository ?? throw new ArgumentNullException(nameof(passkeyRepository));
-
     public async Task<bool> CanRemovePasskeyAsync(Guid userId, Guid credentialId, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.FindByIdAsync(userId, cancellationToken);
+        var user = await userRepository.FindByIdAsync(userId, cancellationToken);
         if (user is null) return false;
 
-        var passkeys = await _passkeyRepository.GetCredentialsByUserIdAsync(userId, cancellationToken);
+        var passkeys = await passkeyRepository.GetCredentialsByUserIdAsync(userId, cancellationToken);
         var hasPassword = !string.IsNullOrEmpty(user.PasswordHash);
         var oauthProviderCount = user.IdentityLinks.Count;
 
@@ -28,10 +22,10 @@ internal sealed class AuthMethodGuardService(
 
     public async Task<bool> CanUnlinkProviderAsync(Guid userId, string provider, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.FindByIdAsync(userId, cancellationToken);
+        var user = await userRepository.FindByIdAsync(userId, cancellationToken);
         if (user is null) return false;
 
-        var passkeys = await _passkeyRepository.GetCredentialsByUserIdAsync(userId, cancellationToken);
+        var passkeys = await passkeyRepository.GetCredentialsByUserIdAsync(userId, cancellationToken);
         var hasPassword = !string.IsNullOrEmpty(user.PasswordHash);
         var otherProviderCount = user.IdentityLinks
             .Count(l => !string.Equals(l.Provider.ToString(), provider, StringComparison.OrdinalIgnoreCase));
@@ -42,10 +36,10 @@ internal sealed class AuthMethodGuardService(
 
     public async Task<int> GetAuthMethodCountAsync(Guid userId, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.FindByIdAsync(userId, cancellationToken);
+        var user = await userRepository.FindByIdAsync(userId, cancellationToken);
         if (user is null) return 0;
 
-        var passkeys = await _passkeyRepository.GetCredentialsByUserIdAsync(userId, cancellationToken);
+        var passkeys = await passkeyRepository.GetCredentialsByUserIdAsync(userId, cancellationToken);
         var hasPassword = !string.IsNullOrEmpty(user.PasswordHash);
 
         var count = 0;

@@ -1,4 +1,3 @@
-using Application.LocalStore.Interfaces;
 using Application.LocalStore.Interfaces.Outbound;
 using Infrastructure.EFCore.Extensions;
 using Infrastructure.EFCore.LocalStore.Models;
@@ -6,12 +5,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.EFCore.LocalStore.Services;
 
-public sealed class EFCoreLocalStoreService(
+internal sealed class EFCoreLocalStoreService(
     IDbContextFactory<EFCoreDbContext> dbContextFactory,
     IDatabaseInitializationState databaseInitializationState) : ILocalStoreService
 {
-    private readonly IDbContextFactory<EFCoreDbContext> _dbContextFactory = dbContextFactory ?? throw new ArgumentNullException(nameof(dbContextFactory));
-    private readonly IDatabaseInitializationState _databaseInitializationState = databaseInitializationState ?? throw new ArgumentNullException(nameof(databaseInitializationState));
     
     private EFCoreDbContext? _dbContext;
     private bool _hasTransaction;
@@ -24,9 +21,9 @@ public sealed class EFCoreLocalStoreService(
         }
 
         // Wait for database tables to be initialized before opening context
-        await _databaseInitializationState.WaitForInitializationAsync(cancellationToken);
+        await databaseInitializationState.WaitForInitializationAsync(cancellationToken);
         
-        _dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+        _dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         await _dbContext.Database.BeginTransactionAsync(cancellationToken);
         _hasTransaction = true;
     }

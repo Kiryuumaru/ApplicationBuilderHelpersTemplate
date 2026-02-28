@@ -7,7 +7,7 @@ namespace Application.LocalStore.Services;
 
 internal sealed class LocalStoreFactory(IServiceProvider serviceProvider) : ILocalStoreFactory
 {
-    public async Task<ConcurrentLocalStore> OpenStore(string group = "common_group", CancellationToken cancellationToken = default)
+    public async Task<IConcurrentLocalStore> OpenStore(string group = "common_group", CancellationToken cancellationToken = default)
     {
         var normalizedGroup = LocalStoreKey.NormalizeGroup(group);
 

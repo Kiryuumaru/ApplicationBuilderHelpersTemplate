@@ -1,4 +1,4 @@
-using Application.LocalStore.Services;
+using Application.LocalStore.Interfaces;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
@@ -6,7 +6,7 @@ using System.Text.Json.Serialization.Metadata;
 namespace Application.LocalStore.Extensions;
 
 /// <summary>
-/// Extension methods for <see cref="ConcurrentLocalStore"/> to store and retrieve typed values.
+/// Extension methods for <see cref="IConcurrentLocalStore"/> to store and retrieve typed values.
 /// Supports all primitive types, string, DateTime, DateTimeOffset, TimeSpan, Guid, and any type
 /// implementing <see cref="IFormattable"/> (for Set) or <see cref="IParsable{T}"/> (for Get).
 /// </summary>
@@ -15,7 +15,7 @@ public static class ConcurrentLocalStoreExtensions
     /// <summary>
     /// Stores a boolean value.
     /// </summary>
-    public static Task Set(this ConcurrentLocalStore store, string id, bool value, CancellationToken cancellationToken = default)
+    public static Task Set(this IConcurrentLocalStore store, string id, bool value, CancellationToken cancellationToken = default)
         => store.Set(id, value ? bool.TrueString : bool.FalseString, cancellationToken);
 
     /// <summary>
@@ -23,7 +23,7 @@ public static class ConcurrentLocalStoreExtensions
     /// Covers: byte, sbyte, short, ushort, int, uint, long, ulong, float, double, decimal,
     /// char, DateTime, DateTimeOffset, TimeSpan, Guid, and custom IFormattable types.
     /// </summary>
-    public static Task Set<T>(this ConcurrentLocalStore store, string id, T value, CancellationToken cancellationToken = default)
+    public static Task Set<T>(this IConcurrentLocalStore store, string id, T value, CancellationToken cancellationToken = default)
         where T : IFormattable
     {
         var format = GetFormat(value);
@@ -36,7 +36,7 @@ public static class ConcurrentLocalStoreExtensions
     /// Covers: bool, byte, sbyte, short, ushort, int, uint, long, ulong, float, double, decimal,
     /// char, DateTime, DateTimeOffset, TimeSpan, Guid, and any custom IParsable types (struct or class).
     /// </summary>
-    public static async Task<T?> Get<T>(this ConcurrentLocalStore store, string id, CancellationToken cancellationToken = default)
+    public static async Task<T?> Get<T>(this IConcurrentLocalStore store, string id, CancellationToken cancellationToken = default)
         where T : IParsable<T>
     {
         var stored = await store.Get(id, cancellationToken).ConfigureAwait(false);
@@ -46,7 +46,7 @@ public static class ConcurrentLocalStoreExtensions
     /// <summary>
     /// Retrieves a JSON-serialized object using the provided <see cref="JsonTypeInfo{T}"/>.
     /// </summary>
-    public static async Task<T?> Get<T>(this ConcurrentLocalStore store, string id, JsonTypeInfo<T?> jsonTypeInfo, CancellationToken cancellationToken = default)
+    public static async Task<T?> Get<T>(this IConcurrentLocalStore store, string id, JsonTypeInfo<T?> jsonTypeInfo, CancellationToken cancellationToken = default)
         where T : class
     {
         var payload = await store.Get(id, cancellationToken).ConfigureAwait(false);
@@ -56,7 +56,7 @@ public static class ConcurrentLocalStoreExtensions
     /// <summary>
     /// Stores an object as JSON using the provided <see cref="JsonTypeInfo{T}"/>.
     /// </summary>
-    public static Task Set<T>(this ConcurrentLocalStore store, string id, T? obj, JsonTypeInfo<T?> jsonTypeInfo, CancellationToken cancellationToken = default)
+    public static Task Set<T>(this IConcurrentLocalStore store, string id, T? obj, JsonTypeInfo<T?> jsonTypeInfo, CancellationToken cancellationToken = default)
         where T : class
     {
         var data = JsonSerializer.Serialize(obj, jsonTypeInfo);

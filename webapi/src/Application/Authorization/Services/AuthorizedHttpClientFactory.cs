@@ -1,6 +1,5 @@
 using Application.Authorization.Extensions;
-using Application.Authorization.Interfaces;
-using Application.Authorization.Interfaces.Application;
+using Application.Authorization.Interfaces.Inbound;
 using Application.Logger.Extensions;
 using DisposableHelpers.Attributes;
 using Microsoft.Extensions.Logging;

@@ -9,10 +9,7 @@ using Microsoft.Extensions.Options;
 
 namespace Infrastructure.Identity.Extensions;
 
-/// <summary>
-/// Extension methods for registering JWT token services.
-/// </summary>
-public static class JwtServiceCollectionExtensions
+internal static class JwtServiceCollectionExtensions
 {
     /// <summary>
     /// Adds JWT token services using the specified configuration factory with an optional service key.

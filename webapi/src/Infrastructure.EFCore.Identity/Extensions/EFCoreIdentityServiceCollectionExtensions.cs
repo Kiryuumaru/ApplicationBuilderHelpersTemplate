@@ -2,16 +2,17 @@ using Domain.Authorization.Interfaces;
 using Domain.Authorization.Models;
 using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
+using Domain.Identity.Entities;
 using Infrastructure.EFCore.Identity.Configurations;
+using Infrastructure.EFCore.Identity.Repositories;
 using Infrastructure.EFCore.Identity.Services;
-using Infrastructure.EFCore.Identity.Workers;
 using Infrastructure.EFCore.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.EFCore.Identity.Extensions;
 
-public static class EFCoreIdentityServiceCollectionExtensions
+internal static class EFCoreIdentityServiceCollectionExtensions
 {
     public static IServiceCollection AddEFCoreIdentity(this IServiceCollection services)
     {
@@ -32,12 +33,6 @@ public static class EFCoreIdentityServiceCollectionExtensions
         services.AddScoped<IPasskeyRepository, EFCorePasskeyRepository>();
         services.AddScoped<IRoleRepository, EFCoreRoleRepository>();
         services.AddScoped<IApiKeyRepository, EFCoreApiKeyRepository>();
-
-        // Background worker for anonymous user cleanup
-        services.AddHostedService<AnonymousUserCleanupWorker>();
-
-        // Background worker for API key cleanup
-        services.AddHostedService<ApiKeyCleanupWorker>();
 
         return services;
     }

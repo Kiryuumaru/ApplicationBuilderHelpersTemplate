@@ -2,6 +2,7 @@ using Application.Identity.Interfaces.Outbound;
 using Domain.Authorization.Models;
 using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
+using Domain.Identity.Entities;
 using Infrastructure.Identity.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Infrastructure.Identity.Extensions;
 
-public static class IdentityCoreServiceCollectionExtensions
+internal static class IdentityCoreServiceCollectionExtensions
 {
     public static IServiceCollection AddIdentityCoreServices(this IServiceCollection services)
     {

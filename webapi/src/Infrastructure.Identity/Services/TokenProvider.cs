@@ -6,7 +6,7 @@ using System.Security.Claims;
 
 namespace Infrastructure.Identity.Services;
 
-internal class TokenProvider(IJwtTokenService jwtTokenService) : ITokenProvider
+internal sealed class TokenProvider(IJwtTokenService jwtTokenService) : ITokenProvider
 {
     public async Task<string> GenerateTokenWithScopesAsync(
         string userId,

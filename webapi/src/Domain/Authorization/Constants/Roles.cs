@@ -53,6 +53,7 @@ public static class Roles
             return true;
         }
 
+        // Safe: Try pattern - value unused when returning false
         role = null!;
         return false;
     }
@@ -65,6 +66,7 @@ public static class Roles
             return true;
         }
 
+        // Safe: Try pattern - value unused when returning false
         role = null!;
         return false;
     }

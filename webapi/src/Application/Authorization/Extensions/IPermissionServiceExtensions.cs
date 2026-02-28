@@ -1,4 +1,4 @@
-using Application.Authorization.Interfaces;
+using Application.Authorization.Interfaces.Inbound;
 using System.Security.Claims;
 
 namespace Application.Authorization.Extensions;

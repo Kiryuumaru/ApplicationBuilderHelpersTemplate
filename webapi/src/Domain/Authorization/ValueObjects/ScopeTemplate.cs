@@ -9,7 +9,7 @@ namespace Domain.Authorization.ValueObjects;
 /// A template for generating scope directives from role definitions.
 /// Supports parameter placeholders that are expanded at runtime.
 /// </summary>
-public sealed class ScopeTemplate : ValueObject
+public class ScopeTemplate : ValueObject
 {
     private static readonly Regex PlaceholderRegex = new("\\{([a-zA-Z0-9_]+)\\}", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly IReadOnlyCollection<(string Key, string ValueTemplate)> EmptyParameterTemplates =
@@ -35,7 +35,7 @@ public sealed class ScopeTemplate : ValueObject
     /// </summary>
     public IReadOnlyCollection<string> RequiredParameters { get; }
 
-    private ScopeTemplate(
+    protected ScopeTemplate(
         ScopeDirectiveType type,
         string permissionPath,
         IReadOnlyCollection<(string Key, string ValueTemplate)> parameterTemplates,

@@ -1,4 +1,4 @@
-using Application.Identity.Interfaces;
+using Application.Identity.Interfaces.Inbound;
 using Application.Identity.Models;
 using Domain.Identity.Enums;
 using Domain.Identity.Interfaces;
@@ -7,11 +7,6 @@ using System.Security.Cryptography;
 
 namespace Application.Identity.Services;
 
-/// <summary>
-/// Mock OAuth service for development and testing.
-/// This implementation simulates OAuth flows without connecting to real providers.
-/// Replace with real provider implementations when ready to integrate.
-/// </summary>
 internal sealed class MockOAuthService(
     IUserRepository userRepository,
     IIdentityUnitOfWork unitOfWork,
@@ -207,6 +202,7 @@ internal sealed class MockOAuthService(
                 callbackResult.ErrorDescription ?? "OAuth callback processing failed.");
         }
 
+        // Safe: UserInfo guaranteed non-null when Succeeded is true
         var userInfo = callbackResult.UserInfo!;
 
         // Try to find existing user by external login

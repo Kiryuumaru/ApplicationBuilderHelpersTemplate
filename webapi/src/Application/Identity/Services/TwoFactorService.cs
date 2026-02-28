@@ -1,4 +1,4 @@
-using Application.Identity.Interfaces;
+using Application.Identity.Interfaces.Inbound;
 using Application.Identity.Models;
 using Domain.Identity.Exceptions;
 using Domain.Identity.Interfaces;
@@ -8,28 +8,23 @@ using System.Text;
 
 namespace Application.Identity.Services;
 
-/// <summary>
-/// Implementation of ITwoFactorService using repositories and UnitOfWork.
-/// </summary>
 internal sealed class TwoFactorService(
     IUserRepository userRepository,
     IIdentityUnitOfWork unitOfWork) : ITwoFactorService
 {
-    private readonly IUserRepository _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
-    private readonly IIdentityUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
     private const int RecoveryCodeCount = 10;
     private const int RecoveryCodeLength = 8;
 
     public async Task<TwoFactorSetupInfo> Setup2faAsync(Guid userId, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
+        var user = await userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
         // Generate authenticator key
         var key = GenerateAuthenticatorKey();
         user.SetAuthenticatorKey(key);
-        _userRepository.Update(user);
-        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
+        userRepository.Update(user);
+        await unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
 
         // Create URI for QR code
         var issuer = "ApplicationBuilder";
@@ -44,7 +39,7 @@ internal sealed class TwoFactorService(
 
     public async Task<IReadOnlyCollection<string>> Enable2faAsync(Guid userId, string verificationCode, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
+        var user = await userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
         if (string.IsNullOrEmpty(user.AuthenticatorKey))
@@ -63,15 +58,15 @@ internal sealed class TwoFactorService(
         var recoveryCodes = GenerateRecoveryCodes();
         user.SetRecoveryCodes(string.Join(";", recoveryCodes));
 
-        _userRepository.Update(user);
-        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
+        userRepository.Update(user);
+        await unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
 
         return recoveryCodes;
     }
 
     public async Task Disable2faAsync(Guid userId, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
+        var user = await userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
         if (!user.TwoFactorEnabled)
@@ -83,13 +78,13 @@ internal sealed class TwoFactorService(
         user.SetAuthenticatorKey(null);
         user.SetRecoveryCodes(null);
 
-        _userRepository.Update(user);
-        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
+        userRepository.Update(user);
+        await unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<bool> Verify2faCodeAsync(Guid userId, string code, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
+        var user = await userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
         if (!user.TwoFactorEnabled || string.IsNullOrEmpty(user.AuthenticatorKey))
@@ -111,8 +106,8 @@ internal sealed class TwoFactorService(
             {
                 recoveryCodes.Remove(code);
                 user.SetRecoveryCodes(recoveryCodes.Count > 0 ? string.Join(";", recoveryCodes) : null);
-                _userRepository.Update(user);
-                await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
+                userRepository.Update(user);
+                await unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
                 return true;
             }
         }
@@ -122,7 +117,7 @@ internal sealed class TwoFactorService(
 
     public async Task<IReadOnlyCollection<string>> GenerateRecoveryCodesAsync(Guid userId, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
+        var user = await userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
         if (!user.TwoFactorEnabled)
@@ -133,15 +128,15 @@ internal sealed class TwoFactorService(
         var recoveryCodes = GenerateRecoveryCodes();
         user.SetRecoveryCodes(string.Join(";", recoveryCodes));
 
-        _userRepository.Update(user);
-        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
+        userRepository.Update(user);
+        await unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
 
         return recoveryCodes;
     }
 
     public async Task<int> GetRecoveryCodeCountAsync(Guid userId, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
+        var user = await userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
         if (string.IsNullOrEmpty(user.RecoveryCodes))

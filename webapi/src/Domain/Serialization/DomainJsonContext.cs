@@ -5,6 +5,7 @@ using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;
 using Domain.Identity.Enums;
 using Domain.Identity.Models;
+using Domain.Identity.Entities;
 using Domain.Identity.ValueObjects;
 using Domain.Serialization.Converters;
 
@@ -19,7 +20,7 @@ namespace Domain.Serialization;
         typeof(PermissionAccessCategoryJsonConverter)
     })]
 // AppEnvironment
-[JsonSerializable(typeof(Domain.AppEnvironment.Models.AppEnvironment))]
+[JsonSerializable(typeof(global::Domain.AppEnvironment.Models.AppEnvironment))]
 // Authorization Enums
 [JsonSerializable(typeof(PermissionAccessCategory))]
 [JsonSerializable(typeof(ScopeDirectiveType))]

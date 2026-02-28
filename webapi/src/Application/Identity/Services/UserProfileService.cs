@@ -1,15 +1,13 @@
 using Application.Authorization.Interfaces;
-using Application.Identity.Interfaces;
+using Application.Identity.Interfaces.Inbound;
 using Application.Identity.Models;
 using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
+using Domain.Identity.Entities;
 using Domain.Shared.Exceptions;
 
 namespace Application.Identity.Services;
 
-/// <summary>
-/// Implementation of IUserProfileService using repositories and UnitOfWork.
-/// </summary>
 internal sealed class UserProfileService(
     IUserRepository userRepository,
     IIdentityUnitOfWork unitOfWork,

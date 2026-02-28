@@ -145,7 +145,7 @@ internal class DefaultLogEnricher(IConfiguration configuration, Dictionary<strin
             string? realValueLogTyping = null;
             if (logTypings.TryGetValue(prop.Key, out var existingValueLogTyping))
             {
-                realValueLogTyping = (existingValueLogTyping.Value as ScalarValue)?.Value?.ToString()!;
+                realValueLogTyping = (existingValueLogTyping.Value as ScalarValue)?.Value?.ToString();
             }
 
             realValueLogTyping ??= valueType.Name;

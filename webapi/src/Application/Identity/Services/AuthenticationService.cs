@@ -1,17 +1,14 @@
 using Application.Authorization.Interfaces;
-using Application.Identity.Interfaces;
+using Application.Identity.Interfaces.Inbound;
 using Application.Identity.Models;
 using Domain.Identity.Exceptions;
 using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
+using Domain.Identity.Entities;
 using Domain.Shared.Exceptions;
 
 namespace Application.Identity.Services;
 
-/// <summary>
-/// Implementation of IAuthenticationService using repositories directly.
-/// Delegates token generation to IUserTokenService.
-/// </summary>
 internal sealed class AuthenticationService(
     IUserRepository userRepository,
     IPasswordVerifier passwordVerifier,
@@ -19,16 +16,9 @@ internal sealed class AuthenticationService(
     ITwoFactorService twoFactorService,
     IUserTokenService userTokenService) : IAuthenticationService
 {
-
-    private readonly IUserRepository _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
-    private readonly IPasswordVerifier _passwordVerifier = passwordVerifier ?? throw new ArgumentNullException(nameof(passwordVerifier));
-    private readonly IUserRoleResolver _userRoleResolver = userRoleResolver ?? throw new ArgumentNullException(nameof(userRoleResolver));
-    private readonly ITwoFactorService _twoFactorService = twoFactorService ?? throw new ArgumentNullException(nameof(twoFactorService));
-    private readonly IUserTokenService _userTokenService = userTokenService ?? throw new ArgumentNullException(nameof(userTokenService));
-
     public async Task<CredentialValidationResult> ValidateCredentialsAsync(string username, string password, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.FindByUsernameAsync(username, cancellationToken).ConfigureAwait(false);
+        var user = await userRepository.FindByUsernameAsync(username, cancellationToken).ConfigureAwait(false);
         if (user is null)
         {
             return CredentialValidationResult.Failed("Invalid username or password.");
@@ -39,7 +29,7 @@ internal sealed class AuthenticationService(
             return CredentialValidationResult.Failed("Invalid username or password.");
         }
 
-        if (!_passwordVerifier.Verify(user.PasswordHash, password))
+        if (!passwordVerifier.Verify(user.PasswordHash, password))
         {
             return CredentialValidationResult.Failed("Invalid username or password.");
         }
@@ -50,20 +40,20 @@ internal sealed class AuthenticationService(
             return CredentialValidationResult.TwoFactorRequired(user.Id);
         }
 
-        var roleResolutions = await _userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
+        var roleResolutions = await userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
         var roleCodes = roleResolutions.Select(r => r.Code).ToArray();
         return CredentialValidationResult.Success(user.Id, user.UserName, user.Email, roleCodes, user.IsAnonymous);
     }
 
     public async Task<CredentialValidationResult> GetUserForSessionAsync(Guid userId, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false);
+        var user = await userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false);
         if (user is null)
         {
             return CredentialValidationResult.Failed($"User with ID {userId} not found.");
         }
 
-        var roleResolutions2 = await _userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
+        var roleResolutions2 = await userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
         var roleCodes2 = roleResolutions2.Select(r => r.Code).ToArray();
         return CredentialValidationResult.Success(user.Id, user.UserName, user.Email, roleCodes2, user.IsAnonymous);
     }
@@ -87,7 +77,7 @@ internal sealed class AuthenticationService(
 
     public async Task<AuthenticationResultDto> AuthenticateWithResultAsync(string username, string password, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.FindByUsernameAsync(username, cancellationToken).ConfigureAwait(false);
+        var user = await userRepository.FindByUsernameAsync(username, cancellationToken).ConfigureAwait(false);
         if (user is null)
         {
             return AuthenticationResultDto.Failed("Invalid username or password.");
@@ -98,7 +88,7 @@ internal sealed class AuthenticationService(
             return AuthenticationResultDto.Failed("Invalid username or password.");
         }
 
-        if (!_passwordVerifier.Verify(user.PasswordHash, password))
+        if (!passwordVerifier.Verify(user.PasswordHash, password))
         {
             return AuthenticationResultDto.Failed("Invalid username or password.");
         }
@@ -115,7 +105,7 @@ internal sealed class AuthenticationService(
 
     public async Task<UserSessionDto> CreateSessionForUserAsync(Guid userId, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
+        var user = await userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
         return await CreateSessionForUserInternalAsync(user, cancellationToken).ConfigureAwait(false);
@@ -123,14 +113,14 @@ internal sealed class AuthenticationService(
 
     public async Task<UserSessionDto> Complete2faAuthenticationAsync(Guid userId, string code, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false);
+        var user = await userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false);
         if (user is null)
         {
             throw new TwoFactorSessionInvalidException();
         }
 
         // SECURITY: Verify 2FA code before creating session
-        var isValid = await _twoFactorService.Verify2faCodeAsync(userId, code, cancellationToken).ConfigureAwait(false);
+        var isValid = await twoFactorService.Verify2faCodeAsync(userId, code, cancellationToken).ConfigureAwait(false);
         if (!isValid)
         {
             throw new InvalidTwoFactorCodeException();
@@ -142,13 +132,13 @@ internal sealed class AuthenticationService(
     private async Task<UserSessionDto> CreateSessionForUserInternalAsync(User user, CancellationToken cancellationToken)
     {
         // Delegate all token generation to IUserTokenService
-        var tokenResult = await _userTokenService.CreateSessionWithTokensAsync(
+        var tokenResult = await userTokenService.CreateSessionWithTokensAsync(
             user.Id,
             deviceInfo: null, // Device info not available in this flow
             cancellationToken).ConfigureAwait(false);
 
         // Get formatted role claims for the session DTO
-        var roleResolutions = await _userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
+        var roleResolutions = await userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
         var roleClaims = roleResolutions.Select(r => r.ToFormattedClaim()).OrderBy(r => r, StringComparer.Ordinal).ToArray();
 
         return new UserSessionDto

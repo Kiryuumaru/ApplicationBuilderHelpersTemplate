@@ -1,13 +1,10 @@
-using Application.Identity.Interfaces;
+using Application.Identity.Interfaces.Inbound;
 using Fido2NetLib;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.Passkeys.Extensions;
 
-/// <summary>
-/// Extension methods for registering passkey infrastructure services.
-/// </summary>
-public static class PasskeyServiceCollectionExtensions
+internal static class PasskeyServiceCollectionExtensions
 {
     /// <summary>
     /// Adds passkey (WebAuthn/FIDO2) services to the service collection.

@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using Application.Authorization.Interfaces;
+using Application.Authorization.Interfaces.Inbound;
 using Domain.Authorization.Exceptions;
 using Domain.Authorization.Constants;
 using Domain.Authorization.Models;

@@ -4,10 +4,8 @@ namespace Domain.Shared.Models;
 
 public abstract class Entity : DomainObject, IEntity
 {
-    private readonly List<IDomainEvent> _domainEvents = [];
-
     public Guid Id { get; private set; }
-    public Guid RevId { get; set; } = Guid.NewGuid();
+    public Guid RevId { get; protected set; } = Guid.NewGuid();
 
     protected Entity(Guid id)
     {
@@ -17,22 +15,5 @@ public abstract class Entity : DomainObject, IEntity
         }
 
         Id = id;
-    }
-
-    public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
-
-    public void AddDomainEvent(IDomainEvent domainEvent)
-    {
-        _domainEvents.Add(domainEvent);
-    }
-
-    public void RemoveDomainEvent(IDomainEvent domainEvent)
-    {
-        _domainEvents.Remove(domainEvent);
-    }
-
-    public void ClearDomainEvents()
-    {
-        _domainEvents.Clear();
     }
 }

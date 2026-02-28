@@ -1,6 +1,7 @@
 using Domain.Identity.Exceptions;
 using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
+using Domain.Identity.Entities;
 
 namespace Domain.Identity.Services;
 

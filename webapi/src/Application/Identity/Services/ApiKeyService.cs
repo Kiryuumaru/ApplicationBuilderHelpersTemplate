@@ -1,19 +1,17 @@
 using System.Security.Claims;
-using Application.Authorization.Interfaces;
-using Application.Identity.Interfaces;
+using Application.Authorization.Interfaces.Inbound;
+using Application.Identity.Interfaces.Inbound;
 using Application.Identity.Models;
 using Domain.Authorization.Constants;
 using Domain.Authorization.ValueObjects;
 using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
+using Domain.Identity.Entities;
 using TokenClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 using TokenType = Domain.Identity.Enums.TokenType;
 
 namespace Application.Identity.Services;
 
-/// <summary>
-/// Service for managing user API keys using repositories and UnitOfWork.
-/// </summary>
 internal sealed class ApiKeyService(
     IApiKeyRepository apiKeyRepository,
     IIdentityUnitOfWork unitOfWork,
@@ -39,22 +37,11 @@ internal sealed class ApiKeyService(
             throw new InvalidOperationException($"Maximum number of API keys ({MaxApiKeysPerUser}) reached.");
         }
 
-        // Generate API key ID
-        var keyId = Guid.NewGuid();
-        var now = DateTimeOffset.UtcNow;
-
         // Create API key entity
-        var apiKey = new ApiKey
-        {
-            Id = keyId,
-            UserId = userId,
-            Name = name,
-            CreatedAt = now,
-            ExpiresAt = expiresAt
-        };
+        var apiKey = ApiKey.Create(userId, name, expiresAt);
 
         // Generate the token
-        var token = await GenerateApiKeyTokenAsync(userId, keyId, expiresAt, cancellationToken);
+        var token = await GenerateApiKeyTokenAsync(userId, apiKey.Id, expiresAt, cancellationToken);
 
         // Store metadata in DB
         apiKeyRepository.Add(apiKey);
@@ -92,8 +79,7 @@ internal sealed class ApiKeyService(
             return false;
         }
 
-        apiKey.IsRevoked = true;
-        apiKey.RevokedAt = DateTimeOffset.UtcNow;
+        apiKey.Revoke(DateTimeOffset.UtcNow);
         apiKeyRepository.Update(apiKey);
         await unitOfWork.CommitAsync(cancellationToken);
         return true;
@@ -129,7 +115,7 @@ internal sealed class ApiKeyService(
         var apiKey = await apiKeyRepository.GetByIdAsync(keyId, cancellationToken);
         if (apiKey is not null && !apiKey.IsRevoked)
         {
-            apiKey.LastUsedAt = DateTimeOffset.UtcNow;
+            apiKey.MarkUsed(DateTimeOffset.UtcNow);
             apiKeyRepository.Update(apiKey);
             await unitOfWork.CommitAsync(cancellationToken);
         }

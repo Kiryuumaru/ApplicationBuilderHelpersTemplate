@@ -4,12 +4,12 @@ using Domain.Shared.Models;
 
 namespace Domain.Identity.ValueObjects;
 
-public sealed class UserRoleAssignment : ValueObject
+public class UserRoleAssignment : ValueObject
 {
     public Guid RoleId { get; }
     public IReadOnlyDictionary<string, string?> ParameterValues { get; }
 
-    private UserRoleAssignment(Guid roleId, IReadOnlyDictionary<string, string?> parameterValues)
+    protected UserRoleAssignment(Guid roleId, IReadOnlyDictionary<string, string?> parameterValues)
     {
         RoleId = roleId;
         ParameterValues = parameterValues;

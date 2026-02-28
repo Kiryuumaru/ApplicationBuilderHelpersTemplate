@@ -6,7 +6,7 @@ using Domain.Shared.Models;
 
 namespace Domain.Identity.ValueObjects;
 
-public sealed class UserPermissionGrant : ValueObject
+public class UserPermissionGrant : ValueObject
 {
     /// <summary>
     /// Gets the type of this grant (Allow or Deny).
@@ -22,7 +22,7 @@ public sealed class UserPermissionGrant : ValueObject
     public DateTimeOffset GrantedAt { get; }
     public string? GrantedBy { get; }
 
-    private UserPermissionGrant(ScopeDirectiveType type, string identifier, string? description, DateTimeOffset grantedAt, string? grantedBy)
+    protected UserPermissionGrant(ScopeDirectiveType type, string identifier, string? description, DateTimeOffset grantedAt, string? grantedBy)
     {
         Type = type;
         Identifier = Normalize(identifier);

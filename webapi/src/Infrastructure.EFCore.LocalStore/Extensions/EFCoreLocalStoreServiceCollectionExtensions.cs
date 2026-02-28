@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.EFCore.LocalStore.Extensions;
 
-public static class EFCoreLocalStoreServiceCollectionExtensions
+internal static class EFCoreLocalStoreServiceCollectionExtensions
 {
     public static IServiceCollection AddEFCoreLocalStore(this IServiceCollection services)
     {

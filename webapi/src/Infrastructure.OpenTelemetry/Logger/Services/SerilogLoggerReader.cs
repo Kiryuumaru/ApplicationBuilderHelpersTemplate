@@ -11,7 +11,7 @@ using System.Globalization;
 
 namespace Infrastructure.OpenTelemetry.Logger.Services;
 
-internal class SerilogLoggerReader(IConfiguration configuration) : ILoggerReader
+internal sealed class SerilogLoggerReader(IConfiguration configuration) : ILoggerReader
 {
     private readonly IConfiguration _configuration = configuration;
 

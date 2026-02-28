@@ -1,5 +1,6 @@
 using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
+using Domain.Identity.Entities;
 using Microsoft.AspNetCore.Identity;
 
 namespace Infrastructure.Identity.Services;

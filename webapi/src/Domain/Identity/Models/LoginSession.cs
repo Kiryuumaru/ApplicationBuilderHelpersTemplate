@@ -4,7 +4,7 @@ namespace Domain.Identity.Models;
 /// Represents a user's login session with refresh token tracking.
 /// Sessions enable logout-everywhere functionality and token rotation for security.
 /// </summary>
-public sealed class LoginSession
+public class LoginSession
 {
     /// <summary>
     /// Gets the unique identifier for this session.
@@ -68,7 +68,7 @@ public sealed class LoginSession
         RefreshTokenHash = string.Empty;
     }
 
-    private LoginSession(
+    protected LoginSession(
         Guid id,
         Guid userId,
         string refreshTokenHash,

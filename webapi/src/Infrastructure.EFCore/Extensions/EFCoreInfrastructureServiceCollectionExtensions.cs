@@ -1,10 +1,10 @@
-using Application.LocalStore.Interfaces;
+using Application.LocalStore.Interfaces.Outbound;
 using Infrastructure.EFCore.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.EFCore.Extensions;
 
-public static class EFCoreInfrastructureServiceCollectionExtensions
+internal static class EFCoreInfrastructureServiceCollectionExtensions
 {
     public static IServiceCollection AddEFCoreInfrastructure(this IServiceCollection services)
     {

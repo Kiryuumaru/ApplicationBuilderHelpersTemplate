@@ -1,5 +1,6 @@
 using Domain.Identity.Interfaces;
 using Domain.Identity.Models;
+using Domain.Identity.Entities;
 using Domain.Identity.Services;
 
 namespace Domain.UnitTests.Identity;
@@ -44,7 +45,7 @@ public class FederatedAuthTests
 
         var service = new UserAuthenticationService(new StubPasswordVerifier("secret"));
 
-        Assert.Throws<Domain.Identity.Exceptions.AuthenticationException>(() => service.Authenticate(user, "secret", DateTimeOffset.UtcNow));
+        Assert.Throws<global::Domain.Identity.Exceptions.AuthenticationException>(() => service.Authenticate(user, "secret", DateTimeOffset.UtcNow));
     }
 
     [Fact]

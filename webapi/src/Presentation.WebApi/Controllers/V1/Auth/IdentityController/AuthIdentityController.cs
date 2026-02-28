@@ -1,4 +1,4 @@
-using Application.Identity.Interfaces;
+using Application.Identity.Interfaces.Inbound;
 using Asp.Versioning;
 using Domain.Authorization.Constants;
 using Domain.Identity.Enums;

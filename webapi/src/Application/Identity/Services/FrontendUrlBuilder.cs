@@ -1,5 +1,5 @@
 using System.Text.Encodings.Web;
-using Application.Identity.Interfaces;
+using Application.Identity.Interfaces.Inbound;
 using Microsoft.Extensions.Options;
 
 namespace Application.Identity.Services;
@@ -25,9 +25,6 @@ public sealed class FrontendUrlOptions
     public string EmailVerificationPath { get; set; } = "/verify-email";
 }
 
-/// <summary>
-/// Builds frontend URLs using configured base URL and paths.
-/// </summary>
 internal sealed class FrontendUrlBuilder : IFrontendUrlBuilder
 {
     private readonly FrontendUrlOptions _options;

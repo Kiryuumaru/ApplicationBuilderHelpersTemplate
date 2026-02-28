@@ -1,11 +1,12 @@
 using Application.LocalStore.Common;
+using Application.LocalStore.Interfaces;
 using Application.LocalStore.Interfaces.Outbound;
 using DisposableHelpers.Attributes;
 
 namespace Application.LocalStore.Services;
 
 [Disposable]
-public partial class ConcurrentLocalStore(ILocalStoreService localStoreService, string group) : IDisposable
+public partial class ConcurrentLocalStore(ILocalStoreService localStoreService, string group) : IConcurrentLocalStore
 {
     private readonly ILocalStoreService localStoreService = localStoreService ?? throw new ArgumentNullException(nameof(localStoreService));
     private readonly SemaphoreSlim gate = new(1, 1);

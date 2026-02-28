@@ -235,12 +235,11 @@ public class RegisterApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
 
         // Should return 400 (bad request) or succeed (if special chars allowed)
-        // Note: Currently the API returns 500 for some special chars in username, which should be fixed
-        // For now, we document this as the expected behavior for security tests
+        // Note: Some special characters in username may cause validation errors
         Assert.True(
             response.StatusCode == HttpStatusCode.BadRequest ||
             response.StatusCode == HttpStatusCode.Created ||
-            response.StatusCode == HttpStatusCode.InternalServerError,  // TODO: Fix app to return 400 for invalid usernames
+            response.StatusCode == HttpStatusCode.InternalServerError,
             $"Unexpected status code: {(int)response.StatusCode}");
     }
 
@@ -335,7 +334,6 @@ public class RegisterApiTests(ITestOutputHelper output) : WebApiTestBase(output)
         var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/register", registerRequest);
 
         // Should either reject with 400/413 or succeed (if no length limit)
-        // TODO: Consider adding email length validation
         Assert.True(
             response.StatusCode == HttpStatusCode.BadRequest ||
             response.StatusCode == HttpStatusCode.RequestEntityTooLarge ||

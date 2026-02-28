@@ -1,6 +1,6 @@
 using Application.Authorization.Models;
-using Application.Authorization.Interfaces;
-using Application.Identity.Interfaces;
+using Application.Authorization.Interfaces.Inbound;
+using Application.Identity.Interfaces.Inbound;
 using Asp.Versioning;
 using Domain.Authorization.Constants;
 using Domain.Authorization.Enums;

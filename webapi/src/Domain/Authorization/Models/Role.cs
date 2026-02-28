@@ -7,7 +7,7 @@ using Domain.Shared.Models;
 
 namespace Domain.Authorization.Models;
 
-public sealed class Role : AggregateRoot
+public class Role : AggregateRoot
 {
     private readonly List<ScopeTemplate> _scopeTemplates = new();
 
@@ -19,7 +19,7 @@ public sealed class Role : AggregateRoot
 
     public IReadOnlyCollection<ScopeTemplate> ScopeTemplates => _scopeTemplates.AsReadOnly();
 
-    private Role(Guid id, string code, string name, string? description, bool isSystemRole) : base(id)
+    protected Role(Guid id, string code, string name, string? description, bool isSystemRole) : base(id)
     {
         Code = NormalizeCode(code);
         Name = NormalizeName(name);
