@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Application.Shared.Extensions;
 
-public static class GuidExtension
+public static class GuidExtensions
 {
     public static string Encode(string guidText)
     {

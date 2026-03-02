@@ -1,4 +1,4 @@
-namespace Application.Shared.Extensions;
+namespace Application.Shared.Utilities;
 
 public static class ThreadHelpers
 {

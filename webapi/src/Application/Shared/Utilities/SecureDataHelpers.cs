@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Nodes;
 
-namespace Application.Shared.Extensions;
+namespace Application.Shared.Utilities;
 
 public static class SecureDataHelpers
 {

@@ -2,7 +2,7 @@ using System.Text;
 
 namespace Application.Shared.Extensions;
 
-public static class StringCaseHelpers
+public static class StringCaseExtensions
 {
     /// <summary>
     /// Converts a string from any case to snake_case.

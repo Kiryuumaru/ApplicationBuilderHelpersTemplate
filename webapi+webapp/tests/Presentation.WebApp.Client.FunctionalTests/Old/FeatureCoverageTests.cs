@@ -142,7 +142,7 @@ public class FeatureCoverageTests : WebAppTestBase
         var passwordInputs = await Page.QuerySelectorAllAsync("input[type='password']");
         Assert.True(passwordInputs.Count >= 2, "Should have password change form");
 
-        Output.WriteLine("✅ CHANGE PASSWORD: UI implemented (API integration TODO)");
+        Output.WriteLine("✅ CHANGE PASSWORD: UI implemented, API integration pending");
     }
 
     [Fact]
@@ -217,7 +217,7 @@ public class FeatureCoverageTests : WebAppTestBase
                         pageContent.Contains("enable", StringComparison.OrdinalIgnoreCase);
 
         Output.WriteLine($"2FA setup page exists: {hasSetupUI}");
-        Output.WriteLine("🔸 2FA SETUP: UI implemented (API integration TODO)");
+        Output.WriteLine("🔸 2FA SETUP: UI implemented, API integration pending");
     }
 
     #endregion
@@ -398,7 +398,7 @@ public class FeatureCoverageTests : WebAppTestBase
         Output.WriteLine("   - 2FA Setup (GET/POST /api/v1/auth/2fa)");
         Output.WriteLine("   - IAM Users (/api/v1/iam/users) - uses mock data");
         Output.WriteLine("   - IAM Roles (/api/v1/iam/roles) - uses mock data");
-        Output.WriteLine("   - Profile Update - TODO annotation in code");
+        Output.WriteLine("   - Profile Update - annotation in code");
         Output.WriteLine("");
         Output.WriteLine("❌ NOT IMPLEMENTED:");
         Output.WriteLine("   - Sessions Management (GET/DELETE /api/v1/auth/sessions)");

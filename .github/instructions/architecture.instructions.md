@@ -49,6 +49,36 @@ Presentation.*.Server Presentation.*.Client
 
 ---
 
+## Quick Start
+
+When adding a new feature:
+
+```
+1. Domain/{Feature}/
+   ├── Create entities, value objects, enums
+   ├── Define I{Feature}Repository in Interfaces/
+   └── Define I{Feature}UnitOfWork in Interfaces/
+            ↓
+2. Application/{Feature}/
+   ├── Define I{Feature}Service in Interfaces/Inbound/
+   ├── Define I{External}Provider in Interfaces/Outbound/ (if needed)
+   ├── Implement {Feature}Service in Services/
+   └── Create {Feature}ServiceCollectionExtensions in Extensions/
+            ↓
+3. Infrastructure.{Provider}.{Feature}/
+   ├── Implement repository in Repositories/
+   ├── Implement outbound adapters in Adapters/
+   └── Create {Feature}ServiceCollectionExtensions in Extensions/
+            ↓
+4. Presentation.*/
+   ├── Add controller/component (incoming adapter)
+   └── Register in Program.cs via .AddApplication<T>()
+```
+
+Key principle: **Domain defines contracts → Application orchestrates → Infrastructure implements → Presentation drives**
+
+---
+
 ## Layer Reference Rules
 
 Domain:
@@ -119,7 +149,7 @@ Domain/
     +-- ValueObjects/
     +-- Enums/
     +-- Events/
-    +-- Interfaces/                         <- Feature persistence contracts
+    +-- Interfaces/                         <- Domain contracts implemented by Infrastructure
     |   +-- I{Feature}Repository.cs         <- Repository interface
     |   +-- I{Feature}UnitOfWork.cs         <- Feature UoW interface
     +-- Constants/
@@ -287,6 +317,40 @@ Presentation.Cli/
 +-- Services/
 ```
 
+### Testing Layer
+
+```
+tests/
++-- Domain.UnitTests/
+|   +-- {Feature}/
+|       +-- Entities/
+|       +-- Services/
+|       +-- ValueObjects/
++-- Application.UnitTests/
+|   +-- {Feature}/
+|       +-- Services/
+|       +-- EventHandlers/
++-- Application.IntegrationTests/
+|   +-- {Feature}/
++-- Presentation.*.FunctionalTests/
+    +-- {Feature}/
+```
+
+Test project rules:
+- MUST mirror `src/` folder structure in `tests/` sibling folder
+- MUST be named `{Layer}.{TestType}Tests` (e.g., `Domain.UnitTests`, `Application.IntegrationTests`)
+- MUST use same namespace structure as source projects
+- MUST place shared test helpers in `TestHelpers/` or base test class
+- MUST use mocks for Infrastructure dependencies in unit tests
+- MAY use real Infrastructure in integration tests
+
+| Test Type | Project Name | Tests Against |
+|-----------|--------------|---------------|
+| Unit | `Domain.UnitTests` | Entities, value objects, domain services |
+| Unit | `Application.UnitTests` | Application services (mocked dependencies) |
+| Integration | `Application.IntegrationTests` | Application + Infrastructure |
+| Functional | `Presentation.*.FunctionalTests` | Full HTTP/UI stack |
+
 ---
 
 ## Interface Folders
@@ -316,7 +380,6 @@ Interfaces (without subfolder):
 - Are internal abstractions within Application layer
 - Are implemented by Application* services
 - MAY be called by Application* only
-- MAY be called by Infrastructure* for integration points (e.g., `IDomainEventDispatcher` called by EF Core interceptor)
 - MUST NOT be called by Presentation
 - Examples: `IDomainEventDispatcher`, `IDomainEventHandler`, `IOfflineSyncManager`
 
@@ -468,7 +531,8 @@ public interface IIdentityUnitOfWork : IUnitOfWork;
 - Feature UnitOfWork interfaces MUST inherit from `IUnitOfWork`
 - Infrastructure MUST implement feature-specific interfaces, NOT base `IUnitOfWork`
 - Services MUST inject feature-specific interfaces, NOT base `IUnitOfWork`
-- One feature UnitOfWork = one atomicity boundary
+- Each UnitOfWork defines one atomicity boundary
+- A feature MAY have multiple UnitOfWork interfaces
 - Repositories sharing a UnitOfWork are atomic together
 
 ### Infrastructure Implementation
@@ -694,10 +758,11 @@ Domain event dispatch:
 
 Application workers:
 - Are `BackgroundService` implementations for business-related background tasks
-- Decide WHEN to run (scheduling, intervals, event triggers)
+- Are **initiators** - they ACT by calling services, they do not get called
+- Own their background loop and decide WHEN to run (scheduling, intervals, event triggers)
 - Call Domain repositories and Application services for HOW to execute
 - Are internal classes
-- Are not injectable
+- Are not injectable (services do not call workers, workers call services)
 - Create scopes and resolve services within those scopes
 - Are registered as hosted services via `AddHostedService<T>()`
 
@@ -713,12 +778,14 @@ Examples: `AnonymousUserCleanupWorker`, `ApiKeyCleanupWorker`, `OrderExpirationW
 ## Presentation Workers
 
 Presentation workers:
-- Are `BackgroundService` implementations for UI/presentation-specific background tasks
+- Are rare exceptions for UI-only background tasks that cannot exist in Application layer
+- Are `BackgroundService` implementations for pure UI concerns
 - Handle presentation concerns only (not business logic)
 - Live in `Presentation.*/Workers/`
 - Are internal classes
+- PREFER Application workers for all business-related background tasks
 
-Examples: SignalR reconnection handlers, UI state polling, notification listeners, real-time update subscribers.
+Examples: Toast notification timeout, UI animation loops, browser-only cleanup.
 
 ---
 
@@ -748,15 +815,15 @@ Controllers, components, services, and commands MUST NOT import Infrastructure n
 ## Service Accessibility
 
 Interfaces: `public`
-Implementations: `internal sealed`
+Implementations: `internal`
 
 ```csharp
 public interface ILocalStoreService { }
-internal sealed class IndexedDBLocalStoreService : ILocalStoreService { }
+internal class IndexedDBLocalStoreService : ILocalStoreService { }
 ```
 
 Domain types (entities, value objects, events) are `public` because they are shared across layers.
-Infrastructure and Application service implementations are `internal sealed` because they are resolved via DI.
+Infrastructure and Application service implementations are `internal` because they are resolved via DI.
 
 ---
 
@@ -867,7 +934,8 @@ MUST extract when:
 
 Shared code locations by layer:
 
-- Domain interfaces MUST go in `Domain/Shared/Interfaces/`
+- Domain shared interfaces (base contracts) MUST go in `Domain/Shared/Interfaces/`
+- Domain feature interfaces (repos, UoW) MUST go in `Domain/{Feature}/Interfaces/`
 - Domain services MUST go in `Domain/{Feature}/Services/`
 - Domain value objects MUST go in `Domain/{Feature}/ValueObjects/`
 - Domain logic MUST go in `Domain/Shared/` or `Domain/{Feature}/`
@@ -992,7 +1060,7 @@ Files MUST be placed in folders matching their type kind.
 |-----------|-----------------|---------|
 | Interface (internal) | `Interfaces/` | `Interfaces/IDomainEventDispatcher.cs` |
 | Interface (Inbound) | `Interfaces/Inbound/` | `Interfaces/Inbound/IOrderService.cs` |
-| Interface (Outbound) | `Interfaces/Outbound/` | `Interfaces/Outbound/IOrderRepository.cs` |
+| Interface (Outbound) | `Interfaces/Outbound/` | `Interfaces/Outbound/IEmailSender.cs` |
 | Enum | `Enums/` | `Enums/OrderStatus.cs` |
 | Record (DTO/Model) | `Models/` | `Models/LoginRequest.cs` |
 | Service class | `Services/` | `Services/UserService.cs` |
@@ -1061,6 +1129,35 @@ Examples: `ServiceCollectionExtensions`, `ConfigurationExtensions`, `StringExten
 
 ---
 
+## FAQ / Edge Cases
+
+**Q: Where do I put a service used by both Server and Client?**
+A: `Application/{Feature}/Services/` - The base Application layer is shared by both Application.Server and Application.Client.
+
+**Q: What if Infrastructure needs to call another Infrastructure adapter?**
+A: Create an interface in `Application/{Feature}/Interfaces/Outbound/`. Infrastructure adapters should not call each other directly.
+
+**Q: Where do constants shared across all layers go?**
+A: `Domain/Shared/Constants/` - Domain is referenced by all layers.
+
+**Q: Can a domain service call a repository?**
+A: No. Domain services are pure logic with no I/O. Pass data as method parameters. Application services orchestrate repos and domain services.
+
+**Q: Where do DTOs for external API responses go?**
+A: `Infrastructure.{Provider}/Models/` - They are implementation details of the outbound adapter.
+
+**Q: When should I use Application.Server vs Application?**
+A: Use `Application.Server/` for logic that only runs on server (e.g., background jobs requiring server resources). Use `Application/` for shared logic.
+
+**Q: Can Presentation call Interfaces/Outbound directly?**
+A: No. Presentation calls Interfaces/Inbound only. Create a service in Application that wraps the outbound call if needed.
+
+[→ See Interface Access Rules for full table](#interface-access-rules)
+[→ See Unit of Work Pattern for transaction boundaries](#unit-of-work-pattern)
+[→ See Service Categories for Singleton vs Scoped guidance](#service-categories)
+
+---
+
 ## Prohibited Patterns
 
 - NEVER use `@inject DbContext` in components
@@ -1070,8 +1167,7 @@ Examples: `ServiceCollectionExtensions`, `ConfigurationExtensions`, `StringExten
 - NEVER use static service locator patterns
 - NEVER hardcode connection strings or URLs in Application
 - NEVER use `if (type == X)` branching in Application layer
-- NEVER define Interfaces/Inbound in Infrastructure layer
-- NEVER define Interfaces/Outbound in Infrastructure layer
+- NEVER define public interfaces in Infrastructure layer that other layers depend on
 - NEVER implement Interfaces/Inbound in Infrastructure layer
 - NEVER implement Interfaces/Outbound in Application layer
 - NEVER call Interfaces/Outbound directly from Presentation layer
@@ -1158,7 +1254,8 @@ Method usage:
 Every feature and Shared MUST have its own ServiceCollectionExtensions class.
 
 ServiceCollectionExtensions rules:
-- Feature-specific extensions MUST be `internal static` class
+- MUST be `internal static` class when called only by same-layer ApplicationDependency
+- MAY be `public static` class when designed for cross-layer use (e.g., Presentation configuring options)
 - MUST have extension methods for IServiceCollection
 - MUST be named `{Feature}ServiceCollectionExtensions`
 - MUST have methods named `Add{Feature}Services`
@@ -1269,7 +1366,8 @@ ConfigurationExtensions provide a unified way to share settings across layers re
 
 ### ConfigurationExtensions Rules
 
-- MUST be `public static` class with `extension(IConfiguration)` block
+- MUST be `public static` class with `extension(IConfiguration)` block (C# 13+ syntax)
+- MAY use traditional `this IConfiguration` syntax for C# 12 compatibility
 - MUST be named `{Feature}ConfigurationExtensions`
 - MUST use private const string for key names
 - MUST have property with getter and setter
@@ -1561,7 +1659,6 @@ Long-running commands (servers, watchers):
 - NEVER use constructor injection in Commands
 - NEVER call lifecycle methods out of order
 - NEVER add ApplicationDependency without corresponding ServiceCollectionExtensions
-- NEVER make feature-specific ServiceCollectionExtensions public
 - NEVER register DI from another layer (all layers converge in Program.cs)
 - NEVER forget `.RunAsync(args)` in Program.cs
 - NEVER forget `cancellationTokenSource.Cancel()` in one-shot CLI commands

@@ -1,8 +1,8 @@
 using System.Text.Json;
 
-namespace Application.Shared.Extensions;
+namespace Application.Shared.Utilities;
 
-public static class JsonSerializerExtension
+public static class JsonSerializerDefaults
 {
     public static readonly JsonSerializerOptions CamelCaseOption = new()
     {

@@ -2,7 +2,7 @@ using System.Text;
 
 namespace Application.Shared.Extensions;
 
-public static class StringEncoder
+public static class StringEncoderExtensions
 {
     public static string Encode(this string value)
     {

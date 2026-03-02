@@ -1,4 +1,4 @@
-namespace Application.Shared.Extensions;
+namespace Application.Shared.Primitives;
 
 public class LazyValue<TValue>(Func<CancellationToken, Task<TValue>> valueFactory)
 {

@@ -188,7 +188,7 @@ public class PasskeyApiTests : WebAppTestBase
             var requestBody = new { ChallengeId = options.ChallengeId, AssertionResponseJson = "not valid json" };
             var response = await HttpClient.PostAsJsonAsync("/api/v1/auth/login/passkey", requestBody);
 
-            // TODO: Should return 400, currently returns 500 due to JSON parsing
+            // Currently returns 500 for invalid JSON, expected 400
             Assert.True(
                 response.StatusCode == HttpStatusCode.BadRequest ||
                 response.StatusCode == HttpStatusCode.InternalServerError,
@@ -276,7 +276,7 @@ public class PasskeyApiTests : WebAppTestBase
             // Second attempt with same challenge should fail
             var response2 = await HttpClient.PostAsJsonAsync("/api/v1/auth/login/passkey", requestBody);
 
-            // TODO: Should return 400 for challenge reuse, currently may return 500
+            // Currently returns 500 for challenge reuse, expected 400
             Assert.True(
                 response2.StatusCode == HttpStatusCode.BadRequest ||
                 response2.StatusCode == HttpStatusCode.InternalServerError,
@@ -314,7 +314,7 @@ public class PasskeyApiTests : WebAppTestBase
             request2.Content = JsonContent.Create(new { ChallengeId = options.ChallengeId, AttestationResponseJson = "{}" });
             var response2 = await HttpClient.SendAsync(request2);
 
-            // TODO: Should return 400 for challenge reuse, currently may return 500
+            // Currently returns 500 for challenge reuse, expected 400
             Assert.True(
                 response2.StatusCode == HttpStatusCode.BadRequest ||
                 response2.StatusCode == HttpStatusCode.InternalServerError,

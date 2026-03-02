@@ -5,7 +5,7 @@ using CliWrap.EventStream;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Application.Shared.Extensions;
+namespace Application.Shared.Utilities;
 
 public static class CliHelpers
 {

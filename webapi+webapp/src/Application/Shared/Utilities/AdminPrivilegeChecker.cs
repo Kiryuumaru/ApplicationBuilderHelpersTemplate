@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.Principal;
 
-namespace Application.Shared.Extensions;
+namespace Application.Shared.Utilities;
 
 public static class AdminPrivilegeChecker
 {

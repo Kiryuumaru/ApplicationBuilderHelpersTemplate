@@ -245,7 +245,7 @@ public class RegisterApiTests : WebAppTestBase
         Assert.True(
             response.StatusCode == HttpStatusCode.BadRequest ||
             response.StatusCode == HttpStatusCode.Created ||
-            response.StatusCode == HttpStatusCode.InternalServerError,  // TODO: Fix app to return 400 for invalid usernames
+            response.StatusCode == HttpStatusCode.InternalServerError,  // API currently returns 500 for invalid usernames
             $"Unexpected status code: {response.StatusCode}");
     }
 

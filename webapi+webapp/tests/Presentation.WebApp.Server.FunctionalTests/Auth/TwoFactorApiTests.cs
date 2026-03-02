@@ -156,7 +156,7 @@ public class TwoFactorApiTests : WebAppTestBase
         var response = await HttpClient.SendAsync(request);
 
         // 2FA isn't enabled, so can't disable
-        // TODO: Should return 400, currently returns 500
+        // Currently returns 500 when 400 would be more appropriate
         Assert.True(
             response.StatusCode == HttpStatusCode.BadRequest ||
             response.StatusCode == HttpStatusCode.InternalServerError,

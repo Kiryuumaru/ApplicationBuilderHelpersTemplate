@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
 
-namespace Application.Shared.Extensions;
+namespace Application.Shared.Utilities;
 
 public class NetworkUtils
 {
