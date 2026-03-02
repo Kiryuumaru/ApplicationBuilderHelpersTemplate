@@ -1003,6 +1003,7 @@ Files MUST be placed in folders matching their type kind.
 | Exception | `Exceptions/` | `Exceptions/UserNotFoundException.cs` |
 | Extension class | `Extensions/` | `Extensions/ServiceCollectionExtensions.cs` |
 | Primitive class | `Primitives/` | `Primitives/GateKeeper.cs` |
+| Utility class | `Utilities/` | `Utilities/NetworkUtils.cs` |
 | Validator | `Validators/` | `Validators/LoginRequestValidator.cs` |
 | Configuration | `Configurations/` | `Configurations/UserConfiguration.cs` |
 | Constants class | `Constants/` | `Constants/ErrorMessages.cs` |
@@ -1024,9 +1025,9 @@ Verification:
 
 ---
 
-## Primitives vs Extensions
+## Primitives, Utilities, and Extensions
 
-Primitives and Extensions serve different purposes in shared utility code.
+Primitives, Utilities, and Extensions serve different purposes in shared utility code.
 
 ### Primitives
 
@@ -1036,17 +1037,27 @@ Primitives are instantiable utility classes that:
 - Provide reusable building blocks
 - Live in `Primitives/` folder
 
-Examples: `GateKeeper`, `AsyncManualResetEvent`, `AsyncReaderWriterLock`, `ValueKeeper`.
+Examples: `GateKeeper`, `AsyncManualResetEvent`, `AsyncReaderWriterLock`, `ValueKeeper`, `LazyValue`.
+
+### Utilities
+
+Utilities are static helper classes that:
+- Are called directly without instantiation
+- Do NOT use `this` parameter (not extension methods)
+- Provide stateless helper functions
+- Live in `Utilities/` folder
+
+Examples: `NetworkUtils`, `RandomHelpers`, `TaskUtils`, `StringEncoder`, `SecureDataHelpers`.
 
 ### Extensions
 
-Extensions are static helper methods that:
+Extensions are static extension methods that:
 - Are called directly without instantiation
 - Extend existing types via `this` parameter
-- Provide stateless transformations or helpers
+- Provide stateless transformations on existing types
 - Live in `Extensions/` folder
 
-Examples: `ServiceCollectionExtensions`, `ConfigurationExtensions`, `StringExtensions`.
+Examples: `ServiceCollectionExtensions`, `ConfigurationExtensions`, `StringExtensions`, `CancellationTokenExtensions`.
 
 ---
 
