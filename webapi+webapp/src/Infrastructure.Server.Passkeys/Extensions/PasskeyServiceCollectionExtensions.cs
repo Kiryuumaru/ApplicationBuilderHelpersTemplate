@@ -1,4 +1,4 @@
-using Application.Server.Identity.Interfaces;
+using Application.Server.Identity.Interfaces.Inbound;
 using Fido2NetLib;
 using Microsoft.Extensions.DependencyInjection;
 

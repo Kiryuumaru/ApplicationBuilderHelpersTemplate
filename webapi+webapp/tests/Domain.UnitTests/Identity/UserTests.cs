@@ -3,6 +3,7 @@ using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;
 using Domain.Identity.Exceptions;
 using Domain.Identity.Interfaces;
+using Domain.Identity.Entities;
 using Domain.Identity.Models;
 using Domain.Identity.Services;
 using Domain.Identity.ValueObjects;

@@ -1,3 +1,4 @@
+using Domain.Identity.Entities;
 using Domain.Identity.Models;
 using Infrastructure.EFCore.Extensions;
 using Microsoft.AspNetCore.Identity;

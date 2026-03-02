@@ -1,5 +1,5 @@
 using Application.Shared.Services;
-using Application.Server.Identity.Interfaces;
+using Application.Server.Identity.Interfaces.Inbound;
 using Application.Server.Identity.Models;
 using Presentation.WebApp.Server.Controllers.V1.Auth.Shared.Responses;
 

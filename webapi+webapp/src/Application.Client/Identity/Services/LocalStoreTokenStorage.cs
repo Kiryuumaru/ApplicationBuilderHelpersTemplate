@@ -1,8 +1,8 @@
 using System.Text.Json;
-using Application.Client.Identity.Interfaces;
+using Application.Client.Identity.Interfaces.Inbound;
 using Application.Client.Identity.Models;
 using Application.Client.Serialization;
-using Application.LocalStore.Interfaces.Infrastructure;
+using Application.LocalStore.Interfaces.Outbound;
 
 namespace Application.Client.Identity.Services;
 

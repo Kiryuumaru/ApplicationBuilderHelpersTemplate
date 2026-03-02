@@ -1,8 +1,9 @@
-using Application.Server.Authorization.Interfaces;
-using Application.Server.Authorization.Interfaces.Infrastructure;
-using Application.Server.Identity.Interfaces;
-using Application.Server.Identity.Interfaces.Infrastructure;
+using Application.Server.Authorization.Interfaces.Inbound;
+using Application.Server.Authorization.Interfaces.Outbound;
+using Application.Server.Identity.Interfaces.Inbound;
+using Application.Server.Identity.Interfaces.Outbound;
 using Application.Server.Identity.Models;
+using Domain.Identity.Entities;
 using Domain.Identity.Models;
 using Domain.Shared.Exceptions;
 

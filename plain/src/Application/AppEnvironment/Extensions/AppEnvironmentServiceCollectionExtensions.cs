@@ -1,4 +1,4 @@
-using Application.AppEnvironment.Interfaces;
+using Application.AppEnvironment.Interfaces.Inbound;
 using Application.AppEnvironment.Services;
 using Microsoft.Extensions.DependencyInjection;
 

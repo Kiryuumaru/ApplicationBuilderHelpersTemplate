@@ -1,4 +1,4 @@
-using Application.LocalStore.Interfaces.Infrastructure;
+using Application.LocalStore.Interfaces.Outbound;
 using Infrastructure.EFCore.Extensions;
 using Infrastructure.EFCore.Interfaces;
 using Infrastructure.EFCore.LocalStore.Models;

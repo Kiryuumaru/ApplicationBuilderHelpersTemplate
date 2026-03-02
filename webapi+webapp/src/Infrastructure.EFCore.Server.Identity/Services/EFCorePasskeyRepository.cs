@@ -1,5 +1,6 @@
-using Application.Server.Identity.Interfaces.Infrastructure;
+using Application.Server.Identity.Interfaces.Outbound;
 using Domain.Identity.Enums;
+using Domain.Identity.Entities;
 using Domain.Identity.Models;
 using Domain.Shared.Exceptions;
 using Infrastructure.EFCore.Extensions;

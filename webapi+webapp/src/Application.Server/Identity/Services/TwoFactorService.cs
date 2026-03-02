@@ -1,7 +1,8 @@
-using Application.Server.Identity.Interfaces;
-using Application.Server.Identity.Interfaces.Infrastructure;
+using Application.Server.Identity.Interfaces.Inbound;
+using Application.Server.Identity.Interfaces.Outbound;
 using Application.Server.Identity.Models;
 using Domain.Identity.Exceptions;
+using Domain.Identity.Entities;
 using Domain.Identity.Models;
 using Domain.Shared.Exceptions;
 using System.Security.Cryptography;

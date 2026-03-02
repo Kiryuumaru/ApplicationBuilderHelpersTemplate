@@ -1,4 +1,4 @@
-using Application.LocalStore.Interfaces.Infrastructure;
+using Application.LocalStore.Interfaces.Outbound;
 using Application.LocalStore.Services;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;

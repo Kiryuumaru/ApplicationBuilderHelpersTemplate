@@ -1,5 +1,5 @@
 using Application.AppEnvironment.Extensions;
-using Application.AppEnvironment.Interfaces;
+using Application.AppEnvironment.Interfaces.Inbound;
 using Application.Shared.Interfaces.Inbound;
 using Microsoft.Extensions.Configuration;
 

@@ -1,11 +1,12 @@
 using System.Security.Claims;
-using Application.Server.Authorization.Interfaces;
-using Application.Server.Identity.Interfaces;
-using Application.Server.Identity.Interfaces.Infrastructure;
+using Application.Server.Authorization.Interfaces.Inbound;
+using Application.Server.Identity.Interfaces.Inbound;
+using Application.Server.Identity.Interfaces.Outbound;
 using Application.Server.Identity.Models;
 using Domain.Authorization.Constants;
 using Domain.Authorization.ValueObjects;
 using Domain.Identity.Constants;
+using Domain.Identity.Entities;
 using Domain.Identity.Models;
 using TokenClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 using TokenType = Domain.Identity.Enums.TokenType;

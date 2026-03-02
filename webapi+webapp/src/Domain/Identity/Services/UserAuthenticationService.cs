@@ -1,3 +1,4 @@
+using Domain.Identity.Entities;
 using Domain.Identity.Exceptions;
 using Domain.Identity.Interfaces;
 using Domain.Identity.Models;

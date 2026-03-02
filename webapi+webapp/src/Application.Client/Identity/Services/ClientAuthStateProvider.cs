@@ -1,6 +1,6 @@
 using System.Security.Claims;
 using System.Text.Json;
-using Application.Client.Identity.Interfaces;
+using Application.Client.Identity.Interfaces.Inbound;
 using Application.Client.Identity.Models;
 using Application.Client.Serialization;
 

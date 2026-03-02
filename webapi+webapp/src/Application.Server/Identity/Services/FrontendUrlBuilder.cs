@@ -1,5 +1,5 @@
 using System.Text.Encodings.Web;
-using Application.Server.Identity.Interfaces;
+using Application.Server.Identity.Interfaces.Inbound;
 using Microsoft.Extensions.Options;
 
 namespace Application.Server.Identity.Services;

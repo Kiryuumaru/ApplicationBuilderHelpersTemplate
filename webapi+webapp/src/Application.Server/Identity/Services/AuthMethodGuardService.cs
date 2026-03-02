@@ -1,5 +1,5 @@
-using Application.Server.Identity.Interfaces;
-using Application.Server.Identity.Interfaces.Infrastructure;
+using Application.Server.Identity.Interfaces.Inbound;
+using Application.Server.Identity.Interfaces.Outbound;
 
 namespace Application.Server.Identity.Services;
 

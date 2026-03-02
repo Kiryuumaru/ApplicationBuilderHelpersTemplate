@@ -1,5 +1,6 @@
 using Application.AppEnvironment.Extensions;
-using Application.Shared.Interfaces.Application;
+using Application.Shared.Interfaces.Inbound;
+using Application.Shared.Interfaces.Outbound;
 using Application.LocalStore.Interfaces;
 using Microsoft.Extensions.Configuration;
 

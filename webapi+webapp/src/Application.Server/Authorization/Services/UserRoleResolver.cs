@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using Application.Server.Authorization.Interfaces;
-using Application.Server.Authorization.Interfaces.Infrastructure;
+using Application.Server.Authorization.Interfaces.Inbound;
+using Application.Server.Authorization.Interfaces.Outbound;
+using Domain.Identity.Entities;
 using Domain.Identity.Models;
 
 namespace Application.Server.Authorization.Services;

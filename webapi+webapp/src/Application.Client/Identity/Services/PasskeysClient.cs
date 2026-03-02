@@ -1,5 +1,5 @@
 using System.Net.Http.Json;
-using Application.Client.Identity.Interfaces;
+using Application.Client.Identity.Interfaces.Inbound;
 using Application.Client.Identity.Models;
 using Application.Client.Serialization;
 

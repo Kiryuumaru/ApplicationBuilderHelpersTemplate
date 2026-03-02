@@ -1,3 +1,4 @@
+using Domain.Identity.Entities;
 using Domain.Identity.Models;
 
 namespace Application.Server.Identity.Models;

@@ -1,10 +1,10 @@
-using Application.Server.Authorization.Interfaces.Infrastructure;
-using Application.Server.Identity.Interfaces.Infrastructure;
+using Application.Server.Authorization.Interfaces.Outbound;
+using Application.Server.Identity.Interfaces.Outbound;
 using Domain.Authorization.Models;
+using Domain.Identity.Entities;
 using Domain.Identity.Models;
 using Infrastructure.EFCore.Server.Identity.Configurations;
 using Infrastructure.EFCore.Server.Identity.Services;
-using Infrastructure.EFCore.Server.Identity.Workers;
 using Infrastructure.EFCore.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;

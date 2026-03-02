@@ -1,4 +1,4 @@
-using Application.LocalStore.Interfaces.Infrastructure;
+using Application.LocalStore.Interfaces.Outbound;
 using Microsoft.JSInterop;
 using Presentation.WebApp.Client.Components.Theme.Interfaces;
 

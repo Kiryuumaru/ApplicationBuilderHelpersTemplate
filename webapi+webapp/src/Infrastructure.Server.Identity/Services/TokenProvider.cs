@@ -1,4 +1,4 @@
-using Application.Server.Authorization.Interfaces.Infrastructure;
+using Application.Server.Authorization.Interfaces.Outbound;
 using Application.Server.Authorization.Models;
 using Domain.Identity.Enums;
 using Infrastructure.Server.Identity.Interfaces;

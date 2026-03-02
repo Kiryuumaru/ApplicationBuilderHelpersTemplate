@@ -1,4 +1,4 @@
-using Application.LocalStore.Interfaces.Infrastructure;
+using Application.LocalStore.Interfaces.Outbound;
 using Infrastructure.Browser.IndexedDB.LocalStore.Services;
 using Microsoft.Extensions.DependencyInjection;
 

@@ -1,4 +1,4 @@
-using Application.Server.Authorization.Interfaces.Infrastructure;
+using Application.Server.Authorization.Interfaces.Outbound;
 using Infrastructure.Server.Identity.ConfigureOptions;
 using Infrastructure.Server.Identity.Interfaces;
 using Infrastructure.Server.Identity.Models;

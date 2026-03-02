@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Application.Server.Authorization.Interfaces;
+using Application.Server.Authorization.Interfaces.Inbound;
 using Domain.Authorization.Exceptions;
 using Domain.Authorization.Constants;
 using Domain.Authorization.Models;

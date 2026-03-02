@@ -1,4 +1,4 @@
-using Application.Server.Identity.Interfaces;
+using Application.Server.Identity.Interfaces.Inbound;
 using Asp.Versioning;
 using Domain.Identity.Exceptions;
 using Microsoft.AspNetCore.Authorization;

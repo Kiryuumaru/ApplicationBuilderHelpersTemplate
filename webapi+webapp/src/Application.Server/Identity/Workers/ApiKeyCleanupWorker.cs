@@ -1,4 +1,4 @@
-using Application.Server.Identity.Interfaces;
+using Application.Server.Identity.Interfaces.Inbound;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;

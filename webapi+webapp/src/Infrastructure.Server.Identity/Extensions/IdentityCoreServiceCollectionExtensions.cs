@@ -1,6 +1,7 @@
-using Application.Server.Identity.Interfaces.Infrastructure;
+using Application.Server.Identity.Interfaces.Outbound;
 using Domain.Authorization.Models;
 using Domain.Identity.Interfaces;
+using Domain.Identity.Entities;
 using Domain.Identity.Models;
 using Infrastructure.Server.Identity.Services;
 using Microsoft.AspNetCore.Identity;

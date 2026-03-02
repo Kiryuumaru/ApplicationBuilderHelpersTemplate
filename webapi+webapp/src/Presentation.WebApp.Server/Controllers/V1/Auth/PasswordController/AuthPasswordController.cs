@@ -1,5 +1,6 @@
-using Application.Shared.Interfaces;
-using Application.Server.Identity.Interfaces;
+using Application.Shared.Interfaces.Inbound;
+using Application.Shared.Interfaces.Outbound;
+using Application.Server.Identity.Interfaces.Inbound;
 using Asp.Versioning;
 using Domain.Authorization.Constants;
 using Domain.Identity.Exceptions;

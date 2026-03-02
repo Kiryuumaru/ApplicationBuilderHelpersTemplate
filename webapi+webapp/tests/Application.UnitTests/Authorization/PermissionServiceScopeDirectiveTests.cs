@@ -1,5 +1,5 @@
-using Application.Server.Authorization.Interfaces;
-using Application.Server.Authorization.Interfaces.Infrastructure;
+using Application.Server.Authorization.Interfaces.Inbound;
+using Application.Server.Authorization.Interfaces.Outbound;
 using Application.Server.Authorization.Services;
 using Application.UnitTests.Authorization.Fakes;
 using Domain.Authorization.Constants;

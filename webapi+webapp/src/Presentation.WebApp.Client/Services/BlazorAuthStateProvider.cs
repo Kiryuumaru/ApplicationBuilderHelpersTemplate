@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using Application.Client.Identity.Interfaces;
+using Application.Client.Identity.Interfaces.Inbound;
 using Application.Client.Identity.Models;
 using Microsoft.AspNetCore.Components.Authorization;
 

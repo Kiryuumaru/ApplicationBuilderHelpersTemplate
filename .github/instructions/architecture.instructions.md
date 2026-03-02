@@ -141,8 +141,9 @@ Application/
 |   |   +-- Inbound/                        <- Incoming ports
 |   |   +-- Outbound/                       <- Outgoing ports
 |   +-- Models/
+|   +-- Primitives/                         <- Instantiable utility classes
 |   +-- Services/
-|   +-- Extensions/
+|   +-- Extensions/                         <- Static extension methods
 |       +-- SharedServiceCollectionExtensions.cs
 +-- {Feature}/
     +-- Interfaces/
@@ -1001,6 +1002,7 @@ Files MUST be placed in folders matching their type kind.
 | Value object | `ValueObjects/` | `ValueObjects/Email.cs` |
 | Exception | `Exceptions/` | `Exceptions/UserNotFoundException.cs` |
 | Extension class | `Extensions/` | `Extensions/ServiceCollectionExtensions.cs` |
+| Primitive class | `Primitives/` | `Primitives/GateKeeper.cs` |
 | Validator | `Validators/` | `Validators/LoginRequestValidator.cs` |
 | Configuration | `Configurations/` | `Configurations/UserConfiguration.cs` |
 | Constants class | `Constants/` | `Constants/ErrorMessages.cs` |
@@ -1019,6 +1021,32 @@ Verification:
 - Before creating a file, identify its type kind
 - Place in the corresponding folder within the feature/component area
 - If folder does not exist, create it
+
+---
+
+## Primitives vs Extensions
+
+Primitives and Extensions serve different purposes in shared utility code.
+
+### Primitives
+
+Primitives are instantiable utility classes that:
+- Are created with `new` keyword
+- Hold state or manage resources
+- Provide reusable building blocks
+- Live in `Primitives/` folder
+
+Examples: `GateKeeper`, `AsyncManualResetEvent`, `AsyncReaderWriterLock`, `ValueKeeper`.
+
+### Extensions
+
+Extensions are static helper methods that:
+- Are called directly without instantiation
+- Extend existing types via `this` parameter
+- Provide stateless transformations or helpers
+- Live in `Extensions/` folder
+
+Examples: `ServiceCollectionExtensions`, `ConfigurationExtensions`, `StringExtensions`.
 
 ---
 

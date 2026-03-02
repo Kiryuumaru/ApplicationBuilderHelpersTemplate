@@ -2,7 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using Application.Client.Authorization.Interfaces;
 using Application.Client.Authorization.Services;
 using Application.Client.Shared.Extensions;
-using Application.Client.Identity.Interfaces;
+using Application.Client.Identity.Interfaces.Inbound;
 using Application.Client.Identity.Services;
 using ApplicationBuilderHelpers;
 using Microsoft.Extensions.Configuration;
@@ -10,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Application.Client;
 
-public class ClientApplication : Application
+public class ClientApplication : ApplicationDependency
 {
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
     {

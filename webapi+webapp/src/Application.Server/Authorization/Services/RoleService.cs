@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Application.Server.Authorization.Interfaces;
-using Application.Server.Authorization.Interfaces.Infrastructure;
+using Application.Server.Authorization.Interfaces.Inbound;
+using Application.Server.Authorization.Interfaces.Outbound;
 using Application.Server.Authorization.Models;
 using Domain.Authorization.Exceptions;
 using Domain.Authorization.Models;

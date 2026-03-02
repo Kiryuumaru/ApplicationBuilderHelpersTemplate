@@ -1,6 +1,6 @@
 #if DEBUG
-using Application.Server.Authorization.Interfaces;
-using Application.Server.Identity.Interfaces;
+using Application.Server.Authorization.Interfaces.Inbound;
+using Application.Server.Identity.Interfaces.Inbound;
 using Application.Server.Identity.Models;
 using Asp.Versioning;
 using Domain.Authorization.Constants;

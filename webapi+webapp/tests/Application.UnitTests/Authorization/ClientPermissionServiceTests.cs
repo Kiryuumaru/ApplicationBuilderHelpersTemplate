@@ -1,6 +1,6 @@
 using Application.Client.Authorization.Interfaces;
 using Application.Client.Authorization.Services;
-using Application.Client.Identity.Interfaces;
+using Application.Client.Identity.Interfaces.Inbound;
 using Application.Client.Identity.Models;
 using Domain.Authorization.Constants;
 using NSubstitute;

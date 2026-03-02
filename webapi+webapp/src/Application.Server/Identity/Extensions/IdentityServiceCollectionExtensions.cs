@@ -1,9 +1,10 @@
 using Application.Server.Authorization.Extensions;
-using Application.Server.Identity.Interfaces;
+using Application.Server.Identity.Interfaces.Inbound;
 using Application.Server.Identity.Services;
 using Application.Server.Identity.Workers;
 using Domain.Authorization.Models;
 using Domain.Identity.Interfaces;
+using Domain.Identity.Entities;
 using Domain.Identity.Models;
 using Domain.Identity.Services;
 using Microsoft.Extensions.DependencyInjection;

@@ -1,3 +1,4 @@
+using Application;
 using Application.Server;
 using Infrastructure.EFCore;
 using Infrastructure.EFCore.LocalStore;
@@ -10,6 +11,8 @@ using Infrastructure.Server.Passkeys;
 using Presentation.WebApp.Server.Commands;
 
 return await ApplicationBuilderHelpers.ApplicationBuilder.Create()
+    .AddApplication<Domain.Domain>()
+    .AddApplication<Application.Application>()
     .AddApplication<ServerApplication>()
     .AddApplication<OpenTelemetryInfrastructure>()
     .AddApplication<IdentityInfrastructure>()

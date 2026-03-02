@@ -1,5 +1,5 @@
-using Application.Shared.Interfaces;
-using Application.Shared.Interfaces.Application;
+using Application.Shared.Interfaces.Inbound;
+using Application.Shared.Interfaces.Outbound;
 using Application.Shared.Services;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Attributes;

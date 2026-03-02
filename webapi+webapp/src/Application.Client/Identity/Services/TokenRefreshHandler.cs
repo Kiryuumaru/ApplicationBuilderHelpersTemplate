@@ -1,6 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
-using Application.Client.Identity.Interfaces;
+using Application.Client.Identity.Interfaces.Inbound;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Application.Client.Identity.Services;

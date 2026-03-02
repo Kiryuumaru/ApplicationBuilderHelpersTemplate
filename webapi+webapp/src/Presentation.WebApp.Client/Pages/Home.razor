@@ -1,5 +1,6 @@
 @page "/"
-@using Application.Client.Identity.Interfaces
+@using Application.Client.Identity.Interfaces.Inbound
+@using Application.Shared.Interfaces.Inbound
 @attribute [Authorize]
 @inject IAuthStateProvider AuthStateProvider
 

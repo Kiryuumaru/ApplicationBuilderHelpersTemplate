@@ -1,6 +1,5 @@
 using Application.Server.Authorization.Extensions;
-using Application.Server.Authorization.Interfaces;
-using Application.Server.Authorization.Interfaces.Application;
+using Application.Server.Authorization.Interfaces.Inbound;
 using Application.Logger.Extensions;
 using DisposableHelpers.Attributes;
 using Microsoft.Extensions.DependencyInjection;

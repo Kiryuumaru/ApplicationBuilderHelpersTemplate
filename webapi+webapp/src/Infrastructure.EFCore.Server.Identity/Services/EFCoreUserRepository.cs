@@ -1,7 +1,8 @@
 using System.Text.Json;
-using Application.Server.Identity.Interfaces.Infrastructure;
+using Application.Server.Identity.Interfaces.Outbound;
 using Application.Server.Identity.Models;
 using Domain.Identity.Enums;
+using Domain.Identity.Entities;
 using Domain.Identity.Models;
 using Domain.Identity.ValueObjects;
 using Domain.Shared.Exceptions;

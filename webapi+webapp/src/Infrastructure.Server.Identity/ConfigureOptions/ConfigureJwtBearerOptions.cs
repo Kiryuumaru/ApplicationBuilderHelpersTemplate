@@ -1,6 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using Application.Server.Identity.Enums;
-using Application.Server.Identity.Interfaces;
+using Application.Server.Identity.Interfaces.Inbound;
 using Domain.Identity.Constants;
 using Infrastructure.Server.Identity.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;

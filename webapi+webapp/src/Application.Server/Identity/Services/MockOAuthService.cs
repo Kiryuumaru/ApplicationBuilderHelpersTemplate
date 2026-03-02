@@ -1,5 +1,5 @@
-using Application.Server.Identity.Interfaces;
-using Application.Server.Identity.Interfaces.Infrastructure;
+using Application.Server.Identity.Interfaces.Inbound;
+using Application.Server.Identity.Interfaces.Outbound;
 using Application.Server.Identity.Models;
 using Application.Shared.Services;
 using Domain.Identity.Enums;
