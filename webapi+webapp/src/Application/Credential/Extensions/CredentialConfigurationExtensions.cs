@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Application.Credential.Extensions;
 
-public static class IConfigurationExtensions
+public static class CredentialConfigurationExtensions
 {
     private const string CredentialsKey = "VEG_RUNTIME_CREDENTIALS";
 

@@ -9,10 +9,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.EFCore.Server.Identity.Services;
 
-/// <summary>
-/// EF Core implementation of IPasskeyRepository.
-/// Merges functionality from IPasskeyCredentialStore and IPasskeyChallengeStore.
-/// </summary>
 internal sealed class EFCorePasskeyRepository(IDbContextFactory<EFCoreDbContext> contextFactory) : IPasskeyRepository
 {
     // Credential operations (from IPasskeyCredentialStore)

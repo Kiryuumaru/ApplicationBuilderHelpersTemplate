@@ -11,9 +11,6 @@ public static class SharedServiceCollectionExtensions
         return services;
     }
 
-    /// <summary>
-    /// Adds the mock email service for development/testing.
-    /// </summary>
     public static IServiceCollection AddMockEmailService(this IServiceCollection services)
     {
         services.AddSingleton<IEmailService, MockEmailService>();

@@ -8,9 +8,6 @@ using Domain.Shared.Exceptions;
 
 namespace Application.Server.Identity.Services;
 
-/// <summary>
-/// Implementation of IPasswordService using repositories directly.
-/// </summary>
 internal sealed class PasswordService(
     IUserRepository userRepository,
     IPasswordVerifier passwordVerifier,

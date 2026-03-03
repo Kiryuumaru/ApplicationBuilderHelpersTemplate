@@ -5,31 +5,13 @@ using Microsoft.Extensions.Logging;
 
 namespace Application.Server.Identity.Workers;
 
-/// <summary>
-/// Background service that periodically cleans up expired and revoked API keys.
-/// </summary>
 internal sealed class ApiKeyCleanupWorker(
     IServiceProvider serviceProvider,
     ILogger<ApiKeyCleanupWorker> logger) : BackgroundService
 {
-    /// <summary>
-    /// Delete expired keys immediately (0 days retention after expiration).
-    /// </summary>
     private const int ExpiredRetentionDays = 0;
-
-    /// <summary>
-    /// Keep revoked keys for 30 days before hard deletion (for audit purposes).
-    /// </summary>
     private const int RevokedRetentionDays = 30;
-
-    /// <summary>
-    /// How often to run the cleanup job.
-    /// </summary>
     private static readonly TimeSpan CleanupInterval = TimeSpan.FromHours(24);
-
-    /// <summary>
-    /// Initial delay before the first cleanup run to allow the application to fully start.
-    /// </summary>
     private static readonly TimeSpan InitialDelay = TimeSpan.FromMinutes(5);
 
     private readonly IServiceProvider _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));

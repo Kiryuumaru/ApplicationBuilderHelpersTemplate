@@ -1,6 +1,6 @@
 using Application.Server.Authorization.Interfaces.Inbound;
 using Application.Server.Authorization.Interfaces.Outbound;
-using Application.Server.Authorization.Services;
+using Application.Server.Authorization.Utilities;
 using Application.Server.Identity.Interfaces.Inbound;
 using Application.Server.Identity.Interfaces.Outbound;
 using Application.Server.Identity.Models;
@@ -13,9 +13,6 @@ using Domain.Shared.Exceptions;
 
 namespace Application.Server.Identity.Services;
 
-/// <summary>
-/// Implementation of IUserAuthorizationService using repositories directly.
-/// </summary>
 internal sealed class UserAuthorizationService(
     IUserRepository userRepository,
     IRoleRepository roleRepository,

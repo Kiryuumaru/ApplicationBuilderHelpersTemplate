@@ -2,12 +2,6 @@ using Application.Client.Identity.Models;
 
 namespace Application.Client.Identity.Services;
 
-/// <summary>
-/// Singleton that holds shared auth state and events.
-/// Allows multiple scoped instances of ClientAuthStateProvider to share state
-/// so that state changes in one scope (e.g., TokenRefreshHandler) are visible
-/// to UI components in other scopes.
-/// </summary>
 internal sealed class AuthStateNotifier
 {
     private AuthState _currentState = AuthState.Anonymous;

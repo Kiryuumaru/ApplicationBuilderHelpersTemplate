@@ -4,9 +4,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.EFCore.LocalStore.Configurations;
 
-/// <summary>
-/// EF Core entity configuration for LocalStore entries.
-/// </summary>
 internal class LocalStoreEntityConfiguration : IEFCoreEntityConfiguration
 {
     public void Configure(ModelBuilder modelBuilder)

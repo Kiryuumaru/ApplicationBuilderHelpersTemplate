@@ -6,9 +6,6 @@ namespace Infrastructure.Passkeys.Extensions;
 
 internal static class PasskeyServiceCollectionExtensions
 {
-    /// <summary>
-    /// Adds passkey (WebAuthn/FIDO2) services to the service collection.
-    /// </summary>
     public static IServiceCollection AddPasskeyInfrastructure(
         this IServiceCollection services,
         Fido2Configuration config)
@@ -23,9 +20,6 @@ internal static class PasskeyServiceCollectionExtensions
         return services;
     }
 
-    /// <summary>
-    /// Adds passkey (WebAuthn/FIDO2) services to the service collection with configuration factory.
-    /// </summary>
     public static IServiceCollection AddPasskeyInfrastructure(
         this IServiceCollection services,
         Func<IServiceProvider, Fido2Configuration> configFactory)

@@ -8,11 +8,6 @@ using System.Security.Cryptography;
 
 namespace Application.Server.Identity.Services;
 
-/// <summary>
-/// Mock OAuth service for development and testing.
-/// This implementation simulates OAuth flows without connecting to real providers.
-/// Replace with real provider implementations when ready to integrate.
-/// </summary>
 internal sealed class MockOAuthService(
     IUserRepository userRepository,
     IUserRegistrationService registrationService) : IOAuthService

@@ -12,9 +12,6 @@ using JwtClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 
 namespace Infrastructure.Server.Identity.ConfigureOptions;
 
-/// <summary>
-/// Configures JWT Bearer authentication options using the IJwtTokenService.
-/// </summary>
 internal class ConfigureJwtBearerOptions(IServiceProvider serviceProvider) : IConfigureNamedOptions<JwtBearerOptions>
 {
     public void Configure(JwtBearerOptions options)
@@ -104,9 +101,6 @@ internal class ConfigureJwtBearerOptions(IServiceProvider serviceProvider) : ICo
         options.MapInboundClaims = false;
     }
 
-    /// <summary>
-    /// Determines which token types are allowed for a given endpoint path.
-    /// </summary>
     private static TokenType[] GetAllowedTokenTypes(PathString path)
     {
         // Refresh endpoint only accepts refresh tokens

@@ -3,19 +3,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.EFCore.Extensions;
 
-/// <summary>
-/// Extension methods for DbContext that provide standardized exception handling.
-/// </summary>
 public static class DbContextExtensions
 {
-    /// <summary>
-    /// Saves all changes made in this context to the database with standardized exception handling.
-    /// Converts database-specific exceptions (like UNIQUE constraint violations) to domain exceptions.
-    /// </summary>
-    /// <param name="context">The DbContext instance.</param>
-    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
-    /// <returns>The number of state entries written to the database.</returns>
-    /// <exception cref="DuplicateEntityException">Thrown when a UNIQUE constraint violation occurs.</exception>
     public static async Task<int> SaveChangesWithExceptionHandlingAsync(
         this DbContext context,
         CancellationToken cancellationToken = default)
@@ -31,16 +20,6 @@ public static class DbContextExtensions
         }
     }
 
-    /// <summary>
-    /// Saves all changes made in this context to the database with standardized exception handling.
-    /// Allows providing entity context for more descriptive error messages.
-    /// </summary>
-    /// <param name="context">The DbContext instance.</param>
-    /// <param name="entityType">The type of entity being saved (e.g., "User", "Role").</param>
-    /// <param name="entityIdentifier">An identifier for the entity (e.g., username, role code).</param>
-    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
-    /// <returns>The number of state entries written to the database.</returns>
-    /// <exception cref="DuplicateEntityException">Thrown when a UNIQUE constraint violation occurs.</exception>
     public static async Task<int> SaveChangesWithExceptionHandlingAsync(
         this DbContext context,
         string entityType,
@@ -57,17 +36,6 @@ public static class DbContextExtensions
         }
     }
 
-    /// <summary>
-    /// Saves all changes made in this context to the database with custom exception mapping.
-    /// </summary>
-    /// <param name="context">The DbContext instance.</param>
-    /// <param name="duplicateExceptionFactory">
-    /// Factory function that creates a DuplicateEntityException from the DbUpdateException.
-    /// Return null to use default exception handling.
-    /// </param>
-    /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
-    /// <returns>The number of state entries written to the database.</returns>
-    /// <exception cref="DuplicateEntityException">Thrown when a UNIQUE constraint violation occurs.</exception>
     public static async Task<int> SaveChangesWithExceptionHandlingAsync(
         this DbContext context,
         Func<DbUpdateException, DuplicateEntityException?> duplicateExceptionFactory,
@@ -90,41 +58,29 @@ public static class DbContextExtensions
         }
     }
 
-    /// <summary>
-    /// Checks if the exception represents a UNIQUE constraint violation.
-    /// Supports SQLite, SQL Server, PostgreSQL, and MySQL.
-    /// </summary>
     public static bool IsUniqueConstraintViolation(DbUpdateException ex)
     {
         var message = ex.InnerException?.Message ?? ex.Message;
         
-        // SQLite: "UNIQUE constraint failed: TableName.ColumnName"
         if (message.Contains("UNIQUE constraint failed", StringComparison.OrdinalIgnoreCase))
             return true;
         
-        // SQL Server: "Violation of UNIQUE KEY constraint" or "Cannot insert duplicate key"
         if (message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase))
             return true;
         
-        // PostgreSQL: "duplicate key value violates unique constraint"
         if (message.Contains("unique constraint", StringComparison.OrdinalIgnoreCase))
             return true;
         
-        // MySQL: "Duplicate entry ... for key"
         if (message.Contains("Duplicate entry", StringComparison.OrdinalIgnoreCase))
             return true;
         
         return false;
     }
 
-    /// <summary>
-    /// Extracts the constraint name from a UNIQUE constraint violation message.
-    /// </summary>
     public static string? ExtractConstraintName(DbUpdateException ex)
     {
         var message = ex.InnerException?.Message ?? ex.Message;
         
-        // SQLite: "UNIQUE constraint failed: Roles.Code"
         if (message.Contains("UNIQUE constraint failed:", StringComparison.OrdinalIgnoreCase))
         {
             var startIndex = message.IndexOf("UNIQUE constraint failed:", StringComparison.OrdinalIgnoreCase) + 25;
@@ -136,9 +92,6 @@ public static class DbContextExtensions
         return null;
     }
 
-    /// <summary>
-    /// Checks if the UNIQUE constraint violation is for a specific column.
-    /// </summary>
     public static bool IsConstraintViolationForColumn(DbUpdateException ex, string columnName)
     {
         var message = ex.InnerException?.Message ?? ex.Message;

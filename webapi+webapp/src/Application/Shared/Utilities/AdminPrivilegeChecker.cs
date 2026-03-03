@@ -6,10 +6,6 @@ namespace Application.Shared.Utilities;
 
 public static class AdminPrivilegeChecker
 {
-    /// <summary>
-    /// Throws an exception if the application is not running with administrator/sudo privileges
-    /// </summary>
-    /// <exception cref="UnauthorizedAccessException">Thrown when the application lacks required privileges</exception>
     public static void RequireAdminPrivileges()
     {
         if (!IsRunningAsAdmin())
@@ -23,11 +19,6 @@ public static class AdminPrivilegeChecker
         }
     }
 
-    /// <summary>
-    /// Checks if the current process is running with administrator privileges on Windows
-    /// or sudo privileges on Linux/macOS
-    /// </summary>
-    /// <returns>True if running with elevated privileges, false otherwise</returns>
     public static bool IsRunningAsAdmin()
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -44,9 +35,6 @@ public static class AdminPrivilegeChecker
         return false;
     }
 
-    /// <summary>
-    /// Checks if running as administrator on Windows
-    /// </summary>
     [SupportedOSPlatform("Windows")]
     private static bool IsWindowsAdmin()
     {
@@ -62,9 +50,6 @@ public static class AdminPrivilegeChecker
         }
     }
 
-    /// <summary>
-    /// Checks if running with sudo privileges on Unix-like systems
-    /// </summary>
     private static bool IsUnixSudo()
     {
         try
@@ -80,9 +65,6 @@ public static class AdminPrivilegeChecker
         }
     }
 
-    /// <summary>
-    /// Gets the effective user ID on Unix systems
-    /// </summary>
     [DllImport("libc", SetLastError = true)]
     private static extern uint geteuid();
 

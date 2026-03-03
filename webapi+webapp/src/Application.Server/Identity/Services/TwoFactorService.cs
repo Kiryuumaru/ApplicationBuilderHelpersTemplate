@@ -10,9 +10,6 @@ using System.Text;
 
 namespace Application.Server.Identity.Services;
 
-/// <summary>
-/// Implementation of ITwoFactorService using repositories directly.
-/// </summary>
 internal sealed class TwoFactorService(
     IUserRepository userRepository) : ITwoFactorService
 {

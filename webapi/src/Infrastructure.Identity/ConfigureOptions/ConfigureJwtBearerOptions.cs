@@ -99,9 +99,6 @@ internal sealed class ConfigureJwtBearerOptions(IServiceProvider serviceProvider
         options.MapInboundClaims = false;
     }
 
-    /// <summary>
-    /// Determines which token types are allowed for a given endpoint path.
-    /// </summary>
     private static TokenType[] GetAllowedTokenTypes(PathString path)
     {
         // Refresh endpoint only accepts refresh tokens

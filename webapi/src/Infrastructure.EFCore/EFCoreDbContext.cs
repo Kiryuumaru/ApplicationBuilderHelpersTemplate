@@ -3,10 +3,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.EFCore;
 
-/// <summary>
-/// Composable DbContext for EF Core infrastructure.
-/// Entity configurations are dynamically loaded from registered IEFCoreEntityConfiguration services.
-/// </summary>
 public class EFCoreDbContext : DbContext
 {
     private readonly IEnumerable<IEFCoreEntityConfiguration> _configurations;

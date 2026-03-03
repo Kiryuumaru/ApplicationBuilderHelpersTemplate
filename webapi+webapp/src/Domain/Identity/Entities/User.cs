@@ -52,11 +52,6 @@ public class User : AggregateRoot
 
     protected User(Guid id, string? userName, string? email, bool isAnonymous = false) : base(id)
     {
-        if (!isAnonymous && string.IsNullOrWhiteSpace(userName))
-        {
-            throw new ArgumentException("UserName cannot be empty for non-anonymous users", nameof(userName));
-        }
-
         UserName = userName;
         NormalizedUserName = userName?.ToUpperInvariant();
         Email = email;
@@ -68,15 +63,17 @@ public class User : AggregateRoot
     }
 
     public static User Register(string userName, string? email = null)
-        => new(Guid.NewGuid(), userName, email);
+    {
+        if (string.IsNullOrWhiteSpace(userName))
+        {
+            throw new ArgumentException("UserName cannot be empty", nameof(userName));
+        }
+        return new(Guid.NewGuid(), userName, email);
+    }
 
     public static User RegisterAnonymous()
         => new(Guid.NewGuid(), null, null, isAnonymous: true);
 
-    /// <summary>
-    /// Factory method for hydrating a User from persistence using a data record.
-    /// Preferred for new code - reduces parameter count and improves readability.
-    /// </summary>
     public static User Hydrate(UserHydrationData data)
     {
         ArgumentNullException.ThrowIfNull(data);
@@ -103,10 +100,6 @@ public class User : AggregateRoot
             data.LinkedAt);
     }
 
-    /// <summary>
-    /// Factory method for hydrating a User from persistence. AOT-compatible.
-    /// Consider using the overload that takes UserHydrationData for better readability.
-    /// </summary>
     public static User Hydrate(
         Guid id,
         Guid? revId,
@@ -264,10 +257,6 @@ public class User : AggregateRoot
         MarkAsModified();
     }
 
-    /// <summary>
-    /// Upgrades an anonymous user to a full account by setting username.
-    /// Call this when linking password or OAuth for the first time.
-    /// </summary>
     public void UpgradeFromAnonymous(string userName)
     {
         if (!IsAnonymous)
@@ -287,10 +276,6 @@ public class User : AggregateRoot
         MarkAsModified();
     }
 
-    /// <summary>
-    /// Upgrades an anonymous user to a full account without requiring a username.
-    /// Call this when linking a passkey for the first time (passwordless auth doesn't need username).
-    /// </summary>
     public void UpgradeFromAnonymousWithPasskey()
     {
         if (!IsAnonymous)
@@ -365,9 +350,6 @@ public class User : AggregateRoot
             .Distinct(StringComparer.Ordinal)
             .OrderBy(identifier => identifier, StringComparer.Ordinal)];
 
-    /// <summary>
-    /// Builds the effective scope directives from roles.
-    /// </summary>
     public IReadOnlyCollection<ScopeDirective> BuildEffectiveScopeDirectives(IEnumerable<UserRoleResolution>? roleResolutions)
     {
         var directives = new List<ScopeDirective>();
@@ -553,9 +535,6 @@ public class User : AggregateRoot
         return UserSession.CreateLegacy(Id, UserName, permissions, timestamp, timestamp + lifetime, codes);
     }
 
-    /// <summary>
-    /// Creates a session with the new scope directive system.
-    /// </summary>
     public UserSession CreateScopedSession(TimeSpan lifetime, IEnumerable<ScopeDirective> scope, DateTimeOffset? issuedAt = null, IEnumerable<string>? roleCodes = null)
     {
         if (lifetime <= TimeSpan.Zero)

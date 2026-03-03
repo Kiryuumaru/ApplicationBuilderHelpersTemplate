@@ -3,7 +3,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace Application.Shared.Extensions;
 
-public static class IConfigurationExtensions
+public static class SharedConfigurationExtensions
 {
     public static bool? GetBoolean(this IConfiguration configuration, string key)
     {

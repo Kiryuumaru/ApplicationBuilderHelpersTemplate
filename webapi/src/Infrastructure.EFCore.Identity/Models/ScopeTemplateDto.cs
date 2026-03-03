@@ -3,9 +3,6 @@ using Domain.Authorization.ValueObjects;
 
 namespace Infrastructure.EFCore.Identity.Models;
 
-/// <summary>
-/// DTO for persisting ScopeTemplate as JSON in the database.
-/// </summary>
 internal sealed class ScopeTemplateDto
 {
     public string Type { get; set; } = string.Empty;

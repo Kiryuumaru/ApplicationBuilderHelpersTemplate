@@ -8,21 +8,16 @@ internal sealed class SessionService(
     ISessionRepository sessionRepository,
     IIdentityUnitOfWork unitOfWork) : ISessionService
 {
-    /// <inheritdoc />
     public async Task<SessionDto?> GetByIdAsync(Guid sessionId, CancellationToken cancellationToken)
     {
         var session = await sessionRepository.GetByIdAsync(sessionId, cancellationToken);
         return session is null ? null : MapToDto(session);
     }
-
-    /// <inheritdoc />
     public async Task<IReadOnlyCollection<SessionDto>> GetActiveByUserIdAsync(Guid userId, CancellationToken cancellationToken)
     {
         var sessions = await sessionRepository.GetActiveByUserIdAsync(userId, cancellationToken);
         return sessions.Select(MapToDto).ToList();
     }
-
-    /// <inheritdoc />
     public async Task<bool> RevokeAsync(Guid sessionId, CancellationToken cancellationToken)
     {
         var session = await sessionRepository.GetByIdAsync(sessionId, cancellationToken);
@@ -36,8 +31,6 @@ internal sealed class SessionService(
         await unitOfWork.CommitAsync(cancellationToken);
         return true;
     }
-
-    /// <inheritdoc />
     public async Task<bool> RevokeForUserAsync(Guid userId, Guid sessionId, CancellationToken cancellationToken)
     {
         var session = await sessionRepository.GetByIdAsync(sessionId, cancellationToken);
@@ -51,26 +44,18 @@ internal sealed class SessionService(
         await unitOfWork.CommitAsync(cancellationToken);
         return true;
     }
-
-    /// <inheritdoc />
     public async Task<int> RevokeAllForUserAsync(Guid userId, CancellationToken cancellationToken)
     {
         return await sessionRepository.RevokeAllForUserAsync(userId, cancellationToken);
     }
-
-    /// <inheritdoc />
     public async Task<int> RevokeAllExceptAsync(Guid userId, Guid exceptSessionId, CancellationToken cancellationToken)
     {
         return await sessionRepository.RevokeAllExceptAsync(userId, exceptSessionId, cancellationToken);
     }
-
-    /// <inheritdoc />
     public async Task<int> DeleteExpiredAsync(DateTimeOffset olderThan, CancellationToken cancellationToken)
     {
         return await sessionRepository.DeleteExpiredAsync(olderThan, cancellationToken);
     }
-
-    /// <inheritdoc />
     public async Task<SessionDto?> ValidateSessionAsync(Guid sessionId, string? refreshTokenHash, CancellationToken cancellationToken)
     {
         var session = await sessionRepository.GetByIdAsync(sessionId, cancellationToken);
@@ -91,15 +76,11 @@ internal sealed class SessionService(
 
         return MapToDto(session);
     }
-
-    /// <inheritdoc />
     public Task<SessionDto?> ValidateSessionWithTokenAsync(Guid sessionId, string refreshToken, CancellationToken cancellationToken)
     {
-        var tokenHash = Shared.Services.TokenHasher.Hash(refreshToken);
+        var tokenHash = Shared.Utilities.TokenHasher.Hash(refreshToken);
         return ValidateSessionAsync(sessionId, tokenHash, cancellationToken);
     }
-
-    /// <inheritdoc />
     public async Task UpdateRefreshTokenAsync(Guid sessionId, string newRefreshTokenHash, DateTimeOffset newExpiresAt, CancellationToken cancellationToken)
     {
         var session = await sessionRepository.GetByIdAsync(sessionId, cancellationToken);
@@ -112,8 +93,6 @@ internal sealed class SessionService(
         sessionRepository.Update(session);
         await unitOfWork.CommitAsync(cancellationToken);
     }
-
-    /// <inheritdoc />
     public async Task<Guid> CreateSessionAsync(
         Guid userId,
         string refreshTokenHash,

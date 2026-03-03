@@ -6,15 +6,10 @@ using Domain.Identity.Constants;
 
 namespace Application.Server.Identity.Services;
 
-/// <summary>
-/// Unified token validation service for all JWT types.
-/// Orchestrates ISessionService and IApiKeyService for post-signature validation.
-/// </summary>
 internal sealed class TokenValidationService(
     ISessionService sessionService,
     IApiKeyService apiKeyService) : ITokenValidationService
 {
-    /// <inheritdoc />
     public async Task<TokenValidationResult> ValidatePostSignatureAsync(
         ClaimsPrincipal principal,
         string? typHeader,

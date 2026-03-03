@@ -11,10 +11,6 @@ using RolesConstants = Domain.Authorization.Constants.Roles;
 
 namespace Infrastructure.EFCore.Server.Identity.Services;
 
-/// <summary>
-/// EF Core implementation of the internal IRoleRepository.
-/// Checks static/system roles from domain constants first, then falls back to database.
-/// </summary>
 internal sealed class EFCoreRoleRepository(IDbContextFactory<EFCoreDbContext> contextFactory) : IRoleRepository
 {
 

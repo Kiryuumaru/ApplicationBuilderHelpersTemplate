@@ -2,66 +2,18 @@ using Domain.Shared.Models;
 
 namespace Domain.Identity.Entities;
 
-/// <summary>
-/// Represents a registered WebAuthn/FIDO2 passkey credential for a user.
-/// </summary>
 public class PasskeyCredential : AuditableEntity
 {
-    /// <summary>
-    /// The user who owns this passkey.
-    /// </summary>
     public Guid UserId { get; private set; }
-
-    /// <summary>
-    /// User-friendly name for this passkey (e.g., "My iPhone", "Work Laptop").
-    /// </summary>
     public string Name { get; private set; }
-
-    /// <summary>
-    /// The credential ID assigned by the authenticator (base64url encoded).
-    /// This is used to identify which credential to use during authentication.
-    /// </summary>
     public byte[] CredentialId { get; private set; }
-
-    /// <summary>
-    /// The public key in COSE format for verifying signatures.
-    /// </summary>
     public byte[] PublicKey { get; private set; }
-
-    /// <summary>
-    /// The signature counter, incremented on each use.
-    /// Used to detect cloned authenticators.
-    /// </summary>
     public uint SignCount { get; private set; }
-
-    /// <summary>
-    /// The AAGUID of the authenticator that created this credential.
-    /// </summary>
     public Guid AaGuid { get; private set; }
-
-    /// <summary>
-    /// The type of credential (typically "public-key").
-    /// </summary>
     public string CredentialType { get; private set; }
-
-    /// <summary>
-    /// When this passkey was registered.
-    /// </summary>
     public DateTimeOffset RegisteredAt { get; private set; }
-
-    /// <summary>
-    /// When this passkey was last used for authentication.
-    /// </summary>
     public DateTimeOffset? LastUsedAt { get; private set; }
-
-    /// <summary>
-    /// User handle (user ID bytes) associated with this credential.
-    /// </summary>
     public byte[] UserHandle { get; private set; }
-
-    /// <summary>
-    /// The attestation format used during registration (e.g., "none", "packed").
-    /// </summary>
     public string AttestationFormat { get; private set; }
 
     protected PasskeyCredential(
@@ -77,20 +29,17 @@ public class PasskeyCredential : AuditableEntity
         string attestationFormat) : base(id)
     {
         UserId = userId;
-        Name = name ?? throw new ArgumentNullException(nameof(name));
-        CredentialId = credentialId ?? throw new ArgumentNullException(nameof(credentialId));
-        PublicKey = publicKey ?? throw new ArgumentNullException(nameof(publicKey));
+        Name = name;
+        CredentialId = credentialId;
+        PublicKey = publicKey;
         SignCount = signCount;
         AaGuid = aaGuid;
-        CredentialType = credentialType ?? "public-key";
-        UserHandle = userHandle ?? throw new ArgumentNullException(nameof(userHandle));
-        AttestationFormat = attestationFormat ?? "none";
+        CredentialType = credentialType;
+        UserHandle = userHandle;
+        AttestationFormat = attestationFormat;
         RegisteredAt = DateTimeOffset.UtcNow;
     }
 
-    /// <summary>
-    /// Creates a new passkey credential after successful registration.
-    /// </summary>
     public static PasskeyCredential Create(
         Guid userId,
         string name,
@@ -102,6 +51,10 @@ public class PasskeyCredential : AuditableEntity
         byte[] userHandle,
         string attestationFormat)
     {
+        ArgumentNullException.ThrowIfNull(credentialId);
+        ArgumentNullException.ThrowIfNull(publicKey);
+        ArgumentNullException.ThrowIfNull(userHandle);
+
         return new PasskeyCredential(
             Guid.NewGuid(),
             userId,
@@ -110,14 +63,11 @@ public class PasskeyCredential : AuditableEntity
             publicKey,
             signCount,
             aaGuid,
-            credentialType,
+            credentialType ?? "public-key",
             userHandle,
-            attestationFormat);
+            attestationFormat ?? "none");
     }
 
-    /// <summary>
-    /// Reconstructs a credential from stored data.
-    /// </summary>
     public static PasskeyCredential Reconstruct(
         Guid id,
         Guid userId,
@@ -155,9 +105,6 @@ public class PasskeyCredential : AuditableEntity
         return credential;
     }
 
-    /// <summary>
-    /// Updates the sign count after successful authentication.
-    /// </summary>
     public void UpdateSignCount(uint newSignCount)
     {
         SignCount = newSignCount;
@@ -165,9 +112,6 @@ public class PasskeyCredential : AuditableEntity
         MarkAsModified();
     }
 
-    /// <summary>
-    /// Renames this passkey.
-    /// </summary>
     public void Rename(string newName)
     {
         if (string.IsNullOrWhiteSpace(newName))

@@ -8,14 +8,8 @@ namespace Domain.Identity.ValueObjects;
 
 public class UserPermissionGrant : ValueObject
 {
-    /// <summary>
-    /// Gets the type of this grant (Allow or Deny).
-    /// </summary>
     public ScopeDirectiveType Type { get; }
 
-    /// <summary>
-    /// Gets the permission path identifier.
-    /// </summary>
     public string Identifier { get; }
 
     public string? Description { get; }
@@ -31,27 +25,18 @@ public class UserPermissionGrant : ValueObject
         GrantedBy = string.IsNullOrWhiteSpace(grantedBy) ? null : grantedBy.Trim();
     }
 
-    /// <summary>
-    /// Creates an allow grant for the specified permission identifier.
-    /// </summary>
     public static UserPermissionGrant Allow(string identifier, string? description = null, string? grantedBy = null, DateTimeOffset? grantedAt = null)
     {
         var timestamp = grantedAt ?? DateTimeOffset.UtcNow;
         return new UserPermissionGrant(ScopeDirectiveType.Allow, identifier, description, timestamp, grantedBy);
     }
 
-    /// <summary>
-    /// Creates a deny grant for the specified permission identifier.
-    /// </summary>
     public static UserPermissionGrant Deny(string identifier, string? description = null, string? grantedBy = null, DateTimeOffset? grantedAt = null)
     {
         var timestamp = grantedAt ?? DateTimeOffset.UtcNow;
         return new UserPermissionGrant(ScopeDirectiveType.Deny, identifier, description, timestamp, grantedBy);
     }
 
-    /// <summary>
-    /// Creates a grant from a permission with the specified type.
-    /// </summary>
     public static UserPermissionGrant FromPermission(ScopeDirectiveType type, Permission permission, IReadOnlyDictionary<string, string?>? parameters = null, string? description = null, string? grantedBy = null, DateTimeOffset? grantedAt = null)
     {
         if (permission is null)
@@ -64,9 +49,6 @@ public class UserPermissionGrant : ValueObject
         return new UserPermissionGrant(type, identifier, description ?? permission.Description, timestamp, grantedBy);
     }
 
-    /// <summary>
-    /// Converts this grant to a ScopeDirective.
-    /// </summary>
     public ScopeDirective ToScopeDirective()
     {
         return Type == ScopeDirectiveType.Allow

@@ -1,7 +1,6 @@
 using Application.Shared.Interfaces.Inbound;
 using Application.Shared.Extensions;
 using Application.Logger.Extensions;
-using Application.NativeCmd.Extensions;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Exceptions;
 using ApplicationBuilderHelpers.Extensions;
@@ -152,7 +151,6 @@ partial class Build
         {
             base.AddConfigurations(applicationBuilder, configuration);
             configuration.SetLoggerLevel(LogLevel.Debug);
-            configuration.SetIsVerboseCliLogger(false);
             configuration.SetApplyThemeWhenOutputIsRedirected(true);
         }
 

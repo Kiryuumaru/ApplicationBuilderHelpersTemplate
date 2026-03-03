@@ -47,11 +47,6 @@ public class User : AggregateRoot
 
     protected User(Guid id, string? userName, string? email, bool isAnonymous = false) : base(id)
     {
-        if (!isAnonymous && string.IsNullOrWhiteSpace(userName))
-        {
-            throw new ArgumentException("UserName cannot be empty for non-anonymous users", nameof(userName));
-        }
-
         UserName = userName;
         NormalizedUserName = userName?.ToUpperInvariant();
         Email = email;
@@ -63,7 +58,13 @@ public class User : AggregateRoot
     }
 
     public static User Register(string userName, string? email = null)
-        => new(Guid.NewGuid(), userName, email);
+    {
+        if (string.IsNullOrWhiteSpace(userName))
+        {
+            throw new ArgumentException("UserName cannot be empty", nameof(userName));
+        }
+        return new(Guid.NewGuid(), userName, email);
+    }
 
     public static User RegisterAnonymous()
         => new(Guid.NewGuid(), null, null, isAnonymous: true);

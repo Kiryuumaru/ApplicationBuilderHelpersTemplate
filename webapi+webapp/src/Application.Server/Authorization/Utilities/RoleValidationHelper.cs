@@ -1,17 +1,10 @@
 using Domain.Authorization.Models;
 using Domain.Shared.Exceptions;
 
-namespace Application.Authorization.Services;
+namespace Application.Server.Authorization.Utilities;
 
-/// <summary>
-/// Shared validation helper for role-related operations.
-/// </summary>
 public static class RoleValidationHelper
 {
-    /// <summary>
-    /// Validates that all required parameters for a role's scope templates are provided.
-    /// </summary>
-    /// <exception cref="ValidationException">Thrown when required parameters are missing.</exception>
     public static void ValidateRoleParameters(Role role, IReadOnlyDictionary<string, string?>? providedParameters)
     {
         ArgumentNullException.ThrowIfNull(role);

@@ -2,9 +2,6 @@ using Domain.Shared.Exceptions;
 
 namespace Domain.Identity.Exceptions;
 
-/// <summary>
-/// Exception thrown when a two-factor authentication operation fails.
-/// </summary>
 public sealed class TwoFactorException : DomainException
 {
     public TwoFactorException(string message)

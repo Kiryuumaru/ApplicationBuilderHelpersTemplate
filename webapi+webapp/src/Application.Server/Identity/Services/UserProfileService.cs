@@ -9,9 +9,6 @@ using Domain.Shared.Exceptions;
 
 namespace Application.Server.Identity.Services;
 
-/// <summary>
-/// Implementation of IUserProfileService using repositories directly.
-/// </summary>
 internal sealed class UserProfileService(
     IUserRepository userRepository,
     IUserRoleResolver userRoleResolver) : IUserProfileService

@@ -5,26 +5,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Application.Server.Identity.Workers;
 
-/// <summary>
-/// Background service that periodically cleans up abandoned anonymous user accounts.
-/// </summary>
 internal sealed class AnonymousUserCleanupWorker(
     IServiceProvider serviceProvider,
     ILogger<AnonymousUserCleanupWorker> logger) : BackgroundService
 {
-    /// <summary>
-    /// Number of days of inactivity before an anonymous account is considered abandoned.
-    /// </summary>
     private const int RetentionDays = 30;
-
-    /// <summary>
-    /// How often to run the cleanup job.
-    /// </summary>
     private static readonly TimeSpan CleanupInterval = TimeSpan.FromHours(24);
-
-    /// <summary>
-    /// Initial delay before the first cleanup run to allow the application to fully start.
-    /// </summary>
     private static readonly TimeSpan InitialDelay = TimeSpan.FromMinutes(5);
 
     private readonly IServiceProvider _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));

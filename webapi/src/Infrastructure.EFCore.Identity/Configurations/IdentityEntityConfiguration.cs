@@ -6,9 +6,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.EFCore.Identity.Configurations;
 
-/// <summary>
-/// EF Core entity configuration for User and Role entities.
-/// </summary>
 public class IdentityEntityConfiguration : IEFCoreEntityConfiguration
 {
     public void Configure(ModelBuilder modelBuilder)

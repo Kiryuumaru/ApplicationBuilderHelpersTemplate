@@ -5,13 +5,8 @@ using Domain.Authorization.ValueObjects;
 
 namespace Application.Client.Authorization.Services;
 
-/// <summary>
-/// Client-side permission service that evaluates permissions from the current auth state.
-/// Uses the Domain layer's ScopeEvaluator for permission evaluation.
-/// </summary>
 internal sealed class ClientPermissionService(IAuthStateProvider authStateProvider) : IClientPermissionService
 {
-    /// <inheritdoc />
     public bool HasPermission(string permissionPath)
     {
         var authState = authStateProvider.CurrentState;
@@ -25,7 +20,6 @@ internal sealed class ClientPermissionService(IAuthStateProvider authStateProvid
         return ScopeEvaluator.HasPermission(directives, permissionPath);
     }
 
-    /// <inheritdoc />
     public bool HasAnyPermission(params string[] permissionPaths)
     {
         if (permissionPaths is null || permissionPaths.Length == 0)
@@ -44,7 +38,6 @@ internal sealed class ClientPermissionService(IAuthStateProvider authStateProvid
         return ScopeEvaluator.HasAnyPermission(directives, permissionPaths);
     }
 
-    /// <inheritdoc />
     public bool HasAllPermissions(params string[] permissionPaths)
     {
         if (permissionPaths is null || permissionPaths.Length == 0)

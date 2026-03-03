@@ -1,4 +1,4 @@
-namespace Infrastructure.EFCore.Interfaces;
+namespace Application.LocalStore.Interfaces.Outbound;
 
 public interface IDatabaseInitializationState
 {

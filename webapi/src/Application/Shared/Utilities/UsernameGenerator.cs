@@ -1,4 +1,4 @@
-namespace Application.Shared.Services;
+namespace Application.Shared.Utilities;
 
 /// <summary>
 /// Generates usernames for various registration flows.

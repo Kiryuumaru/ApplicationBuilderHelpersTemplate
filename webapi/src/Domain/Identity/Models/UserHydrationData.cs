@@ -1,9 +1,5 @@
 namespace Domain.Identity.Models;
 
-/// <summary>
-/// Data transfer record for hydrating a User from persistence.
-/// Contains all fields needed to reconstruct a User entity without using reflection.
-/// </summary>
 public sealed record UserHydrationData
 {
     public required Guid Id { get; init; }

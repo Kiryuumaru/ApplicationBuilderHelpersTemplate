@@ -1,8 +1,5 @@
 namespace Infrastructure.EFCore.Identity.Models;
 
-/// <summary>
-/// Entity for storing passkey challenge information (short-lived).
-/// </summary>
 public class PasskeyChallengeEntity
 {
     public required Guid Id { get; set; }

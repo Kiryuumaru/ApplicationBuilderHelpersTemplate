@@ -7,9 +7,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.EFCore.Server.Identity.Services;
 
-/// <summary>
-/// EF Core implementation of IApiKeyRepository.
-/// </summary>
 internal sealed class EFCoreApiKeyRepository(IDbContextFactory<EFCoreDbContext> contextFactory) : IApiKeyRepository
 {
     public async Task<ApiKey?> GetByIdAsync(Guid id, CancellationToken cancellationToken)

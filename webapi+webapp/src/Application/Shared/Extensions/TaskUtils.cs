@@ -41,16 +41,6 @@ public static class TaskUtils
         return ThreadHelpers.WaitThread(() => task);
     }
 
-    /// <summary>
-    /// Retries an async action with configurable delay and retry count.
-    /// </summary>
-    /// <typeparam name="T">The return type of the action.</typeparam>
-    /// <param name="action">The action to retry.</param>
-    /// <param name="onRetry">Optional callback executed on each retry attempt.</param>
-    /// <param name="retryDelay">Delay between retry attempts. Default is 2 seconds.</param>
-    /// <param name="maxRetries">Maximum number of retries. Use -1 for unlimited retries.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The result of the action.</returns>
     public static async Task<T> RetryAsync<T>(
         Func<Task<T>> action,
         Action<(Exception Error, int Attempts)>? onRetry = null,
@@ -61,16 +51,6 @@ public static class TaskUtils
         return await RetryInternalAsync(action, onRetry, retryDelay, maxRetries, cancellationToken);
     }
 
-    /// <summary>
-    /// Retries an async action with configurable delay and retry count.
-    /// </summary>
-    /// <typeparam name="T">The return type of the action.</typeparam>
-    /// <param name="action">The action to retry.</param>
-    /// <param name="onRetry">Optional async callback executed on each retry attempt.</param>
-    /// <param name="retryDelay">Delay between retry attempts. Default is 2 seconds.</param>
-    /// <param name="maxRetries">Maximum number of retries. Use -1 for unlimited retries.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The result of the action.</returns>
     public static async Task<T> RetryAsync<T>(
         Func<Task<T>> action,
         Func<(Exception Error, int Attempts), Task>? onRetry = null,
@@ -81,14 +61,6 @@ public static class TaskUtils
         return await RetryInternalAsync(action, onRetry, retryDelay, maxRetries, cancellationToken);
     }
 
-    /// <summary>
-    /// Retries an async action with configurable delay and retry count.
-    /// </summary>
-    /// <param name="action">The action to retry.</param>
-    /// <param name="onRetry">Optional callback executed on each retry attempt.</param>
-    /// <param name="retryDelay">Delay between retry attempts. Default is 2 seconds.</param>
-    /// <param name="maxRetries">Maximum number of retries. Use -1 for unlimited retries.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
     public static async Task RetryAsync(
         Func<Task> action,
         Action<(Exception Error, int Attempts)>? onRetry = null,

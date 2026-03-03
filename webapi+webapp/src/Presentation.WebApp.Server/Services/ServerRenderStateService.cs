@@ -4,18 +4,12 @@ using Presentation.WebApp.Services;
 
 namespace Presentation.WebApp.Server.Services;
 
-/// <summary>
-/// Server-side implementation of IRenderStateService.
-/// Detects pre-rendering by checking if HttpContext exists and if the response has started.
-/// </summary>
 internal class ServerRenderStateService : IRenderStateService
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
 
-    /// <inheritdoc />
     public Guid ServiceUid { get; } = Guid.NewGuid();
 
-    /// <inheritdoc />
     public RenderState RenderState
     {
         get
@@ -33,10 +27,6 @@ internal class ServerRenderStateService : IRenderStateService
         }
     }
 
-    /// <summary>
-    /// Initializes a new instance of the ServerRenderStateService class.
-    /// </summary>
-    /// <param name="httpContextAccessor">The HTTP context accessor for detecting render state.</param>
     public ServerRenderStateService(IHttpContextAccessor httpContextAccessor)
     {
         _httpContextAccessor = httpContextAccessor;

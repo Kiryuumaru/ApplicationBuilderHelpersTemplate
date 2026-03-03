@@ -5,9 +5,6 @@ using Application.Client.Serialization;
 
 namespace Application.Client.Identity.Services;
 
-/// <summary>
-/// HTTP client for IAM user endpoints.
-/// </summary>
 internal class UsersClient : IUsersClient
 {
     private readonly HttpClient _httpClient;

@@ -13,10 +13,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.EFCore.Server.Identity.Services;
 
-/// <summary>
-/// EF Core implementation of IUserRepository.
-/// Merges functionality from IUserStore and IExternalLoginStore.
-/// </summary>
 internal sealed class EFCoreUserRepository(IDbContextFactory<EFCoreDbContext> contextFactory) : IUserRepository
 {
     // User operations (from IUserStore)

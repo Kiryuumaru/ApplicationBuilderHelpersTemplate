@@ -1,4 +1,4 @@
-using Infrastructure.EFCore.Interfaces;
+using Application.LocalStore.Interfaces.Outbound;
 
 namespace Infrastructure.EFCore.Services;
 

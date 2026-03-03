@@ -4,10 +4,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.EFCore;
 
-/// <summary>
-/// Composable DbContext for EF Core infrastructure.
-/// Entity configurations are dynamically loaded from registered IEFCoreEntityConfiguration services.
-/// </summary>
 [RequiresUnreferencedCode("EF Core uses reflection for model building. Use compiled models for full NativeAOT support.")]
 public class EFCoreDbContext : DbContext
 {

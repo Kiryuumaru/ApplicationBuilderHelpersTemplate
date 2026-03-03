@@ -3,9 +3,6 @@ using Application.Server.Identity.Interfaces.Outbound;
 
 namespace Application.Server.Identity.Services;
 
-/// <summary>
-/// Guard service implementation for validating authentication method operations.
-/// </summary>
 internal sealed class AuthMethodGuardService(
     IUserRepository userRepository,
     IPasskeyRepository passkeyRepository) : IAuthMethodGuardService

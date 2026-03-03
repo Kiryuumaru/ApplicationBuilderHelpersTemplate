@@ -6,9 +6,6 @@ using Application.LocalStore.Interfaces.Outbound;
 
 namespace Application.Client.Identity.Services;
 
-/// <summary>
-/// Token storage using ILocalStoreService (IndexedDB in browser).
-/// </summary>
 internal sealed class LocalStoreTokenStorage : ITokenStorage
 {
     private const string GroupName = "auth";

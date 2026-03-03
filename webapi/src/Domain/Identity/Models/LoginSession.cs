@@ -1,65 +1,17 @@
 namespace Domain.Identity.Models;
 
-/// <summary>
-/// Represents a user's login session with refresh token tracking.
-/// Sessions enable logout-everywhere functionality and token rotation for security.
-/// </summary>
 public class LoginSession
 {
-    /// <summary>
-    /// Gets the unique identifier for this session.
-    /// </summary>
     public Guid Id { get; private set; }
-
-    /// <summary>
-    /// Gets the ID of the user who owns this session.
-    /// </summary>
     public Guid UserId { get; private set; }
-
-    /// <summary>
-    /// Gets the hash of the current refresh token for this session.
-    /// Used to validate refresh requests and detect token theft.
-    /// </summary>
     public string RefreshTokenHash { get; private set; }
-
-    /// <summary>
-    /// Gets the name of the device or browser used to create this session.
-    /// </summary>
     public string? DeviceName { get; private set; }
-
-    /// <summary>
-    /// Gets the user agent string from the request that created this session.
-    /// </summary>
     public string? UserAgent { get; private set; }
-
-    /// <summary>
-    /// Gets the IP address from which this session was created.
-    /// </summary>
     public string? IpAddress { get; private set; }
-
-    /// <summary>
-    /// Gets the timestamp when this session was created.
-    /// </summary>
     public DateTimeOffset CreatedAt { get; private set; }
-
-    /// <summary>
-    /// Gets the timestamp when this session was last used (token refreshed).
-    /// </summary>
     public DateTimeOffset LastUsedAt { get; private set; }
-
-    /// <summary>
-    /// Gets the timestamp when this session expires.
-    /// </summary>
     public DateTimeOffset ExpiresAt { get; private set; }
-
-    /// <summary>
-    /// Gets whether this session has been revoked.
-    /// </summary>
     public bool IsRevoked { get; private set; }
-
-    /// <summary>
-    /// Gets the timestamp when this session was revoked, if applicable.
-    /// </summary>
     public DateTimeOffset? RevokedAt { get; private set; }
 
     // Required for EF Core
@@ -90,16 +42,6 @@ public class LoginSession
         IsRevoked = false;
     }
 
-    /// <summary>
-    /// Creates a new login session.
-    /// </summary>
-    /// <param name="userId">The ID of the user.</param>
-    /// <param name="refreshTokenHash">Hash of the refresh token.</param>
-    /// <param name="expiresAt">When the session expires.</param>
-    /// <param name="deviceName">Optional device name.</param>
-    /// <param name="userAgent">Optional user agent string.</param>
-    /// <param name="ipAddress">Optional IP address.</param>
-    /// <returns>A new login session.</returns>
     public static LoginSession Create(
         Guid userId,
         string refreshTokenHash,
@@ -129,9 +71,6 @@ public class LoginSession
             expiresAt);
     }
 
-    /// <summary>
-    /// Reconstructs a login session from persisted data.
-    /// </summary>
     public static LoginSession Reconstruct(
         Guid id,
         Guid userId,
@@ -162,11 +101,6 @@ public class LoginSession
         return session;
     }
 
-    /// <summary>
-    /// Updates the refresh token hash (for token rotation).
-    /// </summary>
-    /// <param name="newRefreshTokenHash">The new refresh token hash.</param>
-    /// <param name="newExpiresAt">The new expiration time.</param>
     public void RotateRefreshToken(string newRefreshTokenHash, DateTimeOffset newExpiresAt)
     {
         if (string.IsNullOrWhiteSpace(newRefreshTokenHash))
@@ -179,17 +113,11 @@ public class LoginSession
         ExpiresAt = newExpiresAt;
     }
 
-    /// <summary>
-    /// Marks this session as revoked.
-    /// </summary>
     public void Revoke()
     {
         IsRevoked = true;
         RevokedAt = DateTimeOffset.UtcNow;
     }
 
-    /// <summary>
-    /// Checks if this session is still valid (not expired and not revoked).
-    /// </summary>
     public bool IsValid => !IsRevoked && ExpiresAt > DateTimeOffset.UtcNow;
 }

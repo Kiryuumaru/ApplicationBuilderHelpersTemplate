@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Application.Logger.Extensions;
 
-public static class IConfigurationExtensions
+public static class LoggerConfigurationExtensions
 {
     private const string ApplyThemeWhenOutputIsRedirectedKey = "RUNTIME_APPLYTHEMEWHENOUTPUTISREDIRECTED";
 

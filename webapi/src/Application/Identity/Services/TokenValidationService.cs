@@ -10,7 +10,6 @@ internal sealed class TokenValidationService(
     ISessionService sessionService,
     IApiKeyService apiKeyService) : ITokenValidationService
 {
-    /// <inheritdoc />
     public async Task<TokenValidationResult> ValidatePostSignatureAsync(
         ClaimsPrincipal principal,
         string? typHeader,

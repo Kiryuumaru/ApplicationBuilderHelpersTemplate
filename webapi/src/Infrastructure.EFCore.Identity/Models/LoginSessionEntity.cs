@@ -1,8 +1,5 @@
 namespace Infrastructure.EFCore.Identity.Models;
 
-/// <summary>
-/// Entity for storing login session information.
-/// </summary>
 public class LoginSessionEntity
 {
     public required Guid Id { get; set; }

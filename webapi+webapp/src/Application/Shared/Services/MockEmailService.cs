@@ -3,10 +3,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Application.Shared.Services;
 
-/// <summary>
-/// Mock email service that logs emails instead of sending them.
-/// Use this for development/testing. Replace with a real implementation in production.
-/// </summary>
 internal class MockEmailService : IEmailService
 {
     private readonly ILogger<MockEmailService> _logger;

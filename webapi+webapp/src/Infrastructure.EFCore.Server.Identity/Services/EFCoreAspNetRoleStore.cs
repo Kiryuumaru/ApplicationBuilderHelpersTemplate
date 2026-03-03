@@ -5,10 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.EFCore.Server.Identity.Services;
 
-/// <summary>
-/// ASP.NET Core Identity role store implementation using EF Core.
-/// Required for RoleManager to work with our Role entity.
-/// </summary>
 internal sealed class EFCoreAspNetRoleStore(IDbContextFactory<EFCoreDbContext> contextFactory) :
     IRoleStore<Role>
 {

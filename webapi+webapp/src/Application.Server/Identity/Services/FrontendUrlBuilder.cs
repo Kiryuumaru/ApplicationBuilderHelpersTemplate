@@ -5,9 +5,6 @@ using Microsoft.Extensions.Options;
 
 namespace Application.Server.Identity.Services;
 
-/// <summary>
-/// Builds frontend URLs using configured base URL and paths.
-/// </summary>
 internal sealed class FrontendUrlBuilder : IFrontendUrlBuilder
 {
     private readonly FrontendUrlOptions _options;

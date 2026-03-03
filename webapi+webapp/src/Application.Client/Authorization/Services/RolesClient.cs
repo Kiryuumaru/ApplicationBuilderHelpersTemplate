@@ -5,9 +5,6 @@ using Application.Client.Serialization;
 
 namespace Application.Client.Authorization.Services;
 
-/// <summary>
-/// HTTP client for IAM role endpoints.
-/// </summary>
 internal class RolesClient : IRolesClient
 {
     private readonly HttpClient _httpClient;

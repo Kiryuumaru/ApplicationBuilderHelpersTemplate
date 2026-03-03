@@ -1,4 +1,4 @@
-using Infrastructure.EFCore.Interfaces;
+using Application.LocalStore.Interfaces.Outbound;
 using Infrastructure.EFCore.Services;
 using Microsoft.Extensions.DependencyInjection;
 

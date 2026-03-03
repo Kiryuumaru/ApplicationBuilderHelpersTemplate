@@ -22,8 +22,6 @@ internal sealed class ApiKeyService(
     /// Maximum number of API keys allowed per user.
     /// </summary>
     private const int MaxApiKeysPerUser = 100;
-
-    /// <inheritdoc />
     public async Task<(ApiKeyDto Metadata, string Token)> CreateAsync(
         Guid userId,
         string name,
@@ -51,15 +49,11 @@ internal sealed class ApiKeyService(
         var dto = MapToDto(apiKey);
         return (dto, token);
     }
-
-    /// <inheritdoc />
     public async Task<IReadOnlyList<ApiKeyDto>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken)
     {
         var apiKeys = await apiKeyRepository.GetByUserIdAsync(userId, cancellationToken);
         return apiKeys.Select(MapToDto).ToList();
     }
-
-    /// <inheritdoc />
     public async Task<ApiKeyDto?> GetByIdAsync(Guid userId, Guid id, CancellationToken cancellationToken)
     {
         var apiKey = await apiKeyRepository.GetByIdAsync(id, cancellationToken);
@@ -69,8 +63,6 @@ internal sealed class ApiKeyService(
         }
         return MapToDto(apiKey);
     }
-
-    /// <inheritdoc />
     public async Task<bool> RevokeAsync(Guid userId, Guid id, CancellationToken cancellationToken)
     {
         var apiKey = await apiKeyRepository.GetByIdAsync(id, cancellationToken);
@@ -84,8 +76,6 @@ internal sealed class ApiKeyService(
         await unitOfWork.CommitAsync(cancellationToken);
         return true;
     }
-
-    /// <inheritdoc />
     public async Task<ApiKey?> ValidateApiKeyAsync(Guid keyId, CancellationToken cancellationToken)
     {
         var apiKey = await apiKeyRepository.GetByIdAsync(keyId, cancellationToken);
@@ -108,8 +98,6 @@ internal sealed class ApiKeyService(
 
         return apiKey;
     }
-
-    /// <inheritdoc />
     public async Task UpdateLastUsedAsync(Guid keyId, CancellationToken cancellationToken)
     {
         var apiKey = await apiKeyRepository.GetByIdAsync(keyId, cancellationToken);
@@ -120,8 +108,6 @@ internal sealed class ApiKeyService(
             await unitOfWork.CommitAsync(cancellationToken);
         }
     }
-
-    /// <inheritdoc />
     public Task<int> GetActiveCountAsync(Guid userId, CancellationToken cancellationToken)
     {
         return apiKeyRepository.GetActiveCountByUserIdAsync(userId, cancellationToken);

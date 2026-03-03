@@ -8,20 +8,11 @@ public class UserSession : ValueObject
 {
     public Guid UserId { get; }
     public string? Username { get; }
-    /// <summary>
-    /// Gets the scope directives for this session (new directive-based system).
-    /// </summary>
     public IReadOnlyCollection<ScopeDirective> Scope { get; }
-    /// <summary>
-    /// Gets the legacy permission identifiers (kept for backward compatibility).
-    /// </summary>
     public IReadOnlyCollection<string> PermissionIdentifiers { get; }
     public IReadOnlyCollection<string> RoleCodes { get; }
     public DateTimeOffset IssuedAt { get; }
     public DateTimeOffset ExpiresAt { get; }
-    /// <summary>
-    /// Whether this session belongs to an anonymous (guest) user.
-    /// </summary>
     public bool IsAnonymous { get; }
 
     protected UserSession(
@@ -44,9 +35,6 @@ public class UserSession : ValueObject
         IsAnonymous = isAnonymous;
     }
 
-    /// <summary>
-    /// Creates a simple UserSession for anonymous users or simple scenarios.
-    /// </summary>
     public static UserSession Create(
         Guid userId,
         string? username,
@@ -76,9 +64,6 @@ public class UserSession : ValueObject
             isAnonymous);
     }
 
-    /// <summary>
-    /// Creates a UserSession with scope directives (new system).
-    /// </summary>
     public static UserSession Create(
         Guid userId,
         string? username,
@@ -125,9 +110,6 @@ public class UserSession : ValueObject
         return new UserSession(userId, username?.Trim(), scopeList, permissions, roles, issuedAt, expiresAt, isAnonymous);
     }
 
-    /// <summary>
-    /// Creates a UserSession with legacy permission identifiers (backward compatibility).
-    /// </summary>
     public static UserSession CreateLegacy(
         Guid userId,
         string? username,
@@ -170,36 +152,21 @@ public class UserSession : ValueObject
         return new UserSession(userId, username?.Trim(), Array.Empty<ScopeDirective>(), permissions, roles, issuedAt, expiresAt, isAnonymous);
     }
 
-    /// <summary>
-    /// Determines whether this session grants the specified permission.
-    /// </summary>
-    /// <param name="permissionPath">The permission path to check.</param>
-    /// <param name="requestParameters">Optional parameters from the request context.</param>
-    /// <returns>True if the permission is granted; otherwise false.</returns>
     public bool HasPermission(string permissionPath, IReadOnlyDictionary<string, string>? requestParameters = null)
     {
         return ScopeEvaluator.HasPermission(Scope, permissionPath, requestParameters);
     }
 
-    /// <summary>
-    /// Determines whether this session grants any of the specified permissions.
-    /// </summary>
     public bool HasAnyPermission(IEnumerable<string> permissionPaths, IReadOnlyDictionary<string, string>? requestParameters = null)
     {
         return ScopeEvaluator.HasAnyPermission(Scope, permissionPaths, requestParameters);
     }
 
-    /// <summary>
-    /// Determines whether this session grants all of the specified permissions.
-    /// </summary>
     public bool HasAllPermissions(IEnumerable<string> permissionPaths, IReadOnlyDictionary<string, string>? requestParameters = null)
     {
         return ScopeEvaluator.HasAllPermissions(Scope, permissionPaths, requestParameters);
     }
 
-    /// <summary>
-    /// Gets the parameters from matching allow directives for the specified permission.
-    /// </summary>
     public IReadOnlyDictionary<string, string> GetParameters(string permissionPath)
     {
         return ScopeEvaluator.GetParameters(Scope, permissionPath);

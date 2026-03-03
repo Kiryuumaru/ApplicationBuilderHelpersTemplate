@@ -1,8 +1,5 @@
 namespace Domain.Identity.Exceptions;
 
-/// <summary>
-/// Exception thrown when an API key is not found.
-/// </summary>
 public sealed class ApiKeyNotFoundException : Exception
 {
     public ApiKeyNotFoundException(Guid keyId)
@@ -11,8 +8,5 @@ public sealed class ApiKeyNotFoundException : Exception
         KeyId = keyId;
     }
 
-    /// <summary>
-    /// The ID of the API key that was not found.
-    /// </summary>
     public Guid KeyId { get; }
 }

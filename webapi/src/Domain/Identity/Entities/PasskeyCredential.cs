@@ -77,14 +77,14 @@ public class PasskeyCredential : AuditableEntity
         string attestationFormat) : base(id)
     {
         UserId = userId;
-        Name = name ?? throw new ArgumentNullException(nameof(name));
-        CredentialId = credentialId ?? throw new ArgumentNullException(nameof(credentialId));
-        PublicKey = publicKey ?? throw new ArgumentNullException(nameof(publicKey));
+        Name = name;
+        CredentialId = credentialId;
+        PublicKey = publicKey;
         SignCount = signCount;
         AaGuid = aaGuid;
-        CredentialType = credentialType ?? "public-key";
-        UserHandle = userHandle ?? throw new ArgumentNullException(nameof(userHandle));
-        AttestationFormat = attestationFormat ?? "none";
+        CredentialType = credentialType;
+        UserHandle = userHandle;
+        AttestationFormat = attestationFormat;
         RegisteredAt = DateTimeOffset.UtcNow;
     }
 
@@ -102,6 +102,10 @@ public class PasskeyCredential : AuditableEntity
         byte[] userHandle,
         string attestationFormat)
     {
+        ArgumentNullException.ThrowIfNull(credentialId);
+        ArgumentNullException.ThrowIfNull(publicKey);
+        ArgumentNullException.ThrowIfNull(userHandle);
+
         return new PasskeyCredential(
             Guid.NewGuid(),
             userId,
@@ -110,9 +114,9 @@ public class PasskeyCredential : AuditableEntity
             publicKey,
             signCount,
             aaGuid,
-            credentialType,
+            credentialType ?? "public-key",
             userHandle,
-            attestationFormat);
+            attestationFormat ?? "none");
     }
 
     /// <summary>

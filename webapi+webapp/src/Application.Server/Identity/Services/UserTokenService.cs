@@ -11,18 +11,12 @@ using TokenClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 
 namespace Application.Server.Identity.Services;
 
-/// <summary>
-/// Service for user authentication token generation and rotation.
-/// Coordinates token generation with session management atomically.
-/// </summary>
 internal sealed class UserTokenService(
     IUserAuthorizationService userAuthorizationService,
     ISessionService sessionService,
     IPermissionService permissionService,
     ITokenProvider tokenProvider) : IUserTokenService
 {
-
-    /// <inheritdoc />
     public async Task<UserTokenResult> CreateSessionWithTokensAsync(
         Guid userId,
         SessionDeviceInfo? deviceInfo,
@@ -36,7 +30,7 @@ internal sealed class UserTokenService(
 
         // Generate refresh token and hash
         var refreshToken = await GenerateRefreshTokenAsync(userId, authData.Username, sessionId, cancellationToken);
-        var tokenHash = Shared.Services.TokenHasher.Hash(refreshToken);
+        var tokenHash = Shared.Utilities.TokenHasher.Hash(refreshToken);
 
         // Create session
         await sessionService.CreateSessionAsync(
@@ -54,8 +48,6 @@ internal sealed class UserTokenService(
 
         return new UserTokenResult(accessToken, refreshToken, sessionId, (int)TokenExpirations.AccessToken.TotalSeconds);
     }
-
-    /// <inheritdoc />
     public async Task<UserTokenResult> RotateTokensAsync(
         Guid sessionId,
         CancellationToken cancellationToken)
@@ -69,7 +61,7 @@ internal sealed class UserTokenService(
 
         // Generate new refresh token and hash
         var refreshToken = await GenerateRefreshTokenAsync(session.UserId, authData.Username, sessionId, cancellationToken);
-        var tokenHash = Shared.Services.TokenHasher.Hash(refreshToken);
+        var tokenHash = Shared.Utilities.TokenHasher.Hash(refreshToken);
 
         // Update session with new token hash
         await sessionService.UpdateRefreshTokenAsync(
@@ -155,8 +147,6 @@ internal sealed class UserTokenService(
             tokenId: null,
             cancellationToken);
     }
-
-    /// <inheritdoc />
     public async Task<TokenRefreshResult> RefreshTokensAsync(
         string refreshToken,
         CancellationToken cancellationToken)

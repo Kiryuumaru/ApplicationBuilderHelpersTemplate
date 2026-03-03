@@ -1,10 +1,8 @@
 using Application.AppEnvironment.Extensions;
-using Application.AppEnvironment.Services;
 using Application.Shared.Extensions;
 using Application.Credential.Extensions;
 using Application.LocalStore.Extensions;
 using Application.Logger.Extensions;
-using Application.NativeCmd.Extensions;
 using ApplicationBuilderHelpers;
 using Domain.AppEnvironment.Constants;
 using Microsoft.Extensions.Configuration;
@@ -21,7 +19,6 @@ public class Application : ApplicationDependency
 
         services.AddSharedServices();
         services.AddAppEnvironmentServices();
-        services.AddNativeCmdServices();
         services.AddLocalStoreServices();
         services.AddCredentialServices();
     }

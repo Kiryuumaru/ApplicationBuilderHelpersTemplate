@@ -1,8 +1,5 @@
 namespace Infrastructure.EFCore.Server.Identity.Models;
 
-/// <summary>
-/// Entity for storing registered passkey credentials.
-/// </summary>
 public class PasskeyCredentialEntity
 {
     public required Guid Id { get; set; }

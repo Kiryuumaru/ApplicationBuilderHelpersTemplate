@@ -15,10 +15,6 @@ using System.Security.Claims;
 
 namespace Application.Server.Identity.Services;
 
-/// <summary>
-/// Implementation of IAuthenticationService using repositories directly.
-/// Delegates token generation to IUserTokenService.
-/// </summary>
 internal sealed class AuthenticationService(
     IUserRepository userRepository,
     IPasswordVerifier passwordVerifier,

@@ -54,10 +54,10 @@ public class PasskeyChallenge : Entity
         DateTimeOffset createdAt,
         DateTimeOffset expiresAt) : base(id)
     {
-        Challenge = challenge ?? throw new ArgumentNullException(nameof(challenge));
+        Challenge = challenge;
         UserId = userId;
         Type = type;
-        OptionsJson = optionsJson ?? throw new ArgumentNullException(nameof(optionsJson));
+        OptionsJson = optionsJson;
         CredentialName = credentialName;
         CreatedAt = createdAt;
         ExpiresAt = expiresAt;
@@ -74,6 +74,9 @@ public class PasskeyChallenge : Entity
         string? credentialName = null,
         TimeSpan? lifetime = null)
     {
+        ArgumentNullException.ThrowIfNull(challenge);
+        ArgumentNullException.ThrowIfNull(optionsJson);
+
         var now = DateTimeOffset.UtcNow;
         var expiry = now.Add(lifetime ?? TimeSpan.FromMinutes(5)); // Default 5 minute expiry
 

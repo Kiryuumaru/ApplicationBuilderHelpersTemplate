@@ -1,8 +1,5 @@
 namespace Domain.Shared.Exceptions;
 
-/// <summary>
-/// Exception thrown when attempting to use a reserved name.
-/// </summary>
 public sealed class ReservedNameException : DomainException
 {
     public string? ReservedName { get; }

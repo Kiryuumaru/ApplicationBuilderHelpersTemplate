@@ -1,4 +1,5 @@
 using Application.AppEnvironment.Extensions;
+using Application.AppEnvironment.Interfaces.Inbound;
 using Application.Shared.Interfaces.Inbound;
 using Application.Shared.Interfaces.Outbound;
 using Application.LocalStore.Interfaces;
@@ -6,10 +7,10 @@ using Microsoft.Extensions.Configuration;
 
 namespace Application.AppEnvironment.Services;
 
-public class AppEnvironmentService(
+internal sealed class AppEnvironmentService(
     IConfiguration configuration,
     ILocalStoreFactory localStoreFactory,
-    IApplicationConstants applicationConstants)
+    IApplicationConstants applicationConstants) : IAppEnvironmentService
 {
     public async Task<Domain.AppEnvironment.Models.AppEnvironment> GetEnvironment(CancellationToken cancellationToken = default)
     {

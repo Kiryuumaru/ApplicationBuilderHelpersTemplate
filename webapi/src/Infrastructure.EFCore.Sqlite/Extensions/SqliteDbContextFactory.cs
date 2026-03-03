@@ -3,9 +3,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.EFCore.Sqlite.Extensions;
 
-/// <summary>
-/// Factory for creating SqliteDbContext instances with registered entity configurations.
-/// </summary>
 internal sealed class SqliteDbContextFactory : IDbContextFactory<SqliteDbContext>
 {
     private readonly string _connectionString;

@@ -9,9 +9,6 @@ public partial class AsyncReaderWriterLock : IDisposable
     private readonly SemaphoreSlim _writerSemaphore = new(1, 1); // Controls exclusive writer access
     private int _readerCount = 0;
 
-    /// <summary>
-    /// Enters an async read lock, allowing multiple concurrent readers
-    /// </summary>
     public async Task<IDisposable> EnterReadLockAsync(CancellationToken cancellationToken = default)
     {
         await _readerSemaphore.WaitAsync(cancellationToken);
@@ -32,9 +29,6 @@ public partial class AsyncReaderWriterLock : IDisposable
         return new ReadLockReleaser(this);
     }
 
-    /// <summary>
-    /// Enters an async write lock, providing exclusive access
-    /// </summary>
     public async Task<IDisposable> EnterWriteLockAsync(CancellationToken cancellationToken = default)
     {
         await _writerSemaphore.WaitAsync(cancellationToken);

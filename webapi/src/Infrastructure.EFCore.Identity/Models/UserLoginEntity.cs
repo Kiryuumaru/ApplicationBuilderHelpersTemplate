@@ -1,8 +1,5 @@
 namespace Infrastructure.EFCore.Identity.Models;
 
-/// <summary>
-/// Entity for storing user login information (external identity providers).
-/// </summary>
 public class UserLoginEntity
 {
     public required string LoginProvider { get; set; }

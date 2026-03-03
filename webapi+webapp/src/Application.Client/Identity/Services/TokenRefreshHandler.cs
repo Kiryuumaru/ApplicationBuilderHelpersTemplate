@@ -5,11 +5,6 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Application.Client.Identity.Services;
 
-/// <summary>
-/// HTTP message handler that attaches Bearer tokens to requests and handles token refresh.
-/// Creates a scope to read from ITokenStorage (IndexedDB) for each request.
-/// When token refresh fails or session is revoked, clears auth state (UI reacts via OnStateChanged).
-/// </summary>
 internal class TokenRefreshHandler : DelegatingHandler
 {
     private readonly IServiceScopeFactory _scopeFactory;

@@ -1,15 +1,7 @@
-namespace Application.Shared.Services;
+namespace Application.Shared.Utilities;
 
-/// <summary>
-/// Parses device information from User-Agent strings.
-/// </summary>
 public static class DeviceInfoParser
 {
-    /// <summary>
-    /// Parses a user-friendly device name from the User-Agent string.
-    /// </summary>
-    /// <param name="userAgent">The User-Agent header value.</param>
-    /// <returns>A human-readable device name, or null if the agent is empty.</returns>
     public static string? ParseDeviceName(string? userAgent)
     {
         if (string.IsNullOrWhiteSpace(userAgent))

@@ -8,10 +8,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.EFCore.Server.Identity.Services;
 
-/// <summary>
-/// EF Core implementation of ISessionRepository.
-/// Renamed from EFCoreSessionStore to follow repository naming convention.
-/// </summary>
 internal sealed class EFCoreSessionRepository(IDbContextFactory<EFCoreDbContext> contextFactory) : ISessionRepository
 {
     public async Task CreateAsync(LoginSession session, CancellationToken cancellationToken)

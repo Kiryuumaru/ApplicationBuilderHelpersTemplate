@@ -1,8 +1,5 @@
 namespace Domain.Shared.Exceptions;
 
-/// <summary>
-/// Exception thrown when an entity is not found.
-/// </summary>
 public sealed class EntityNotFoundException : DomainException
 {
     public string? EntityType { get; }

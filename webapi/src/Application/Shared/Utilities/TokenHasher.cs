@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 
-namespace Application.Shared.Services;
+namespace Application.Shared.Utilities;
 
 /// <summary>
 /// Provides token hashing functionality for secure token storage.

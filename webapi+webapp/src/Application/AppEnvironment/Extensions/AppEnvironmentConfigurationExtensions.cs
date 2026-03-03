@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Application.AppEnvironment.Extensions;
 
-public static class IConfigurationExtensions
+public static class AppEnvironmentConfigurationExtensions
 {
     private const string AppTagOverrideKey = "VEG_APP_TAG_OVERRIDE";
     public static string? GetAppTagOverride(this IConfiguration configuration)
