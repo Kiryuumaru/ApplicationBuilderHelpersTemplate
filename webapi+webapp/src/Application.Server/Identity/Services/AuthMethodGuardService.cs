@@ -6,7 +6,7 @@ namespace Application.Server.Identity.Services;
 /// <summary>
 /// Guard service implementation for validating authentication method operations.
 /// </summary>
-public sealed class AuthMethodGuardService(
+internal sealed class AuthMethodGuardService(
     IUserRepository userRepository,
     IPasskeyRepository passkeyRepository) : IAuthMethodGuardService
 {

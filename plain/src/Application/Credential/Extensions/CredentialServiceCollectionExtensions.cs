@@ -6,7 +6,7 @@ namespace Application.Credential.Extensions;
 
 internal static class CredentialServiceCollectionExtensions
 {
-    public static IServiceCollection AddCredentialServices(this IServiceCollection services)
+    internal static IServiceCollection AddCredentialServices(this IServiceCollection services)
     {
         services.AddScoped<ICredentialService, CredentialService>();
 

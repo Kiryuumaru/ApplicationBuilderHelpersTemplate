@@ -9,7 +9,7 @@ using Domain.Identity.Models;
 
 namespace Application.Server.Authorization.Services;
 
-public sealed class UserRoleResolver(IRoleRepository roleRepository) : IUserRoleResolver
+internal sealed class UserRoleResolver(IRoleRepository roleRepository) : IUserRoleResolver
 {
     private readonly IRoleRepository _roleRepository = roleRepository ?? throw new ArgumentNullException(nameof(roleRepository));
 

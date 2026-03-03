@@ -8,7 +8,7 @@ namespace Presentation.WebApp.Server.Services;
 /// Server-side implementation of IRenderStateService.
 /// Detects pre-rendering by checking if HttpContext exists and if the response has started.
 /// </summary>
-public class ServerRenderStateService : IRenderStateService
+internal class ServerRenderStateService : IRenderStateService
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
 

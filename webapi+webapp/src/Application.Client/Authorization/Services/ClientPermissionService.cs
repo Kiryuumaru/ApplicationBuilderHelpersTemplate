@@ -9,7 +9,7 @@ namespace Application.Client.Authorization.Services;
 /// Client-side permission service that evaluates permissions from the current auth state.
 /// Uses the Domain layer's ScopeEvaluator for permission evaluation.
 /// </summary>
-public sealed class ClientPermissionService(IAuthStateProvider authStateProvider) : IClientPermissionService
+internal sealed class ClientPermissionService(IAuthStateProvider authStateProvider) : IClientPermissionService
 {
     /// <inheritdoc />
     public bool HasPermission(string permissionPath)

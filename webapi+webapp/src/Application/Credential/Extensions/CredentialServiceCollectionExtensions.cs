@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Application.Credential.Extensions;
 
-internal static class ServiceCollectionExtensions
+internal static class CredentialServiceCollectionExtensions
 {
     public static void AddCredentialServices(this IServiceCollection services)
     {

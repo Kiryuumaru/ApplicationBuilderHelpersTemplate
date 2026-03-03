@@ -10,7 +10,7 @@ namespace Application.Server.Identity.Services;
 /// Unified token validation service for all JWT types.
 /// Orchestrates ISessionService and IApiKeyService for post-signature validation.
 /// </summary>
-public sealed class TokenValidationService(
+internal sealed class TokenValidationService(
     ISessionService sessionService,
     IApiKeyService apiKeyService) : ITokenValidationService
 {

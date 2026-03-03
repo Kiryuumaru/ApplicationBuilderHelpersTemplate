@@ -10,7 +10,7 @@ namespace Infrastructure.EFCore.Server.Identity.Configurations;
 /// <summary>
 /// EF Core entity configuration for User and Role entities.
 /// </summary>
-public class IdentityEntityConfiguration : IEFCoreEntityConfiguration
+internal class IdentityEntityConfiguration : IEFCoreEntityConfiguration
 {
     public void Configure(ModelBuilder modelBuilder)
     {

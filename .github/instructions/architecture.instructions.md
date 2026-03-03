@@ -1152,10 +1152,6 @@ A: Use `Application.Server/` for logic that only runs on server (e.g., backgroun
 **Q: Can Presentation call Interfaces/Outbound directly?**
 A: No. Presentation calls Interfaces/Inbound only. Create a service in Application that wraps the outbound call if needed.
 
-[→ See Interface Access Rules for full table](#interface-access-rules)
-[→ See Unit of Work Pattern for transaction boundaries](#unit-of-work-pattern)
-[→ See Service Categories for Singleton vs Scoped guidance](#service-categories)
-
 ---
 
 ## Prohibited Patterns

@@ -7,7 +7,7 @@ namespace Presentation.WebApp.Client.Services;
 /// Client-side (WebAssembly) implementation of IRenderStateService.
 /// Always returns CSR since WASM components are always client-side rendered.
 /// </summary>
-public class ClientRenderStateService : IRenderStateService
+internal class ClientRenderStateService : IRenderStateService
 {
     /// <inheritdoc />
     public Guid ServiceUid { get; } = Guid.NewGuid();

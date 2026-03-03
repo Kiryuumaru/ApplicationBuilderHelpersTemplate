@@ -6,7 +6,7 @@ namespace Application.AppEnvironment.Extensions;
 
 internal static class AppEnvironmentServiceCollectionExtensions
 {
-    public static IServiceCollection AddAppEnvironmentServices(this IServiceCollection services)
+    internal static IServiceCollection AddAppEnvironmentServices(this IServiceCollection services)
     {
         services.AddScoped<IAppEnvironmentService, AppEnvironmentService>();
 

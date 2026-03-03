@@ -16,7 +16,7 @@ namespace Application.Server.Identity.Services;
 /// <summary>
 /// Service for managing user API keys.
 /// </summary>
-public sealed class ApiKeyService(
+internal sealed class ApiKeyService(
     IApiKeyRepository apiKeyRepository,
     IUserAuthorizationService userAuthorizationService,
     IPermissionService permissionService) : IApiKeyService

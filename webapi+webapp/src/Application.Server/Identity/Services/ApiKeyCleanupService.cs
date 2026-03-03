@@ -7,7 +7,7 @@ namespace Application.Server.Identity.Services;
 /// <summary>
 /// Service for cleaning up expired and revoked API keys.
 /// </summary>
-public sealed class ApiKeyCleanupService(
+internal sealed class ApiKeyCleanupService(
     IApiKeyRepository apiKeyRepository,
     ILogger<ApiKeyCleanupService> logger) : IApiKeyCleanupService
 {

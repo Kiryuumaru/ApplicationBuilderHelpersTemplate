@@ -1,5 +1,6 @@
 using Application.Server.Authorization.Extensions;
 using Application.Server.Identity.Interfaces.Inbound;
+using Application.Server.Identity.Models;
 using Application.Server.Identity.Services;
 using Application.Server.Identity.Workers;
 using Domain.Authorization.Models;

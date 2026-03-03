@@ -15,7 +15,7 @@ namespace Application.Server.Identity.Services;
 /// Service for user authentication token generation and rotation.
 /// Coordinates token generation with session management atomically.
 /// </summary>
-public sealed class UserTokenService(
+internal sealed class UserTokenService(
     IUserAuthorizationService userAuthorizationService,
     ISessionService sessionService,
     IPermissionService permissionService,

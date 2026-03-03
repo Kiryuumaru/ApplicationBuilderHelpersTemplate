@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace Application.Server.Authorization.Services;
 
 [Disposable]
-public partial class AuthorizedHttpClientFactory(string serviceKey, ILogger<AuthorizedHttpClientFactory> logger, IHttpClientFactory httpClientFactory, IPermissionService permissionService) : IAuthorizedHttpClientFactory
+internal partial class AuthorizedHttpClientFactory(string serviceKey, ILogger<AuthorizedHttpClientFactory> logger, IHttpClientFactory httpClientFactory, IPermissionService permissionService) : IAuthorizedHttpClientFactory
 {
     private readonly List<HttpClient> httpClients = [];
 

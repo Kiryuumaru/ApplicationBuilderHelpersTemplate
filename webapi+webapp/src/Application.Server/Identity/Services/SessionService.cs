@@ -8,7 +8,7 @@ namespace Application.Server.Identity.Services;
 /// <summary>
 /// Service for managing user sessions.
 /// </summary>
-public sealed class SessionService(
+internal sealed class SessionService(
     ISessionRepository sessionRepository,
     ILogger<SessionService> logger) : ISessionService
 {

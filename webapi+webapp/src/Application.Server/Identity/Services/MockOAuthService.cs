@@ -13,7 +13,7 @@ namespace Application.Server.Identity.Services;
 /// This implementation simulates OAuth flows without connecting to real providers.
 /// Replace with real provider implementations when ready to integrate.
 /// </summary>
-public sealed class MockOAuthService(
+internal sealed class MockOAuthService(
     IUserRepository userRepository,
     IUserRegistrationService registrationService) : IOAuthService
 {

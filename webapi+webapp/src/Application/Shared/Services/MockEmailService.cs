@@ -7,7 +7,7 @@ namespace Application.Shared.Services;
 /// Mock email service that logs emails instead of sending them.
 /// Use this for development/testing. Replace with a real implementation in production.
 /// </summary>
-public class MockEmailService : IEmailService
+internal class MockEmailService : IEmailService
 {
     private readonly ILogger<MockEmailService> _logger;
 

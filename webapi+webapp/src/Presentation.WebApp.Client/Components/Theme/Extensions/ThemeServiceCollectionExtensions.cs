@@ -3,7 +3,7 @@ using Presentation.WebApp.Client.Components.Theme.Services;
 
 namespace Presentation.WebApp.Client.Components.Theme.Extensions;
 
-internal static class ServiceCollectionExtensions
+internal static class ThemeServiceCollectionExtensions
 {
     public static IServiceCollection AddThemeServices(this IServiceCollection services)
     {

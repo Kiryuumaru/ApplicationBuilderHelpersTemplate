@@ -16,7 +16,7 @@ namespace Application.Server.Identity.Services;
 /// <summary>
 /// Implementation of IUserAuthorizationService using repositories directly.
 /// </summary>
-public sealed class UserAuthorizationService(
+internal sealed class UserAuthorizationService(
     IUserRepository userRepository,
     IRoleRepository roleRepository,
     IUserRoleResolver userRoleResolver) : IUserAuthorizationService

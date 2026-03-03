@@ -19,7 +19,7 @@ namespace Application.Server.Identity.Services;
 /// Implementation of IAuthenticationService using repositories directly.
 /// Delegates token generation to IUserTokenService.
 /// </summary>
-public sealed class AuthenticationService(
+internal sealed class AuthenticationService(
     IUserRepository userRepository,
     IPasswordVerifier passwordVerifier,
     IUserRoleResolver userRoleResolver,

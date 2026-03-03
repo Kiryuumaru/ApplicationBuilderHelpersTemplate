@@ -11,7 +11,7 @@ namespace Application.Server.Identity.Services;
 /// <summary>
 /// Implementation of IPasswordService using repositories directly.
 /// </summary>
-public sealed class PasswordService(
+internal sealed class PasswordService(
     IUserRepository userRepository,
     IPasswordVerifier passwordVerifier,
     IPasswordHashService passwordHashService,

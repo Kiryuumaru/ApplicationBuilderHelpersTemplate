@@ -12,7 +12,7 @@ namespace Application.Server.Identity.Services;
 /// <summary>
 /// Implementation of IUserProfileService using repositories directly.
 /// </summary>
-public sealed class UserProfileService(
+internal sealed class UserProfileService(
     IUserRepository userRepository,
     IUserRoleResolver userRoleResolver) : IUserProfileService
 {

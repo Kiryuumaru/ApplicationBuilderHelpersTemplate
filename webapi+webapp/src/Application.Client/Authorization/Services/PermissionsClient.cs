@@ -8,7 +8,7 @@ namespace Application.Client.Authorization.Services;
 /// <summary>
 /// HTTP client for IAM permission endpoints.
 /// </summary>
-public class PermissionsClient : IPermissionsClient
+internal class PermissionsClient : IPermissionsClient
 {
     private readonly HttpClient _httpClient;
 

@@ -12,7 +12,7 @@ using RolesConstants = Domain.Authorization.Constants.Roles;
 
 namespace Application.Server.Authorization.Services;
 
-public sealed class RoleService(IRoleRepository repository) : IRoleService
+internal sealed class RoleService(IRoleRepository repository) : IRoleService
 {
     private readonly IRoleRepository _repository = repository ?? throw new ArgumentNullException(nameof(repository));
 

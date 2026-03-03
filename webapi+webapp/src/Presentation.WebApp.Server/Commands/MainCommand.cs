@@ -1,6 +1,6 @@
+using Application.Shared.Extensions;
 using Application.Shared.Interfaces.Inbound;
 using Application.Shared.Interfaces.Outbound;
-using Application.Shared.Services;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Attributes;
 using Asp.Versioning;
@@ -138,7 +138,7 @@ internal class MainCommand : Build.BaseCommand<WebApplicationBuilder>
         });
 
         // Add Email Service (mock for now)
-        services.AddSingleton<IEmailService, MockEmailService>();
+        services.AddMockEmailService();
     }
 
     public override void AddMappings(ApplicationHost applicationHost, IHost host)

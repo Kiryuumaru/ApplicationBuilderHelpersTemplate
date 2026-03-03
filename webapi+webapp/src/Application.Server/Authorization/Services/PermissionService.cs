@@ -19,7 +19,7 @@ using TokenClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 
 namespace Application.Server.Authorization.Services;
 
-public sealed class PermissionService(
+internal sealed class PermissionService(
     ITokenProvider tokenProvider,
     IRoleRepository roleRepository) : IPermissionService
 {

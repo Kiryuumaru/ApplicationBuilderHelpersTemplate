@@ -8,7 +8,7 @@ namespace Application.Client.Authorization.Services;
 /// <summary>
 /// HTTP client for IAM role endpoints.
 /// </summary>
-public class RolesClient : IRolesClient
+internal class RolesClient : IRolesClient
 {
     private readonly HttpClient _httpClient;
 

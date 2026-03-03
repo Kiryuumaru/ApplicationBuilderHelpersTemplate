@@ -1,11 +1,22 @@
+using Application.Shared.Interfaces.Outbound;
+using Application.Shared.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Application.Shared.Extensions;
 
-internal static class SharedServiceCollectionExtensions
+public static class SharedServiceCollectionExtensions
 {
-    public static IServiceCollection AddSharedServices(this IServiceCollection services)
+    internal static IServiceCollection AddSharedServices(this IServiceCollection services)
     {
+        return services;
+    }
+
+    /// <summary>
+    /// Adds the mock email service for development/testing.
+    /// </summary>
+    public static IServiceCollection AddMockEmailService(this IServiceCollection services)
+    {
+        services.AddSingleton<IEmailService, MockEmailService>();
         return services;
     }
 }

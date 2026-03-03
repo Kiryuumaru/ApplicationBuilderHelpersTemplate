@@ -8,7 +8,7 @@ namespace Application.Client.Identity.Services;
 /// <summary>
 /// HTTP client for IAM user endpoints.
 /// </summary>
-public class UsersClient : IUsersClient
+internal class UsersClient : IUsersClient
 {
     private readonly HttpClient _httpClient;
 

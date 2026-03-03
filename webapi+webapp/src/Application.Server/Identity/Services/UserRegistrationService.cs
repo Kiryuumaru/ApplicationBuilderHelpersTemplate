@@ -14,7 +14,7 @@ namespace Application.Server.Identity.Services;
 /// <summary>
 /// Implementation of IUserRegistrationService using repositories directly.
 /// </summary>
-public sealed class UserRegistrationService(
+internal sealed class UserRegistrationService(
     IUserRepository userRepository,
     IRoleRepository roleRepository,
     IUserRoleResolver userRoleResolver,

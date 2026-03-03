@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.EFCore.LocalStore.Services;
 
-public sealed class EFCoreLocalStoreService(
+internal sealed class EFCoreLocalStoreService(
     IDbContextFactory<EFCoreDbContext> dbContextFactory,
     IDatabaseInitializationState databaseInitializationState) : ILocalStoreService
 {

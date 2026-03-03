@@ -7,7 +7,7 @@ namespace Infrastructure.EFCore.LocalStore.Configurations;
 /// <summary>
 /// EF Core entity configuration for LocalStore entries.
 /// </summary>
-public class LocalStoreEntityConfiguration : IEFCoreEntityConfiguration
+internal class LocalStoreEntityConfiguration : IEFCoreEntityConfiguration
 {
     public void Configure(ModelBuilder modelBuilder)
     {

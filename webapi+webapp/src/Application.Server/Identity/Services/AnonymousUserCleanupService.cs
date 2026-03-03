@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Application.Server.Identity.Services;
 
-public sealed class AnonymousUserCleanupService(
+internal sealed class AnonymousUserCleanupService(
     IUserRepository userRepository,
     ILogger<AnonymousUserCleanupService> logger) : IAnonymousUserCleanupService
 {

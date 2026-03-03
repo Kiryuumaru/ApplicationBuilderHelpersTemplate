@@ -1,29 +1,9 @@
 using System.Text.Encodings.Web;
 using Application.Identity.Interfaces.Inbound;
+using Application.Identity.Models;
 using Microsoft.Extensions.Options;
 
 namespace Application.Identity.Services;
-
-/// <summary>
-/// Options for configuring frontend URLs.
-/// </summary>
-public sealed class FrontendUrlOptions
-{
-    /// <summary>
-    /// The base URL for the frontend application (e.g., "https://example.com").
-    /// </summary>
-    public string BaseUrl { get; set; } = string.Empty;
-
-    /// <summary>
-    /// The path for password reset page (default: "/reset-password").
-    /// </summary>
-    public string PasswordResetPath { get; set; } = "/reset-password";
-
-    /// <summary>
-    /// The path for email verification page (default: "/verify-email").
-    /// </summary>
-    public string EmailVerificationPath { get; set; } = "/verify-email";
-}
 
 internal sealed class FrontendUrlBuilder : IFrontendUrlBuilder
 {
