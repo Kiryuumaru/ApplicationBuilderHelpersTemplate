@@ -1,8 +1,5 @@
 namespace Domain.Identity.Exceptions;
 
-/// <summary>
-/// Exception thrown when an API key has been revoked.
-/// </summary>
 public sealed class ApiKeyRevokedException : Exception
 {
     public ApiKeyRevokedException(Guid keyId)
@@ -11,8 +8,5 @@ public sealed class ApiKeyRevokedException : Exception
         KeyId = keyId;
     }
 
-    /// <summary>
-    /// The ID of the revoked API key.
-    /// </summary>
     public Guid KeyId { get; }
 }

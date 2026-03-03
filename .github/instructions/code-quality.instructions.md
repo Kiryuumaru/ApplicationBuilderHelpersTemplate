@@ -129,9 +129,18 @@ Comments exist for future readers with no conversation context. The codebase sta
 
 ## XML Documentation
 
-XML docs (`///`) belong on interfaces only. Implementations do not require XML documentation.
+XML docs (`///`) are required for public types shared across layers. Internal types do not need XML docs.
 
-- Public interface MUST have XML docs
-- Interface methods MUST have XML docs
-- Implementation class MUST NOT have XML docs
-- Implementation methods MUST NOT have XML docs
+Public cross-layer types MUST have XML docs:
+- Interfaces (public by design, used across layers)
+- Domain entities, value objects, records, enums
+- Application DTOs/models used by other layers
+
+Internal types MUST NOT have XML docs:
+- Interface implementations (internal)
+- Infrastructure models/entities (internal)
+- Layer-internal helper classes
+
+Quick rule:
+- `public` + cross-layer = XML docs required
+- `internal` = no XML docs

@@ -2,9 +2,6 @@ using Domain.Shared.Exceptions;
 
 namespace Domain.Identity.Exceptions;
 
-/// <summary>
-/// Exception thrown when OAuth provider operations fail.
-/// </summary>
 public sealed class OAuthProviderException : DomainException
 {
     public string? ProviderName { get; }

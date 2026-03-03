@@ -2,9 +2,6 @@ using Domain.Shared.Exceptions;
 
 namespace Domain.Identity.Exceptions;
 
-/// <summary>
-/// Exception thrown when passkey operations fail.
-/// </summary>
 public sealed class PasskeyException : DomainException
 {
     public Guid? CredentialId { get; }
