@@ -1,4 +1,4 @@
-using Application.LocalStore.Common;
+using Application.LocalStore.Utilities;
 
 namespace Application.UnitTests.LocalStore;
 

@@ -5,20 +5,13 @@ using Application.Client.Serialization;
 
 namespace Application.Client.Identity.Services;
 
-internal class TwoFactorClient : ITwoFactorClient
+internal class TwoFactorClient(HttpClient httpClient) : ITwoFactorClient
 {
-    private readonly HttpClient _httpClient;
-
-    public TwoFactorClient(HttpClient httpClient)
-    {
-        _httpClient = httpClient;
-    }
-
     public async Task<TwoFactorSetupInfo?> GetSetupInfoAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _httpClient.GetAsync($"api/v1/auth/users/{userId}/2fa/setup", cancellationToken);
+            var response = await httpClient.GetAsync($"api/v1/auth/users/{userId}/2fa/setup", cancellationToken);
             
             if (response.IsSuccessStatusCode)
             {
@@ -44,7 +37,7 @@ internal class TwoFactorClient : ITwoFactorClient
                 VerificationCode = verificationCode
             };
 
-            var response = await _httpClient.PostAsJsonAsync(
+            var response = await httpClient.PostAsJsonAsync(
                 $"api/v1/auth/users/{userId}/2fa/enable",
                 request,
                 ApplicationClientJsonContext.Default.EnableTwoFactorRequest,
@@ -78,7 +71,7 @@ internal class TwoFactorClient : ITwoFactorClient
                 Password = password
             };
 
-            var response = await _httpClient.PostAsJsonAsync(
+            var response = await httpClient.PostAsJsonAsync(
                 $"api/v1/auth/users/{userId}/2fa/disable",
                 request,
                 ApplicationClientJsonContext.Default.DisableTwoFactorRequest,
@@ -96,7 +89,7 @@ internal class TwoFactorClient : ITwoFactorClient
     {
         try
         {
-            var response = await _httpClient.PostAsync($"api/v1/auth/users/{userId}/2fa/recovery-codes", null, cancellationToken);
+            var response = await httpClient.PostAsync($"api/v1/auth/users/{userId}/2fa/recovery-codes", null, cancellationToken);
             
             if (response.IsSuccessStatusCode)
             {

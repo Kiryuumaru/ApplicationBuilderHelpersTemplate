@@ -6,17 +6,8 @@ using Application.Client.Serialization;
 
 namespace Application.Client.Identity.Services;
 
-internal class AuthenticationClient : IAuthenticationClient
+internal class AuthenticationClient(HttpClient httpClient, ITokenStorage tokenStorage) : IAuthenticationClient
 {
-    private readonly HttpClient _httpClient;
-    private readonly ITokenStorage _tokenStorage;
-
-    public AuthenticationClient(HttpClient httpClient, ITokenStorage tokenStorage)
-    {
-        _httpClient = httpClient;
-        _tokenStorage = tokenStorage;
-    }
-
     public async Task<LoginResult> LoginAsync(string usernameOrEmail, string password, CancellationToken cancellationToken = default)
     {
         try
@@ -27,7 +18,7 @@ internal class AuthenticationClient : IAuthenticationClient
                 Password = password
             };
 
-            var response = await _httpClient.PostAsJsonAsync(
+            var response = await httpClient.PostAsJsonAsync(
                 "api/v1/auth/login",
                 request,
                 ApplicationClientJsonContext.Default.LoginRequest,
@@ -81,7 +72,7 @@ internal class AuthenticationClient : IAuthenticationClient
                 ConfirmPassword = password
             };
 
-            var response = await _httpClient.PostAsJsonAsync(
+            var response = await httpClient.PostAsJsonAsync(
                 "api/v1/auth/register",
                 request,
                 ApplicationClientJsonContext.Default.RegisterRequest,
@@ -123,7 +114,7 @@ internal class AuthenticationClient : IAuthenticationClient
                 RefreshToken = refreshToken
             };
 
-            var response = await _httpClient.PostAsJsonAsync(
+            var response = await httpClient.PostAsJsonAsync(
                 "api/v1/auth/refresh",
                 request,
                 ApplicationClientJsonContext.Default.RefreshTokenRequest,
@@ -157,7 +148,7 @@ internal class AuthenticationClient : IAuthenticationClient
     {
         try
         {
-            var credentials = await _tokenStorage.GetCredentialsAsync();
+            var credentials = await tokenStorage.GetCredentialsAsync();
             if (credentials?.AccessToken == null)
             {
                 return;
@@ -165,7 +156,7 @@ internal class AuthenticationClient : IAuthenticationClient
 
             using var request = new HttpRequestMessage(HttpMethod.Post, "api/v1/auth/logout");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", credentials.AccessToken);
-            await _httpClient.SendAsync(request, cancellationToken);
+            await httpClient.SendAsync(request, cancellationToken);
         }
         catch
         {
@@ -182,7 +173,7 @@ internal class AuthenticationClient : IAuthenticationClient
                 Email = email
             };
 
-            var response = await _httpClient.PostAsJsonAsync(
+            var response = await httpClient.PostAsJsonAsync(
                 "api/v1/auth/forgot-password",
                 request,
                 ApplicationClientJsonContext.Default.ForgotPasswordRequest,
@@ -207,7 +198,7 @@ internal class AuthenticationClient : IAuthenticationClient
                 NewPassword = newPassword
             };
 
-            var response = await _httpClient.PostAsJsonAsync(
+            var response = await httpClient.PostAsJsonAsync(
                 "api/v1/auth/reset-password",
                 request,
                 ApplicationClientJsonContext.Default.ResetPasswordRequest,
@@ -231,7 +222,7 @@ internal class AuthenticationClient : IAuthenticationClient
                 TwoFactorToken = twoFactorToken
             };
 
-            var response = await _httpClient.PostAsJsonAsync(
+            var response = await httpClient.PostAsJsonAsync(
                 "api/v1/auth/2fa/verify",
                 request,
                 ApplicationClientJsonContext.Default.TwoFactorVerifyRequest,

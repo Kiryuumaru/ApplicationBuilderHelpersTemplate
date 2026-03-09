@@ -1,24 +1,17 @@
 using System.Net.Http.Json;
-using Application.Client.Authorization.Interfaces;
+using Application.Client.Authorization.Interfaces.Inbound;
 using Application.Client.Authorization.Models;
 using Application.Client.Serialization;
 
 namespace Application.Client.Authorization.Services;
 
-internal class PermissionsClient : IPermissionsClient
+internal class PermissionsClient(HttpClient httpClient) : IPermissionsClient
 {
-    private readonly HttpClient _httpClient;
-
-    public PermissionsClient(HttpClient httpClient)
-    {
-        _httpClient = httpClient;
-    }
-
     public async Task<List<IamPermission>> ListPermissionsAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _httpClient.GetAsync("api/v1/iam/permissions", cancellationToken);
+            var response = await httpClient.GetAsync("api/v1/iam/permissions", cancellationToken);
             
             if (response.IsSuccessStatusCode)
             {
@@ -40,7 +33,7 @@ internal class PermissionsClient : IPermissionsClient
     {
         try
         {
-            var response = await _httpClient.PostAsJsonAsync(
+            var response = await httpClient.PostAsJsonAsync(
                 "api/v1/iam/permissions/grant",
                 request,
                 ApplicationClientJsonContext.Default.GrantPermissionRequest,
@@ -57,7 +50,7 @@ internal class PermissionsClient : IPermissionsClient
     {
         try
         {
-            var response = await _httpClient.PostAsJsonAsync(
+            var response = await httpClient.PostAsJsonAsync(
                 "api/v1/iam/permissions/revoke",
                 request,
                 ApplicationClientJsonContext.Default.RevokePermissionRequest,

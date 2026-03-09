@@ -2,7 +2,6 @@ using Application.Server.Identity.Interfaces.Inbound;
 using Asp.Versioning;
 using Domain.Authorization.Constants;
 using Microsoft.AspNetCore.Mvc;
-using Presentation.WebApp.Attributes;
 using Presentation.WebApp.Server.Attributes;
 using Presentation.WebApp.Server.Controllers.V1.Auth.Shared;
 using Presentation.WebApp.Server.Controllers.V1.Auth.Shared.Responses;

@@ -6,7 +6,6 @@ using Domain.Identity.Exceptions;
 using Domain.Shared.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Presentation.WebApp.Attributes;
 using Presentation.WebApp.Server.Attributes;
 using Presentation.WebApp.Server.Controllers.V1.Auth.OAuthController.Requests;
 using Presentation.WebApp.Server.Controllers.V1.Auth.OAuthController.Responses;

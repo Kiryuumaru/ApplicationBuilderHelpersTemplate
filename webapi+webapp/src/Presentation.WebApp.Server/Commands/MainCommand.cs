@@ -1,4 +1,3 @@
-using Application.Shared.Extensions;
 using Application.Shared.Interfaces.Inbound;
 using Application.Shared.Interfaces.Outbound;
 using ApplicationBuilderHelpers;
@@ -136,9 +135,6 @@ internal class MainCommand : Build.BaseCommand<WebApplicationBuilder>
             var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
             options.IncludeXmlComments(xmlPath, true);
         });
-
-        // Add Email Service (mock for now)
-        services.AddMockEmailService();
     }
 
     public override void AddMappings(ApplicationHost applicationHost, IHost host)

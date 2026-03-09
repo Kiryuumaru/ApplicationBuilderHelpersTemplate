@@ -1,24 +1,17 @@
 using System.Net.Http.Json;
-using Application.Client.Authorization.Interfaces;
+using Application.Client.Authorization.Interfaces.Inbound;
 using Application.Client.Authorization.Models;
 using Application.Client.Serialization;
 
 namespace Application.Client.Authorization.Services;
 
-internal class RolesClient : IRolesClient
+internal class RolesClient(HttpClient httpClient) : IRolesClient
 {
-    private readonly HttpClient _httpClient;
-
-    public RolesClient(HttpClient httpClient)
-    {
-        _httpClient = httpClient;
-    }
-
     public async Task<List<IamRole>> ListRolesAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _httpClient.GetAsync("api/v1/iam/roles", cancellationToken);
+            var response = await httpClient.GetAsync("api/v1/iam/roles", cancellationToken);
             
             if (response.IsSuccessStatusCode)
             {
@@ -40,7 +33,7 @@ internal class RolesClient : IRolesClient
     {
         try
         {
-            var response = await _httpClient.GetAsync($"api/v1/iam/roles/{roleId}", cancellationToken);
+            var response = await httpClient.GetAsync($"api/v1/iam/roles/{roleId}", cancellationToken);
             
             if (response.IsSuccessStatusCode)
             {
@@ -61,7 +54,7 @@ internal class RolesClient : IRolesClient
     {
         try
         {
-            var response = await _httpClient.PostAsJsonAsync(
+            var response = await httpClient.PostAsJsonAsync(
                 "api/v1/iam/roles",
                 request,
                 ApplicationClientJsonContext.Default.CreateRoleRequest,
@@ -86,7 +79,7 @@ internal class RolesClient : IRolesClient
     {
         try
         {
-            var response = await _httpClient.PutAsJsonAsync(
+            var response = await httpClient.PutAsJsonAsync(
                 $"api/v1/iam/roles/{roleId}",
                 request,
                 ApplicationClientJsonContext.Default.UpdateRoleRequest,
@@ -111,7 +104,7 @@ internal class RolesClient : IRolesClient
     {
         try
         {
-            var response = await _httpClient.DeleteAsync($"api/v1/iam/roles/{roleId}", cancellationToken);
+            var response = await httpClient.DeleteAsync($"api/v1/iam/roles/{roleId}", cancellationToken);
             return response.IsSuccessStatusCode;
         }
         catch
@@ -124,7 +117,7 @@ internal class RolesClient : IRolesClient
     {
         try
         {
-            var response = await _httpClient.PostAsJsonAsync(
+            var response = await httpClient.PostAsJsonAsync(
                 "api/v1/iam/roles/assign",
                 request,
                 ApplicationClientJsonContext.Default.AssignRoleRequest,
@@ -141,7 +134,7 @@ internal class RolesClient : IRolesClient
     {
         try
         {
-            var response = await _httpClient.PostAsJsonAsync(
+            var response = await httpClient.PostAsJsonAsync(
                 "api/v1/iam/roles/remove",
                 request,
                 ApplicationClientJsonContext.Default.UnassignRoleRequest,

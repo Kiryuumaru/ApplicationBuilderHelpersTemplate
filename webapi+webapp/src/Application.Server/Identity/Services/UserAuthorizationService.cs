@@ -18,42 +18,38 @@ internal sealed class UserAuthorizationService(
     IRoleRepository roleRepository,
     IUserRoleResolver userRoleResolver) : IUserAuthorizationService
 {
-    private readonly IUserRepository _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
-    private readonly IRoleRepository _roleRepository = roleRepository ?? throw new ArgumentNullException(nameof(roleRepository));
-    private readonly IUserRoleResolver _userRoleResolver = userRoleResolver ?? throw new ArgumentNullException(nameof(userRoleResolver));
-
     public async Task AssignRoleAsync(Guid userId, RoleAssignmentRequest assignment, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(assignment);
 
-        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
+        var user = await userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
-        var role = await _roleRepository.GetByCodeAsync(assignment.RoleCode, cancellationToken).ConfigureAwait(false)
+        var role = await roleRepository.GetByCodeAsync(assignment.RoleCode, cancellationToken).ConfigureAwait(false)
             ?? throw new EntityNotFoundException("Role", assignment.RoleCode);
 
         // Validate required parameters
         RoleValidationHelper.ValidateRoleParameters(role, assignment.ParameterValues);
 
         user.AssignRole(role.Id, assignment.ParameterValues);
-        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+        await userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task RemoveRoleAsync(Guid userId, Guid roleId, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
+        var user = await userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
         user.RemoveRole(roleId);
-        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+        await userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<IReadOnlyCollection<string>> GetEffectivePermissionsAsync(Guid userId, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
+        var user = await userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
-        var roleResolutions = await _userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
+        var roleResolutions = await userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
 
         var permissions = new HashSet<string>(StringComparer.Ordinal);
 
@@ -81,27 +77,27 @@ internal sealed class UserAuthorizationService(
     {
         ArgumentException.ThrowIfNullOrEmpty(permissionIdentifier);
 
-        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
+        var user = await userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
         var grant = isAllow
             ? UserPermissionGrant.Allow(permissionIdentifier, description, grantedBy)
             : UserPermissionGrant.Deny(permissionIdentifier, description, grantedBy);
         user.GrantPermission(grant);
-        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+        await userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<bool> RevokePermissionAsync(Guid userId, string permissionIdentifier, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrEmpty(permissionIdentifier);
 
-        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
+        var user = await userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
         var revoked = user.RevokePermission(permissionIdentifier);
         if (revoked)
         {
-            await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+            await userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
         }
 
         return revoked;
@@ -109,16 +105,16 @@ internal sealed class UserAuthorizationService(
 
     public async Task<IReadOnlyCollection<string>> GetFormattedRoleClaimsAsync(Guid userId, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
+        var user = await userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
-        var roleResolutions = await _userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
+        var roleResolutions = await userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
         return roleResolutions.Select(r => r.ToFormattedClaim()).OrderBy(r => r, StringComparer.Ordinal).ToArray();
     }
 
     public async Task<IReadOnlyCollection<string>> GetDirectPermissionScopesAsync(Guid userId, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
+        var user = await userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
         // Return direct permission grants as scope directives (preserving Allow/Deny type)
@@ -132,11 +128,11 @@ internal sealed class UserAuthorizationService(
     public async Task<UserAuthorizationData> GetAuthorizationDataAsync(Guid userId, CancellationToken cancellationToken)
     {
         // Single database call to get the user
-        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
+        var user = await userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
         // Single call to resolve roles
-        var roleResolutions = await _userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
+        var roleResolutions = await userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
 
         // Build formatted role claims (e.g., "USER;roleUserId=abc123")
         var formattedRoles = roleResolutions

@@ -28,9 +28,6 @@ internal sealed class PermissionService(
     private static readonly ReadOnlyDictionary<string, HashSet<string>> ReachableParameterLookup;
     private static readonly HashSet<string> EmptyParameterNameSet = new(StringComparer.Ordinal);
 
-    private readonly ITokenProvider _tokenProvider = tokenProvider ?? throw new ArgumentNullException(nameof(tokenProvider));
-    private readonly IRoleRepository _roleRepository = roleRepository ?? throw new ArgumentNullException(nameof(roleRepository));
-
     static PermissionService()
     {
         ReachableParameterLookup = BuildReachableParameterLookup(PermissionCache.TreeRoots);
@@ -49,7 +46,7 @@ internal sealed class PermissionService(
         var normalizedPermissions = NormalizeAndValidate(permissionIdentifiers, allowEmpty: true);
         var additionalClaimSet = additionalClaims?.ToArray();
 
-        return await _tokenProvider.GenerateTokenWithScopesAsync(
+        return await tokenProvider.GenerateTokenWithScopesAsync(
             userId: userId,
             username: username ?? string.Empty,
             scopes: normalizedPermissions,
@@ -70,7 +67,7 @@ internal sealed class PermissionService(
         var normalizedPermissions = NormalizeAndValidate(permissionIdentifiers, allowEmpty: true);
         var additionalClaimSet = additionalClaims?.ToArray();
 
-        return await _tokenProvider.GenerateApiKeyTokenAsync(
+        return await tokenProvider.GenerateApiKeyTokenAsync(
             apiKeyName: apiKeyName,
             scopes: normalizedPermissions,
             additionalClaims: additionalClaimSet,
@@ -98,7 +95,7 @@ internal sealed class PermissionService(
 
         var additionalClaimSet = additionalClaims?.ToArray();
 
-        return await _tokenProvider.GenerateTokenWithScopesAsync(
+        return await tokenProvider.GenerateTokenWithScopesAsync(
             userId: userId,
             username: username ?? string.Empty,
             scopes: scopes,
@@ -417,7 +414,7 @@ internal sealed class PermissionService(
 
         var roleCodes = parsedRoles.Select(p => p.Code).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 
-        var roles = await _roleRepository.GetByCodesAsync(roleCodes, cancellationToken).ConfigureAwait(false);
+        var roles = await roleRepository.GetByCodesAsync(roleCodes, cancellationToken).ConfigureAwait(false);
         var roleIndex = roles.ToDictionary(r => r.Code, StringComparer.OrdinalIgnoreCase);
 
         foreach (var parsedRole in parsedRoles)

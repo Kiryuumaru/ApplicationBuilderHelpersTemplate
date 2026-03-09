@@ -6,12 +6,8 @@ using System.Text.Json.Nodes;
 
 namespace Presentation.WebApp.Server.Filters;
 
-/// <summary>
-/// Automatically applies allowable values to Swagger schema based on System.ComponentModel.DataAnnotations.AllowedValuesAttribute.
-/// </summary>
-public class AllowedValuesSchemaFilter : ISchemaFilter
+internal class AllowedValuesSchemaFilter : ISchemaFilter
 {
-    /// <inheritdoc/>
     public void Apply(IOpenApiSchema schema, SchemaFilterContext context)
     {
         if (schema is not OpenApiSchema concreteSchema || context.Type == null)

@@ -3,7 +3,6 @@ using Asp.Versioning;
 using Domain.Authorization.Constants;
 using Domain.Shared.Exceptions;
 using Microsoft.AspNetCore.Mvc;
-using Presentation.WebApp.Attributes;
 using Presentation.WebApp.Server.Attributes;
 using Presentation.WebApp.Server.Controllers.V1.Auth.SessionsController.Responses;
 using Presentation.WebApp.Server.Extensions;

@@ -7,8 +7,6 @@ namespace Infrastructure.Server.Identity.Services;
 
 internal sealed class AspNetIdentityPasswordStrengthValidator(UserManager<User> userManager) : IPasswordStrengthValidator
 {
-    private readonly UserManager<User> _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
-
     public async Task<IReadOnlyCollection<string>> ValidateAsync(User user, string password, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(user);
@@ -21,9 +19,9 @@ internal sealed class AspNetIdentityPasswordStrengthValidator(UserManager<User> 
         cancellationToken.ThrowIfCancellationRequested();
 
         var errors = new List<string>();
-        foreach (var validator in _userManager.PasswordValidators)
+        foreach (var validator in userManager.PasswordValidators)
         {
-            var result = await validator.ValidateAsync(_userManager, user, password).ConfigureAwait(false);
+            var result = await validator.ValidateAsync(userManager, user, password).ConfigureAwait(false);
             if (!result.Succeeded)
             {
                 errors.AddRange(result.Errors.Select(static e => e.Description));

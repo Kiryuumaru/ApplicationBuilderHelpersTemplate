@@ -5,20 +5,13 @@ using Application.Client.Serialization;
 
 namespace Application.Client.Identity.Services;
 
-internal class UsersClient : IUsersClient
+internal class UsersClient(HttpClient httpClient) : IUsersClient
 {
-    private readonly HttpClient _httpClient;
-
-    public UsersClient(HttpClient httpClient)
-    {
-        _httpClient = httpClient;
-    }
-
     public async Task<List<IamUser>> ListUsersAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _httpClient.GetAsync("api/v1/iam/users", cancellationToken);
+            var response = await httpClient.GetAsync("api/v1/iam/users", cancellationToken);
             
             if (response.IsSuccessStatusCode)
             {
@@ -40,7 +33,7 @@ internal class UsersClient : IUsersClient
     {
         try
         {
-            var response = await _httpClient.GetAsync($"api/v1/iam/users/{userId}", cancellationToken);
+            var response = await httpClient.GetAsync($"api/v1/iam/users/{userId}", cancellationToken);
             
             if (response.IsSuccessStatusCode)
             {
@@ -61,7 +54,7 @@ internal class UsersClient : IUsersClient
     {
         try
         {
-            var response = await _httpClient.PutAsJsonAsync(
+            var response = await httpClient.PutAsJsonAsync(
                 $"api/v1/iam/users/{userId}",
                 request,
                 ApplicationClientJsonContext.Default.UpdateUserRequest,
@@ -86,7 +79,7 @@ internal class UsersClient : IUsersClient
     {
         try
         {
-            var response = await _httpClient.DeleteAsync($"api/v1/iam/users/{userId}", cancellationToken);
+            var response = await httpClient.DeleteAsync($"api/v1/iam/users/{userId}", cancellationToken);
             return response.IsSuccessStatusCode;
         }
         catch
@@ -99,7 +92,7 @@ internal class UsersClient : IUsersClient
     {
         try
         {
-            var response = await _httpClient.GetAsync($"api/v1/iam/users/{userId}/permissions", cancellationToken);
+            var response = await httpClient.GetAsync($"api/v1/iam/users/{userId}/permissions", cancellationToken);
             
             if (response.IsSuccessStatusCode)
             {
@@ -125,7 +118,7 @@ internal class UsersClient : IUsersClient
                 NewPassword = newPassword
             };
 
-            var response = await _httpClient.PutAsJsonAsync(
+            var response = await httpClient.PutAsJsonAsync(
                 $"api/v1/iam/users/{userId}/password",
                 request,
                 ApplicationClientJsonContext.Default.ResetUserPasswordRequest,

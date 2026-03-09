@@ -5,21 +5,15 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Application.Client.Identity.Services;
 
-internal class TokenRefreshHandler : DelegatingHandler
+internal class TokenRefreshHandler(IServiceScopeFactory scopeFactory) : DelegatingHandler
 {
-    private readonly IServiceScopeFactory _scopeFactory;
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
-
-    public TokenRefreshHandler(IServiceScopeFactory scopeFactory)
-    {
-        _scopeFactory = scopeFactory;
-    }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         // Create scope to read from persistent token storage (IndexedDB)
         Models.StoredCredentials? credentials;
-        using (var scope = _scopeFactory.CreateScope())
+        using (var scope = scopeFactory.CreateScope())
         {
             var tokenStorage = scope.ServiceProvider.GetRequiredService<ITokenStorage>();
             credentials = await tokenStorage.GetCredentialsAsync();
@@ -39,7 +33,7 @@ internal class TokenRefreshHandler : DelegatingHandler
             try
             {
                 // Re-check credentials (another request might have refreshed)
-                using var scope = _scopeFactory.CreateScope();
+                using var scope = scopeFactory.CreateScope();
                 var tokenStorage = scope.ServiceProvider.GetRequiredService<ITokenStorage>();
                 var currentCredentials = await tokenStorage.GetCredentialsAsync();
                 
@@ -88,7 +82,7 @@ internal class TokenRefreshHandler : DelegatingHandler
         // Handle 401 when no refresh token available (already logged out or session revoked elsewhere)
         else if (response.StatusCode == HttpStatusCode.Unauthorized && credentials != null)
         {
-            using var scope = _scopeFactory.CreateScope();
+            using var scope = scopeFactory.CreateScope();
             var authStateProvider = scope.ServiceProvider.GetRequiredService<IAuthStateProvider>();
             await authStateProvider.ClearStateAsync();
         }

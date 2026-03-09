@@ -14,14 +14,13 @@ namespace Application.Server.Authorization.Services;
 
 internal sealed class RoleService(IRoleRepository repository) : IRoleService
 {
-    private readonly IRoleRepository _repository = repository ?? throw new ArgumentNullException(nameof(repository));
 
     public async Task<Role> CreateRoleAsync(RoleDescriptor descriptor, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(descriptor);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var existing = await _repository.GetByCodeAsync(descriptor.Code, cancellationToken).ConfigureAwait(false);
+        var existing = await repository.GetByCodeAsync(descriptor.Code, cancellationToken).ConfigureAwait(false);
         if (existing is not null)
         {
             throw new DuplicateEntityException("Role", descriptor.Code);
@@ -34,7 +33,7 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
 
         var role = Role.Create(descriptor.Code, descriptor.Name, descriptor.Description, descriptor.IsSystemRole);
         role.ReplaceScopeTemplates(descriptor.ScopeTemplates ?? []);
-        await _repository.SaveAsync(role, cancellationToken).ConfigureAwait(false);
+        await repository.SaveAsync(role, cancellationToken).ConfigureAwait(false);
         return role;
     }
 
@@ -47,7 +46,7 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
             throw new SystemRoleException("Cannot delete a static role.", roleId);
         }
 
-        var role = await _repository.GetByIdAsync(roleId, cancellationToken).ConfigureAwait(false);
+        var role = await repository.GetByIdAsync(roleId, cancellationToken).ConfigureAwait(false);
         if (role is null)
         {
             return false;
@@ -58,7 +57,7 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
             throw new SystemRoleException("Cannot delete a system role.", roleId);
         }
 
-        return await _repository.DeleteAsync(roleId, cancellationToken).ConfigureAwait(false);
+        return await repository.DeleteAsync(roleId, cancellationToken).ConfigureAwait(false);
     }
 
     public Task<Role?> GetByCodeAsync(string code, CancellationToken cancellationToken)
@@ -70,7 +69,7 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
             return Task.FromResult<Role?>(staticRole);
         }
 
-        return _repository.GetByCodeAsync(code, cancellationToken);
+        return repository.GetByCodeAsync(code, cancellationToken);
     }
 
     public Task<Role?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
@@ -82,7 +81,7 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
             return Task.FromResult<Role?>(staticRole);
         }
 
-        return _repository.GetByIdAsync(id, cancellationToken);
+        return repository.GetByIdAsync(id, cancellationToken);
     }
 
     public async Task<IReadOnlyCollection<Role>> ListAsync(CancellationToken cancellationToken)
@@ -95,7 +94,7 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
             result[role.Id] = role;
         }
 
-        var dynamicRoles = await _repository.ListAsync(cancellationToken).ConfigureAwait(false);
+        var dynamicRoles = await repository.ListAsync(cancellationToken).ConfigureAwait(false);
         foreach (var role in dynamicRoles)
         {
             if (RolesConstants.IsStaticRole(role.Id))
@@ -121,14 +120,14 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
             throw new SystemRoleException("Cannot modify scope templates of a static role.", roleId);
         }
 
-        var role = await _repository.GetByIdAsync(roleId, cancellationToken).ConfigureAwait(false) ?? throw new EntityNotFoundException("Role", roleId.ToString());
+        var role = await repository.GetByIdAsync(roleId, cancellationToken).ConfigureAwait(false) ?? throw new EntityNotFoundException("Role", roleId.ToString());
         if (role.IsSystemRole)
         {
             throw new SystemRoleException("Cannot modify scope templates of a system role.", roleId);
         }
 
         role.ReplaceScopeTemplates(scopeTemplates);
-        await _repository.SaveAsync(role, cancellationToken).ConfigureAwait(false);
+        await repository.SaveAsync(role, cancellationToken).ConfigureAwait(false);
         return role;
     }
 
@@ -141,7 +140,7 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
             throw new SystemRoleException("Cannot modify metadata of a static role.", roleId);
         }
 
-        var role = await _repository.GetByIdAsync(roleId, cancellationToken).ConfigureAwait(false) ?? throw new EntityNotFoundException("Role", roleId.ToString());
+        var role = await repository.GetByIdAsync(roleId, cancellationToken).ConfigureAwait(false) ?? throw new EntityNotFoundException("Role", roleId.ToString());
         if (role.IsSystemRole)
         {
             throw new SystemRoleException("Cannot modify metadata of a system role.", roleId);
@@ -149,7 +148,7 @@ internal sealed class RoleService(IRoleRepository repository) : IRoleService
 
         role.UpdateMetadata(name, description);
         
-        await _repository.SaveAsync(role, cancellationToken).ConfigureAwait(false);
+        await repository.SaveAsync(role, cancellationToken).ConfigureAwait(false);
         return role;
     }
 }

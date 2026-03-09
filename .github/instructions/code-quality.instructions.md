@@ -44,6 +44,16 @@ Nullable handling patterns:
 
 ---
 
+## Verify Before Claiming
+
+- NEVER claim code is broken without running it to confirm
+- NEVER assume a fix is needed without reproducing the issue
+- NEVER guess at behavior without checking the actual implementation
+- MUST read existing code before claiming it needs changes
+- MUST run tests or build before stating something fails
+
+---
+
 ## Code Longevity
 
 - MUST use stable, documented APIs

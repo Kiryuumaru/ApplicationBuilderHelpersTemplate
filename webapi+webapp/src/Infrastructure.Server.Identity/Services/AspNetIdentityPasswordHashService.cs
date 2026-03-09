@@ -7,8 +7,6 @@ namespace Infrastructure.Server.Identity.Services;
 
 internal sealed class AspNetIdentityPasswordHashService(IPasswordHasher<User> passwordHasher) : IPasswordHashService
 {
-    private readonly IPasswordHasher<User> _passwordHasher = passwordHasher ?? throw new ArgumentNullException(nameof(passwordHasher));
-
     public string Hash(User user, string password)
     {
         ArgumentNullException.ThrowIfNull(user);
@@ -18,6 +16,6 @@ internal sealed class AspNetIdentityPasswordHashService(IPasswordHasher<User> pa
             throw new ArgumentException("Password cannot be null or whitespace.", nameof(password));
         }
 
-        return _passwordHasher.HashPassword(user, password);
+        return passwordHasher.HashPassword(user, password);
     }
 }

@@ -11,8 +11,6 @@ namespace Application.Server.Authorization.Services;
 
 internal sealed class UserRoleResolver(IRoleRepository roleRepository) : IUserRoleResolver
 {
-    private readonly IRoleRepository _roleRepository = roleRepository ?? throw new ArgumentNullException(nameof(roleRepository));
-
     public async Task<IReadOnlyCollection<UserRoleResolution>> ResolveRolesAsync(User user, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(user);
@@ -27,7 +25,7 @@ internal sealed class UserRoleResolver(IRoleRepository roleRepository) : IUserRo
             .Distinct()
             .ToArray();
 
-        var roles = await _roleRepository.GetByIdsAsync(distinctIds, cancellationToken).ConfigureAwait(false);
+        var roles = await roleRepository.GetByIdsAsync(distinctIds, cancellationToken).ConfigureAwait(false);
         var roleIndex = roles.ToDictionary(static role => role.Id);
         var resolutions = new List<UserRoleResolution>(user.RoleAssignments.Count);
         foreach (var assignment in user.RoleAssignments)

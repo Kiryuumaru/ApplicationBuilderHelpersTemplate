@@ -258,7 +258,7 @@ internal class SerilogLoggerReader(IConfiguration configuration) : ILoggerReader
                 10 => DateTime.ParseExact(currentLogStr, "yyyyMMddHH", CultureInfo.InvariantCulture),
                 8 => DateTime.ParseExact(currentLogStr, "yyyyMMdd", CultureInfo.InvariantCulture),
                 6 => DateTime.ParseExact(currentLogStr, "yyyyMM", CultureInfo.InvariantCulture),
-                _ => throw new Exception()
+                _ => throw new FormatException($"Invalid log filename format: {currentLogStr}")
             };
             return (currentLogStr, currentLog);
         }

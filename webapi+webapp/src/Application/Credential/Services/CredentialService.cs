@@ -1,6 +1,6 @@
 using Application.AppEnvironment.Interfaces.Inbound;
 using Application.Credential.Extensions;
-using Application.Credential.Interfaces;
+using Application.Credential.Interfaces.Inbound;
 using Application.Credential.Models;
 using Domain.Shared.Extensions;
 using Microsoft.Extensions.Configuration;

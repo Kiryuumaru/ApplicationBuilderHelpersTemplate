@@ -12,6 +12,7 @@ internal sealed class IndexedDBLocalStoreService(IJSRuntime jsRuntime) : ILocalS
     private const string StoreName = "LocalStore";
     private const int DatabaseVersion = 1;
 
+    // Safe: Assembly.GetName().Name is always non-null for loaded assemblies
     private static readonly string AssemblyName = typeof(IndexedDBLocalStoreService).Assembly.GetName().Name!;
 
     private readonly Lazy<Task<IJSObjectReference>> _moduleTask = new(() =>

@@ -1,4 +1,4 @@
-using Application.Credential.Interfaces;
+using Application.Credential.Interfaces.Inbound;
 using Application.Credential.Models;
 using Application.Credential.Services;
 using Application.Server.Authorization.Services;

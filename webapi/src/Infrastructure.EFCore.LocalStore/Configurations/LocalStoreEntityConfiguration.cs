@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.EFCore.LocalStore.Configurations;
 
-public class LocalStoreEntityConfiguration : IEFCoreEntityConfiguration
+internal class LocalStoreEntityConfiguration : IEFCoreEntityConfiguration
 {
     public void Configure(ModelBuilder modelBuilder)
     {

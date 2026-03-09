@@ -1,6 +1,6 @@
 namespace Infrastructure.Server.Identity.Models;
 
-public class JwtConfiguration
+internal sealed class JwtConfiguration
 {
     public required string Secret { get; init; }
     public required string Issuer { get; init; }

@@ -6,47 +6,38 @@ using Application.Client.Serialization;
 
 namespace Application.Client.Identity.Services;
 
-internal class ClientAuthStateProvider : IAuthStateProvider
+internal class ClientAuthStateProvider(ITokenStorage tokenStorage, AuthStateNotifier notifier) : IAuthStateProvider
 {
-    private readonly ITokenStorage _tokenStorage;
-    private readonly AuthStateNotifier _notifier;
-
-    public AuthState CurrentState => _notifier.CurrentState;
+    public AuthState CurrentState => notifier.CurrentState;
     public event Action? OnStateChanged
     {
-        add => _notifier.OnStateChanged += value;
-        remove => _notifier.OnStateChanged -= value;
-    }
-
-    public ClientAuthStateProvider(ITokenStorage tokenStorage, AuthStateNotifier notifier)
-    {
-        _tokenStorage = tokenStorage;
-        _notifier = notifier;
+        add => notifier.OnStateChanged += value;
+        remove => notifier.OnStateChanged -= value;
     }
 
     public async Task InitializeAsync()
     {
-        var credentials = await _tokenStorage.GetCredentialsAsync();
+        var credentials = await tokenStorage.GetCredentialsAsync();
         if (credentials != null && credentials.IsValid)
         {
-            _notifier.SetState(BuildAuthState(credentials));
+            notifier.SetState(BuildAuthState(credentials));
         }
         else
         {
-            _notifier.ClearState();
+            notifier.ClearState();
         }
     }
 
     public async Task UpdateStateAsync(StoredCredentials credentials)
     {
-        await _tokenStorage.StoreCredentialsAsync(credentials);
-        _notifier.SetState(BuildAuthState(credentials));
+        await tokenStorage.StoreCredentialsAsync(credentials);
+        notifier.SetState(BuildAuthState(credentials));
     }
 
     public async Task ClearStateAsync()
     {
-        await _tokenStorage.ClearCredentialsAsync();
-        _notifier.ClearState();
+        await tokenStorage.ClearCredentialsAsync();
+        notifier.ClearState();
     }
 
     private static AuthState BuildAuthState(StoredCredentials credentials)

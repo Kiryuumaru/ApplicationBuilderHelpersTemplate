@@ -4,24 +4,15 @@ using Presentation.WebApp.Client.Components.Theme.Interfaces;
 
 namespace Presentation.WebApp.Client.Components.Theme.Services;
 
-internal sealed class ThemeService : IThemeService
+internal sealed class ThemeService(IJSRuntime jsRuntime, ILocalStoreService localStore) : IThemeService
 {
     private const string ThemeStorageGroup = "theme";
     private const string ThemeStorageId = "preference";
     private const string DarkClass = "dark";
 
-    private readonly IJSRuntime _jsRuntime;
-    private readonly ILocalStoreService _localStore;
-
     private bool? _cachedIsDark;
 
     public event Action<bool>? ThemeChanged;
-
-    public ThemeService(IJSRuntime jsRuntime, ILocalStoreService localStore)
-    {
-        _jsRuntime = jsRuntime;
-        _localStore = localStore;
-    }
 
     public async Task<bool> IsDarkModeAsync()
     {
@@ -30,7 +21,7 @@ internal sealed class ThemeService : IThemeService
             return _cachedIsDark.Value;
         }
 
-        _cachedIsDark = await _jsRuntime.InvokeAsync<bool>(
+        _cachedIsDark = await jsRuntime.InvokeAsync<bool>(
             "eval",
             $"document.documentElement.classList.contains('{DarkClass}')"
         );
@@ -41,16 +32,16 @@ internal sealed class ThemeService : IThemeService
     public async Task SetDarkModeAsync(bool isDark)
     {
         var action = isDark ? "add" : "remove";
-        await _jsRuntime.InvokeVoidAsync(
+        await jsRuntime.InvokeVoidAsync(
             "eval",
             $"document.documentElement.classList.{action}('{DarkClass}')"
         );
 
         _cachedIsDark = isDark;
         
-        await _localStore.Open(CancellationToken.None);
-        await _localStore.Set(ThemeStorageGroup, ThemeStorageId, isDark.ToString(), CancellationToken.None);
-        await _localStore.CommitAsync(CancellationToken.None);
+        await localStore.Open(CancellationToken.None);
+        await localStore.Set(ThemeStorageGroup, ThemeStorageId, isDark.ToString(), CancellationToken.None);
+        await localStore.CommitAsync(CancellationToken.None);
 
         ThemeChanged?.Invoke(isDark);
     }
@@ -69,8 +60,8 @@ internal sealed class ThemeService : IThemeService
 
         try
         {
-            await _localStore.Open(CancellationToken.None);
-            var stored = await _localStore.Get(ThemeStorageGroup, ThemeStorageId, CancellationToken.None);
+            await localStore.Open(CancellationToken.None);
+            var stored = await localStore.Get(ThemeStorageGroup, ThemeStorageId, CancellationToken.None);
             
             if (!string.IsNullOrEmpty(stored) && bool.TryParse(stored, out var parsed))
             {
@@ -79,7 +70,7 @@ internal sealed class ThemeService : IThemeService
             else
             {
                 // Fall back to system preference
-                isDark = await _jsRuntime.InvokeAsync<bool>(
+                isDark = await jsRuntime.InvokeAsync<bool>(
                     "eval",
                     "window.matchMedia('(prefers-color-scheme: dark)').matches"
                 );

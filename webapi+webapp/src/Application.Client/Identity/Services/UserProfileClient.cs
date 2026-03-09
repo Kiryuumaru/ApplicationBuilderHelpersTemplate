@@ -5,20 +5,13 @@ using Application.Client.Serialization;
 
 namespace Application.Client.Identity.Services;
 
-internal class UserProfileClient : IUserProfileClient
+internal class UserProfileClient(HttpClient httpClient) : IUserProfileClient
 {
-    private readonly HttpClient _httpClient;
-
-    public UserProfileClient(HttpClient httpClient)
-    {
-        _httpClient = httpClient;
-    }
-
     public async Task<UserProfile?> GetCurrentUserAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _httpClient.GetAsync("api/v1/auth/me", cancellationToken);
+            var response = await httpClient.GetAsync("api/v1/auth/me", cancellationToken);
             
             if (response.IsSuccessStatusCode)
             {
@@ -45,7 +38,7 @@ internal class UserProfileClient : IUserProfileClient
                 NewPassword = newPassword
             };
 
-            var response = await _httpClient.PutAsJsonAsync(
+            var response = await httpClient.PutAsJsonAsync(
                 $"api/v1/auth/users/{userId}/identity/password",
                 request,
                 ApplicationClientJsonContext.Default.ChangePasswordRequest,
@@ -76,7 +69,7 @@ internal class UserProfileClient : IUserProfileClient
                 Username = newUsername
             };
 
-            var response = await _httpClient.PutAsJsonAsync(
+            var response = await httpClient.PutAsJsonAsync(
                 $"api/v1/auth/users/{userId}/identity/username",
                 request,
                 ApplicationClientJsonContext.Default.ChangeUsernameRequest,
@@ -110,7 +103,7 @@ internal class UserProfileClient : IUserProfileClient
                 Email = newEmail
             };
 
-            var response = await _httpClient.PutAsJsonAsync(
+            var response = await httpClient.PutAsJsonAsync(
                 $"api/v1/auth/users/{userId}/identity/email",
                 request,
                 ApplicationClientJsonContext.Default.ChangeEmailRequest,

@@ -1,4 +1,4 @@
-using Application.LocalStore.Common;
+using Application.LocalStore.Utilities;
 using Application.LocalStore.Interfaces.Outbound;
 using DisposableHelpers.Attributes;
 using System;

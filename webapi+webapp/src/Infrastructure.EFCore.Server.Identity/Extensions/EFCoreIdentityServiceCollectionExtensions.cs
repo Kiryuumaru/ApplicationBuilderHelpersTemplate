@@ -4,7 +4,7 @@ using Domain.Authorization.Models;
 using Domain.Identity.Entities;
 using Domain.Identity.Models;
 using Infrastructure.EFCore.Server.Identity.Configurations;
-using Infrastructure.EFCore.Server.Identity.Services;
+using Infrastructure.EFCore.Server.Identity.Repositories;
 using Infrastructure.EFCore.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;

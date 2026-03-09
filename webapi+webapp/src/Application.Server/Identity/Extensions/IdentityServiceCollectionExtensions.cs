@@ -12,9 +12,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Application.Server.Identity.Extensions;
 
-public static class IdentityServiceCollectionExtensions
+internal static class IdentityServiceCollectionExtensions
 {
-    public static IServiceCollection AddIdentityServices(this IServiceCollection services, Action<FrontendUrlOptions>? configureFrontendUrl = null)
+    internal static IServiceCollection AddIdentityServices(this IServiceCollection services, Action<FrontendUrlOptions>? configureFrontendUrl = null)
     {
         ArgumentNullException.ThrowIfNull(services);
 

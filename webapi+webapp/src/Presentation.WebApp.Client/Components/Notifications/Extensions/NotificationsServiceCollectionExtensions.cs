@@ -6,12 +6,12 @@ namespace Presentation.WebApp.Client.Components.Notifications.Extensions;
 /// <summary>
 /// Extension methods for registering notification component services.
 /// </summary>
-public static class NotificationsServiceCollectionExtensions
+internal static class NotificationsServiceCollectionExtensions
 {
     /// <summary>
     /// Adds notification component services (toast and dialog) to the service collection.
     /// </summary>
-    public static IServiceCollection AddNotificationComponentServices(this IServiceCollection services)
+    internal static IServiceCollection AddNotificationComponentServices(this IServiceCollection services)
     {
         services.AddSingleton<ToastService>();
         services.AddSingleton<IToastService>(sp => sp.GetRequiredService<ToastService>());

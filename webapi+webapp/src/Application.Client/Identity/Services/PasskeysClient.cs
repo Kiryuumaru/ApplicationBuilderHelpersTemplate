@@ -5,20 +5,13 @@ using Application.Client.Serialization;
 
 namespace Application.Client.Identity.Services;
 
-internal class PasskeysClient : IPasskeysClient
+internal class PasskeysClient(HttpClient httpClient) : IPasskeysClient
 {
-    private readonly HttpClient _httpClient;
-
-    public PasskeysClient(HttpClient httpClient)
-    {
-        _httpClient = httpClient;
-    }
-
     public async Task<(List<PasskeyInfo>? Passkeys, string? ErrorMessage)> ListPasskeysAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _httpClient.GetAsync($"api/v1/auth/users/{userId}/identity/passkeys", cancellationToken);
+            var response = await httpClient.GetAsync($"api/v1/auth/users/{userId}/identity/passkeys", cancellationToken);
 
             if (response.IsSuccessStatusCode)
             {
@@ -48,7 +41,7 @@ internal class PasskeysClient : IPasskeysClient
                 CredentialName = credentialName
             };
 
-            var response = await _httpClient.PostAsJsonAsync(
+            var response = await httpClient.PostAsJsonAsync(
                 $"api/v1/auth/users/{userId}/identity/passkeys/options",
                 request,
                 ApplicationClientJsonContext.Default.PasskeyRegistrationOptionsRequest,
@@ -83,7 +76,7 @@ internal class PasskeysClient : IPasskeysClient
                 AttestationResponseJson = attestationResponseJson
             };
 
-            var response = await _httpClient.PostAsJsonAsync(
+            var response = await httpClient.PostAsJsonAsync(
                 $"api/v1/auth/users/{userId}/identity/passkeys",
                 request,
                 ApplicationClientJsonContext.Default.PasskeyRegistrationRequest,
@@ -117,7 +110,7 @@ internal class PasskeysClient : IPasskeysClient
                 Name = newName
             };
 
-            var response = await _httpClient.PutAsJsonAsync(
+            var response = await httpClient.PutAsJsonAsync(
                 $"api/v1/auth/users/{userId}/identity/passkeys/{credentialId}",
                 request,
                 ApplicationClientJsonContext.Default.PasskeyRenameRequest,
@@ -143,7 +136,7 @@ internal class PasskeysClient : IPasskeysClient
     {
         try
         {
-            var response = await _httpClient.DeleteAsync(
+            var response = await httpClient.DeleteAsync(
                 $"api/v1/auth/users/{userId}/identity/passkeys/{credentialId}",
                 cancellationToken);
 

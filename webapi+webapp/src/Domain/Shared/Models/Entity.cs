@@ -7,7 +7,7 @@ public abstract class Entity : DomainObject, IEntity
     private readonly List<IDomainEvent> _domainEvents = [];
 
     public Guid Id { get; private set; }
-    public Guid RevId { get; set; } = Guid.NewGuid();
+    public Guid RevId { get; protected set; } = Guid.NewGuid();
 
     protected Entity(Guid id)
     {

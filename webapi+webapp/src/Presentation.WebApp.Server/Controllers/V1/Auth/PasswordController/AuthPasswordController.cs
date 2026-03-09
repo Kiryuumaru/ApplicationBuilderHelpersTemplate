@@ -6,7 +6,6 @@ using Domain.Authorization.Constants;
 using Domain.Identity.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Presentation.WebApp.Attributes;
 using Presentation.WebApp.Server.Attributes;
 using Presentation.WebApp.Server.Controllers.V1.Auth.PasswordController.Requests;
 using System.ComponentModel.DataAnnotations;

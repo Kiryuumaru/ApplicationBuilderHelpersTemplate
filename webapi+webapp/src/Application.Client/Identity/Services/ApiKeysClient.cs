@@ -5,20 +5,13 @@ using Application.Client.Serialization;
 
 namespace Application.Client.Identity.Services;
 
-internal class ApiKeysClient : IApiKeysClient
+internal class ApiKeysClient(HttpClient httpClient) : IApiKeysClient
 {
-    private readonly HttpClient _httpClient;
-
-    public ApiKeysClient(HttpClient httpClient)
-    {
-        _httpClient = httpClient;
-    }
-
     public async Task<List<ApiKeyInfo>> ListApiKeysAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _httpClient.GetAsync($"api/v1/auth/users/{userId}/api-keys", cancellationToken);
+            var response = await httpClient.GetAsync($"api/v1/auth/users/{userId}/api-keys", cancellationToken);
             
             if (response.IsSuccessStatusCode)
             {
@@ -46,7 +39,7 @@ internal class ApiKeysClient : IApiKeysClient
                 ExpiresAt = expiresAt
             };
 
-            var response = await _httpClient.PostAsJsonAsync(
+            var response = await httpClient.PostAsJsonAsync(
                 $"api/v1/auth/users/{userId}/api-keys",
                 request,
                 ApplicationClientJsonContext.Default.CreateApiKeyRequest,
@@ -71,7 +64,7 @@ internal class ApiKeysClient : IApiKeysClient
     {
         try
         {
-            var response = await _httpClient.DeleteAsync($"api/v1/auth/users/{userId}/api-keys/{apiKeyId}", cancellationToken);
+            var response = await httpClient.DeleteAsync($"api/v1/auth/users/{userId}/api-keys/{apiKeyId}", cancellationToken);
             return response.IsSuccessStatusCode;
         }
         catch

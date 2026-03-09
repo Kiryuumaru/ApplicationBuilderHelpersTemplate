@@ -77,6 +77,7 @@ internal class ConfigureJwtBearerOptions(IServiceProvider serviceProvider) : ICo
             using var scope = context.HttpContext.RequestServices.CreateScope();
             var tokenValidation = scope.ServiceProvider.GetRequiredService<ITokenValidationService>();
 
+            // Safe: OnTokenValidated event guarantees Principal is set after JWT signature validation
             var result = await tokenValidation.ValidatePostSignatureAsync(
                 context.Principal!,
                 typHeader,

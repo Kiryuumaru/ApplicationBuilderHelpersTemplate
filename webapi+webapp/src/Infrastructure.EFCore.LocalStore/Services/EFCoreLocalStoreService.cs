@@ -59,7 +59,8 @@ internal sealed class EFCoreLocalStoreService(
     public async Task<string?> Get(string group, string id, CancellationToken cancellationToken)
     {
         await EnsureConnectionAsync(cancellationToken);
-        
+
+        // Safe: EnsureConnectionAsync guarantees _dbContext is initialized
         var entry = await _dbContext!.Set<LocalStoreEntry>()
             .FirstOrDefaultAsync(e => e.Group == group && e.Id == id, cancellationToken);
         
@@ -70,6 +71,7 @@ internal sealed class EFCoreLocalStoreService(
     {
         await EnsureConnectionAsync(cancellationToken);
 
+        // Safe: EnsureConnectionAsync guarantees _dbContext is initialized
         return await _dbContext!.Set<LocalStoreEntry>()
             .Where(e => e.Group == group)
             .Select(e => e.Id)
@@ -80,6 +82,7 @@ internal sealed class EFCoreLocalStoreService(
     {
         await EnsureConnectionAsync(cancellationToken);
 
+        // Safe: EnsureConnectionAsync guarantees _dbContext is initialized
         var existing = await _dbContext!.Set<LocalStoreEntry>()
             .FirstOrDefaultAsync(e => e.Group == group && e.Id == id, cancellationToken);
 
@@ -114,6 +117,7 @@ internal sealed class EFCoreLocalStoreService(
     {
         await EnsureConnectionAsync(cancellationToken);
 
+        // Safe: EnsureConnectionAsync guarantees _dbContext is initialized
         return await _dbContext!.Set<LocalStoreEntry>()
             .AnyAsync(e => e.Group == group && e.Id == id, cancellationToken);
     }

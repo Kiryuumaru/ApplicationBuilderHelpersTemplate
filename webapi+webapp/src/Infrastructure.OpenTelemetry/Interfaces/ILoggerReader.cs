@@ -1,6 +1,6 @@
 namespace Infrastructure.OpenTelemetry.Interfaces;
 
-public interface ILoggerReader
+internal interface ILoggerReader
 {
     Task Start(int tail, bool follow, Dictionary<string, string> scope, CancellationToken cancellationToken = default);
 }

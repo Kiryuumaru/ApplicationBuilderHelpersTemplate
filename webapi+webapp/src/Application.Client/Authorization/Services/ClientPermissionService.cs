@@ -1,5 +1,5 @@
 using Application.Client.Identity.Interfaces.Inbound;
-using Application.Client.Authorization.Interfaces;
+using Application.Client.Authorization.Interfaces.Inbound;
 using Domain.Authorization.Services;
 using Domain.Authorization.ValueObjects;
 

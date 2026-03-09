@@ -17,9 +17,8 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using TokenClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
-using Presentation.WebApp.Server.Attributes;
 
-namespace Presentation.WebApp.Attributes;
+namespace Presentation.WebApp.Server.Attributes;
 
 /// <summary>
 /// Enforces that a request principal possesses a specific permission before the decorated controller or action executes.

@@ -18,12 +18,6 @@ internal sealed class UserRegistrationService(
     IPasswordHashService passwordHashService,
     IPasswordStrengthValidator passwordStrengthValidator) : IUserRegistrationService
 {
-    private readonly IUserRepository _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
-    private readonly IRoleRepository _roleRepository = roleRepository ?? throw new ArgumentNullException(nameof(roleRepository));
-    private readonly IUserRoleResolver _userRoleResolver = userRoleResolver ?? throw new ArgumentNullException(nameof(userRoleResolver));
-    private readonly IPasswordHashService _passwordHashService = passwordHashService ?? throw new ArgumentNullException(nameof(passwordHashService));
-    private readonly IPasswordStrengthValidator _passwordStrengthValidator = passwordStrengthValidator ?? throw new ArgumentNullException(nameof(passwordStrengthValidator));
-
     public async Task<UserDto> RegisterUserAsync(UserRegistrationRequest? request, CancellationToken cancellationToken)
     {
         User user;
@@ -42,7 +36,7 @@ internal sealed class UserRegistrationService(
             }
 
             // Validate uniqueness
-            var existingByUsername = await _userRepository.FindByUsernameAsync(request.Username, cancellationToken).ConfigureAwait(false);
+            var existingByUsername = await userRepository.FindByUsernameAsync(request.Username, cancellationToken).ConfigureAwait(false);
             if (existingByUsername is not null)
             {
                 throw new DuplicateEntityException("Username", request.Username);
@@ -50,7 +44,7 @@ internal sealed class UserRegistrationService(
 
             if (!string.IsNullOrEmpty(request.Email))
             {
-                var existingByEmail = await _userRepository.FindByEmailAsync(request.Email, cancellationToken).ConfigureAwait(false);
+                var existingByEmail = await userRepository.FindByEmailAsync(request.Email, cancellationToken).ConfigureAwait(false);
                 if (existingByEmail is not null)
                 {
                     throw new DuplicateEntityException("Email", request.Email);
@@ -59,20 +53,20 @@ internal sealed class UserRegistrationService(
 
             // Validate password strength
             user = User.Register(request.Username, request.Email);
-            var passwordErrors = await _passwordStrengthValidator.ValidateAsync(user, request.Password, cancellationToken).ConfigureAwait(false);
+            var passwordErrors = await passwordStrengthValidator.ValidateAsync(user, request.Password, cancellationToken).ConfigureAwait(false);
             if (passwordErrors.Count > 0)
             {
                 throw new PasswordValidationException($"Invalid password: {string.Join("; ", passwordErrors)}");
             }
 
-            user.SetPasswordHash(_passwordHashService.Hash(user, request.Password));
+            user.SetPasswordHash(passwordHashService.Hash(user, request.Password));
 
             // Process additional role assignments from the request
             if (request.RoleAssignments is { Count: > 0 })
             {
                 foreach (var roleAssignment in request.RoleAssignments)
                 {
-                    var role = await _roleRepository.GetByCodeAsync(roleAssignment.RoleCode, cancellationToken).ConfigureAwait(false)
+                    var role = await roleRepository.GetByCodeAsync(roleAssignment.RoleCode, cancellationToken).ConfigureAwait(false)
                         ?? throw new EntityNotFoundException("Role", roleAssignment.RoleCode);
 
                     // Validate required parameters
@@ -99,10 +93,10 @@ internal sealed class UserRegistrationService(
         var userRoleId = Domain.Authorization.Constants.Roles.User.Id;
         user.AssignRole(userRoleId, new Dictionary<string, string?> { ["roleUserId"] = user.Id.ToString() });
 
-        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+        await userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
 
-        var externalLogins = await _userRepository.GetLoginsAsync(user.Id, cancellationToken).ConfigureAwait(false);
-        var roleResolutions = await _userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
+        var externalLogins = await userRepository.GetLoginsAsync(user.Id, cancellationToken).ConfigureAwait(false);
+        var roleResolutions = await userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
         var roleCodes = roleResolutions.Select(r => r.Code).ToArray();
 
         return user.ToDto(user.RoleIds, roleCodes, externalLogins);
@@ -113,7 +107,7 @@ internal sealed class UserRegistrationService(
         ArgumentNullException.ThrowIfNull(request);
 
         // Check if this external login already exists
-        var existingUserId = await _userRepository.FindUserByLoginAsync(request.Provider, request.ProviderSubject, cancellationToken).ConfigureAwait(false);
+        var existingUserId = await userRepository.FindUserByLoginAsync(request.Provider, request.ProviderSubject, cancellationToken).ConfigureAwait(false);
         if (existingUserId.HasValue)
         {
             throw new DuplicateEntityException("ExternalLogin", $"{request.Provider}:{request.ProviderSubject}");
@@ -131,10 +125,10 @@ internal sealed class UserRegistrationService(
         var userRoleId = Domain.Authorization.Constants.Roles.User.Id;
         user.AssignRole(userRoleId, new Dictionary<string, string?> { ["roleUserId"] = user.Id.ToString() });
 
-        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+        await userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
 
         // Add external login
-        await _userRepository.AddLoginAsync(
+        await userRepository.AddLoginAsync(
             user.Id,
             request.Provider,
             request.ProviderSubject,
@@ -142,8 +136,8 @@ internal sealed class UserRegistrationService(
             request.ProviderEmail,
             cancellationToken).ConfigureAwait(false);
 
-        var externalLogins = await _userRepository.GetLoginsAsync(user.Id, cancellationToken).ConfigureAwait(false);
-        var roleResolutions = await _userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
+        var externalLogins = await userRepository.GetLoginsAsync(user.Id, cancellationToken).ConfigureAwait(false);
+        var roleResolutions = await userRoleResolver.ResolveRolesAsync(user, cancellationToken).ConfigureAwait(false);
         var roleCodes = roleResolutions.Select(r => r.Code).ToArray();
 
         return user.ToDto(user.RoleIds, roleCodes, externalLogins);
@@ -151,7 +145,7 @@ internal sealed class UserRegistrationService(
 
     public async Task UpgradeAnonymousWithPasskeyAsync(Guid userId, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
+        var user = await userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
         if (!user.IsAnonymous)
@@ -161,14 +155,14 @@ internal sealed class UserRegistrationService(
 
         // For passkey upgrade, we don't need a username - just mark as non-anonymous
         user.UpgradeFromAnonymousWithPasskey();
-        await _userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
+        await userRepository.SaveAsync(user, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task DeleteUserAsync(Guid userId, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
+        var user = await userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
             ?? throw new EntityNotFoundException("User", userId.ToString());
 
-        await _userRepository.DeleteAsync(userId, cancellationToken).ConfigureAwait(false);
+        await userRepository.DeleteAsync(userId, cancellationToken).ConfigureAwait(false);
     }
 }

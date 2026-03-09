@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Application.Server.Authorization.Extensions;
 
-public static class AuthorizationServiceCollectionExtensions
+internal static class AuthorizationServiceCollectionExtensions
 {
     internal static IServiceCollection AddAuthorizationServices(this IServiceCollection services)
     {

@@ -1,4 +1,4 @@
-using Application.LocalStore.Interfaces;
+using Application.LocalStore.Interfaces.Inbound;
 using Application.LocalStore.Services;
 using Microsoft.Extensions.DependencyInjection;
 

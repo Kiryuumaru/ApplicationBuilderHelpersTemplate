@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Domain.Authorization.Enums;
 using Domain.Shared.Constants;
 using Domain.Shared.Models;
@@ -103,7 +104,7 @@ public class ScopeDirective : ValueObject
         {
             throw new FormatException(error);
         }
-        return result!;
+        return result;
     }
 
     /// <summary>
@@ -112,7 +113,7 @@ public class ScopeDirective : ValueObject
     /// <param name="directive">The directive string to parse.</param>
     /// <param name="result">The parsed directive if successful.</param>
     /// <returns>True if parsing succeeded; otherwise false.</returns>
-    public static bool TryParse(string? directive, out ScopeDirective? result)
+    public static bool TryParse(string? directive, [NotNullWhen(true)] out ScopeDirective? result)
     {
         return TryParse(directive, out result, out _);
     }
@@ -124,7 +125,7 @@ public class ScopeDirective : ValueObject
     /// <param name="result">The parsed directive if successful.</param>
     /// <param name="error">The error message if parsing failed.</param>
     /// <returns>True if parsing succeeded; otherwise false.</returns>
-    public static bool TryParse(string? directive, out ScopeDirective? result, out string? error)
+    public static bool TryParse(string? directive, [NotNullWhen(true)] out ScopeDirective? result, out string? error)
     {
         result = null;
         error = null;

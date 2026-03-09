@@ -5,20 +5,13 @@ using Application.Client.Serialization;
 
 namespace Application.Client.Identity.Services;
 
-internal class SessionsClient : ISessionsClient
+internal class SessionsClient(HttpClient httpClient) : ISessionsClient
 {
-    private readonly HttpClient _httpClient;
-
-    public SessionsClient(HttpClient httpClient)
-    {
-        _httpClient = httpClient;
-    }
-
     public async Task<List<SessionInfo>> ListSessionsAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _httpClient.GetAsync($"api/v1/auth/users/{userId}/sessions", cancellationToken);
+            var response = await httpClient.GetAsync($"api/v1/auth/users/{userId}/sessions", cancellationToken);
             
             if (response.IsSuccessStatusCode)
             {
@@ -40,7 +33,7 @@ internal class SessionsClient : ISessionsClient
     {
         try
         {
-            var response = await _httpClient.DeleteAsync($"api/v1/auth/users/{userId}/sessions/{sessionId}", cancellationToken);
+            var response = await httpClient.DeleteAsync($"api/v1/auth/users/{userId}/sessions/{sessionId}", cancellationToken);
             return response.IsSuccessStatusCode;
         }
         catch
@@ -53,7 +46,7 @@ internal class SessionsClient : ISessionsClient
     {
         try
         {
-            var response = await _httpClient.DeleteAsync($"api/v1/auth/users/{userId}/sessions", cancellationToken);
+            var response = await httpClient.DeleteAsync($"api/v1/auth/users/{userId}/sessions", cancellationToken);
             
             if (response.IsSuccessStatusCode)
             {

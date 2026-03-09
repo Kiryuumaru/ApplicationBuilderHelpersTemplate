@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.EFCore.Identity.Configurations;
 
-public class IdentityEntityConfiguration : IEFCoreEntityConfiguration
+internal class IdentityEntityConfiguration : IEFCoreEntityConfiguration
 {
     public void Configure(ModelBuilder modelBuilder)
     {

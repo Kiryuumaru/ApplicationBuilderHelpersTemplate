@@ -1,6 +1,6 @@
 namespace Infrastructure.EFCore.Server.Identity.Models;
 
-public class PasskeyCredentialEntity
+internal sealed class PasskeyCredentialEntity
 {
     public required Guid Id { get; set; }
     public required Guid UserId { get; set; }

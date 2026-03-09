@@ -1,6 +1,6 @@
 namespace Infrastructure.EFCore.Server.Identity.Models;
 
-public class UserPasskeyEntity
+internal sealed class UserPasskeyEntity
 {
     public required Guid UserId { get; set; }
     public required byte[] CredentialId { get; set; }

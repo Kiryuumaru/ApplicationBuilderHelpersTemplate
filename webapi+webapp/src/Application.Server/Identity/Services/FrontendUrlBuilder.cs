@@ -5,22 +5,15 @@ using Microsoft.Extensions.Options;
 
 namespace Application.Server.Identity.Services;
 
-internal sealed class FrontendUrlBuilder : IFrontendUrlBuilder
+internal sealed class FrontendUrlBuilder(IOptions<FrontendUrlOptions> options) : IFrontendUrlBuilder
 {
-    private readonly FrontendUrlOptions _options;
-
-    public FrontendUrlBuilder(IOptions<FrontendUrlOptions> options)
-    {
-        _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
-    }
-
     public string BuildPasswordResetUrl(string email, string token)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(email);
         ArgumentException.ThrowIfNullOrWhiteSpace(token);
 
-        var baseUrl = _options.BaseUrl.TrimEnd('/');
-        var path = _options.PasswordResetPath.TrimStart('/');
+        var baseUrl = options.Value.BaseUrl.TrimEnd('/');
+        var path = options.Value.PasswordResetPath.TrimStart('/');
         var encodedEmail = Uri.EscapeDataString(email);
         var encodedToken = UrlEncoder.Default.Encode(token);
 
@@ -32,8 +25,8 @@ internal sealed class FrontendUrlBuilder : IFrontendUrlBuilder
         ArgumentException.ThrowIfNullOrWhiteSpace(email);
         ArgumentException.ThrowIfNullOrWhiteSpace(token);
 
-        var baseUrl = _options.BaseUrl.TrimEnd('/');
-        var path = _options.EmailVerificationPath.TrimStart('/');
+        var baseUrl = options.Value.BaseUrl.TrimEnd('/');
+        var path = options.Value.EmailVerificationPath.TrimStart('/');
         var encodedEmail = Uri.EscapeDataString(email);
         var encodedToken = UrlEncoder.Default.Encode(token);
 

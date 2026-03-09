@@ -5,15 +5,8 @@ using Domain.Identity.Models;
 
 namespace Domain.Identity.Services;
 
-public sealed class UserAuthenticationService
+public sealed class UserAuthenticationService(IPasswordVerifier passwordVerifier)
 {
-    private readonly IPasswordVerifier _passwordVerifier;
-
-    public UserAuthenticationService(IPasswordVerifier passwordVerifier)
-    {
-        _passwordVerifier = passwordVerifier ?? throw new ArgumentNullException(nameof(passwordVerifier));
-    }
-
     public void Authenticate(User user, string secret, DateTimeOffset? issuedAt = null)
     {
         ArgumentNullException.ThrowIfNull(user);
@@ -29,7 +22,7 @@ public sealed class UserAuthenticationService
             throw new AuthenticationException("User does not have a password set.");
         }
 
-        if (!_passwordVerifier.Verify(user.PasswordHash, secret))
+        if (!passwordVerifier.Verify(user.PasswordHash, secret))
         {
             user.RecordFailedLogin(timestamp);
             throw new AuthenticationException("Invalid credentials supplied.");

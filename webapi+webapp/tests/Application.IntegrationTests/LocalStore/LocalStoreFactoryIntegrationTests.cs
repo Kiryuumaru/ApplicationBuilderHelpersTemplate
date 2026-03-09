@@ -1,5 +1,5 @@
 using Application.LocalStore.Extensions;
-using Application.LocalStore.Interfaces;
+using Application.LocalStore.Interfaces.Inbound;
 using Infrastructure.EFCore.LocalStore.Extensions;
 using Infrastructure.EFCore.Sqlite.Extensions;
 using Infrastructure.EFCore.Extensions;

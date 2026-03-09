@@ -1,3 +1,4 @@
+using Domain.Identity.Constants;
 using Domain.Identity.Enums;
 using Domain.Shared.Models;
 
@@ -78,7 +79,7 @@ public class PasskeyChallenge : Entity
         ArgumentNullException.ThrowIfNull(optionsJson);
 
         var now = DateTimeOffset.UtcNow;
-        var expiry = now.Add(lifetime ?? TimeSpan.FromMinutes(5)); // Default 5 minute expiry
+        var expiry = now.Add(lifetime ?? TokenExpirations.PasskeyChallenge);
 
         return new PasskeyChallenge(
             Guid.NewGuid(),

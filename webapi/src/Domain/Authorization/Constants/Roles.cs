@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;
 
@@ -45,7 +46,7 @@ public static class Roles
         DefinitionsByCode = All.ToDictionary(static definition => definition.Code, StringComparer.OrdinalIgnoreCase);
     }
 
-    public static bool TryGetById(Guid id, out Role role)
+    public static bool TryGetById(Guid id, [NotNullWhen(true)] out Role? role)
     {
         if (DefinitionsById.TryGetValue(id, out var definition))
         {
@@ -53,12 +54,11 @@ public static class Roles
             return true;
         }
 
-        // Safe: Try pattern - value unused when returning false
-        role = null!;
+        role = null;
         return false;
     }
 
-    public static bool TryGetByCode(string? code, out Role role)
+    public static bool TryGetByCode(string? code, [NotNullWhen(true)] out Role? role)
     {
         if (!string.IsNullOrWhiteSpace(code) && DefinitionsByCode.TryGetValue(code.Trim(), out var definition))
         {
@@ -66,8 +66,7 @@ public static class Roles
             return true;
         }
 
-        // Safe: Try pattern - value unused when returning false
-        role = null!;
+        role = null;
         return false;
     }
 

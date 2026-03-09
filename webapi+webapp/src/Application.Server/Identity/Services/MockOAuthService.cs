@@ -1,7 +1,6 @@
 using Application.Server.Identity.Interfaces.Inbound;
 using Application.Server.Identity.Interfaces.Outbound;
 using Application.Server.Identity.Models;
-using Application.Shared.Services;
 using Domain.Identity.Enums;
 using Domain.Identity.Exceptions;
 using System.Security.Cryptography;
@@ -201,6 +200,7 @@ internal sealed class MockOAuthService(
                 callbackResult.ErrorDescription ?? "OAuth callback processing failed.");
         }
 
+        // Safe: UserInfo guaranteed non-null when Succeeded is true
         var userInfo = callbackResult.UserInfo!;
 
         // Try to find existing user by external login

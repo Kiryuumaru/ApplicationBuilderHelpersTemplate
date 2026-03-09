@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;
+using Domain.Identity.Constants;
 using Domain.Identity.Enums;
 using Domain.Identity.Entities;
 using Domain.Identity.Models;
@@ -496,7 +497,7 @@ public class User : AggregateRoot
         if (LockoutEnabled && AccessFailedCount >= lockoutThreshold)
         {
             Status = UserStatus.Locked;
-            LockoutEnd = timestamp + TimeSpan.FromMinutes(15); // Default lockout
+            LockoutEnd = timestamp + SecurityDefaults.LockoutDuration;
         }
 
         MarkAsModified();

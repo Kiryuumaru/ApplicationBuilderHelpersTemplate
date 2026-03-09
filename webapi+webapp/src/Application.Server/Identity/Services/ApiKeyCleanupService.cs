@@ -8,9 +8,6 @@ internal sealed class ApiKeyCleanupService(
     IApiKeyRepository apiKeyRepository,
     ILogger<ApiKeyCleanupService> logger) : IApiKeyCleanupService
 {
-    private readonly IApiKeyRepository _apiKeyRepository = apiKeyRepository ?? throw new ArgumentNullException(nameof(apiKeyRepository));
-    private readonly ILogger<ApiKeyCleanupService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
     public async Task<int> CleanupExpiredAndRevokedKeysAsync(
         int expiredRetentionDays,
         int revokedRetentionDays,
@@ -29,23 +26,23 @@ internal sealed class ApiKeyCleanupService(
         var expiredBefore = DateTimeOffset.UtcNow.AddDays(-expiredRetentionDays);
         var revokedBefore = DateTimeOffset.UtcNow.AddDays(-revokedRetentionDays);
 
-        _logger.LogInformation(
+        logger.LogInformation(
             "Starting API key cleanup. Deleting keys expired before {ExpiredBefore} and revoked before {RevokedBefore}",
             expiredBefore,
             revokedBefore);
 
-        var deletedCount = await _apiKeyRepository.DeleteExpiredOrRevokedAsync(
+        var deletedCount = await apiKeyRepository.DeleteExpiredOrRevokedAsync(
             expiredBefore,
             revokedBefore,
             cancellationToken);
 
         if (deletedCount > 0)
         {
-            _logger.LogInformation("Deleted {Count} expired or revoked API keys", deletedCount);
+            logger.LogInformation("Deleted {Count} expired or revoked API keys", deletedCount);
         }
         else
         {
-            _logger.LogDebug("No expired or revoked API keys found to delete");
+            logger.LogDebug("No expired or revoked API keys found to delete");
         }
 
         return deletedCount;

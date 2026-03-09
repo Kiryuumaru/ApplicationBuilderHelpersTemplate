@@ -47,6 +47,7 @@ public sealed class AuthTokenController(
             throw new RefreshTokenInvalidException(result.Error, result.ErrorDescription);
         }
 
+        // Safe: Succeeded is true, so UserId and Tokens are guaranteed non-null
         var refreshUserInfo = await authResponseFactory.CreateUserInfoAsync(result.UserId!.Value, cancellationToken);
 
         return Ok(new AuthResponse

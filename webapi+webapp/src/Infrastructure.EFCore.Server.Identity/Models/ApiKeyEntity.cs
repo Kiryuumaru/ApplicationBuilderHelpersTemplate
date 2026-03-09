@@ -1,6 +1,6 @@
 namespace Infrastructure.EFCore.Server.Identity.Models;
 
-public sealed class ApiKeyEntity
+internal sealed class ApiKeyEntity
 {
     public required Guid Id { get; set; }
     public required Guid UserId { get; set; }

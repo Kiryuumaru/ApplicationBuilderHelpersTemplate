@@ -46,6 +46,7 @@
 		<ProjectReference Include="..\Infrastructure.Server.Passkeys\Infrastructure.Server.Passkeys.csproj" />
 		<ProjectReference Include="..\Infrastructure.OpenTelemetry\Infrastructure.OpenTelemetry.csproj" />
 		<ProjectReference Include="..\Presentation.WebApp\Presentation.WebApp.csproj" />
+		<ProjectReference Include="..\Infrastructure.Mock\Infrastructure.Mock.csproj" />
 	</ItemGroup>
 
 </Project>

@@ -9,7 +9,7 @@ using Domain.Authorization.ValueObjects;
 using Domain.Shared.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Presentation.WebApp.Attributes;
+using Presentation.WebApp.Server.Attributes;
 using AppRoleAssignment = Application.Server.Identity.Models.RoleAssignmentRequest;
 using Presentation.WebApp.Server.Controllers.V1.Iam.RolesController.Requests;
 using Presentation.WebApp.Server.Controllers.V1.Iam.RolesController.Responses;

@@ -4,17 +4,15 @@ using Presentation.WebApp.Services;
 
 namespace Presentation.WebApp.Server.Services;
 
-internal class ServerRenderStateService : IRenderStateService
+internal class ServerRenderStateService(IHttpContextAccessor httpContextAccessor) : IRenderStateService
 {
-    private readonly IHttpContextAccessor _httpContextAccessor;
-
     public Guid ServiceUid { get; } = Guid.NewGuid();
 
     public RenderState RenderState
     {
         get
         {
-            var httpContext = _httpContextAccessor.HttpContext;
+            var httpContext = httpContextAccessor.HttpContext;
             
             // If HttpContext exists and response hasn't started, we're pre-rendering
             // Once the response starts streaming, we're in SSR mode
@@ -25,10 +23,5 @@ internal class ServerRenderStateService : IRenderStateService
             
             return RenderState.SSR;
         }
-    }
-
-    public ServerRenderStateService(IHttpContextAccessor httpContextAccessor)
-    {
-        _httpContextAccessor = httpContextAccessor;
     }
 }

@@ -18,7 +18,7 @@ public static class CredentialConfigurationExtensions
     {
         var jsonStringCred = configuration.GetRefValue(CredentialsKey);
         return JsonNode.Parse(jsonStringCred)?.AsObject()
-            ?? throw new Exception("Credentials was not set.");
+            ?? throw new InvalidOperationException("Credentials was not set.");
     }
 
     public static TValue GetCredentials<TValue>(this IConfiguration configuration, params string[] path)

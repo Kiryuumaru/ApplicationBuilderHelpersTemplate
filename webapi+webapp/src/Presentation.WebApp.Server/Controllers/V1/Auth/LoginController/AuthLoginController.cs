@@ -5,7 +5,6 @@ using Domain.Authorization.Constants;
 using Domain.Shared.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Presentation.WebApp.Attributes;
 using Presentation.WebApp.Server.Attributes;
 using Presentation.WebApp.Server.Controllers.V1.Auth.LoginController.Requests;
 using Presentation.WebApp.Server.Controllers.V1.Auth.Shared;
@@ -63,6 +62,7 @@ public sealed class AuthLoginController(
 
         if (result.RequiresTwoFactor)
         {
+            // Safe: RequiresTwoFactor implies user exists, so UserId is non-null
             return Accepted(new TwoFactorRequiredResponse
             {
                 UserId = result.UserId!.Value
@@ -72,6 +72,7 @@ public sealed class AuthLoginController(
         var userAgent = Request.Headers.UserAgent.ToString();
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
 
+        // Safe: Passed validation and RequiresTwoFactor check, so Succeeded is true and UserId is non-null
         var (accessToken, refreshToken, _, expiresIn) = await authResponseFactory.CreateSessionAndTokensAsync(
             result.UserId!.Value,
             userAgent,
@@ -150,6 +151,7 @@ public sealed class AuthLoginController(
             return this.CreatedAtMe(response);
         }
 
+        // Safe: IsAnonymous check above guarantees Username and Password are not null for non-anonymous registration
         var registrationRequest = new UserRegistrationRequest(
             request.Username!,
             request.Password!,

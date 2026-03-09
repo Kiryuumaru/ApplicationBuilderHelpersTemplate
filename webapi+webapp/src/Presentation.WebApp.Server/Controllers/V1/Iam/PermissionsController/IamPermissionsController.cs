@@ -5,7 +5,7 @@ using Domain.Authorization.Models;
 using Domain.Shared.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Presentation.WebApp.Attributes;
+using Presentation.WebApp.Server.Attributes;
 using Presentation.WebApp.Server.Controllers.V1.Iam.PermissionsController.Requests;
 using Presentation.WebApp.Server.Controllers.V1.Iam.PermissionsController.Responses;
 using Presentation.WebApp.Server.Models.Shared;
