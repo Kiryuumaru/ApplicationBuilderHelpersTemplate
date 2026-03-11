@@ -154,7 +154,6 @@ Instruction file names:
 | Topic | File Name |
 |-------|-----------|
 | Architecture rules | `architecture.instructions.md` |
-| File structure | `file-structure.instructions.md` |
 | Code quality | `code-quality.instructions.md` |
 | Workflow | `workflow.instructions.md` |
 

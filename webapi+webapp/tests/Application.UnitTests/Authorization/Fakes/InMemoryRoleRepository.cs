@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Application.Server.Authorization.Interfaces.Outbound;
+using Domain.Authorization.Entities;
 using Domain.Authorization.Models;
 
 namespace Application.UnitTests.Authorization.Fakes;

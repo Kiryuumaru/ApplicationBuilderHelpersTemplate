@@ -43,7 +43,7 @@ Presentation.*.Server Presentation.*.Client
 +-------------------------------------------+
 |              DOMAIN                       |
 |  References: DI helpers only              |
-|  Contains: Entities, repos, value objects |
+|  Contains: Entities, models, value objects|
 +-------------------------------------------+
 ```
 
@@ -55,7 +55,7 @@ When adding a new feature:
 
 ```
 1. Domain/{Feature}/
-   ├── Create entities, value objects, enums
+   ├── Create entities, value objects, models, enums
    ├── Define I{Feature}Repository in Interfaces/
    └── Define I{Feature}UnitOfWork in Interfaces/
             ↓
@@ -147,6 +147,7 @@ Domain/
 +-- {Feature}/
     +-- Entities/
     +-- ValueObjects/
+    +-- Models/                             <- Non-entity domain types (plain classes, records)
     +-- Enums/
     +-- Events/
     +-- Interfaces/                         <- Domain contracts implemented by Infrastructure
@@ -564,6 +565,23 @@ Base models are in `Domain/Shared/Models/`.
 
 ---
 
+## Domain Type Categories
+
+Domain types are organized into three categories based on their characteristics.
+
+| Category | Location | Characteristics | Examples |
+|----------|----------|-----------------|----------|
+| Entities | `Entities/` | Extends `Entity`/`AggregateRoot`, has identity, mutable state | `User`, `Order`, `Role` |
+| ValueObjects | `ValueObjects/` | Extends `ValueObject`, immutable, equality by components | `Email`, `Money`, `UserId` |
+| Models | `Models/` | Plain classes/records, no base class required, domain data structures | `ApiKey`, `LoginSession`, `Permission` |
+
+When to use each:
+- USE Entities for things with unique identity that are tracked over time
+- USE ValueObjects for immutable concepts defined by their attributes
+- USE Models for domain data structures that don't fit Entity or ValueObject patterns
+
+---
+
 ## Entity Implementation
 
 Entities use protected constructors for EF Core hydration and subclass inheritance, and static factory methods for creation.
@@ -938,6 +956,7 @@ Shared code locations by layer:
 - Domain feature interfaces (repos, UoW) MUST go in `Domain/{Feature}/Interfaces/`
 - Domain services MUST go in `Domain/{Feature}/Services/`
 - Domain value objects MUST go in `Domain/{Feature}/ValueObjects/`
+- Domain models (non-entity types) MUST go in `Domain/{Feature}/Models/`
 - Domain logic MUST go in `Domain/Shared/` or `Domain/{Feature}/`
 - Application service interfaces (Interfaces/Inbound) MUST go in `Application/{Feature}/Interfaces/Inbound/`
 - Application infrastructure interfaces (Interfaces/Outbound) MUST go in `Application/{Feature}/Interfaces/Outbound/`
@@ -988,7 +1007,7 @@ public static class EmptyCollections
 
 When duplicates are discovered:
 
-1. MUST identify canonical location based on layer rules (prefer `Application/Models` or `Domain/ValueObjects`)
+1. MUST identify canonical location based on layer rules (prefer `Application/Models`, `Domain/Models`, or `Domain/ValueObjects`)
 2. MUST keep the most complete definition
 3. MUST update all references to use the shared type
 4. MUST delete duplicate definitions

@@ -42,7 +42,10 @@ public static class CredentialConfigurationExtensions
             {
                 existingCreds = configuration.GetCredentials();
             }
-            catch { }
+            catch
+            {
+                // Intentionally empty: no existing credentials is valid, will use new credentials only
+            }
             if (existingCreds != null)
             {
                 credentials = existingCreds.Merge(credentials).DeepClone().AsObject();
@@ -71,7 +74,10 @@ public static class CredentialConfigurationExtensions
                 return;
             }
         }
-        catch { }
+        catch
+        {
+            // Intentionally empty: fall through to throw ArgumentException below
+        }
         throw new ArgumentException("Invalid credential path or JSON string.", nameof(credentialPathOrJsonString));
     }
 }

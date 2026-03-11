@@ -130,11 +130,4 @@ public class PasskeyChallenge : Entity
     {
         return new PasskeyChallenge(id, challenge, userId, type, optionsJson, credentialName, createdAt, expiresAt);
     }
-
-    // For EF Core
-    private PasskeyChallenge() : base(Guid.NewGuid())
-    {
-        Challenge = Array.Empty<byte>();
-        OptionsJson = string.Empty;
-    }
 }

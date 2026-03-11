@@ -1,5 +1,6 @@
 using Application.Server.Authorization.Interfaces.Outbound;
 using Application.Server.Identity.Interfaces.Outbound;
+using Domain.Authorization.Entities;
 using Domain.Authorization.Models;
 using Domain.Identity.Entities;
 using Domain.Identity.Models;

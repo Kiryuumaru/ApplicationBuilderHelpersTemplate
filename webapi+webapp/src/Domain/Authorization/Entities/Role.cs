@@ -8,7 +8,7 @@ using Domain.Shared.Constants;
 using Domain.Shared.Exceptions;
 using Domain.Shared.Models;
 
-namespace Domain.Authorization.Models;
+namespace Domain.Authorization.Entities;
 
 public sealed class Role : AggregateRoot
 {

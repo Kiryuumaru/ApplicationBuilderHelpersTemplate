@@ -104,15 +104,13 @@ internal sealed class EFCoreApiKeyRepository(IDbContextFactory<EFCoreDbContext> 
         RevokedAt = apiKey.RevokedAt
     };
 
-    private static ApiKey MapToDomain(ApiKeyEntity entity) => new()
-    {
-        Id = entity.Id,
-        UserId = entity.UserId,
-        Name = entity.Name,
-        CreatedAt = entity.CreatedAt,
-        ExpiresAt = entity.ExpiresAt,
-        LastUsedAt = entity.LastUsedAt,
-        IsRevoked = entity.IsRevoked,
-        RevokedAt = entity.RevokedAt
-    };
+    private static ApiKey MapToDomain(ApiKeyEntity entity) => ApiKey.Reconstruct(
+        entity.Id,
+        entity.UserId,
+        entity.Name,
+        entity.CreatedAt,
+        entity.ExpiresAt,
+        entity.LastUsedAt,
+        entity.IsRevoked,
+        entity.RevokedAt);
 }

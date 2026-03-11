@@ -1,11 +1,10 @@
+using Application.Server.Identity.Interfaces.Outbound;
 using Domain.Identity.Entities;
 using Domain.Identity.Exceptions;
-using Domain.Identity.Interfaces;
-using Domain.Identity.Models;
 
-namespace Domain.Identity.Services;
+namespace Application.Server.Identity.Services;
 
-public sealed class UserAuthenticationService(IPasswordVerifier passwordVerifier)
+internal sealed class UserAuthenticationService(IPasswordVerifier passwordVerifier)
 {
     public void Authenticate(User user, string secret, DateTimeOffset? issuedAt = null)
     {

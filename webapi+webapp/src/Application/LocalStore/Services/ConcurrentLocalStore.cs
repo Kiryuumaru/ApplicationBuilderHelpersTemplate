@@ -1,4 +1,5 @@
 using Application.LocalStore.Utilities;
+using Application.LocalStore.Interfaces.Inbound;
 using Application.LocalStore.Interfaces.Outbound;
 using DisposableHelpers.Attributes;
 using System;
@@ -9,7 +10,7 @@ using System.Threading.Tasks;
 namespace Application.LocalStore.Services;
 
 [Disposable]
-public partial class ConcurrentLocalStore(ILocalStoreService localStoreService, string group) : IDisposable
+internal partial class ConcurrentLocalStore(ILocalStoreService localStoreService, string group) : IConcurrentLocalStore
 {
     private readonly ILocalStoreService localStoreService = localStoreService ?? throw new ArgumentNullException(nameof(localStoreService));
     private readonly SemaphoreSlim gate = new(1, 1);

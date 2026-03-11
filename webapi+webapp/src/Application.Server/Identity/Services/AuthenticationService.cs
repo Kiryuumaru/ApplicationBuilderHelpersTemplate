@@ -4,10 +4,10 @@ using Application.Server.Identity.Interfaces.Inbound;
 using Application.Server.Identity.Interfaces.Outbound;
 using Application.Server.Identity.Models;
 using Domain.Authorization.Constants;
+using Domain.Authorization.Entities;
 using Domain.Authorization.Models;
 using Domain.Identity.Constants;
 using Domain.Identity.Exceptions;
-using Domain.Identity.Interfaces;
 using Domain.Identity.Entities;
 using Domain.Identity.Models;
 using Domain.Shared.Exceptions;
@@ -81,6 +81,7 @@ internal sealed class AuthenticationService(
 
         if (result.RequiresTwoFactor)
         {
+            // Safe: RequiresTwoFactor is only true when user exists and was found, so UserId is non-null
             throw new TwoFactorRequiredException(result.UserId!.Value);
         }
 
@@ -125,14 +126,20 @@ internal sealed class AuthenticationService(
 
     public async Task<UserSessionDto> Complete2faAuthenticationAsync(Guid userId, string code, CancellationToken cancellationToken)
     {
+        // SECURITY: Single DB lookup - pass user to verification to avoid timing-based user enumeration
+        // If we did two lookups (one here, one in Verify), existing users would take longer than non-existing
         var user = await userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false);
+
+        // Cast to access internal method - both services are in same assembly
+        var twoFactorServiceImpl = (TwoFactorService)twoFactorService;
+        var isValid = await twoFactorServiceImpl.VerifyCodeForUserAsync(user, code, cancellationToken).ConfigureAwait(false);
+
+        // Check user existence AFTER verification to prevent timing attacks
         if (user is null)
         {
             throw new TwoFactorSessionInvalidException();
         }
 
-        // SECURITY: Verify 2FA code before creating session
-        var isValid = await twoFactorService.Verify2faCodeAsync(userId, code, cancellationToken).ConfigureAwait(false);
         if (!isValid)
         {
             throw new InvalidTwoFactorCodeException();

@@ -1,8 +1,10 @@
-using Application.Shared.Utilities;
 using DisposableHelpers;
 
-namespace Application.Shared.Extensions;
+namespace Application.Shared.Utilities;
 
+/// <summary>
+/// Provides utility methods for task operations.
+/// </summary>
 public static class TaskUtils
 {
     public static async Task DelayAndForget(int milliseconds, CancellationToken cancellationToken = default)
@@ -16,29 +18,10 @@ public static class TaskUtils
         {
             await Task.Delay(timeSpan, cancellationToken);
         }
-        catch { }
-    }
-
-    public static void Forget(this Task task)
-    {
-        if (!task.IsCompleted || task.IsFaulted)
+        catch
         {
-            _ = ForgetAwaited(task);
+            // Intentionally empty: fire-and-forget delay should not propagate cancellation
         }
-
-        async static Task ForgetAwaited(Task task)
-        {
-            try
-            {
-                await task;
-            }
-            catch { }
-        }
-    }
-
-    public static Task WaitThread(this Task task)
-    {
-        return ThreadHelpers.WaitThread(() => task);
     }
 
     public static async Task<T> RetryAsync<T>(
@@ -100,7 +83,7 @@ public static class TaskUtils
                         }
                         catch
                         {
-                            // Ignore exceptions from error handler
+                            // Intentionally empty: exceptions from error handler should not propagate
                         }
                     }
                 }
@@ -109,12 +92,18 @@ public static class TaskUtils
                 {
                     cts.Dispose();
                 }
-                catch { }
+                catch
+                {
+                    // Intentionally empty: dispose should not throw
+                }
                 try
                 {
                     backgroundTask?.Dispose();
                 }
-                catch { }
+                catch
+                {
+                    // Intentionally empty: dispose should not throw
+                }
             }
         });
 
@@ -132,7 +121,7 @@ public static class TaskUtils
                 }
                 catch
                 {
-                    // Ignore exceptions from error handler
+                    // Intentionally empty: exceptions from error handler should not propagate
                 }
             }
         });

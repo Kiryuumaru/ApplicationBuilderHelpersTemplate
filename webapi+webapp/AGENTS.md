@@ -8,7 +8,6 @@ When updating process docs, update the `.github/instructions/*` files instead of
 ## Source of Truth
 
 - Architecture rules: `.github/instructions/architecture.instructions.md`
-- File structure: `.github/instructions/file-structure.instructions.md`
 - Code quality: `.github/instructions/code-quality.instructions.md`
 - Documentation: `.github/instructions/documentation.instructions.md`
 - Workflow: `.github/instructions/workflow.instructions.md`

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Domain.Authorization.Entities;
 using Domain.Authorization.Extensions;
 using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;

@@ -1,5 +1,6 @@
 using Domain.Identity.Entities;
 using Domain.Identity.Models;
+using Domain.Identity.ValueObjects;
 
 namespace Application.Server.Identity.Models;
 

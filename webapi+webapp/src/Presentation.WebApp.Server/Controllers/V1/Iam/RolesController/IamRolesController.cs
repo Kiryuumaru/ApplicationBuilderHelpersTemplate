@@ -3,6 +3,7 @@ using Application.Server.Authorization.Interfaces.Inbound;
 using Application.Server.Identity.Interfaces.Inbound;
 using Asp.Versioning;
 using Domain.Authorization.Constants;
+using Domain.Authorization.Entities;
 using Domain.Authorization.Enums;
 using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;

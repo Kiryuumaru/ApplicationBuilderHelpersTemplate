@@ -42,5 +42,5 @@ Prioritize clean, correct design over compatibility. Fix naming mistakes and str
 | API contracts | `docs/features/*.md` |
 | Architecture patterns | `docs/architecture/*.md` |
 | Build commands | `.github/instructions/workflow.instructions.md` |
-| File organization | `.github/instructions/file-structure.instructions.md` |
+| File organization | `.github/instructions/architecture.instructions.md` |
 | Architecture rules | `.github/instructions/architecture.instructions.md` |

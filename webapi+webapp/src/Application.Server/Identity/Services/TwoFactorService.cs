@@ -16,6 +16,9 @@ internal sealed class TwoFactorService(
     private const int RecoveryCodeCount = 10;
     private const int RecoveryCodeLength = 8;
 
+    // Dummy key used for constant-time verification when user doesn't exist (prevents timing attacks)
+    private const string DummyAuthenticatorKey = "JBSWY3DPEHPK3PXP";
+
     public async Task<TwoFactorSetupInfo> Setup2faAsync(Guid userId, CancellationToken cancellationToken)
     {
         var user = await userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
@@ -82,11 +85,21 @@ internal sealed class TwoFactorService(
 
     public async Task<bool> Verify2faCodeAsync(Guid userId, string code, CancellationToken cancellationToken)
     {
-        var user = await userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false)
-            ?? throw new EntityNotFoundException("User", userId.ToString());
+        var user = await userRepository.FindByIdAsync(userId, cancellationToken).ConfigureAwait(false);
+        return await VerifyCodeForUserAsync(user, code, cancellationToken).ConfigureAwait(false);
+    }
 
-        if (!user.TwoFactorEnabled || string.IsNullOrEmpty(user.AuthenticatorKey))
+    /// <summary>
+    /// Verifies a 2FA code for a pre-fetched user. Use this to avoid redundant DB lookups.
+    /// </summary>
+    internal async Task<bool> VerifyCodeForUserAsync(User? user, string code, CancellationToken cancellationToken)
+    {
+        // SECURITY: Perform TOTP verification work even when user doesn't exist or 2FA is disabled
+        // This prevents timing-based user enumeration attacks
+        if (user is null || !user.TwoFactorEnabled || string.IsNullOrEmpty(user.AuthenticatorKey))
         {
+            // Perform dummy TOTP verification to maintain constant timing
+            VerifyTotpCode(DummyAuthenticatorKey, code);
             return false;
         }
 

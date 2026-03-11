@@ -1,6 +1,7 @@
 using Application.Server.Identity.Interfaces.Inbound;
 using Asp.Versioning;
 using Domain.Authorization.Constants;
+using Domain.Authorization.Entities;
 using Domain.Authorization.Models;
 using Domain.Shared.Exceptions;
 using Microsoft.AspNetCore.Authorization;

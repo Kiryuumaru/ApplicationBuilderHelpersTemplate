@@ -50,7 +50,10 @@ public partial class AsyncManualResetEvent
                 return true;
             }
         }
-        catch { }
+        catch
+        {
+            // Intentionally empty: timeout or cancellation during wait is expected
+        }
 
         return false;
     }
@@ -73,7 +76,10 @@ public partial class AsyncManualResetEvent
                 return true;
             }
         }
-        catch { }
+        catch
+        {
+            // Intentionally empty: timeout or cancellation during wait is expected
+        }
 
         return false;
     }

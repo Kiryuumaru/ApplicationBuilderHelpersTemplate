@@ -2,7 +2,7 @@ using Domain.Authorization.Services;
 using Domain.Authorization.ValueObjects;
 using Domain.Shared.Models;
 
-namespace Domain.Identity.Models;
+namespace Domain.Identity.ValueObjects;
 
 public sealed class UserSession : ValueObject
 {

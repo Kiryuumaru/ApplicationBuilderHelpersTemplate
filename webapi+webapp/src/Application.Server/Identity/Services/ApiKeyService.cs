@@ -81,8 +81,7 @@ internal sealed class ApiKeyService(
             return false;
         }
 
-        apiKey.IsRevoked = true;
-        apiKey.RevokedAt = DateTimeOffset.UtcNow;
+        apiKey.Revoke();
         await apiKeyRepository.UpdateAsync(apiKey, cancellationToken);
         return true;
     }
@@ -113,7 +112,7 @@ internal sealed class ApiKeyService(
         var apiKey = await apiKeyRepository.GetByIdAsync(keyId, cancellationToken);
         if (apiKey is not null && !apiKey.IsRevoked)
         {
-            apiKey.LastUsedAt = DateTimeOffset.UtcNow;
+            apiKey.RecordUsage();
             await apiKeyRepository.UpdateAsync(apiKey, cancellationToken);
         }
     }

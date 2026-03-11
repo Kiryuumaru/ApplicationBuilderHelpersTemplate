@@ -11,8 +11,8 @@ Before implementing, modifying, or asking questions, check the relevant document
 |------|-------|
 | New feature | `docs/features/*.md` for similar patterns |
 | Modify endpoint | `docs/features/*.md` for current contract |
-| Write tests | `docs/architecture/test-architecture.md` |
-| Architecture question | `docs/architecture/*.md` |
+| Write tests | `.github/instructions/ui-test-practices.instructions.md` |
+| Architecture question | `.github/instructions/architecture.instructions.md` |
 
 Documentation index: `docs/index.md`
 
@@ -23,8 +23,8 @@ Documentation index: `docs/index.md`
 | Content | Location |
 |---------|----------|
 | API contracts | `docs/features/*.md` |
-| Architecture patterns | `docs/architecture/*.md` |
-| Test conventions | `docs/architecture/test-architecture.md` |
+| Architecture patterns | `.github/instructions/architecture.instructions.md` |
+| Test conventions | `.github/instructions/ui-test-practices.instructions.md` |
 | Implementation status | `TODO.md` |
 
 ---

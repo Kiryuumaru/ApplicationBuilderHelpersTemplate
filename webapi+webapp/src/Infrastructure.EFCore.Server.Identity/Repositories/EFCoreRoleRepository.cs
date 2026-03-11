@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Application.Server.Authorization.Interfaces.Outbound;
+using Domain.Authorization.Entities;
 using Domain.Authorization.Exceptions;
 using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;

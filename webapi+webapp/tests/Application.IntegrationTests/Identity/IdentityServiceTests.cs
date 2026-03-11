@@ -7,6 +7,7 @@ using Application.Server.Identity.Extensions;
 using Application.Server.Identity.Interfaces.Inbound;
 using Application.Server.Identity.Models;
 using Domain.Authorization.Constants;
+using Domain.Authorization.Entities;
 using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;
 using Domain.Identity.Enums;

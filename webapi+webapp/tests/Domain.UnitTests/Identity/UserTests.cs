@@ -1,11 +1,9 @@
 using System.Linq;
+using Domain.Authorization.Entities;
 using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;
-using Domain.Identity.Exceptions;
-using Domain.Identity.Interfaces;
 using Domain.Identity.Entities;
 using Domain.Identity.Models;
-using Domain.Identity.Services;
 using Domain.Identity.ValueObjects;
 using Domain.Shared.Exceptions;
 
@@ -24,40 +22,6 @@ public class UserTests
         var identifiers = user.GetPermissionIdentifiers();
         Assert.Single(identifiers);
         Assert.Equal("api:iam:users:list", identifiers.First());
-    }
-
-    [Fact]
-    public void Authenticate_RecordsSuccessfulLogin()
-    {
-        var user = CreateUser();
-        user.Activate();
-        user.GrantPermission(UserPermissionGrant.Allow("api:iam:users:list"));
-        
-        // Set password hash
-        var prop = typeof(User).GetProperty(nameof(User.PasswordHash));
-        prop?.SetValue(user, "hashed_secret");
-
-        var service = new UserAuthenticationService(new StubPasswordVerifier("secret"));
-        service.Authenticate(user, "secret", DateTimeOffset.UtcNow);
-
-        Assert.NotNull(user.LastLoginAt);
-        Assert.Equal(0, user.AccessFailedCount);
-    }
-
-    [Fact]
-    public void AuthenticationService_Throws_WhenSecretIsInvalid()
-    {
-        var user = CreateUser();
-        user.Activate();
-        
-        // Set password hash
-        var prop = typeof(User).GetProperty(nameof(User.PasswordHash));
-        prop?.SetValue(user, "hashed_secret");
-
-        var service = new UserAuthenticationService(new StubPasswordVerifier("secret"));
-
-        Assert.Throws<AuthenticationException>(() => service.Authenticate(user, "invalid", DateTimeOffset.UtcNow));
-        Assert.Equal(1, user.AccessFailedCount);
     }
 
     [Fact]
@@ -132,17 +96,6 @@ public class UserTests
     }
 
     [Fact]
-    public void AuthenticationService_Throws_WhenUserHasNoLocalCredential()
-    {
-        var user = User.Register("federated", "federated@example.com");
-        user.Activate();
-
-        var service = new UserAuthenticationService(new StubPasswordVerifier("secret"));
-
-        Assert.Throws<AuthenticationException>(() => service.Authenticate(user, "secret", DateTimeOffset.UtcNow));
-    }
-
-    [Fact]
     public void LinkIdentity_AddsOrUpdatesLink()
     {
         var user = User.Register("social", "social@example.com");
@@ -173,13 +126,4 @@ public class UserTests
     {
         return User.Register("trader", "trader@example.com");
     }
-
-    private sealed class StubPasswordVerifier(string expected) : IPasswordVerifier
-    {
-        public bool Verify(string hashedPassword, string providedPassword)
-        {
-            return providedPassword == expected && hashedPassword == "hashed_secret";
-        }
-    }
-
 }

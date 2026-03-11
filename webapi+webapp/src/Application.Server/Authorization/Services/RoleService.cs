@@ -4,6 +4,7 @@ using System.Linq;
 using Application.Server.Authorization.Interfaces.Inbound;
 using Application.Server.Authorization.Interfaces.Outbound;
 using Application.Server.Authorization.Models;
+using Domain.Authorization.Entities;
 using Domain.Authorization.Exceptions;
 using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;

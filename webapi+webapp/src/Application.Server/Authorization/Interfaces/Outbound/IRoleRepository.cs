@@ -1,3 +1,4 @@
+using Domain.Authorization.Entities;
 using Domain.Authorization.Models;
 
 namespace Application.Server.Authorization.Interfaces.Outbound;

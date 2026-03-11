@@ -1,3 +1,4 @@
+using Domain.Authorization.Entities;
 using Domain.Authorization.Models;
 using Infrastructure.EFCore.Extensions;
 using Microsoft.AspNetCore.Identity;

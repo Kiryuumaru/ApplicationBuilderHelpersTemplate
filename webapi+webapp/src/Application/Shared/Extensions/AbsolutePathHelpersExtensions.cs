@@ -97,7 +97,10 @@ public static class AbsolutePathHelpersExtensions
                     proc.Kill(true);
                     kills++;
                 }
-                catch { }
+                catch
+                {
+                    // Intentionally empty: best-effort process kill, failure is expected for protected processes
+                }
             }
             
             if (procsCount == kills)
@@ -132,7 +135,10 @@ public static class AbsolutePathHelpersExtensions
             {
                 await path.Delete(cancellationToken);
             }
-            catch { }
+            catch
+            {
+                // Intentionally empty: best-effort delete, process holding file lock may prevent deletion
+            }
 
             if (!path.IsExists())
             {
@@ -159,7 +165,10 @@ public static class AbsolutePathHelpersExtensions
                     proc.Kill(true);
                     kills++;
                 }
-                catch { }
+                catch
+                {
+                    // Intentionally empty: best-effort process kill, failure is expected for protected processes
+                }
             }
 
             if (procsCount == kills)

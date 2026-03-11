@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Domain.Authorization.Constants;
+using Domain.Authorization.Entities;
 using Domain.Authorization.Enums;
 using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;

@@ -26,7 +26,9 @@ public class PasskeyCredential : AuditableEntity
         Guid aaGuid,
         string credentialType,
         byte[] userHandle,
-        string attestationFormat) : base(id)
+        string attestationFormat,
+        DateTimeOffset registeredAt,
+        DateTimeOffset? lastUsedAt) : base(id)
     {
         UserId = userId;
         Name = name;
@@ -37,7 +39,8 @@ public class PasskeyCredential : AuditableEntity
         CredentialType = credentialType;
         UserHandle = userHandle;
         AttestationFormat = attestationFormat;
-        RegisteredAt = DateTimeOffset.UtcNow;
+        RegisteredAt = registeredAt;
+        LastUsedAt = lastUsedAt;
     }
 
     public static PasskeyCredential Create(
@@ -65,7 +68,9 @@ public class PasskeyCredential : AuditableEntity
             aaGuid,
             credentialType ?? "public-key",
             userHandle,
-            attestationFormat ?? "none");
+            attestationFormat ?? "none",
+            DateTimeOffset.UtcNow,
+            null);
     }
 
     public static PasskeyCredential Reconstruct(
@@ -82,27 +87,19 @@ public class PasskeyCredential : AuditableEntity
         DateTimeOffset registeredAt,
         DateTimeOffset? lastUsedAt)
     {
-        var credential = new PasskeyCredential
-        {
-            UserId = userId,
-            Name = name,
-            CredentialId = credentialId,
-            PublicKey = publicKey,
-            SignCount = signCount,
-            AaGuid = aaGuid,
-            CredentialType = credentialType,
-            UserHandle = userHandle,
-            AttestationFormat = attestationFormat,
-            RegisteredAt = registeredAt,
-            LastUsedAt = lastUsedAt
-        };
-        
-        // Set Id using reflection since Entity.Id has a private setter
-        typeof(global::Domain.Shared.Models.Entity)
-            .GetProperty(nameof(global::Domain.Shared.Models.Entity.Id))!
-            .SetValue(credential, id);
-        
-        return credential;
+        return new PasskeyCredential(
+            id,
+            userId,
+            name,
+            credentialId,
+            publicKey,
+            signCount,
+            aaGuid,
+            credentialType,
+            userHandle,
+            attestationFormat,
+            registeredAt,
+            lastUsedAt);
     }
 
     public void UpdateSignCount(uint newSignCount)
@@ -119,16 +116,5 @@ public class PasskeyCredential : AuditableEntity
 
         Name = newName;
         MarkAsModified();
-    }
-
-    // For EF Core
-    private PasskeyCredential() : base(Guid.NewGuid())
-    {
-        Name = string.Empty;
-        CredentialId = Array.Empty<byte>();
-        PublicKey = Array.Empty<byte>();
-        CredentialType = "public-key";
-        UserHandle = Array.Empty<byte>();
-        AttestationFormat = "none";
     }
 }

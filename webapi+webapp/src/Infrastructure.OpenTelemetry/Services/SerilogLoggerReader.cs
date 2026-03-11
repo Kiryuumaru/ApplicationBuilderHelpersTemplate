@@ -93,7 +93,10 @@ internal class SerilogLoggerReader(IConfiguration configuration) : ILoggerReader
                         {
                             logEvent = LogEventReader.ReadFromString(line);
                         }
-                        catch { }
+                        catch
+                        {
+                            // Intentionally empty: malformed log lines are skipped
+                        }
                         if (logEvent != null)
                         {
                             var inScope = isWithinScope(logEvent);
@@ -137,7 +140,10 @@ internal class SerilogLoggerReader(IConfiguration configuration) : ILoggerReader
                     {
                         previousCts.Cancel();
                     }
-                    catch { }
+                    catch
+                    {
+                        // Intentionally empty: cancellation may fail if already disposed
+                    }
                     finally
                     {
                         previousCts.Dispose();
@@ -169,11 +175,15 @@ internal class SerilogLoggerReader(IConfiguration configuration) : ILoggerReader
                                 }
                                 catch
                                 {
+                                    // Intentionally empty: timeout or parse error during seek breaks the loop
                                     break;
                                 }
                             }
                         }
-                        catch { }
+                        catch
+                        {
+                            // Intentionally empty: errors during tail seek are non-fatal
+                        }
                         hasPrintedTail = true;
                     }
 
@@ -188,7 +198,10 @@ internal class SerilogLoggerReader(IConfiguration configuration) : ILoggerReader
                                 logEvent = LogEventReader.ReadFromString(line);
                             }
                         }
-                        catch { }
+                        catch
+                        {
+                            // Intentionally empty: malformed log lines are skipped during streaming
+                        }
                         if (logEvent != null)
                         {
                             stampLog(logEvent);
@@ -203,7 +216,10 @@ internal class SerilogLoggerReader(IConfiguration configuration) : ILoggerReader
                         }
                     }
                 }
-                catch { }
+                catch
+                {
+                    // Intentionally empty: file read errors during streaming are non-fatal
+                }
             }, cancellationToken);
         }
         finally
@@ -289,7 +305,10 @@ internal class SerilogLoggerReader(IConfiguration configuration) : ILoggerReader
                         continue;
                     }
                 }
-                catch { }
+                catch
+                {
+                    // Intentionally empty: invalid log filenames are skipped
+                }
             }
             if (latestLogTime.LogStr == null)
             {

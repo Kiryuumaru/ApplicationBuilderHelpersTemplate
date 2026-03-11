@@ -80,7 +80,6 @@ Before every commit:
 ### Manual Review Checklist
 
 - MUST follow architecture rules in `architecture.instructions.md`
-- MUST follow file structure rules in `file-structure.instructions.md`
 - MUST follow code quality rules in `code-quality.instructions.md`
 - MUST verify proper layer dependency direction per architecture rules
 - MUST verify correct file placement per file structure rules
