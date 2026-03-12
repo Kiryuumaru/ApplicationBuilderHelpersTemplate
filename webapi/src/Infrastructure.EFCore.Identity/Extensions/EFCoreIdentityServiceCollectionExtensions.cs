@@ -1,8 +1,7 @@
+using Domain.Authorization.Entities;
 using Domain.Authorization.Interfaces;
-using Domain.Authorization.Models;
-using Domain.Identity.Interfaces;
-using Domain.Identity.Models;
 using Domain.Identity.Entities;
+using Domain.Identity.Interfaces;
 using Infrastructure.EFCore.Identity.Configurations;
 using Infrastructure.EFCore.Identity.Repositories;
 using Infrastructure.EFCore.Identity.Services;

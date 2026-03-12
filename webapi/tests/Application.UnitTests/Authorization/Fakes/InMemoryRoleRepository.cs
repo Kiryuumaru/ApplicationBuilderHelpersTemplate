@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 using Domain.Authorization.Interfaces;
-using Domain.Authorization.Models;
+using Domain.Authorization.Entities;
 
 namespace Application.UnitTests.Authorization.Fakes;
 

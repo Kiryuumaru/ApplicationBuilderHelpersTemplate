@@ -13,7 +13,7 @@ namespace Presentation.WebApi.FunctionalTests.Iam;
 /// - Deny grants block access even when user has permission from roles
 /// - Revoking grants restores role-based access
 /// </summary>
-public class PermissionAllowDenyTests(ITestOutputHelper output) : WebApiTestBase(output)
+public sealed class PermissionAllowDenyTests(ITestOutputHelper output) : WebApiTestBase(output)
 {
 
     #region Allow Grant Tests

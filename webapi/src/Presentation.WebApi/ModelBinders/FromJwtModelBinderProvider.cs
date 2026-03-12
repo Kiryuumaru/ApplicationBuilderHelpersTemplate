@@ -5,7 +5,7 @@ namespace Presentation.WebApi.ModelBinders;
 /// <summary>
 /// Model binder provider for <see cref="Attributes.FromJwtAttribute"/>.
 /// </summary>
-public sealed class FromJwtModelBinderProvider : IModelBinderProvider
+internal sealed class FromJwtModelBinderProvider : IModelBinderProvider
 {
     /// <inheritdoc />
     public IModelBinder? GetBinder(ModelBinderProviderContext context)

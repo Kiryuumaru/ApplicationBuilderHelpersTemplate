@@ -1,6 +1,11 @@
+using Domain.Shared.Exceptions;
+
 namespace Domain.Identity.Exceptions;
 
-public sealed class ApiKeyRevokedException : Exception
+/// <summary>
+/// Thrown when an API key has been revoked.
+/// </summary>
+public sealed class ApiKeyRevokedException : DomainException
 {
     public ApiKeyRevokedException(Guid keyId)
         : base($"API key with ID '{keyId}' has been revoked.")

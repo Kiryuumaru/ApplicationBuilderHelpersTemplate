@@ -1,5 +1,5 @@
+using Domain.Identity.Entities;
 using Domain.Identity.Interfaces;
-using Domain.Identity.Models;
 using Infrastructure.EFCore.Extensions;
 using Infrastructure.EFCore.Identity.Models;
 using Microsoft.EntityFrameworkCore;

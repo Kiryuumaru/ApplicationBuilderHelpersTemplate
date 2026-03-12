@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace Application.LocalStore.Common;
+namespace Application.LocalStore.Utilities;
 
 internal static class LocalStoreKey
 {

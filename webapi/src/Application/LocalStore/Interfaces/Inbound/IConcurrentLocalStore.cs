@@ -1,5 +1,8 @@
-namespace Application.LocalStore.Interfaces;
+namespace Application.LocalStore.Interfaces.Inbound;
 
+/// <summary>
+/// Provides concurrent access to a local key-value store with transaction support.
+/// </summary>
 public interface IConcurrentLocalStore : IDisposable
 {
     string Group { get; }

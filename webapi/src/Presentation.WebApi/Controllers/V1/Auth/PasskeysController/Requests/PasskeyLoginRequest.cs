@@ -7,7 +7,7 @@ namespace Presentation.WebApi.Controllers.V1.Auth.PasskeysController.Requests;
 /// </summary>
 /// <param name="ChallengeId">The challenge ID returned from the login options endpoint.</param>
 /// <param name="AssertionResponseJson">The JSON-serialized assertion response from the authenticator.</param>
-public record PasskeyLoginRequest(
+public sealed record PasskeyLoginRequest(
     [Required]
     Guid ChallengeId,
     [Required]

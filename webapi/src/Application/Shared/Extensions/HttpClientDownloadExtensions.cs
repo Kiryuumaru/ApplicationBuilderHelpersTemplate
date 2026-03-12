@@ -1,43 +1,10 @@
 using AbsolutePathHelpers;
+using Application.Shared.Models;
 
 namespace Application.Shared.Extensions;
 
 public static class HttpClientDownloadExtensions
 {
-    public readonly struct DownloadProgress
-    {
-        public long BytesDownloaded { get; }
-
-        public long TotalBytesDownloaded { get; }
-
-        public long? TotalBytes { get; }
-
-        public readonly double? Percentage { get; }
-
-        public DownloadProgress(long bytesDownloaded, long totalBytesDownloaded, long? totalBytes)
-        {
-            BytesDownloaded = bytesDownloaded;
-            TotalBytesDownloaded = totalBytesDownloaded;
-            TotalBytes = totalBytes;
-            if (totalBytes.HasValue)
-            {
-                Percentage = (double)TotalBytesDownloaded / TotalBytes * 100;
-            }
-        }
-
-        public override readonly string ToString()
-        {
-            if (TotalBytes.HasValue)
-            {
-                return $"Downloaded {TotalBytesDownloaded} of {TotalBytes} bytes ({Percentage:F2}%)";
-            }
-            else
-            {
-                return $"Downloaded {TotalBytesDownloaded} bytes";
-            }
-        }
-    }
-
     public static async Task DownloadFile(this HttpClient httpClient, Uri url, Func<(Memory<byte> Memory, long BytesRead, long? ContentLength), ValueTask> onBytesRead, int bufferSize = 8192, CancellationToken cancellationToken = default)
     {
         if (url == null)

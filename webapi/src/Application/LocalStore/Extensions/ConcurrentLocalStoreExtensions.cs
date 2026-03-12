@@ -1,4 +1,4 @@
-using Application.LocalStore.Interfaces;
+using Application.LocalStore.Interfaces.Inbound;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;

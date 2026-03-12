@@ -1,6 +1,6 @@
 namespace Infrastructure.EFCore.Identity.Models;
 
-public class LoginSessionEntity
+internal sealed class LoginSessionEntity
 {
     public required Guid Id { get; set; }
     public required Guid UserId { get; set; }

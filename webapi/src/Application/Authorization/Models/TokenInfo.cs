@@ -5,7 +5,7 @@ namespace Application.Authorization.Models;
 /// <summary>
 /// Information about a decoded JWT token.
 /// </summary>
-public class TokenInfo
+public sealed class TokenInfo
 {
     /// <summary>
     /// Gets or sets the subject (sub) claim of the JWT token, typically representing the user identifier.

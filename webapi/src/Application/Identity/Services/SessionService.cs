@@ -103,7 +103,7 @@ internal sealed class SessionService(
         Guid? sessionId,
         CancellationToken cancellationToken)
     {
-        var loginSession = Domain.Identity.Models.LoginSession.Create(
+        var loginSession = Domain.Identity.Entities.LoginSession.Create(
             userId,
             refreshTokenHash,
             expiresAt,
@@ -114,7 +114,7 @@ internal sealed class SessionService(
         // If a session ID was provided, reconstruct with that ID
         if (sessionId.HasValue)
         {
-            loginSession = Domain.Identity.Models.LoginSession.Reconstruct(
+            loginSession = Domain.Identity.Entities.LoginSession.Reconstruct(
                 sessionId.Value,
                 loginSession.UserId,
                 loginSession.RefreshTokenHash,
@@ -133,7 +133,7 @@ internal sealed class SessionService(
         return loginSession.Id;
     }
 
-    private static SessionDto MapToDto(Domain.Identity.Models.LoginSession session)
+    private static SessionDto MapToDto(Domain.Identity.Entities.LoginSession session)
     {
         return new SessionDto
         {

@@ -11,7 +11,7 @@ namespace Presentation.WebApi.FunctionalTests.Auth;
 /// Functional tests for Login API endpoints.
 /// Tests authentication flows, credential validation, and security edge cases.
 /// </summary>
-public class LoginApiTests(ITestOutputHelper output) : WebApiTestBase(output)
+public sealed class LoginApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 {
 
     #region Basic Login Tests

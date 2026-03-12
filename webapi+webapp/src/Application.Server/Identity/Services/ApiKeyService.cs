@@ -1,13 +1,12 @@
 using System.Security.Claims;
 using Application.Server.Authorization.Interfaces.Inbound;
 using Application.Server.Identity.Interfaces.Inbound;
-using Application.Server.Identity.Interfaces.Outbound;
 using Application.Server.Identity.Models;
 using Domain.Authorization.Constants;
 using Domain.Authorization.ValueObjects;
 using Domain.Identity.Constants;
 using Domain.Identity.Entities;
-using Domain.Identity.Models;
+using Domain.Identity.Interfaces;
 using TokenClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 using TokenType = Domain.Identity.Enums.TokenType;
 
@@ -35,22 +34,11 @@ internal sealed class ApiKeyService(
             throw new InvalidOperationException($"Maximum number of API keys ({MaxApiKeysPerUser}) reached.");
         }
 
-        // Generate API key ID
-        var keyId = Guid.NewGuid();
-        var now = DateTimeOffset.UtcNow;
-
         // Create API key entity
-        var apiKey = new ApiKey
-        {
-            Id = keyId,
-            UserId = userId,
-            Name = name,
-            CreatedAt = now,
-            ExpiresAt = expiresAt
-        };
+        var apiKey = ApiKey.Create(userId, name, expiresAt);
 
         // Generate the token
-        var token = await GenerateApiKeyTokenAsync(userId, keyId, expiresAt, cancellationToken);
+        var token = await GenerateApiKeyTokenAsync(userId, apiKey.Id, expiresAt, cancellationToken);
 
         // Store metadata in DB
         await apiKeyRepository.CreateAsync(apiKey, cancellationToken);

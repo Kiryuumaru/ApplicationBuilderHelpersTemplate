@@ -1,6 +1,6 @@
 namespace Infrastructure.EFCore.Identity.Models;
 
-public class UserRoleAssignmentEntity
+internal sealed class UserRoleAssignmentEntity
 {
     public required Guid UserId { get; set; }
     public required Guid RoleId { get; set; }

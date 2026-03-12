@@ -2,7 +2,7 @@ using Domain.Authorization.Constants;
 using Domain.Authorization.Enums;
 using Domain.Authorization.ValueObjects;
 
-namespace Domain.Authorization.Services;
+namespace Domain.Authorization.Utilities;
 
 /// <summary>
 /// Evaluates whether a scope grants a requested permission.

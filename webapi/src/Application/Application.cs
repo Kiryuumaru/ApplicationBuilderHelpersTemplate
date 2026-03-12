@@ -13,7 +13,7 @@ using Microsoft.Extensions.Hosting;
 
 namespace Application;
 
-public class Application : ApplicationDependency
+public sealed class Application : ApplicationDependency
 {
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
     {

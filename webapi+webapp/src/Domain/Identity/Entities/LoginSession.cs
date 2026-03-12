@@ -1,24 +1,31 @@
-namespace Domain.Identity.Models;
+using Domain.Shared.Models;
 
-public class LoginSession
+namespace Domain.Identity.Entities;
+
+/// <summary>
+/// Represents a user's login session with refresh token tracking.
+/// </summary>
+public class LoginSession : Entity
 {
-    public Guid Id { get; private set; }
     public Guid UserId { get; private set; }
-    public string RefreshTokenHash { get; private set; }
-    public string? DeviceName { get; private set; }
-    public string? UserAgent { get; private set; }
-    public string? IpAddress { get; private set; }
-    public DateTimeOffset CreatedAt { get; private set; }
-    public DateTimeOffset LastUsedAt { get; private set; }
-    public DateTimeOffset ExpiresAt { get; private set; }
-    public bool IsRevoked { get; private set; }
-    public DateTimeOffset? RevokedAt { get; private set; }
 
-    // Required for EF Core
-    private LoginSession()
-    {
-        RefreshTokenHash = string.Empty;
-    }
+    public string RefreshTokenHash { get; private set; }
+
+    public string? DeviceName { get; private set; }
+
+    public string? UserAgent { get; private set; }
+
+    public string? IpAddress { get; private set; }
+
+    public DateTimeOffset CreatedAt { get; private set; }
+
+    public DateTimeOffset LastUsedAt { get; private set; }
+
+    public DateTimeOffset ExpiresAt { get; private set; }
+
+    public bool IsRevoked { get; private set; }
+
+    public DateTimeOffset? RevokedAt { get; private set; }
 
     protected LoginSession(
         Guid id,
@@ -28,9 +35,8 @@ public class LoginSession
         string? userAgent,
         string? ipAddress,
         DateTimeOffset createdAt,
-        DateTimeOffset expiresAt)
+        DateTimeOffset expiresAt) : base(id)
     {
-        Id = id;
         UserId = userId;
         RefreshTokenHash = refreshTokenHash;
         DeviceName = deviceName;

@@ -11,7 +11,7 @@ namespace Presentation.WebApi.FunctionalTests.Fixtures;
 /// Since WebApi uses ApplicationBuilderHelpers CLI pattern, WebApplicationFactory doesn't work.
 /// Instead, we start the actual application and test against it via HTTP.
 /// </summary>
-public class WebApiTestHost : IAsyncDisposable
+public sealed class WebApiTestHost : IAsyncDisposable
 {
     private readonly ITestOutputHelper _output;
     private readonly HttpClient _httpClient;

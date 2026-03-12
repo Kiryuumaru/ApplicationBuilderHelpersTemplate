@@ -1,4 +1,3 @@
-using Application.Shared.Configuration.Extensions;
 using Application.Shared.Extensions;
 using Application.Shared.Interfaces.Inbound;
 using Application.Logger.Extensions;

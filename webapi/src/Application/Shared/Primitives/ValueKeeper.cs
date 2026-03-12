@@ -1,6 +1,6 @@
 namespace Application.Shared.Primitives;
 
-public class ValueKeeper<T>
+public sealed class ValueKeeper<T>
 {
     private readonly AsyncManualResetEvent _waiterEvent = new(false);
 

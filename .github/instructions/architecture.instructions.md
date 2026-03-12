@@ -108,6 +108,20 @@ Application.Client:
 
 Application.Server and Application.Client are parallel branches, not hierarchical.
 
+Domain.Server:
+- MUST reference Domain only
+- MUST NOT reference Domain.Client
+- Contains server-specific domain types (entities, value objects, enums)
+- Used for Blazor Server or API-only scenarios
+
+Domain.Client:
+- MUST reference Domain only
+- MUST NOT reference Domain.Server
+- Contains client-specific domain types
+- Used for Blazor WebAssembly scenarios
+
+Domain.Server and Domain.Client are parallel branches for platform-specific domain logic.
+
 Infrastructure:
 - MUST reference Application and Domain
 - MUST NOT reference Presentation

@@ -12,7 +12,7 @@ namespace Domain.Authorization.ValueObjects;
 /// Represents a single scope directive that grants or revokes permission to a path.
 /// Format: "&lt;type&gt;;&lt;permission_path&gt;[;&lt;param1&gt;=&lt;value1&gt;[;&lt;param2&gt;=&lt;value2&gt;...]]"
 /// </summary>
-public sealed class ScopeDirective : ValueObject
+public class ScopeDirective : ValueObject
 {
     private static readonly char[] Separators = [';'];
 
@@ -31,7 +31,7 @@ public sealed class ScopeDirective : ValueObject
     /// </summary>
     public IReadOnlyDictionary<string, string> Parameters { get; }
 
-    private ScopeDirective(ScopeDirectiveType type, string permissionPath, IReadOnlyDictionary<string, string> parameters)
+    protected ScopeDirective(ScopeDirectiveType type, string permissionPath, IReadOnlyDictionary<string, string> parameters)
     {
         Type = type;
         PermissionPath = permissionPath;

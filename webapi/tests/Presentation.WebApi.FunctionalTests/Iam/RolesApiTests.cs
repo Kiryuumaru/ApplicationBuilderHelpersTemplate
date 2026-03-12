@@ -10,7 +10,7 @@ namespace Presentation.WebApi.FunctionalTests.Iam;
 /// Functional tests for IAM Roles API endpoints.
 /// Tests role assignment and removal operations.
 /// </summary>
-public class RolesApiTests : WebApiTestBase
+public sealed class RolesApiTests : WebApiTestBase
 {
     public RolesApiTests(ITestOutputHelper output) : base(output)
     {

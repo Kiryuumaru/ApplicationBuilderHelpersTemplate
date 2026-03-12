@@ -1,14 +1,14 @@
-using Application.Authorization.Models;
 using Application.Authorization.Services;
 using Application.Credential.Interfaces.Inbound;
 using ApplicationBuilderHelpers;
 using Domain.Shared.Extensions;
 using Infrastructure.Identity.Extensions;
+using Infrastructure.Identity.Models;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.Identity;
 
-public class IdentityInfrastructure : ApplicationDependency
+public sealed class IdentityInfrastructure : ApplicationDependency
 {
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
     {

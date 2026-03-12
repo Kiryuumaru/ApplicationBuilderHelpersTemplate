@@ -2,11 +2,14 @@ using Domain.Shared.Models;
 
 namespace Domain.Authorization.ValueObjects;
 
-public class RoleId : ValueObject
+/// <summary>
+/// Strongly-typed identifier for a role.
+/// </summary>
+public sealed class RoleId : ValueObject
 {
     public Guid Value { get; }
 
-    protected RoleId(Guid value)
+    private RoleId(Guid value)
     {
         if (value == Guid.Empty)
         {

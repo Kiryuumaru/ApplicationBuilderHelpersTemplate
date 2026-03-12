@@ -2,7 +2,7 @@ using Infrastructure.OpenTelemetry.Logger.Abstractions;
 
 namespace Infrastructure.OpenTelemetry.Logger.LogEventPropertyTypes;
 
-internal class DateTimePropertyParser : LogEventPropertyParser<DateTime>
+internal sealed class DateTimePropertyParser : LogEventPropertyParser<DateTime>
 {
     public static DateTimePropertyParser Default { get; } = new();
 

@@ -1,5 +1,8 @@
 namespace Domain.Shared.Exceptions;
 
+/// <summary>
+/// Base exception for all domain-level errors.
+/// </summary>
 public class DomainException : Exception
 {
     public DomainException()

@@ -3,7 +3,7 @@ using System.Security.Claims;
 
 namespace Application.Authorization.Extensions;
 
-public static class IPermissionServiceExtensions
+public static class PermissionServiceExtensions
 {
     public static Task<string> GenerateTokenWithPermissionsAsync(
         this IPermissionService permissionService,

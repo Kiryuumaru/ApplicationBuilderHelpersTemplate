@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using Application.Identity.Enums;
+using Domain.Identity.Enums;
 using Application.Identity.Interfaces.Inbound;
 using Application.Identity.Models;
 using Domain.Identity.Constants;

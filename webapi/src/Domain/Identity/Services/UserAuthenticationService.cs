@@ -5,6 +5,9 @@ using Domain.Identity.Entities;
 
 namespace Domain.Identity.Services;
 
+/// <summary>
+/// Domain service for authenticating users against stored credentials.
+/// </summary>
 public sealed class UserAuthenticationService
 {
     private readonly IPasswordVerifier _passwordVerifier;

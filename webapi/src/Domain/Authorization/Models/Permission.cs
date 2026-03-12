@@ -4,6 +4,9 @@ using Domain.Shared.Constants;
 
 namespace Domain.Authorization.Models;
 
+/// <summary>
+/// Represents a hierarchical permission definition in the authorization system.
+/// </summary>
 public sealed class Permission
 {
     public required string Identifier { get; init; }

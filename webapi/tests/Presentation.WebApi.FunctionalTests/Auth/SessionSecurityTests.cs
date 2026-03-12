@@ -10,7 +10,7 @@ namespace Presentation.WebApi.FunctionalTests.Auth;
 /// Security tests for session management.
 /// Tests session lifecycle, concurrent access, and attack vectors.
 /// </summary>
-public class SessionSecurityTests(ITestOutputHelper output) : WebApiTestBase(output)
+public sealed class SessionSecurityTests(ITestOutputHelper output) : WebApiTestBase(output)
 {
 
     #region Session ID Manipulation Tests

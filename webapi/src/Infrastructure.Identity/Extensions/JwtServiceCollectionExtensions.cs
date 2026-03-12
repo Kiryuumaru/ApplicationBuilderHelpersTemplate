@@ -1,6 +1,6 @@
 using Application.Authorization.Interfaces.Outbound;
-using Application.Authorization.Models;
 using Infrastructure.Identity.ConfigureOptions;
+using Infrastructure.Identity.Models;
 using Infrastructure.Identity.Interfaces;
 using Infrastructure.Identity.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;

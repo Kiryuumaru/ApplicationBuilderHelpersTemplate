@@ -8,7 +8,6 @@ using Domain.Authorization.Entities;
 using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;
 using Domain.Identity.Entities;
-using Domain.Identity.Models;
 using Domain.Identity.ValueObjects;
 using Domain.Shared.Exceptions;
 

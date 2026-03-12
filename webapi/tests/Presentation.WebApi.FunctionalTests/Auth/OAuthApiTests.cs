@@ -10,7 +10,7 @@ namespace Presentation.WebApi.FunctionalTests.Auth;
 /// Functional tests for OAuth/External Login API endpoints.
 /// Tests external login providers, linking, and unlinking.
 /// </summary>
-public class OAuthApiTests(ITestOutputHelper output) : WebApiTestBase(output)
+public sealed class OAuthApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 {
 
     #region Get Providers Tests

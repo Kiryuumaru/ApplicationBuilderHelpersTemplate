@@ -4,12 +4,15 @@ using Domain.Shared.Models;
 
 namespace Domain.Identity.ValueObjects;
 
-public class UserRoleAssignment : ValueObject
+/// <summary>
+/// Represents a role assigned to a user with optional parameter bindings.
+/// </summary>
+public sealed class UserRoleAssignment : ValueObject
 {
     public Guid RoleId { get; }
     public IReadOnlyDictionary<string, string?> ParameterValues { get; }
 
-    protected UserRoleAssignment(Guid roleId, IReadOnlyDictionary<string, string?> parameterValues)
+    private UserRoleAssignment(Guid roleId, IReadOnlyDictionary<string, string?> parameterValues)
     {
         RoleId = roleId;
         ParameterValues = parameterValues;

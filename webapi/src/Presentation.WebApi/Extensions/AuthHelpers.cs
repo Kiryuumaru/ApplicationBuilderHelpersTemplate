@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Presentation.WebApi.Controllers.V1.Auth.MeController;
 using Presentation.WebApi.Controllers.V1.Auth.Shared.Responses;
 
-namespace Presentation.WebApi.Controllers.V1.Auth.Shared;
+namespace Presentation.WebApi.Extensions;
 
 /// <summary>
 /// Shared helper methods for Auth controllers.

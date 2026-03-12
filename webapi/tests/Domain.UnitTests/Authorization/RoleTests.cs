@@ -1,9 +1,9 @@
-using Domain.Authorization.Models;
+using Domain.Authorization.Entities;
 using Domain.Authorization.ValueObjects;
 
 namespace Domain.UnitTests.Authorization;
 
-public class RoleTests
+public sealed class RoleTests
 {
     [Fact]
     public void AddScopeTemplate_AddsTemplateOnce()

@@ -1,5 +1,6 @@
 using Application.Authorization.Models;
 using Domain.Authorization.Constants;
+using Infrastructure.Identity.Models;
 using Domain.Identity.Enums;
 using Domain.Shared.Exceptions;
 using Infrastructure.Identity.Interfaces;

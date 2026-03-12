@@ -1,7 +1,9 @@
+using Application.Identity.Models;
 using Domain.Identity.Models;
 using Domain.Identity.Entities;
+using Domain.Identity.ValueObjects;
 
-namespace Application.Identity.Models;
+namespace Application.Identity.Extensions;
 
 /// <summary>
 /// Extension methods for mapping domain entities to DTOs.

@@ -1,6 +1,11 @@
+using Domain.Shared.Exceptions;
+
 namespace Domain.Identity.Exceptions;
 
-public sealed class OAuthAuthenticationFailedException : Exception
+/// <summary>
+/// Thrown when OAuth authentication fails.
+/// </summary>
+public sealed class OAuthAuthenticationFailedException : DomainException
 {
     public OAuthAuthenticationFailedException(string? error, string? errorDescription)
         : base(errorDescription ?? "OAuth authentication was not successful.")

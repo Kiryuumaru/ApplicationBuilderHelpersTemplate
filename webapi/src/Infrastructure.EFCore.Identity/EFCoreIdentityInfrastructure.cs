@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.EFCore.Identity;
 
-public class EFCoreIdentityInfrastructure : ApplicationDependency
+public sealed class EFCoreIdentityInfrastructure : ApplicationDependency
 {
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
     {

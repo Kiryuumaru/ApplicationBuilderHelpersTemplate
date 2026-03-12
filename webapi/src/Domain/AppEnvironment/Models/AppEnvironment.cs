@@ -12,7 +12,7 @@ namespace Domain.AppEnvironment.Models;
 /// It exists to keep environment naming consistent across the solution, deployment tooling, and generated build metadata.
 /// </para>
 /// </remarks>
-public class AppEnvironment
+public sealed class AppEnvironment
 {
     /// <summary>
     /// Gets the full name of the deployment environment.

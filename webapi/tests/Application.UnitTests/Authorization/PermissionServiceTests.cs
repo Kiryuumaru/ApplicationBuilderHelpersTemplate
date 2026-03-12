@@ -6,7 +6,7 @@ using System.Security.Claims;
 
 namespace Application.UnitTests.Authorization;
 
-public class PermissionServiceTests
+public sealed class PermissionServiceTests
 {
     // Use real permissions from the system that exist under api:auth (user-scoped)
     private const string SessionsListPermission = "api:auth:sessions:list;userId=user-123";

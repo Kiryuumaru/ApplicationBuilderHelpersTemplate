@@ -10,7 +10,7 @@ namespace Presentation.WebApi.FunctionalTests.Auth;
 /// Functional tests for Two-Factor Authentication API endpoints.
 /// Tests 2FA setup, enable, disable, login, and recovery codes.
 /// </summary>
-public class TwoFactorApiTests(ITestOutputHelper output) : WebApiTestBase(output)
+public sealed class TwoFactorApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 {
 
     #region 2FA Setup Tests

@@ -5,7 +5,7 @@ namespace Presentation.WebApi.Controllers.V1.Auth.PasskeysController.Responses;
 /// </summary>
 /// <param name="ChallengeId">The challenge ID to use when completing login.</param>
 /// <param name="OptionsJson">The WebAuthn options JSON to pass to navigator.credentials.get().</param>
-public record PasskeyLoginOptionsResponse(
+public sealed record PasskeyLoginOptionsResponse(
     Guid ChallengeId,
     string OptionsJson
 );

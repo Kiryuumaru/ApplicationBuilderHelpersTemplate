@@ -1,6 +1,6 @@
 namespace Infrastructure.EFCore.Identity.Models;
 
-public class UserLoginEntity
+internal sealed class UserLoginEntity
 {
     public required string LoginProvider { get; set; }
     public required string ProviderKey { get; set; }

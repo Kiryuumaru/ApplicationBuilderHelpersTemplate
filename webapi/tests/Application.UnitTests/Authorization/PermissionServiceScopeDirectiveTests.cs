@@ -1,6 +1,7 @@
 using Application.Authorization.Interfaces.Inbound;
 using Application.Authorization.Models;
 using Application.Authorization.Services;
+using Infrastructure.Identity.Models;
 using Application.UnitTests.Authorization.Fakes;
 using Domain.Authorization.Constants;
 using Infrastructure.Identity.Services;
@@ -14,7 +15,7 @@ namespace Application.UnitTests.Authorization;
 /// and IPermissionService from the Application layer.
 /// Format: "allow;path" or "allow;path;key=value" or "deny;path"
 /// </summary>
-public class PermissionServiceScopeDirectiveTests
+public sealed class PermissionServiceScopeDirectiveTests
 {
     #region Scope Directive Format Tests (PermissionIds Generated API)
 

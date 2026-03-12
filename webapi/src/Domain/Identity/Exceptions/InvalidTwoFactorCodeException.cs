@@ -1,6 +1,11 @@
+using Domain.Shared.Exceptions;
+
 namespace Domain.Identity.Exceptions;
 
-public sealed class InvalidTwoFactorCodeException : Exception
+/// <summary>
+/// Thrown when a two-factor authentication code is invalid.
+/// </summary>
+public sealed class InvalidTwoFactorCodeException : DomainException
 {
     public InvalidTwoFactorCodeException() : base("The 2FA code is invalid or has expired.")
     {

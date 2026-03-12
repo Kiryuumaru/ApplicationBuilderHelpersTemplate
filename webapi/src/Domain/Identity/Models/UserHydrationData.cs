@@ -1,5 +1,8 @@
 namespace Domain.Identity.Models;
 
+/// <summary>
+/// Data transfer object for hydrating a User entity from persistence.
+/// </summary>
 public sealed record UserHydrationData
 {
     public required Guid Id { get; init; }

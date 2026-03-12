@@ -1,6 +1,7 @@
 using Application.Server.Identity.Interfaces.Inbound;
-using Application.Server.Identity.Interfaces.Outbound;
 using Application.Server.Identity.Models;
+using Domain.Identity.Entities;
+using Domain.Identity.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace Application.Server.Identity.Services;
@@ -102,7 +103,7 @@ internal sealed class SessionService(
         Guid? sessionId,
         CancellationToken cancellationToken)
     {
-        var loginSession = Domain.Identity.Models.LoginSession.Create(
+        var loginSession = LoginSession.Create(
             userId,
             refreshTokenHash,
             expiresAt,
@@ -113,7 +114,7 @@ internal sealed class SessionService(
         // If a session ID was provided, reconstruct with that ID
         if (sessionId.HasValue)
         {
-            loginSession = Domain.Identity.Models.LoginSession.Reconstruct(
+            loginSession = LoginSession.Reconstruct(
                 sessionId.Value,
                 loginSession.UserId,
                 loginSession.RefreshTokenHash,
@@ -131,7 +132,7 @@ internal sealed class SessionService(
         return loginSession.Id;
     }
 
-    private static SessionDto MapToDto(Domain.Identity.Models.LoginSession session)
+    private static SessionDto MapToDto(LoginSession session)
     {
         return new SessionDto
         {

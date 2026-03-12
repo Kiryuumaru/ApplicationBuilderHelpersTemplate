@@ -1,10 +1,13 @@
-using Domain.Authorization.Services;
+using Domain.Authorization.Utilities;
 using Domain.Authorization.ValueObjects;
 using Domain.Shared.Models;
 
-namespace Domain.Identity.Models;
+namespace Domain.Identity.ValueObjects;
 
-public class UserSession : ValueObject
+/// <summary>
+/// Represents an authenticated user session with permissions and roles.
+/// </summary>
+public sealed class UserSession : ValueObject
 {
     public Guid UserId { get; }
     public string? Username { get; }
@@ -15,7 +18,7 @@ public class UserSession : ValueObject
     public DateTimeOffset ExpiresAt { get; }
     public bool IsAnonymous { get; }
 
-    protected UserSession(
+    private UserSession(
         Guid userId,
         string? username,
         IReadOnlyCollection<ScopeDirective> scope,

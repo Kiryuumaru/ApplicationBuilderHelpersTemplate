@@ -1,7 +1,7 @@
 using Domain.Identity.Models;
 using Domain.Identity.Entities;
 
-namespace Application.Authorization.Interfaces;
+namespace Application.Authorization.Interfaces.Inbound;
 
 /// <summary>
 /// Resolves user role assignments to their full role definitions with parameter values.

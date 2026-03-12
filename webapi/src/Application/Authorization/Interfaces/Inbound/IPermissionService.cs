@@ -4,7 +4,7 @@ using Domain.Authorization.Models;
 namespace Application.Authorization.Interfaces.Inbound;
 
 /// <summary>
-/// Coordinates permission metadata and token issuance using <see cref="IJwtTokenService"/>.
+/// Coordinates permission metadata and token issuance.
 /// </summary>
 public interface IPermissionService
 {
@@ -31,7 +31,7 @@ public interface IPermissionService
     Task<bool> ValidatePermissionsAsync(IEnumerable<string> permissionIdentifiers, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Issues a JWT token containing the supplied permission claims via <see cref="IJwtTokenService"/>.
+    /// Issues a JWT token containing the supplied permission claims.
     /// </summary>
     /// <param name="userId">The unique identifier for the principal.</param>
     /// <param name="username">The display name for the principal (null for anonymous users).</param>
@@ -49,7 +49,7 @@ public interface IPermissionService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Issues an API key token containing the supplied permission claims via <see cref="IJwtTokenService"/>.
+    /// Issues an API key token containing the supplied permission claims.
     /// </summary>
     /// <param name="apiKeyName">The friendly name for the API key principal.</param>
     /// <param name="permissionIdentifiers">Permission identifiers to embed as claims.</param>
@@ -65,7 +65,7 @@ public interface IPermissionService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Issues a JWT token containing scope directives via <see cref="IJwtTokenService"/>.
+    /// Issues a JWT token containing scope directives.
     /// This method uses the new directive-based scope system (RBAC v2).
     /// </summary>
     /// <param name="userId">The unique identifier for the principal.</param>

@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace Infrastructure.EFCore.Sqlite.Extensions;
+namespace Infrastructure.EFCore.Sqlite.Services;
 
 internal sealed class EFCoreDbContextFactoryAdapter(IDbContextFactory<SqliteDbContext> innerFactory) : IDbContextFactory<EFCoreDbContext>
 {

@@ -15,7 +15,7 @@ using System.Reflection;
 namespace Presentation.WebApi.Commands;
 
 [Command("Main subcommand.")]
-internal class MainCommand : Build.BaseCommand<WebApplicationBuilder>
+internal sealed class MainCommand : Build.BaseCommand<WebApplicationBuilder>
 {
     [CommandOption("urls", Description = "Server listening URLs (semicolon-separated)", EnvironmentVariable = "ASPNETCORE_URLS")]
     public string? Urls { get; set; }

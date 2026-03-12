@@ -5,7 +5,7 @@ namespace Presentation.WebApi.Controllers.V1.Auth.PasskeysController.Responses;
 /// </summary>
 /// <param name="CredentialId">The unique identifier for this passkey.</param>
 /// <param name="Name">The name assigned to this passkey.</param>
-public record PasskeyRegistrationResponse(
+public sealed record PasskeyRegistrationResponse(
     Guid CredentialId,
     string Name
 );

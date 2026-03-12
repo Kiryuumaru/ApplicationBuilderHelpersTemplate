@@ -1,5 +1,6 @@
 using Application.Identity.Interfaces.Inbound;
 using Fido2NetLib;
+using Infrastructure.Passkeys.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.Passkeys.Extensions;

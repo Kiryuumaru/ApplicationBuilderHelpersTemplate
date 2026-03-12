@@ -1,6 +1,5 @@
 using Application.Server.Identity.Interfaces.Outbound;
 using Domain.Identity.Entities;
-using Domain.Identity.Models;
 using Microsoft.AspNetCore.Identity;
 
 namespace Infrastructure.Server.Identity.Services;

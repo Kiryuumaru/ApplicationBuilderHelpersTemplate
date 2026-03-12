@@ -1,6 +1,9 @@
-namespace Application.Authorization.Models;
+namespace Infrastructure.Identity.Models;
 
-public class JwtConfiguration
+/// <summary>
+/// Configuration settings for JWT token generation and validation.
+/// </summary>
+internal sealed class JwtConfiguration
 {
     public required string Secret { get; init; }
     public required string Issuer { get; init; }

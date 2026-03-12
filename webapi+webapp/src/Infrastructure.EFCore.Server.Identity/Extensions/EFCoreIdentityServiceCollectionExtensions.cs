@@ -3,7 +3,7 @@ using Application.Server.Identity.Interfaces.Outbound;
 using Domain.Authorization.Entities;
 using Domain.Authorization.Models;
 using Domain.Identity.Entities;
-using Domain.Identity.Models;
+using Domain.Identity.Interfaces;
 using Infrastructure.EFCore.Server.Identity.Configurations;
 using Infrastructure.EFCore.Server.Identity.Repositories;
 using Infrastructure.EFCore.Interfaces;

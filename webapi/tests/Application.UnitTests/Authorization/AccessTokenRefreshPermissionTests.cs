@@ -13,7 +13,7 @@ namespace Application.UnitTests.Authorization;
 /// <summary>
 /// Tests that expose the permission bug where access tokens incorrectly have api:auth:refresh permission.
 /// </summary>
-public class AccessTokenRefreshPermissionTests
+public sealed class AccessTokenRefreshPermissionTests
 {
     private static readonly Guid TestUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
     private static readonly Guid TestSessionId = Guid.Parse("22222222-2222-2222-2222-222222222222");

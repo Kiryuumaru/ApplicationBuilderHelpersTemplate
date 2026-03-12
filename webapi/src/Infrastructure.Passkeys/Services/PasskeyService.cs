@@ -10,7 +10,7 @@ using Fido2NetLib;
 using Fido2NetLib.Objects;
 using System.Text.Json;
 
-namespace Infrastructure.Passkeys;
+namespace Infrastructure.Passkeys.Services;
 
 internal sealed class PasskeyService : IPasskeyService
 {

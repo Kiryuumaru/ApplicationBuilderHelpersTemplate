@@ -5,7 +5,7 @@ using Domain.Serialization;
 
 namespace Domain.UnitTests.Serialization;
 
-public class DomainJsonContextTests
+public sealed class DomainJsonContextTests
 {
     [Fact]
     public void Enum_Serializes_As_CamelCase_String()

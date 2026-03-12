@@ -9,7 +9,6 @@ using Domain.Authorization.Models;
 using Domain.Identity.Constants;
 using Domain.Identity.Exceptions;
 using Domain.Identity.Entities;
-using Domain.Identity.Models;
 using Domain.Shared.Exceptions;
 using System.Security.Claims;
 

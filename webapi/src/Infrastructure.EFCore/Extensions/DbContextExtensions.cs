@@ -58,7 +58,7 @@ public static class DbContextExtensions
         }
     }
 
-    public static bool IsUniqueConstraintViolation(DbUpdateException ex)
+    public static bool IsUniqueConstraintViolation(this DbUpdateException ex)
     {
         var message = ex.InnerException?.Message ?? ex.Message;
         
@@ -77,7 +77,7 @@ public static class DbContextExtensions
         return false;
     }
 
-    public static string? ExtractConstraintName(DbUpdateException ex)
+    public static string? ExtractConstraintName(this DbUpdateException ex)
     {
         var message = ex.InnerException?.Message ?? ex.Message;
         
@@ -92,7 +92,7 @@ public static class DbContextExtensions
         return null;
     }
 
-    public static bool IsConstraintViolationForColumn(DbUpdateException ex, string columnName)
+    public static bool IsConstraintViolationForColumn(this DbUpdateException ex, string columnName)
     {
         var message = ex.InnerException?.Message ?? ex.Message;
         return message.Contains(columnName, StringComparison.OrdinalIgnoreCase);

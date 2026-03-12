@@ -1,7 +1,7 @@
 using Domain.Authorization.Constants;
 using Domain.Authorization.Enums;
 using Domain.Authorization.Models;
-using Domain.Authorization.Services;
+using Domain.Authorization.Utilities;
 using Domain.Authorization.ValueObjects;
 
 namespace Domain.UnitTests.Authorization;
@@ -9,7 +9,7 @@ namespace Domain.UnitTests.Authorization;
 /// <summary>
 /// Tests for ScopeEvaluator to verify new directive-based scope evaluation works correctly.
 /// </summary>
-public class ScopeEvaluatorTests
+public sealed class ScopeEvaluatorTests
 {
     [Fact]
     public void HasPermission_GlobalReadScope_GrantsRLeafPermission()

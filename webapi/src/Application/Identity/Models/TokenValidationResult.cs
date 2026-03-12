@@ -1,4 +1,4 @@
-using Application.Identity.Enums;
+using Domain.Identity.Enums;
 
 namespace Application.Identity.Models;
 

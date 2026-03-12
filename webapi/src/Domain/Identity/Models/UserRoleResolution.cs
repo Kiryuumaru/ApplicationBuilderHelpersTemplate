@@ -1,9 +1,12 @@
 using System.Collections.ObjectModel;
-using Domain.Authorization.Models;
+using Domain.Authorization.Entities;
 using Domain.Shared.Constants;
 
 namespace Domain.Identity.Models;
 
+/// <summary>
+/// Represents a resolved role assignment with parameter values.
+/// </summary>
 public sealed class UserRoleResolution(Role role, IReadOnlyDictionary<string, string?>? parameterValues = null)
 {
     public Role Role { get; } = role ?? throw new ArgumentNullException(nameof(role));

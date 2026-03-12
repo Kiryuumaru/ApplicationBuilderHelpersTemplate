@@ -2,6 +2,9 @@ using Domain.Shared.Exceptions;
 
 namespace Domain.Identity.Exceptions;
 
+/// <summary>
+/// Thrown when two-factor authentication is required but not completed.
+/// </summary>
 public sealed class TwoFactorRequiredException : DomainException
 {
     public Guid UserId { get; }

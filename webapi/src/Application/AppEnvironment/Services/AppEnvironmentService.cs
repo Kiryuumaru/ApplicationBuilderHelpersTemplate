@@ -1,7 +1,7 @@
 using Application.AppEnvironment.Extensions;
 using Application.AppEnvironment.Interfaces.Inbound;
 using Application.Shared.Interfaces.Inbound;
-using Application.LocalStore.Interfaces;
+using Application.LocalStore.Interfaces.Inbound;
 using Microsoft.Extensions.Configuration;
 
 namespace Application.AppEnvironment.Services;

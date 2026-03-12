@@ -8,7 +8,7 @@ using RolesConstants = Domain.Authorization.Constants.Roles;
 
 namespace Application.UnitTests.Authorization;
 
-public class RoleServiceTests
+public sealed class RoleServiceTests
 {
     [Fact]
     public async Task ListAsync_IncludesStaticRolesWithoutDynamicData()

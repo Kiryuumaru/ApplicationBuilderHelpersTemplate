@@ -1,6 +1,6 @@
 namespace Application.NativeCmd.Exceptions;
 
-public class NativeCmdException : Exception
+public sealed class NativeCmdException : Exception
 {
     public int ExitCode { get; }
 

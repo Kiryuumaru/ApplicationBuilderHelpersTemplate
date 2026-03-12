@@ -3,7 +3,6 @@ using Application.Server.Identity.Interfaces.Outbound;
 using Application.Server.Identity.Models;
 using Domain.Identity.Exceptions;
 using Domain.Identity.Entities;
-using Domain.Identity.Models;
 using Domain.Shared.Exceptions;
 using System.Security.Cryptography;
 using System.Text;

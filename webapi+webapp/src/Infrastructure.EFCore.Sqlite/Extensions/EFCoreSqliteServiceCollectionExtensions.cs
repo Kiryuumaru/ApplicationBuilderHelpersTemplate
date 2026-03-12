@@ -8,6 +8,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.EFCore.Sqlite.Extensions;
 
+// EF Core does not support NativeAOT without compiled models. No workaround currently exists.
+// See: https://learn.microsoft.com/en-us/ef/core/performance/advanced-performance-topics#compiled-models
 [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode", Justification = "EF Core inherently uses reflection. NativeAOT support requires compiled models.")]
 internal static class EFCoreSqliteServiceCollectionExtensions
 {

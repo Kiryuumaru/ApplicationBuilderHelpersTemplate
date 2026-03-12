@@ -9,7 +9,7 @@ namespace Presentation.WebApi.FunctionalTests.RegressionTests;
 /// Regression tests to verify all issues documented in WHAT_YOU_DID_WRONG_FOUND_BY_DEV.md are fixed.
 /// Each test corresponds to a specific issue number from the document.
 /// </summary>
-public class RefactoringRegressionTests : WebApiTestBase
+public sealed class RefactoringRegressionTests : WebApiTestBase
 {
     private HttpClient Client => HttpClient;
 
@@ -688,7 +688,7 @@ public class RefactoringRegressionTests : WebApiTestBase
 }
 
 // Response DTOs for deserializing API responses
-public class AuthResponse
+internal sealed class AuthResponse
 {
     public string AccessToken { get; set; } = "";
     public string RefreshToken { get; set; } = "";
@@ -697,7 +697,7 @@ public class AuthResponse
     public AuthUserInfo? User { get; set; }
 }
 
-public class AuthUserInfo
+internal sealed class AuthUserInfo
 {
     public Guid Id { get; set; }
     public string? Username { get; set; }
@@ -707,12 +707,12 @@ public class AuthUserInfo
     public bool IsAnonymous { get; set; }
 }
 
-public class SessionsResponse
+internal sealed class SessionsResponse
 {
     public SessionInfo[]? Items { get; set; }
 }
 
-public class SessionInfo
+internal sealed class SessionInfo
 {
     public Guid Id { get; set; }
     public string? DeviceName { get; set; }

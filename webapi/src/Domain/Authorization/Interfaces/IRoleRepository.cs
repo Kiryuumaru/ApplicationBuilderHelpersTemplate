@@ -1,4 +1,4 @@
-using Domain.Authorization.Models;
+using Domain.Authorization.Entities;
 
 namespace Domain.Authorization.Interfaces;
 

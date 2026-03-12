@@ -11,6 +11,7 @@ using Presentation.WebApi.Controllers.V1.Auth.OAuthController.Requests;
 using Presentation.WebApi.Controllers.V1.Auth.OAuthController.Responses;
 using Presentation.WebApi.Controllers.V1.Auth.Shared;
 using Presentation.WebApi.Controllers.V1.Auth.Shared.Responses;
+using Presentation.WebApi.Extensions;
 using System.ComponentModel.DataAnnotations;
 
 namespace Presentation.WebApi.Controllers.V1.Auth.OAuthController;

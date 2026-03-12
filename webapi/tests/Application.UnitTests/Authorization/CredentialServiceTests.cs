@@ -9,7 +9,7 @@ namespace Application.UnitTests.Authorization;
 /// Unit tests for CredentialService.
 /// Validates that credentials are correctly read from configuration by environment tag.
 /// </summary>
-public class CredentialServiceTests
+public sealed class CredentialServiceTests
 {
 	[Fact]
 	public async Task GetCredentials_ReadsEnvironmentSpecificValues()

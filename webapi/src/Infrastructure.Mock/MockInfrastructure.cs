@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.Mock;
 
-public class MockInfrastructure : ApplicationDependency
+public sealed class MockInfrastructure : ApplicationDependency
 {
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
     {

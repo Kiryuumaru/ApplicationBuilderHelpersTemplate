@@ -1,6 +1,6 @@
 namespace Infrastructure.EFCore.Identity.Models;
 
-public class PasskeyChallengeEntity
+internal sealed class PasskeyChallengeEntity
 {
     public required Guid Id { get; set; }
     public required byte[] Challenge { get; set; }

@@ -109,7 +109,7 @@ Comments exist for future readers with no conversation context. The codebase sta
 - NEVER use `// HACK:` comments
 - NEVER use `// FIXME:` comments
 - NEVER use `#pragma warning disable`
-- NEVER use `[SuppressMessage]` attributes
+- NEVER use `[SuppressMessage]` attributes (exception: `[UnconditionalSuppressMessage]` for AOT/trimming when no workaround exists)
 - NEVER use `var x = value!;` without justification comment
 - NEVER write comments referencing prompts: "As requested", "Per instruction", "Added because asked"
 - NEVER write comments referencing conversation: "As discussed", "Per our conversation", "Following the plan"

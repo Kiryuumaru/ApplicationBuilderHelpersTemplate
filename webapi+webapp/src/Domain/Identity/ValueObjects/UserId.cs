@@ -5,14 +5,14 @@ namespace Domain.Identity.ValueObjects;
 /// <summary>
 /// Strongly-typed identifier for a user.
 /// </summary>
-public sealed class UserId : ValueObject
+public class UserId : ValueObject
 {
     /// <summary>
     /// Gets the underlying GUID value.
     /// </summary>
     public Guid Value { get; }
 
-    private UserId(Guid value)
+    protected UserId(Guid value)
     {
         Value = value;
     }

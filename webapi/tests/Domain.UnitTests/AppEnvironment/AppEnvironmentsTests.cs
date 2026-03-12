@@ -2,7 +2,7 @@ using Domain.AppEnvironment.Constants;
 
 namespace Domain.UnitTests.AppEnvironment;
 
-public class AppEnvironmentsTests
+public sealed class AppEnvironmentsTests
 {
     [Theory]
     [InlineData("prerelease", "Development", "pre")]

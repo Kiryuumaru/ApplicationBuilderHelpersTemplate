@@ -1,8 +1,8 @@
+using Domain.Authorization.Entities;
 using Domain.Authorization.Extensions;
-using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;
 
-namespace Domain.Authorization.Constants;
+namespace Domain.Authorization.Models;
 
 public sealed record RoleDefinition(
     Guid Id,

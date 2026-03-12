@@ -23,7 +23,7 @@ namespace Presentation.WebApi.FunctionalTests.Auth;
 /// - Refresh tokens CANNOT access them because they only have allow;api:auth:refresh
 /// - These endpoints require specific permissions that access tokens provide
 /// </summary>
-public class TokenSeparationTests(ITestOutputHelper output) : WebApiTestBase(output)
+public sealed class TokenSeparationTests(ITestOutputHelper output) : WebApiTestBase(output)
 {
 
     #region Core Token Separation Tests

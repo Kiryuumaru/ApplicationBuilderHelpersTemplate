@@ -2,6 +2,9 @@ using Domain.Shared.Exceptions;
 
 namespace Domain.Authorization.Exceptions;
 
+/// <summary>
+/// Thrown when a user lacks required permission.
+/// </summary>
 public sealed class PermissionDeniedException : DomainException
 {
     public string PermissionIdentifier { get; }

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Domain.Authorization.Entities;
 using Domain.Authorization.Enums;
 using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;

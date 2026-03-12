@@ -7,7 +7,10 @@ using Domain.Shared.Models;
 
 namespace Domain.Identity.Entities;
 
-public class User : AggregateRoot
+/// <summary>
+/// Represents a user account in the system.
+/// </summary>
+public sealed class User : AggregateRoot
 {
     private readonly HashSet<UserPermissionGrant> _permissionGrants = new();
     private readonly HashSet<UserRoleAssignment> _roleAssignments = new();
@@ -45,7 +48,7 @@ public class User : AggregateRoot
     public IReadOnlyCollection<UserRoleAssignment> RoleAssignments => _roleAssignments.ToList().AsReadOnly();
     public IReadOnlyCollection<UserIdentityLink> IdentityLinks => _identityLinks.Values.ToList().AsReadOnly();
 
-    protected User(Guid id, string? userName, string? email, bool isAnonymous = false) : base(id)
+    private User(Guid id, string? userName, string? email, bool isAnonymous = false) : base(id)
     {
         UserName = userName;
         NormalizedUserName = userName?.ToUpperInvariant();

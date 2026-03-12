@@ -6,7 +6,7 @@ using System.Text.Json.Nodes;
 
 namespace Presentation.WebApi.Filters;
 
-internal class AllowedValuesSchemaFilter : ISchemaFilter
+internal sealed class AllowedValuesSchemaFilter : ISchemaFilter
 {
     public void Apply(IOpenApiSchema schema, SchemaFilterContext context)
     {

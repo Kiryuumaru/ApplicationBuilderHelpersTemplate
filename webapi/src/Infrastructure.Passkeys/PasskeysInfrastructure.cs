@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.Passkeys;
 
-public class PasskeysInfrastructure : ApplicationDependency
+public sealed class PasskeysInfrastructure : ApplicationDependency
 {
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
     {

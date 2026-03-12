@@ -3,7 +3,7 @@ using System.Net.Sockets;
 
 namespace Application.Shared.Utilities;
 
-public class NetworkUtils
+public static class NetworkUtils
 {
     public static int GetRandomAvailablePort()
     {

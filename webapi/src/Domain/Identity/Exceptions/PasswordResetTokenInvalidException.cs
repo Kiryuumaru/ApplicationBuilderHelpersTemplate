@@ -1,6 +1,11 @@
+using Domain.Shared.Exceptions;
+
 namespace Domain.Identity.Exceptions;
 
-public sealed class PasswordResetTokenInvalidException : Exception
+/// <summary>
+/// Thrown when a password reset token is invalid or expired.
+/// </summary>
+public sealed class PasswordResetTokenInvalidException : DomainException
 {
     public PasswordResetTokenInvalidException()
         : base("The password reset token is invalid or has expired.")

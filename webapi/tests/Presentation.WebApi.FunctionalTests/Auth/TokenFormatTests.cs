@@ -8,7 +8,7 @@ namespace Presentation.WebApi.FunctionalTests.Auth;
 /// <summary>
 /// Tests verifying the JWT token format uses correct claim types and inline role parameters.
 /// </summary>
-public class TokenFormatTests(ITestOutputHelper output) : WebApiTestBase(output)
+public sealed class TokenFormatTests(ITestOutputHelper output) : WebApiTestBase(output)
 {
 
     #region JWT Claim Type Tests

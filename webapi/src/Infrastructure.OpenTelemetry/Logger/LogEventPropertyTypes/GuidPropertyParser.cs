@@ -2,7 +2,7 @@ using Infrastructure.OpenTelemetry.Logger.Abstractions;
 
 namespace Infrastructure.OpenTelemetry.Logger.LogEventPropertyTypes;
 
-internal class GuidPropertyParser : LogEventPropertyParser<Guid>
+internal sealed class GuidPropertyParser : LogEventPropertyParser<Guid>
 {
     public static GuidPropertyParser Default { get; } = new();
 

@@ -3,7 +3,7 @@ using Domain.Shared.Models;
 
 namespace Domain.Identity.ValueObjects;
 
-public sealed class UserIdentityLink : ValueObject
+public class UserIdentityLink : ValueObject
 {
     public string Provider { get; }
     public string Subject { get; }
@@ -11,7 +11,7 @@ public sealed class UserIdentityLink : ValueObject
     public string? DisplayName { get; }
     public DateTimeOffset LinkedAt { get; }
 
-    private UserIdentityLink(string provider, string subject, string? email, string? displayName, DateTimeOffset linkedAt)
+    protected UserIdentityLink(string provider, string subject, string? email, string? displayName, DateTimeOffset linkedAt)
     {
         Provider = NormalizeProvider(provider);
         Subject = NormalizeSubject(subject);

@@ -1,8 +1,8 @@
 using Application.Authorization.Interfaces.Inbound;
 using Application.Authorization.Models;
+using Domain.Authorization.Entities;
 using Domain.Authorization.Exceptions;
 using Domain.Authorization.Interfaces;
-using Domain.Authorization.Models;
 using Domain.Authorization.ValueObjects;
 using Domain.Shared.Exceptions;
 using RolesConstants = Domain.Authorization.Constants.Roles;

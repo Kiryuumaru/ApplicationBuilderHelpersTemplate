@@ -6,7 +6,7 @@ namespace Presentation.WebApi.Controllers.V1.Auth.PasskeysController.Requests;
 /// Request to rename a passkey.
 /// </summary>
 /// <param name="Name">The new name for the passkey.</param>
-public record PasskeyRenameRequest(
+public sealed record PasskeyRenameRequest(
     [Required]
     [MaxLength(256)]
     string Name

@@ -8,7 +8,7 @@ namespace Presentation.WebApi.ModelBinders;
 /// <summary>
 /// Model binder that extracts values from JWT claims using <see cref="FromJwtAttribute"/>.
 /// </summary>
-public sealed class FromJwtModelBinder : IModelBinder
+internal sealed class FromJwtModelBinder : IModelBinder
 {
     /// <inheritdoc />
     public Task BindModelAsync(ModelBindingContext bindingContext)

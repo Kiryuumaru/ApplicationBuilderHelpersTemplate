@@ -1,5 +1,8 @@
 namespace Domain.Shared.Models;
 
+/// <summary>
+/// Entity with auditing timestamps for creation and modification tracking.
+/// </summary>
 public abstract class AuditableEntity(Guid id) : Entity(id)
 {
     public DateTimeOffset Created { get; private set; } = DateTimeOffset.UtcNow;

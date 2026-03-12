@@ -1,5 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
-using Application.Identity.Enums;
+using Domain.Identity.Enums;
 using Application.Identity.Interfaces.Inbound;
 using Infrastructure.Identity.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;

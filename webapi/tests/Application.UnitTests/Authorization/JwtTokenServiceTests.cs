@@ -1,4 +1,4 @@
-using Application.Authorization.Models;
+using Infrastructure.Identity.Models;
 using Infrastructure.Identity.Services;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -7,7 +7,7 @@ using TokenClaimTypes = Domain.Identity.Constants.TokenClaimTypes;
 
 namespace Application.UnitTests.Authorization;
 
-public class JwtTokenServiceTests
+public sealed class JwtTokenServiceTests
 {
 	[Fact]
 	public async Task GenerateToken_IncludesNormalizedScopesAndCustomClaims()

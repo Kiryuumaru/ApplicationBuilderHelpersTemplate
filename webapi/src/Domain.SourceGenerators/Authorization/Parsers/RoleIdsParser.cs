@@ -89,7 +89,7 @@ internal static class RoleIdsParser
                 continue;
             }
 
-            if (!string.Equals(ctorSymbol.ContainingType.ToDisplayString(), "Domain.Authorization.Constants.RoleDefinition", StringComparison.Ordinal))
+            if (!string.Equals(ctorSymbol.ContainingType.ToDisplayString(), "Domain.Authorization.Models.RoleDefinition", StringComparison.Ordinal))
             {
                 continue;
             }

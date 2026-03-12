@@ -1,7 +1,7 @@
 using System.Text.Json;
+using Domain.Authorization.Entities;
 using Domain.Authorization.Exceptions;
 using Domain.Authorization.Interfaces;
-using Domain.Authorization.Models;
 using Infrastructure.EFCore.Identity.Models;
 using Microsoft.EntityFrameworkCore;
 using RolesConstants = Domain.Authorization.Constants.Roles;

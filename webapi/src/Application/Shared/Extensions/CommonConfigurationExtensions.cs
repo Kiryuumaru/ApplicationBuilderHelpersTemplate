@@ -3,7 +3,7 @@ using ApplicationBuilderHelpers.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace Application.Shared.Configuration.Extensions;
+namespace Application.Shared.Extensions;
 
 public static class CommonConfigurationExtensions
 {

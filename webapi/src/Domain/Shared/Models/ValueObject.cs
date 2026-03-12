@@ -1,5 +1,8 @@
 namespace Domain.Shared.Models;
 
+/// <summary>
+/// Base class for immutable value objects with equality by components.
+/// </summary>
 public abstract class ValueObject : DomainObject
 {
     protected static bool EqualOperator(ValueObject left, ValueObject right)

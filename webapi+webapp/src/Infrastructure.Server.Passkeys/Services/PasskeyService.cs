@@ -4,7 +4,6 @@ using Application.Server.Identity.Models;
 using Domain.Identity.Enums;
 using Domain.Identity.Exceptions;
 using Domain.Identity.Entities;
-using Domain.Identity.Models;
 using Domain.Shared.Exceptions;
 using Fido2NetLib;
 using Fido2NetLib.Objects;

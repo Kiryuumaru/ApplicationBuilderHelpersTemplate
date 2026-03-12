@@ -10,7 +10,7 @@ namespace Presentation.WebApi.FunctionalTests.Iam;
 /// Functional tests for IAM Permissions API endpoints.
 /// Tests permission grant and revoke operations.
 /// </summary>
-public class PermissionsApiTests : WebApiTestBase
+public sealed class PermissionsApiTests : WebApiTestBase
 {
     public PermissionsApiTests(ITestOutputHelper output) : base(output)
     {

@@ -1,4 +1,4 @@
-using Application.Authorization.Interfaces;
+using Application.Authorization.Interfaces.Inbound;
 using Domain.Authorization.Interfaces;
 using Domain.Identity.Models;
 using Domain.Identity.Entities;

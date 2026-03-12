@@ -2,7 +2,10 @@ using Domain.Shared.Models;
 
 namespace Domain.Identity.Entities;
 
-public class PasskeyCredential : AuditableEntity
+/// <summary>
+/// Represents a user's registered FIDO2 passkey credential.
+/// </summary>
+public sealed class PasskeyCredential : AuditableEntity
 {
     public Guid UserId { get; private set; }
     public string Name { get; private set; }
@@ -16,7 +19,7 @@ public class PasskeyCredential : AuditableEntity
     public byte[] UserHandle { get; private set; }
     public string AttestationFormat { get; private set; }
 
-    protected PasskeyCredential(
+    private PasskeyCredential(
         Guid id,
         Guid userId,
         string name,
@@ -82,26 +85,21 @@ public class PasskeyCredential : AuditableEntity
         DateTimeOffset registeredAt,
         DateTimeOffset? lastUsedAt)
     {
-        var credential = new PasskeyCredential
+        var credential = new PasskeyCredential(
+            id,
+            userId,
+            name,
+            credentialId,
+            publicKey,
+            signCount,
+            aaGuid,
+            credentialType,
+            userHandle,
+            attestationFormat)
         {
-            UserId = userId,
-            Name = name,
-            CredentialId = credentialId,
-            PublicKey = publicKey,
-            SignCount = signCount,
-            AaGuid = aaGuid,
-            CredentialType = credentialType,
-            UserHandle = userHandle,
-            AttestationFormat = attestationFormat,
             RegisteredAt = registeredAt,
             LastUsedAt = lastUsedAt
         };
-        
-        // Set Id using reflection since Entity.Id has a private setter
-        typeof(global::Domain.Shared.Models.Entity)
-            .GetProperty(nameof(global::Domain.Shared.Models.Entity.Id))!
-            .SetValue(credential, id);
-        
         return credential;
     }
 
@@ -119,16 +117,5 @@ public class PasskeyCredential : AuditableEntity
 
         Name = newName;
         MarkAsModified();
-    }
-
-    // For EF Core
-    private PasskeyCredential() : base(Guid.NewGuid())
-    {
-        Name = string.Empty;
-        CredentialId = Array.Empty<byte>();
-        PublicKey = Array.Empty<byte>();
-        CredentialType = "public-key";
-        UserHandle = Array.Empty<byte>();
-        AttestationFormat = "none";
     }
 }

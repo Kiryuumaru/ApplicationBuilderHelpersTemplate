@@ -1,4 +1,4 @@
-using Application.Shared.Configuration.Extensions;
+using Application.Shared.Extensions;
 using Application.Logger.Extensions;
 using Infrastructure.OpenTelemetry.Logger.Interfaces;
 using Infrastructure.OpenTelemetry.Logger.LogEventPropertyTypes;
@@ -8,7 +8,7 @@ using Serilog.Events;
 
 namespace Infrastructure.OpenTelemetry.Logger.Enrichers;
 
-internal class DefaultLogEnricher(IConfiguration configuration, Dictionary<string, object?>? scopeMap) : ILogEventEnricher
+internal sealed class DefaultLogEnricher(IConfiguration configuration, Dictionary<string, object?>? scopeMap) : ILogEventEnricher
 {
     private const string ValueTypeMapIdentifier = "ValueTypeMap";
     private const int MaxSourceContextsToKeep = 10; // Limit the number of source contexts to prevent unbounded growth

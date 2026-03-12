@@ -1,7 +1,6 @@
 using Domain.Identity.Entities;
-using Domain.Identity.Models;
 
-namespace Application.Server.Identity.Interfaces.Outbound;
+namespace Domain.Identity.Interfaces;
 
 /// <summary>
 /// Repository for API key persistence operations.

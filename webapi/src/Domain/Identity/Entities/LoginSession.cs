@@ -1,9 +1,12 @@
-namespace Domain.Identity.Models;
+using Domain.Shared.Models;
 
-public sealed class LoginSession
+namespace Domain.Identity.Entities;
+
+/// <summary>
+/// Represents a user's login session with refresh token tracking.
+/// </summary>
+public sealed class LoginSession : Entity
 {
-    public Guid Id { get; private set; }
-
     public Guid UserId { get; private set; }
 
     public string RefreshTokenHash { get; private set; }
@@ -24,12 +27,6 @@ public sealed class LoginSession
 
     public DateTimeOffset? RevokedAt { get; private set; }
 
-    // Required for EF Core
-    private LoginSession()
-    {
-        RefreshTokenHash = string.Empty;
-    }
-
     private LoginSession(
         Guid id,
         Guid userId,
@@ -38,9 +35,8 @@ public sealed class LoginSession
         string? userAgent,
         string? ipAddress,
         DateTimeOffset createdAt,
-        DateTimeOffset expiresAt)
+        DateTimeOffset expiresAt) : base(id)
     {
-        Id = id;
         UserId = userId;
         RefreshTokenHash = refreshTokenHash;
         DeviceName = deviceName;

@@ -2,11 +2,14 @@ using Domain.Shared.Models;
 
 namespace Domain.Identity.ValueObjects;
 
-public class UserId : ValueObject
+/// <summary>
+/// Strongly-typed identifier for a user.
+/// </summary>
+public sealed class UserId : ValueObject
 {
     public Guid Value { get; }
 
-    protected UserId(Guid value)
+    private UserId(Guid value)
     {
         if (value == Guid.Empty)
         {

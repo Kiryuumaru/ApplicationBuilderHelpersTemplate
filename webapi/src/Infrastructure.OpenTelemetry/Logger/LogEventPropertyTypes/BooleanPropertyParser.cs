@@ -2,7 +2,7 @@ using Infrastructure.OpenTelemetry.Logger.Abstractions;
 
 namespace Infrastructure.OpenTelemetry.Logger.LogEventPropertyTypes;
 
-internal class BooleanPropertyParser : LogEventPropertyParser<bool>
+internal sealed class BooleanPropertyParser : LogEventPropertyParser<bool>
 {
     public static BooleanPropertyParser Default { get; } = new();
 

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Application.Credential.Models;
 
-public class Credentials
+public sealed class Credentials
 {
     public required JsonObject EnvironmentCredentials { get; init; }
 }

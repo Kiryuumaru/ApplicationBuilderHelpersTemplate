@@ -10,7 +10,7 @@ namespace Presentation.WebApi.FunctionalTests.Auth;
 /// Functional tests for Registration API endpoints.
 /// Tests user registration, validation, and security edge cases.
 /// </summary>
-public class RegisterApiTests(ITestOutputHelper output) : WebApiTestBase(output)
+public sealed class RegisterApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 {
 
     #region Basic Registration Tests

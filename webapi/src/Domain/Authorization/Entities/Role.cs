@@ -5,9 +5,12 @@ using Domain.Shared.Constants;
 using Domain.Shared.Exceptions;
 using Domain.Shared.Models;
 
-namespace Domain.Authorization.Models;
+namespace Domain.Authorization.Entities;
 
-public class Role : AggregateRoot
+/// <summary>
+/// Represents a security role that can be assigned to users.
+/// </summary>
+public sealed class Role : AggregateRoot
 {
     private readonly List<ScopeTemplate> _scopeTemplates = new();
 
@@ -19,7 +22,7 @@ public class Role : AggregateRoot
 
     public IReadOnlyCollection<ScopeTemplate> ScopeTemplates => _scopeTemplates.AsReadOnly();
 
-    protected Role(Guid id, string code, string name, string? description, bool isSystemRole) : base(id)
+    private Role(Guid id, string code, string name, string? description, bool isSystemRole) : base(id)
     {
         Code = NormalizeCode(code);
         Name = NormalizeName(name);

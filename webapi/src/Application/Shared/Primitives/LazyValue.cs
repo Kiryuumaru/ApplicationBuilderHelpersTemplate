@@ -1,6 +1,6 @@
 namespace Application.Shared.Primitives;
 
-public class LazyValue<TValue>(Func<CancellationToken, Task<TValue>> valueFactory)
+public sealed class LazyValue<TValue>(Func<CancellationToken, Task<TValue>> valueFactory)
 {
     private TValue? _value;
     private readonly Func<CancellationToken, Task<TValue>> _valueFactory = valueFactory;

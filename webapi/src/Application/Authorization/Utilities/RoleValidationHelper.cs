@@ -1,4 +1,4 @@
-using Domain.Authorization.Models;
+using Domain.Authorization.Entities;
 using Domain.Shared.Exceptions;
 
 namespace Application.Authorization.Utilities;

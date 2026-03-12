@@ -2,7 +2,7 @@ using Domain.Authorization.Enums;
 
 namespace Infrastructure.EFCore.Identity.Models;
 
-public class UserPermissionGrantEntity
+internal sealed class UserPermissionGrantEntity
 {
     public required Guid UserId { get; set; }
     public required ScopeDirectiveType Type { get; set; }

@@ -3,7 +3,10 @@ using Domain.Shared.Models;
 
 namespace Domain.Identity.Entities;
 
-public class PasskeyChallenge : Entity
+/// <summary>
+/// Represents a FIDO2 passkey challenge for registration or authentication.
+/// </summary>
+public sealed class PasskeyChallenge : Entity
 {
     public byte[] Challenge { get; private set; }
     public Guid? UserId { get; private set; }
@@ -13,7 +16,7 @@ public class PasskeyChallenge : Entity
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset ExpiresAt { get; private set; }
 
-    protected PasskeyChallenge(
+    private PasskeyChallenge(
         Guid id,
         byte[] challenge,
         Guid? userId,
@@ -85,12 +88,5 @@ public class PasskeyChallenge : Entity
         DateTimeOffset expiresAt)
     {
         return new PasskeyChallenge(id, challenge, userId, type, optionsJson, credentialName, createdAt, expiresAt);
-    }
-
-    // For EF Core
-    private PasskeyChallenge() : base(Guid.NewGuid())
-    {
-        Challenge = Array.Empty<byte>();
-        OptionsJson = string.Empty;
     }
 }

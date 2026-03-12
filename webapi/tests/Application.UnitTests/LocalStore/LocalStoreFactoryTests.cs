@@ -5,7 +5,7 @@ using NSubstitute;
 
 namespace Application.UnitTests.LocalStore;
 
-public class LocalStoreFactoryTests
+public sealed class LocalStoreFactoryTests
 {
 	[Fact]
 	public async Task OpenStore_NormalizesGroupAndInvokesServiceOpen()

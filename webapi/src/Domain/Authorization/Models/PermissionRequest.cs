@@ -1,5 +1,8 @@
-namespace Domain.Authorization.ValueObjects;
+namespace Domain.Authorization.Models;
 
+/// <summary>
+/// Represents a permission check request with path and optional parameters.
+/// </summary>
 public readonly struct PermissionRequest
 {
     private readonly string _path;

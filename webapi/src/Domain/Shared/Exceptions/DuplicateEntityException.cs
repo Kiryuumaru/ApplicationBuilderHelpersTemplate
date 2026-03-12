@@ -1,5 +1,8 @@
 namespace Domain.Shared.Exceptions;
 
+/// <summary>
+/// Thrown when attempting to create a duplicate entity.
+/// </summary>
 public sealed class DuplicateEntityException : DomainException
 {
     public string? EntityType { get; }

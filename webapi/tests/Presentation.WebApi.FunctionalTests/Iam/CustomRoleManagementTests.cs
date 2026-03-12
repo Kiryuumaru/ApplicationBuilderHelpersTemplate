@@ -11,7 +11,7 @@ namespace Presentation.WebApi.FunctionalTests.Iam;
 /// Tests the full lifecycle of creating roles, assigning permissions to roles,
 /// assigning roles to users, and verifying access based on role permissions.
 /// </summary>
-public class CustomRoleManagementTests(ITestOutputHelper output) : WebApiTestBase(output)
+public sealed class CustomRoleManagementTests(ITestOutputHelper output) : WebApiTestBase(output)
 {
     private const string TestUserPassword = "TestP@ssword123!";
 

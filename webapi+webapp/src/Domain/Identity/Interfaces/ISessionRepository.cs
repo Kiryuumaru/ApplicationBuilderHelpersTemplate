@@ -1,11 +1,9 @@
 using Domain.Identity.Entities;
-using Domain.Identity.Models;
 
-namespace Application.Server.Identity.Interfaces.Outbound;
+namespace Domain.Identity.Interfaces;
 
 /// <summary>
-/// Internal repository for login session persistence operations.
-/// Renamed from ISessionStore to follow repository naming convention.
+/// Repository for login session persistence operations.
 /// </summary>
 public interface ISessionRepository
 {

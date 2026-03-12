@@ -1,9 +1,12 @@
 using Application.Authorization.Models;
-using Domain.Authorization.Models;
+using Domain.Authorization.Entities;
 using Domain.Authorization.ValueObjects;
 
 namespace Application.Authorization.Interfaces.Inbound;
 
+/// <summary>
+/// Service for managing authorization roles.
+/// </summary>
 public interface IRoleService
 {
     Task<Role> CreateRoleAsync(RoleDescriptor descriptor, CancellationToken cancellationToken);

@@ -11,7 +11,7 @@ namespace Presentation.WebApi.FunctionalTests.Auth;
 /// Cross-cutting security tests for Authentication API.
 /// Tests JWT security, header manipulation, and common attack vectors.
 /// </summary>
-public class AuthSecurityTests(ITestOutputHelper output) : WebApiTestBase(output)
+public sealed class AuthSecurityTests(ITestOutputHelper output) : WebApiTestBase(output)
 {
 
     #region JWT Security Tests

@@ -1,4 +1,4 @@
-using Domain.Authorization.Models;
+using Domain.Authorization.Entities;
 using Domain.Authorization.ValueObjects;
 using Domain.Identity.Exceptions;
 using Domain.Identity.Interfaces;
@@ -10,7 +10,7 @@ using Domain.Shared.Exceptions;
 
 namespace Domain.UnitTests.Identity;
 
-public class UserTests
+public sealed class UserTests
 {
     [Fact]
     public void GrantPermission_NormalizesIdentifier()

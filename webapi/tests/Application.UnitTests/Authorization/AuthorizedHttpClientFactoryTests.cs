@@ -7,7 +7,7 @@ using System.Security.Claims;
 
 namespace Application.UnitTests.Authorization;
 
-public class AuthorizedHttpClientFactoryTests
+public sealed class AuthorizedHttpClientFactoryTests
 {
 	[Fact]
 	public async Task CreateAuthorized_SetsBearerTokenAndTracksDisposal()

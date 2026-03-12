@@ -5,6 +5,7 @@ namespace Infrastructure.EFCore.Interfaces;
 /// <summary>
 /// Interface for modular EF Core entity configurations.
 /// Each infrastructure module can register its own entity configurations.
+/// Internal to Infrastructure layer - not exposed to Application or Presentation.
 /// </summary>
 public interface IEFCoreEntityConfiguration
 {

@@ -1,5 +1,5 @@
 using Application.Server.Identity.Interfaces.Inbound;
-using Application.Server.Identity.Interfaces.Outbound;
+using Domain.Identity.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace Application.Server.Identity.Services;

@@ -1,5 +1,6 @@
 using Application.Authorization.Extensions;
 using Application.Authorization.Models;
+using Infrastructure.Identity.Models;
 using Application.Identity.Extensions;
 using Application.Identity.Interfaces.Inbound;
 using Application.Identity.Models;
@@ -23,7 +24,7 @@ namespace Application.IntegrationTests.Identity;
 /// Integration tests for Identity services (split from IIdentityService).
 /// Uses real EF Core implementation via DI - persistence ignorant pattern.
 /// </summary>
-public class IdentityServiceTests
+public sealed class IdentityServiceTests
 {
     [Fact]
     public async Task RegisterUserAsync_PersistsActivatedUserWithPermissions()

@@ -1,6 +1,6 @@
 namespace Application.Shared.Primitives;
 
-public class GateKeeperCounter : GateKeeper
+public sealed class GateKeeperCounter : GateKeeper
 {
     private readonly Lock _lock = new();
 

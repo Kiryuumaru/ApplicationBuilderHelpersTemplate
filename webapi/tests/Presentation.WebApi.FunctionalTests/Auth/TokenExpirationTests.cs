@@ -12,7 +12,7 @@ namespace Presentation.WebApi.FunctionalTests.Auth;
 /// Tests for token expiration, validity, and session lifecycle.
 /// Covers edge cases around token timing, theft detection, and validity boundaries.
 /// </summary>
-public class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(output)
+public sealed class TokenExpirationTests(ITestOutputHelper output) : WebApiTestBase(output)
 {
     private const int ExpectedAccessTokenExpirationSeconds = 3600; // 60 minutes
 

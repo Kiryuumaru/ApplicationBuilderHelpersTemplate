@@ -5,7 +5,7 @@ using Domain.Identity.Services;
 
 namespace Domain.UnitTests.Identity;
 
-public class FederatedAuthTests
+public sealed class FederatedAuthTests
 {
     [Fact]
     public void RegisterExternal_CreatesUserWithIdentityLink()

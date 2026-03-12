@@ -1,5 +1,5 @@
 using Application.LocalStore.Extensions;
-using Application.LocalStore.Interfaces;
+using Application.LocalStore.Interfaces.Inbound;
 using Infrastructure.EFCore.LocalStore.Extensions;
 using Infrastructure.EFCore.Sqlite.Extensions;
 using Infrastructure.EFCore.Extensions;
@@ -14,7 +14,7 @@ namespace Application.IntegrationTests.LocalStore;
 /// Integration tests for ILocalStoreFactory behavior.
 /// Uses DI to obtain the real implementation - tests remain persistence-ignorant.
 /// </summary>
-public class LocalStoreFactoryIntegrationTests
+public sealed class LocalStoreFactoryIntegrationTests
 {
 	[Fact]
 	public async Task SetAndGet_PersistsDataAfterCommit()

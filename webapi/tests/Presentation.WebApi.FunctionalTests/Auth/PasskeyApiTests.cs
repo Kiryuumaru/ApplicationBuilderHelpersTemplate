@@ -10,7 +10,7 @@ namespace Presentation.WebApi.FunctionalTests.Auth;
 /// Functional tests for Passkey (WebAuthn) API endpoints.
 /// Tests passkey registration, authentication, and management.
 /// </summary>
-public class PasskeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
+public sealed class PasskeyApiTests(ITestOutputHelper output) : WebApiTestBase(output)
 {
 
     #region Passkey Creation Options Tests

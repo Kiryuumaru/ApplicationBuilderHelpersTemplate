@@ -1,5 +1,8 @@
 namespace Domain.Shared.Exceptions;
 
+/// <summary>
+/// Thrown when validation fails.
+/// </summary>
 public sealed class ValidationException : DomainException
 {
     public string? PropertyName { get; }

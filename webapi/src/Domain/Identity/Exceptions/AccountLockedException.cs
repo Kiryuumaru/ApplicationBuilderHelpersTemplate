@@ -2,6 +2,9 @@ using Domain.Shared.Exceptions;
 
 namespace Domain.Identity.Exceptions;
 
+/// <summary>
+/// Thrown when a user account is locked.
+/// </summary>
 public sealed class AccountLockedException : DomainException
 {
     public DateTimeOffset? LockoutEnd { get; }

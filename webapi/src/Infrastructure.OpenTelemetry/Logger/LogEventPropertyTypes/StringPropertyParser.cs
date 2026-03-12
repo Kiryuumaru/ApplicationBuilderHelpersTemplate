@@ -2,7 +2,7 @@ using Infrastructure.OpenTelemetry.Logger.Abstractions;
 
 namespace Infrastructure.OpenTelemetry.Logger.LogEventPropertyTypes;
 
-internal class StringPropertyParser : LogEventPropertyParser<string>
+internal sealed class StringPropertyParser : LogEventPropertyParser<string>
 {
     public static StringPropertyParser Default { get; } = new();
 

@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Infrastructure.EFCore;
 
-public class EFCoreInfrastructure : ApplicationDependency
+public sealed class EFCoreInfrastructure : ApplicationDependency
 {
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
     {

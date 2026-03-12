@@ -3,7 +3,10 @@ using Domain.Shared.Models;
 
 namespace Domain.Identity.ValueObjects;
 
-public class UserIdentityLink : ValueObject
+/// <summary>
+/// Links a user account to an external identity provider.
+/// </summary>
+public sealed class UserIdentityLink : ValueObject
 {
     public string Provider { get; }
     public string Subject { get; }
@@ -11,7 +14,7 @@ public class UserIdentityLink : ValueObject
     public string? DisplayName { get; }
     public DateTimeOffset LinkedAt { get; }
 
-    protected UserIdentityLink(string provider, string subject, string? email, string? displayName, DateTimeOffset linkedAt)
+    private UserIdentityLink(string provider, string subject, string? email, string? displayName, DateTimeOffset linkedAt)
     {
         Provider = NormalizeProvider(provider);
         Subject = NormalizeSubject(subject);

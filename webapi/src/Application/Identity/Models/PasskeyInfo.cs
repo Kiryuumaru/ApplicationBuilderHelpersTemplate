@@ -3,7 +3,7 @@ namespace Application.Identity.Models;
 /// <summary>
 /// Information about a registered passkey for display.
 /// </summary>
-public record PasskeyInfo(
+public sealed record PasskeyInfo(
     Guid Id,
     string Name,
     DateTimeOffset RegisteredAt,

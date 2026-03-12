@@ -1,8 +1,8 @@
-using Application.LocalStore.Common;
+using Application.LocalStore.Utilities;
 
 namespace Application.UnitTests.LocalStore;
 
-public class LocalStoreKeyTests
+public sealed class LocalStoreKeyTests
 {
 	[Fact]
 	public void NormalizeGroup_TrimsInput()

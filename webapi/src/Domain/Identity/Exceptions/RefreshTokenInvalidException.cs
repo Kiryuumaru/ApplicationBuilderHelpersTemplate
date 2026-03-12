@@ -1,6 +1,11 @@
+using Domain.Shared.Exceptions;
+
 namespace Domain.Identity.Exceptions;
 
-public sealed class RefreshTokenInvalidException : Exception
+/// <summary>
+/// Thrown when a refresh token is invalid or expired.
+/// </summary>
+public sealed class RefreshTokenInvalidException : DomainException
 {
     public RefreshTokenInvalidException(string? error, string? errorDescription)
         : base(errorDescription ?? "The refresh token is invalid or expired.")
