@@ -10,6 +10,8 @@ NetConduit.Grid provides scalable cloud-to-device communication infrastructure d
 - Cloud nodes aggregate devices
 - Router aggregates cloud nodes and handles user requests
 - Any NetConduit transport
+- Edge devices auto-reconnect on failure, load balancer routes to available node
+- Transport-level security via WebSocket over SSL (WSS)
 
 **Capacity:**
 - 1 Router → up to 100 Cloud Nodes
@@ -581,7 +583,5 @@ spec:
 ## Open Questions
 
 1. **Device ID collision**: Reject duplicate or disconnect old device?
-2. **Cloud node failure**: How to redistribute devices? (Let them reconnect to different node?)
-3. **Router failover**: Single point of failure - need HA solution?
-4. **Authentication**: Add auth hooks for device/node registration?
-5. **Message ordering**: Guarantee order per device?
+2. **Router failover**: Single point of failure - need HA solution?
+3. **Message ordering**: Guarantee order per device?
