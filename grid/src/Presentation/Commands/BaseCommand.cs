@@ -25,7 +25,7 @@ public abstract class BaseCommand<[DynamicallyAccessedMembers(DynamicallyAccesse
     {
         base.AddConfigurations(applicationBuilder, configuration);
 
-        configuration.LoggerLevel = LogLevel;
+        configuration.SetLoggerLevel(LogLevel);
     }
 
     public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
@@ -37,7 +37,7 @@ public abstract class BaseCommand<[DynamicallyAccessedMembers(DynamicallyAccesse
         // Default fallback logging - Infrastructure can ClearProviders() and replace
         services.AddLogging(builder =>
         {
-            builder.SetMinimumLevel(applicationBuilder.Configuration.LoggerLevel);
+            builder.SetMinimumLevel(applicationBuilder.Configuration.GetLoggerLevel());
             builder.AddConsole();
         });
 

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>Infrastructure.NetConduit.Cloud.Node</AssemblyName>
+    <RootNamespace>Infrastructure.NetConduit.Cloud.Node</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Application.Cloud.Node\Application.Cloud.Node.csproj" />
+    <ProjectReference Include="..\Infrastructure.NetConduit\Infrastructure.NetConduit.csproj" />
+  </ItemGroup>
+
+</Project>

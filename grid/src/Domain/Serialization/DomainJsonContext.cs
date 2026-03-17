@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Domain.Grid.Models;
 using Domain.HelloWorld.Entities;
 using Domain.HelloWorld.Events;
 
@@ -15,6 +16,8 @@ namespace Domain.Serialization;
 // HelloWorld Feature
 [JsonSerializable(typeof(HelloWorldEntity))]
 [JsonSerializable(typeof(HelloWorldCreatedEvent))]
+// Grid Feature
+[JsonSerializable(typeof(GridMessage))]
 public partial class DomainJsonContext : JsonSerializerContext
 {
 }

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <BaseCommandType>Presentation.Commands.BaseCommand</BaseCommandType>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Copyright>Copyright (C) 2025 Sample</Copyright>
+    <Company>Sample Company</Company>
+    <AssemblyTitle>Grid Router</AssemblyTitle>
+    <AssemblyName>gridrouter</AssemblyName>
+    <Description>Central routing component that manages cloud nodes and routes messages to devices.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Application\Application.csproj" />
+    <ProjectReference Include="..\Application.Cloud.Router\Application.Cloud.Router.csproj" />
+    <ProjectReference Include="..\Infrastructure.InMemory\Infrastructure.InMemory.csproj" />
+    <ProjectReference Include="..\Infrastructure.NetConduit.Cloud.Router\Infrastructure.NetConduit.Cloud.Router.csproj" />
+    <ProjectReference Include="..\Infrastructure.OpenTelemetry\Infrastructure.OpenTelemetry.csproj" />
+    <ProjectReference Include="..\Presentation\Presentation.csproj" />
+  </ItemGroup>
+
+</Project>

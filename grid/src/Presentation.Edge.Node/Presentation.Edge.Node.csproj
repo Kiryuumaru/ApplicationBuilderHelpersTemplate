@@ -15,7 +15,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Application\Application.csproj" />
+    <ProjectReference Include="..\Application.Edge.Node\Application.Edge.Node.csproj" />
     <ProjectReference Include="..\Infrastructure.InMemory\Infrastructure.InMemory.csproj" />
+    <ProjectReference Include="..\Infrastructure.NetConduit.Edge.Node\Infrastructure.NetConduit.Edge.Node.csproj" />
+    <ProjectReference Include="..\Infrastructure.OpenTelemetry\Infrastructure.OpenTelemetry.csproj" />
     <ProjectReference Include="..\Presentation\Presentation.csproj" />
   </ItemGroup>
 

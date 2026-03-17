@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <BaseCommandType>Presentation.Commands.BaseCommand</BaseCommandType>
@@ -15,7 +15,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Application\Application.csproj" />
+    <ProjectReference Include="..\Application.Cloud.Node\Application.Cloud.Node.csproj" />
     <ProjectReference Include="..\Infrastructure.InMemory\Infrastructure.InMemory.csproj" />
+    <ProjectReference Include="..\Infrastructure.NetConduit.Cloud.Node\Infrastructure.NetConduit.Cloud.Node.csproj" />
+    <ProjectReference Include="..\Infrastructure.OpenTelemetry\Infrastructure.OpenTelemetry.csproj" />
     <ProjectReference Include="..\Presentation\Presentation.csproj" />
   </ItemGroup>
 

@@ -1,6 +1,9 @@
-using Application.HelloWorld.Interfaces.Inbound;
+using Application.Cloud.Node.Grid.Interfaces.Inbound;
+using Application.Cloud.Node.Grid.Models;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Attributes;
+using Infrastructure.NetConduit.Cloud.Node.Extensions;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -8,42 +11,73 @@ using Microsoft.Extensions.Logging;
 namespace Presentation.Cli.Commands;
 
 [Command("Main subcommand.")]
-internal class MainCommand : Build.BaseCommand<HostApplicationBuilder>
+internal class MainCommand : Build.BaseCommand<WebApplicationBuilder>
 {
-    [CommandOption('m', "message", Description = "The hello world message to use.")]
-    public string Message { get; set; } = "Hello, World!";
+    [CommandOption('p', "port", Description = "Port to listen on for device connections.")]
+    public int Port { get; set; } = 8080;
 
-    protected override ValueTask<HostApplicationBuilder> ApplicationBuilder(CancellationToken stoppingToken)
+    [CommandOption('r', "router", Description = "Router WebSocket endpoint to connect to.")]
+    public string RouterEndpoint { get; set; } = "ws://localhost:5000/ws/node";
+
+    protected override ValueTask<WebApplicationBuilder> ApplicationBuilder(CancellationToken stoppingToken)
     {
-        var builder = Host.CreateApplicationBuilder();
-        return new ValueTask<HostApplicationBuilder>(builder);
+        var builder = WebApplication.CreateBuilder();
+        return new ValueTask<WebApplicationBuilder>(builder);
     }
 
-    protected override async ValueTask Run(ApplicationHost<HostApplicationBuilder> applicationHost, CancellationTokenSource cancellationTokenSource)
+    public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
+    {
+        base.AddServices(applicationBuilder, services);
+
+        services.AddGridCloudNode(new GridCloudOptions
+        {
+            RouterEndpoint = RouterEndpoint
+        });
+    }
+
+    public override void AddMappings(ApplicationHost applicationHost, IHost host)
+    {
+        base.AddMappings(applicationHost, host);
+
+        if (host is WebApplication app)
+        {
+            app.UseWebSockets();
+
+            app.Map("/ws/device", async context =>
+            {
+                if (!context.WebSockets.IsWebSocketRequest)
+                {
+                    context.Response.StatusCode = 400;
+                    return;
+                }
+
+                var cloudNode = context.RequestServices.GetRequiredService<IGridCloudNode>();
+                var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+                await cloudNode.HandleDeviceConnectionAsync(webSocket, context.RequestAborted);
+            });
+        }
+    }
+
+    protected override async ValueTask Run(ApplicationHost<WebApplicationBuilder> applicationHost, CancellationTokenSource cancellationTokenSource)
     {
         await base.Run(applicationHost, cancellationTokenSource);
 
-        using var scope = applicationHost.Services.CreateScope();
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<MainCommand>>();
+        var logger = applicationHost.Services.GetRequiredService<ILogger<MainCommand>>();
+        var cloudNode = applicationHost.Services.GetRequiredService<IGridCloudNode>();
 
-        // Presentation calls Application service (Interfaces/Inbound) - no direct entity manipulation
-        var helloWorldService = scope.ServiceProvider.GetRequiredService<IHelloWorldService>();
+        cloudNode.DeviceConnected += deviceId =>
+            logger.LogInformation("Device connected: {DeviceId}", deviceId);
 
-        logger.LogInformation("Calling HelloWorld service with message: {Message}", Message);
-        logger.LogInformation("---");
+        cloudNode.DeviceDisconnected += deviceId =>
+            logger.LogInformation("Device disconnected: {DeviceId}", deviceId);
 
-        // Single call to Application service triggers:
-        // 1. Entity creation (raises domain event)
-        // 2. Event dispatch to all handlers (in parallel)
-        // 3. Each handler executes independently (decoupled side effects)
-        var result = await helloWorldService.CreateGreetingAsync(Message, cancellationTokenSource.Token);
+        cloudNode.DeviceMessageReceived += (deviceId, data) =>
+            logger.LogDebug("Message from device {DeviceId}: {Length} bytes", deviceId, data.Length);
 
-        logger.LogInformation("---");
-        logger.LogInformation("Result: EntityId={EntityId}, Message=\"{Message}\", CreatedAt={CreatedAt}",
-            result.EntityId,
-            result.Message,
-            result.CreatedAt);
+        await cloudNode.StartAsync(cancellationTokenSource.Token);
 
-        cancellationTokenSource.Cancel();
+        logger.LogInformation("Cloud Node {NodeId} started on port {Port}", cloudNode.NodeId, Port);
+        logger.LogInformation("Connected to router: {Connected}", cloudNode.IsConnectedToRouter);
+        logger.LogInformation("Devices should connect to ws://localhost:{Port}/ws/device", Port);
     }
 }

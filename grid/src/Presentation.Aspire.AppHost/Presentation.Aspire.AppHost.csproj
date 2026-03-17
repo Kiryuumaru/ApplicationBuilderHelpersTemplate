@@ -1,4 +1,4 @@
-<Project Sdk="Aspire.AppHost.Sdk/13.1.0">
+<Project Sdk="Aspire.AppHost.Sdk/13.1.2">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Presentation.Cloud.Node\Presentation.Cloud.Node.csproj" />
+    <ProjectReference Include="..\Presentation.Cloud.Router\Presentation.Cloud.Router.csproj" />
     <ProjectReference Include="..\Presentation.Edge.Node\Presentation.Edge.Node.csproj" />
   </ItemGroup>
 

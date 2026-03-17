@@ -1,8 +1,9 @@
-using k8s.Models;
-
 var builder = DistributedApplication.CreateBuilder(args);
 
-var cloudNode01 = builder.AddProject<Projects.Presentation_Edge_Node>("cloud-node-01");
+var router = builder.AddProject<Projects.Presentation_Cloud_Router>("router");
+
+var cloudNode01 = builder.AddProject<Projects.Presentation_Cloud_Node>("cloud-node-01")
+    .WaitFor(router);
 
 builder.AddProject<Projects.Presentation_Edge_Node>("edge-node-01")
     .WaitFor(cloudNode01);

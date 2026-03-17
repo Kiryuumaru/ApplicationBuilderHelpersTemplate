@@ -104,7 +104,7 @@ partial class Build
         public override void AddConfigurations(ApplicationHostBuilder applicationBuilder, Microsoft.Extensions.Configuration.IConfiguration configuration)
         {
             base.AddConfigurations(applicationBuilder, configuration);
-            configuration.LoggerLevel = Microsoft.Extensions.Logging.LogLevel.Debug;
+            configuration.SetLoggerLevel(Microsoft.Extensions.Logging.LogLevel.Debug);
         }
 
         public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)

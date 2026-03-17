@@ -1,17 +1,23 @@
-using Application.HelloWorld.Interfaces.Inbound;
+using Application.Edge.Node.Grid.Interfaces.Inbound;
+using Application.Edge.Node.Grid.Models;
 using ApplicationBuilderHelpers;
 using ApplicationBuilderHelpers.Attributes;
+using Infrastructure.NetConduit.Edge.Node.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using System.Text;
 
 namespace Presentation.Cli.Commands;
 
 [Command("Main subcommand.")]
 internal class MainCommand : Build.BaseCommand<HostApplicationBuilder>
 {
-    [CommandOption('m', "message", Description = "The hello world message to use.")]
-    public string Message { get; set; } = "Hello, World!";
+    [CommandOption('d', "device-id", Description = "Unique device identifier.")]
+    public string DeviceId { get; set; } = $"device-{Guid.NewGuid().ToString("N")[..8]}";
+
+    [CommandOption('c', "cloud-node", Description = "Cloud node WebSocket endpoint to connect to.")]
+    public string CloudNodeEndpoint { get; set; } = "ws://localhost:8080/ws/device";
 
     protected override ValueTask<HostApplicationBuilder> ApplicationBuilder(CancellationToken stoppingToken)
     {
@@ -19,31 +25,67 @@ internal class MainCommand : Build.BaseCommand<HostApplicationBuilder>
         return new ValueTask<HostApplicationBuilder>(builder);
     }
 
+    public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
+    {
+        base.AddServices(applicationBuilder, services);
+
+        services.AddGridDeviceNode(new GridDeviceOptions
+        {
+            DeviceId = DeviceId,
+            CloudNodeEndpoint = CloudNodeEndpoint
+        });
+    }
+
     protected override async ValueTask Run(ApplicationHost<HostApplicationBuilder> applicationHost, CancellationTokenSource cancellationTokenSource)
     {
         await base.Run(applicationHost, cancellationTokenSource);
 
-        using var scope = applicationHost.Services.CreateScope();
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<MainCommand>>();
+        var logger = applicationHost.Services.GetRequiredService<ILogger<MainCommand>>();
+        var deviceNode = applicationHost.Services.GetRequiredService<IGridDeviceNode>();
 
-        // Presentation calls Application service (Interfaces/Inbound) - no direct entity manipulation
-        var helloWorldService = scope.ServiceProvider.GetRequiredService<IHelloWorldService>();
+        deviceNode.Connected += () =>
+            logger.LogInformation("Connected to cloud node");
 
-        logger.LogInformation("Calling HelloWorld service with message: {Message}", Message);
-        logger.LogInformation("---");
+        deviceNode.Disconnected += () =>
+            logger.LogWarning("Disconnected from cloud node");
 
-        // Single call to Application service triggers:
-        // 1. Entity creation (raises domain event)
-        // 2. Event dispatch to all handlers (in parallel)
-        // 3. Each handler executes independently (decoupled side effects)
-        var result = await helloWorldService.CreateGreetingAsync(Message, cancellationTokenSource.Token);
+        deviceNode.MessageReceived += data =>
+        {
+            var text = Encoding.UTF8.GetString(data.Span);
+            logger.LogInformation("Received message: {Message}", text);
+        };
 
-        logger.LogInformation("---");
-        logger.LogInformation("Result: EntityId={EntityId}, Message=\"{Message}\", CreatedAt={CreatedAt}",
-            result.EntityId,
-            result.Message,
-            result.CreatedAt);
+        logger.LogInformation("Edge Node {DeviceId} connecting to {Endpoint}", DeviceId, CloudNodeEndpoint);
 
-        cancellationTokenSource.Cancel();
+        try
+        {
+            await deviceNode.ConnectAsync(cancellationTokenSource.Token);
+            logger.LogInformation("Edge Node {DeviceId} connected successfully", DeviceId);
+
+            // Keep running and send periodic heartbeats
+            while (!cancellationTokenSource.Token.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(30), cancellationTokenSource.Token);
+
+                if (deviceNode.IsConnected)
+                {
+                    var heartbeat = Encoding.UTF8.GetBytes($"heartbeat from {DeviceId} at {DateTimeOffset.UtcNow}");
+                    await deviceNode.SendAsync(heartbeat, cancellationTokenSource.Token);
+                    logger.LogDebug("Sent heartbeat");
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Normal shutdown
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error in edge node");
+        }
+        finally
+        {
+            await deviceNode.DisconnectAsync();
+        }
     }
 }

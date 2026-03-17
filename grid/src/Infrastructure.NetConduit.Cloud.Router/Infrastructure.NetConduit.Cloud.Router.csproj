@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>Infrastructure.NetConduit.Cloud.Router</AssemblyName>
+    <RootNamespace>Infrastructure.NetConduit.Cloud.Router</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Application.Cloud.Router\Application.Cloud.Router.csproj" />
+    <ProjectReference Include="..\Infrastructure.NetConduit\Infrastructure.NetConduit.csproj" />
+  </ItemGroup>
+
+</Project>

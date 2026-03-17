@@ -61,7 +61,13 @@
 	<Allowed From="*" To="System.*" />
 	<Allowed From="*" To="Microsoft.*" />
 	<Allowed From="*" To="ApplicationBuilderHelpers.*" />
+	<Allowed From="*" To="AbsolutePathHelpers.*" />
 	<Allowed From="*" To="Build.*" />
+	<Allowed From="Infrastructure.NetConduit.*" To="NetConduit.*" />
+	<Allowed From="Infrastructure.OpenTelemetry.*" To="Serilog.*" />
+	<Allowed From="Infrastructure.OpenTelemetry.*" To="OpenTelemetry.*" />
+	<Allowed From="Infrastructure.OpenTelemetry.*" To="AbsolutePathHelpers.*" />
+	<Allowed From="Presentation.*" To="Infrastructure.*.Extensions" />
 	<Allowed From="." To="*" />
 </NsDepCopConfig>]]>
 		</NsDepCopConfigContent>
