@@ -38,9 +38,10 @@ Prioritize clean, correct design over compatibility. Fix naming mistakes and str
 
 | Need | Location |
 |------|----------|
-| All documentation | `docs/index.md` |
-| API contracts | `docs/features/*.md` |
-| Architecture patterns | `docs/architecture/*.md` |
+| Project overview | `README.md` |
+| Agent guidance | `AGENTS.md` |
+| Architecture patterns | `.github/instructions/architecture.instructions.md` |
 | Build commands | `.github/instructions/workflow.instructions.md` |
 | File organization | `.github/instructions/architecture.instructions.md` |
-| Architecture rules | `.github/instructions/architecture.instructions.md` |
+| Code quality | `.github/instructions/code-quality.instructions.md` |
+| Documentation rules | `.github/instructions/documentation.instructions.md` |

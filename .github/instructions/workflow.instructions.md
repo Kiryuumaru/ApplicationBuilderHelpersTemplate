@@ -21,30 +21,20 @@ applyTo: '**'
 | `dotnet test` | Run all tests |
 | `dotnet test tests/Domain.UnitTests` | Run Domain tests |
 | `dotnet test tests/Application.UnitTests` | Run Application tests |
-| `dotnet run --project src/Presentation.WebApp` | Run web application |
 | `dotnet run --project src/Presentation.Cli` | Run CLI application |
 
 ### Publishing
 
-Run `dotnet build --no-incremental` before publishing to ensure CSS regeneration.
-
 ```powershell
-dotnet build src/Presentation.WebApp.Server --no-incremental
-dotnet publish src/Presentation.WebApp.Server -o publish
+dotnet build src/Presentation.Cli --no-incremental
+dotnet publish src/Presentation.Cli -o publish
 ```
 
 ### Running Published Application
 
-Use single combined command with absolute path:
-
 ```powershell
-Push-Location "C:\path\to\publish"; & "C:\path\to\publish\sampleapp.exe" --urls "http://0.0.0.0:5000"
+./publish/sampleapp
 ```
-
-| Flag | Description |
-|------|-------------|
-| `--urls "http://0.0.0.0:5000"` | Listen on all interfaces, port 5000 |
-| `--urls "http://localhost:5000"` | Listen on localhost only |
 
 ### Stop Running Instance
 

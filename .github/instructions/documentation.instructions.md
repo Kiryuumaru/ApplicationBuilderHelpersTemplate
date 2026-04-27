@@ -9,12 +9,10 @@ Before implementing, modifying, or asking questions, check the relevant document
 
 | Task | Check |
 |------|-------|
-| New feature | `docs/features/*.md` for similar patterns |
-| Modify endpoint | `docs/features/*.md` for current contract |
+| New feature | `.github/instructions/architecture.instructions.md` for patterns |
 | Write tests | `.github/instructions/ui-test-practices.instructions.md` |
 | Architecture question | `.github/instructions/architecture.instructions.md` |
-
-Documentation index: `docs/index.md`
+| Build/workflow | `.github/instructions/workflow.instructions.md` |
 
 ---
 
@@ -22,10 +20,11 @@ Documentation index: `docs/index.md`
 
 | Content | Location |
 |---------|----------|
-| API contracts | `docs/features/*.md` |
+| Project overview | `README.md` |
 | Architecture patterns | `.github/instructions/architecture.instructions.md` |
 | Test conventions | `.github/instructions/ui-test-practices.instructions.md` |
-| Implementation status | `TODO.md` |
+| Build commands | `.github/instructions/workflow.instructions.md` |
+| Agent guidance | `AGENTS.md` |
 
 ---
 
@@ -35,18 +34,18 @@ Documentation index: `docs/index.md`
 
 | Change | Update |
 |--------|--------|
-| New endpoint | Add to feature doc |
+| New endpoint | Update `README.md` if user-facing |
 | Changed schema | Update examples |
 | Changed path | Update all references |
-| New parameters | Document in endpoint table |
+| New parameters | Document in relevant instruction file |
 
 ### Test Changes
 
 | Change | Update |
 |--------|--------|
-| New tests | Update test count in feature doc |
-| Renamed tests | Update test list |
-| Removed tests | Remove from test list |
+| New tests | Verify test conventions followed |
+| Renamed tests | Update any references |
+| Removed tests | Remove from any references |
 
 ### Architecture Changes
 
@@ -60,8 +59,7 @@ Documentation index: `docs/index.md`
 
 ## Pre-Commit Documentation Check
 
-- Does this change any API endpoint? -> Update feature doc
+- Does this change any user-facing API? -> Update `README.md`
 - Does this change request/response format? -> Update examples
-- Does this add/remove/rename tests? -> Update test list
+- Does this add/remove/rename tests? -> Verify conventions
 - Does this change architecture? -> Update architecture doc
-- Does this complete a TODO? -> Update TODO.md

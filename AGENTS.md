@@ -13,10 +13,9 @@ When updating process docs, update the `.github/instructions/*` files instead of
 - Workflow: `.github/instructions/workflow.instructions.md`
 - Project context: `.github/instructions/project-context.instructions.md`
 - Agent terminal: `.github/instructions/agent-terminal.instructions.md`
-- Tailwind CSS: `.github/instructions/tailwind-css.instructions.md`
 - UI test practices: `.github/instructions/ui-test-practices.instructions.md`
+- Rule style: `.github/instructions/rule-style.instructions.md`
 
 ## Quick Links
 
-- Docs index: `docs/index.md`
 - Build entrypoints: `build.ps1`, `build.cmd`, `build.sh`

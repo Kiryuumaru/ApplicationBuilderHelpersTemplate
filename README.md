@@ -1,6 +1,8 @@
 # Plain CLI Template
 
-A simple CLI application template demonstrating DDD domain events with clean architecture.
+A starter template for building CLI applications with [ApplicationBuilderHelpers](https://github.com/nicenemo/ApplicationBuilderHelpers), clean architecture, and DDD patterns.
+
+Includes a sample **WeatherForecast** feature to demonstrate the end-to-end flow through all layers.
 
 ## Quick Start
 
@@ -12,35 +14,51 @@ dotnet run --project src/Presentation.Cli
 ## Project Structure
 
 ```
-plain/
-├── src/
-│   ├── Domain/                    # Domain layer - entities, events, interfaces
-│   ├── Domain.SourceGenerators/   # Build constants generator
-│   ├── Application/               # Application layer - event handlers, services
-│   ├── Presentation/              # Shared presentation (base commands)
-│   └── Presentation.Cli/          # CLI entry point
-└── tests/
-    ├── Domain.UnitTests/
-    └── Application.UnitTests/
+src/
+├── Domain/                      # Entities, value objects, events, interfaces
+├── Domain.SourceGenerators/     # Build constants source generator
+├── Application/                 # Services, event handlers, config extensions
+├── Infrastructure.InMemory/     # In-memory repository and unit of work
+├── Presentation/                # Shared command base
+└── Presentation.Cli/            # CLI entry point
+tests/
+├── Domain.UnitTests/
+└── Application.UnitTests/
 ```
 
-## Features
+## What the Template Provides
 
-- **Domain Events**: Demonstrates `IDomainEvent`, `DomainEvent`, `Entity`, and `IAggregateRoot`
-- **Event Handlers**: `IDomainEventHandler` and `DomainEventDispatcher` for decoupled side effects
-- **Clean Architecture**: Proper layer separation with dependency inversion
-- **Native AOT Ready**: Pattern matching for event dispatch (no reflection)
+- **Clean Architecture**: Domain → Application → Infrastructure → Presentation layer separation
+- **DDD Building Blocks**: Aggregate roots, entities, value objects, domain events, repositories, unit of work
+- **ApplicationBuilderHelpers Integration**: `ApplicationDependency` lifecycle, `Command` hierarchy, CLI option parsing
+- **Domain Event Dispatch**: `IDomainEvent`, `AggregateRoot.AddDomainEvent()`, `DomainEventDispatcher`, parallel handlers
+- **Embedded Config**: Build-time encrypted configuration with runtime decryption
+- **Trimming Ready**: Source-generated JSON contexts and `DynamicallyAccessedMembers` annotations
+- **NUKE Build**: Build automation with environment-aware configuration
 
-## HelloWorld Example
+## Sample Feature: WeatherForecast
 
-The template includes a HelloWorld feature that demonstrates:
+The included WeatherForecast feature demonstrates how a feature flows through each layer:
 
-1. `HelloWorldEntity` - An entity that raises a domain event on creation
-2. `HelloWorldCreatedEvent` - A domain event record
-3. `HelloWorldCreatedEventHandler` - Handles the event and logs a message
+| Layer | Component | Role |
+|-------|-----------|------|
+| Domain | `WeatherForecastEntity` | Aggregate root raising `WeatherForecastCreatedEvent` |
+| Domain | `Temperature` | Value object with Celsius/Fahrenheit conversion |
+| Application | `WeatherForecastService` | Orchestrates forecast generation, commits via unit of work |
+| Application | `LogForecastHandler`, `NotifySubscribersHandler` | Domain event handlers for decoupled side effects |
+| Infrastructure | `InMemoryWeatherForecastRepository` | Repository and unit of work implementation |
+| Presentation | `MainCommand` | CLI entry point resolving services and displaying output |
 
-Run the CLI to see domain events in action:
+Replace or extend this feature with your own domain.
 
-```bash
-dotnet run --project src/Presentation.Cli
-```
+### CLI Options
+
+| Option | Short | Default | Description |
+|--------|-------|---------|-------------|
+| `--location` | | `New York` | Location for sample forecast |
+| `--days` | `-d` | `5` | Number of days (1-14) |
+| `--log-level` | `-l` | `Information` | Log level |
+
+## License
+
+MIT
