@@ -144,37 +144,19 @@ partial class Build
     }
 
     [Disposable]
-    partial class ApplicationRuntime : IDisposable
+    partial class ApplicationRuntime(IRunContext runContext, IServiceProvider serviceProvider, CancellationTokenSource cancellationTokenSource)
     {
-        public IRunContext RunContext { get; }
-        public AppRunContext App { get; }
-        public string Env { get; }
-        public string BinRuntime { get; }
-        public string BuildId { get; }
-        public SemVersion ProjectVersion { get; }
-        public string Notes { get; }
-        public IServiceProvider ServiceProvider { get; }
-        public CancellationToken CancellationToken { get; }
-        private CancellationTokenSource cancellationTokenSource { get; }
+        public IRunContext RunContext { get; } = runContext;
+        public AppRunContext App { get; } = ExpandRunContext(runContext).app;
+        public string Env { get; } = ExpandRunContext(runContext).env;
+        public string BinRuntime { get; } = ExpandRunContext(runContext).binRuntime;
+        public string BuildId { get; } = ExpandRunContext(runContext).buildId;
+        public SemVersion ProjectVersion { get; } = ExpandRunContext(runContext).projectVersion;
+        public string Notes { get; } = ExpandRunContext(runContext).notes;
+        public IServiceProvider ServiceProvider { get; } = serviceProvider;
+        public CancellationToken CancellationToken { get; } = cancellationTokenSource.Token;
 
-        public ApplicationRuntime(IRunContext runContext, IServiceProvider serviceProvider, CancellationTokenSource cancellationTokenSource)
-        {
-            RunContext = runContext;
-            ServiceProvider = serviceProvider;
-            CancellationToken = cancellationTokenSource.Token;
-            this.cancellationTokenSource = cancellationTokenSource;
-
-            var (app, env, binRuntime, buildId, projectVersion, notes) = ExpandRunContext(runContext);
-
-            App = app;
-            Env = env;
-            BinRuntime = binRuntime;
-            BuildId = buildId;
-            ProjectVersion = projectVersion;
-            Notes = notes;
-        }
-
-        protected void Dispose(bool disposing)
+        void Dispose(bool disposing)
         {
             if (disposing)
             {

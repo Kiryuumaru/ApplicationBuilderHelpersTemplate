@@ -25,10 +25,13 @@ partial class Build : BaseNukeBuildHelpers
 {
     const string AppId = "sample_app";
 
+    static readonly RunnerOS[] TestRunnerOSes = [RunnerOS.Windows2022, RunnerOS.Ubuntu2204];
+    static readonly string[] TestProjects = ["Domain.UnitTests", "Application.UnitTests"];
+
     TestEntry TestEntry => _ => _
         .AppId(AppId)
-        .Matrix([RunnerOS.Windows2022, RunnerOS.Ubuntu2204], (osTest, osId) => osTest
-            .Matrix(["Domain.UnitTests", "Application.UnitTests"], (test, testId) => test
+        .Matrix(TestRunnerOSes, (osTest, osId) => osTest
+            .Matrix(TestProjects, (test, testId) => test
                 .DisplayName($"Test {testId} on {osId.Name}")
                 .WorkflowId($"test_{osId.Name}_{testId}".Replace(".", "_").Replace("-", "_").ToLowerInvariant())
                 .RunnerOS(osId)
