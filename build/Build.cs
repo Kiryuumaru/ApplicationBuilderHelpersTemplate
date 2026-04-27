@@ -8,6 +8,7 @@ using Nuke.Common.IO;
 using Nuke.Common.Tooling;
 using Nuke.Common.Tools.DotNet;
 using NukeBuildHelpers;
+using NukeBuildHelpers.Common.Attributes;
 using NukeBuildHelpers.Entry;
 using NukeBuildHelpers.Entry.Extensions;
 using NukeBuildHelpers.RunContext.Interfaces;
@@ -24,6 +25,9 @@ using System.Threading.Tasks;
 partial class Build : BaseNukeBuildHelpers
 {
     const string AppId = "sample_app";
+
+    [SecretVariable("APPLICATION_CREDENTIALS")]
+    readonly string? ApplicationCredentials;
 
     static readonly RunnerOS[] TestRunnerOSes = [RunnerOS.Windows2022, RunnerOS.Ubuntu2204];
     static readonly string[] TestProjects = ["Domain.UnitTests", "Application.UnitTests"];

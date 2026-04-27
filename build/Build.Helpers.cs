@@ -25,22 +25,21 @@ partial class Build
 {
     public static int Main() => Execute<Build>(x => x.Interactive);
 
-    string applicationCredentials = Environment.GetEnvironmentVariable("APPLICATION_CREDENTIALS") ?? "";
-
     private async Task<ApplicationRuntime> StartApplicationRuntime(IRunContext runContext)
     {
-        if (string.IsNullOrEmpty(applicationCredentials) && (RootDirectory / "embedded-config.json").FileExists())
+        string credentials = ApplicationCredentials ?? "";
+        if (string.IsNullOrEmpty(credentials) && (RootDirectory / "embedded-config.json").FileExists())
         {
             var configContent = (RootDirectory / "embedded-config.json").ReadAllText();
-            applicationCredentials = Convert.ToBase64String(Encoding.UTF8.GetBytes(configContent));
+            credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes(configContent));
         }
-        if (string.IsNullOrEmpty(applicationCredentials))
+        if (string.IsNullOrEmpty(credentials))
         {
             throw new ArgumentException("APPLICATION_CREDENTIALS is not set and embedded-config.json does not exist.");
         }
         try
         {
-            byte[] credBytes = Convert.FromBase64String(applicationCredentials);
+            byte[] credBytes = Convert.FromBase64String(credentials);
             string credString = Encoding.UTF8.GetString(credBytes);
             var envConfig = JsonNode.Parse(credString)?.AsObject()
                 ?? throw new ArgumentException("APPLICATION_CREDENTIALS is not a valid JSON object.");
@@ -53,7 +52,7 @@ partial class Build
         string buildPayload;
         try
         {
-            string credString = Encoding.UTF8.GetString(Convert.FromBase64String(applicationCredentials));
+            string credString = Encoding.UTF8.GetString(Convert.FromBase64String(credentials));
             var envConfig = JsonNode.Parse(credString)?.AsObject()
                 ?? throw new ArgumentException("APPLICATION_CREDENTIALS is not a valid JSON object.");
             buildPayload = Convert.ToBase64String(Encoding.UTF8.GetBytes(envConfig.ToJsonString()));
