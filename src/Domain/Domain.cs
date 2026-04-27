@@ -1,4 +1,6 @@
+using Domain.AppEnvironment.Extensions;
 using Domain.Shared.Extensions;
+using Domain.WeatherForecast.Extensions;
 using ApplicationBuilderHelpers;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,5 +13,7 @@ public class Domain : ApplicationDependency
         base.AddServices(applicationBuilder, services);
 
         services.AddSharedServices();
+        services.AddAppEnvironmentServices();
+        services.AddWeatherForecastServices();
     }
 }

@@ -13,7 +13,7 @@ namespace Presentation.Cli.Commands;
 [Command("Main subcommand.")]
 internal class MainCommand : Build.BaseCommand<HostApplicationBuilder>
 {
-    [CommandOption('l', "location", Description = "The location to generate a weather forecast for.")]
+    [CommandOption("location", Description = "The location to generate a weather forecast for.")]
     public string Location { get; set; } = "New York";
 
     [CommandOption('d', "days", Description = "Number of days to forecast (1-14).")]
