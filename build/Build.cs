@@ -60,7 +60,7 @@ partial class Build : BaseNukeBuildHelpers
         {
             using var appRuntime = await StartApplicationRuntime(context);
             DotNetTasks.DotNetBuild(_ => _
-                .SetProjectFile(RootDirectory / "ApplicationBuilderHelpersTemplate.sln"));
+                .SetProjectFile(RootDirectory / "src" / "Presentation.Cli" / "Presentation.Cli.csproj"));
         });
 
     PublishEntry PublishEntry => _ => _

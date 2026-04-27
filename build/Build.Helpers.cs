@@ -8,6 +8,7 @@ using Domain.AppEnvironment.Constants;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Nuke.Common.IO;
 using NukeBuildHelpers.RunContext.Interfaces;
 using NukeBuildHelpers.RunContext.Models;
 using Presentation.Commands;
@@ -15,6 +16,8 @@ using Semver;
 using Serilog;
 using System;
 using System.Linq;
+using System.Text;
+using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,16 +25,52 @@ partial class Build
 {
     public static int Main() => Execute<Build>(x => x.Interactive);
 
+    string applicationCredentials = Environment.GetEnvironmentVariable("APPLICATION_CREDENTIALS") ?? "";
+
     private async Task<ApplicationRuntime> StartApplicationRuntime(IRunContext runContext)
     {
+        if (string.IsNullOrEmpty(applicationCredentials) && (RootDirectory / "embedded-config.json").FileExists())
+        {
+            var configContent = (RootDirectory / "embedded-config.json").ReadAllText();
+            applicationCredentials = Convert.ToBase64String(Encoding.UTF8.GetBytes(configContent));
+        }
+        if (string.IsNullOrEmpty(applicationCredentials))
+        {
+            throw new ArgumentException("APPLICATION_CREDENTIALS is not set and embedded-config.json does not exist.");
+        }
+        try
+        {
+            byte[] credBytes = Convert.FromBase64String(applicationCredentials);
+            string credString = Encoding.UTF8.GetString(credBytes);
+            var envConfig = JsonNode.Parse(credString)?.AsObject()
+                ?? throw new ArgumentException("APPLICATION_CREDENTIALS is not a valid JSON object.");
+            (RootDirectory / "embedded-config.json").WriteAllText(envConfig.ToJsonString());
+        }
+        catch (FormatException ex)
+        {
+            throw new ArgumentException("APPLICATION_CREDENTIALS is not a valid base64 value.", ex);
+        }
+        string buildPayload;
+        try
+        {
+            string credString = Encoding.UTF8.GetString(Convert.FromBase64String(applicationCredentials));
+            var envConfig = JsonNode.Parse(credString)?.AsObject()
+                ?? throw new ArgumentException("APPLICATION_CREDENTIALS is not a valid JSON object.");
+            buildPayload = Convert.ToBase64String(Encoding.UTF8.GetBytes(envConfig.ToJsonString()));
+        }
+        catch (Exception ex)
+        {
+            throw new ArgumentException("APPLICATION_CREDENTIALS is not a valid value.", ex);
+        }
+
         CancellationTokenSource cts = new();
         ApplicationRuntime? applicationRuntime = null;
-        var (app, env, binRuntime, buildId, projectVersion, notes) = ExpandRunContext(runContext);
 
         Task.Run(async () =>
         {
+            var (app, env, binRuntime, buildId, projectVersion, notes) = ExpandRunContext(runContext);
             int ret = await ApplicationBuilder.Create()
-                .AddCommand(new BuildCommand(env, async (sp, ct) =>
+                .AddCommand(new BuildCommand(env, buildPayload, async (sp, ct) =>
                 {
                     applicationRuntime = new ApplicationRuntime(runContext, sp, cts);
                     await cts.Token.WhenCanceled();
@@ -92,9 +131,9 @@ partial class Build
         return (app, env, binRuntime, buildId, projectVersion, notes);
     }
 
-    class BuildCommand(string appTag, Func<IServiceProvider, CancellationToken, Task> callback) : BaseCommand<HostApplicationBuilder>
+    class BuildCommand(string appTag, string buildPayload, Func<IServiceProvider, CancellationToken, Task> callback) : BaseCommand<HostApplicationBuilder>
     {
-        public override IApplicationConstants ApplicationConstants { get; } = new BuildApplicationConstants(appTag);
+        public override IApplicationConstants ApplicationConstants { get; } = new BuildApplicationConstants(appTag, buildPayload);
 
         protected override ValueTask<HostApplicationBuilder> ApplicationBuilder(CancellationToken stoppingToken)
         {
@@ -133,30 +172,48 @@ partial class Build
         }
     }
 
-    class BuildApplicationConstants(string appTag) : IApplicationConstants
+    class BuildApplicationConstants(string appTag, string buildPayload) : IApplicationConstants
     {
         public string AppName => "_build";
         public string AppTitle => "_build";
         public string AppDescription => "Build application";
         public string Version => "0.0.0";
         public string AppTag { get; } = appTag;
-        public string BuildPayload => "";
+        public string BuildPayload { get; } = buildPayload;
     }
 
     [Disposable]
-    partial class ApplicationRuntime(IRunContext runContext, IServiceProvider serviceProvider, CancellationTokenSource cancellationTokenSource)
+    partial class ApplicationRuntime : IDisposable
     {
-        public IRunContext RunContext { get; } = runContext;
-        public AppRunContext App { get; } = ExpandRunContext(runContext).app;
-        public string Env { get; } = ExpandRunContext(runContext).env;
-        public string BinRuntime { get; } = ExpandRunContext(runContext).binRuntime;
-        public string BuildId { get; } = ExpandRunContext(runContext).buildId;
-        public SemVersion ProjectVersion { get; } = ExpandRunContext(runContext).projectVersion;
-        public string Notes { get; } = ExpandRunContext(runContext).notes;
-        public IServiceProvider ServiceProvider { get; } = serviceProvider;
-        public CancellationToken CancellationToken { get; } = cancellationTokenSource.Token;
+        public IRunContext RunContext { get; }
+        public AppRunContext App { get; }
+        public string Env { get; }
+        public string BinRuntime { get; }
+        public string BuildId { get; }
+        public SemVersion ProjectVersion { get; }
+        public string Notes { get; }
+        public IServiceProvider ServiceProvider { get; }
+        public CancellationToken CancellationToken { get; }
+        private CancellationTokenSource cancellationTokenSource { get; }
 
-        void Dispose(bool disposing)
+        public ApplicationRuntime(IRunContext runContext, IServiceProvider serviceProvider, CancellationTokenSource cancellationTokenSource)
+        {
+            RunContext = runContext;
+            ServiceProvider = serviceProvider;
+            CancellationToken = cancellationTokenSource.Token;
+            this.cancellationTokenSource = cancellationTokenSource;
+
+            var (app, env, binRuntime, buildId, projectVersion, notes) = ExpandRunContext(runContext);
+
+            App = app;
+            Env = env;
+            BinRuntime = binRuntime;
+            BuildId = buildId;
+            ProjectVersion = projectVersion;
+            Notes = notes;
+        }
+
+        protected void Dispose(bool disposing)
         {
             if (disposing)
             {
