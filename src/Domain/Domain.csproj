@@ -3,6 +3,7 @@
 	<ItemGroup>
 		<PackageReference Include="ApplicationBuilderHelpers" Version="4.1.52" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.7" />
+	<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.7" />
 	</ItemGroup>
 
 	<ItemGroup>
