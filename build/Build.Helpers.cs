@@ -1,7 +1,9 @@
+using Application.EmbeddedConfig.Extensions;
 using Application.Logger.Extensions;
 using Application.Shared.Extensions;
 using Application.Shared.Interfaces.Inbound;
 using ApplicationBuilderHelpers;
+using ApplicationBuilderHelpers.Exceptions;
 using ApplicationBuilderHelpers.Extensions;
 using DisposableHelpers.Attributes;
 using Domain.AppEnvironment.Constants;
@@ -45,9 +47,9 @@ partial class Build
                 ?? throw new ArgumentException("APPLICATION_CREDENTIALS is not a valid JSON object.");
             (RootDirectory / "embedded-config.json").WriteAllText(envConfig.ToJsonString());
         }
-        catch (FormatException ex)
+        catch (Exception ex)
         {
-            throw new ArgumentException("APPLICATION_CREDENTIALS is not a valid base64 value.", ex);
+            throw new ArgumentException("APPLICATION_CREDENTIALS is not a valid value.", ex);
         }
         string buildPayload;
         try
@@ -132,7 +134,7 @@ partial class Build
 
     class BuildCommand(string appTag, string buildPayload, Func<IServiceProvider, CancellationToken, Task> callback) : BaseCommand<HostApplicationBuilder>
     {
-        public override IApplicationConstants ApplicationConstants { get; } = new BuildApplicationConstants(appTag, buildPayload);
+        public override IApplicationConstants ApplicationConstants { get; } = new BuildApplicationConstants(appTag);
 
         protected override ValueTask<HostApplicationBuilder> ApplicationBuilder(CancellationToken stoppingToken)
         {
@@ -142,7 +144,12 @@ partial class Build
         public override void AddConfigurations(ApplicationHostBuilder applicationBuilder, Microsoft.Extensions.Configuration.IConfiguration configuration)
         {
             base.AddConfigurations(applicationBuilder, configuration);
-            configuration.LoggerLevel = Microsoft.Extensions.Logging.LogLevel.Debug;
+            var json = JsonNode.Parse(Encoding.UTF8.GetString(Convert.FromBase64String(buildPayload)))?.AsObject();
+            if (json != null)
+            {
+                configuration.SetEmbeddedConfig(json);
+            }
+            configuration.LoggerLevel = Microsoft.Extensions.Logging.LogLevel.Trace;
         }
 
         public override void AddServices(ApplicationHostBuilder applicationBuilder, IServiceCollection services)
@@ -162,7 +169,7 @@ partial class Build
             catch (Exception ex)
             {
                 logger.LogError(ex, "BuildCommand failed.");
-                throw;
+                throw new CommandException($"BuildCommand failed: {ex.Message}", -1);
             }
             finally
             {
@@ -171,14 +178,14 @@ partial class Build
         }
     }
 
-    class BuildApplicationConstants(string appTag, string buildPayload) : IApplicationConstants
+    class BuildApplicationConstants(string appTag) : IApplicationConstants
     {
         public string AppName => "_build";
         public string AppTitle => "_build";
         public string AppDescription => "Build application";
         public string Version => "0.0.0";
         public string AppTag { get; } = appTag;
-        public string BuildPayload { get; } = buildPayload;
+        public string BuildPayload => string.Empty;
     }
 
     [Disposable]
