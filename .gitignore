@@ -14,7 +14,7 @@ bld/
 [Ll]ogs/
 
 # NUKE
-.nuke/
+.nuke/temp/
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
