@@ -1,7 +1,7 @@
 using Application.AppEnvironment.Extensions;
-using Application.Credential.Extensions;
-using Application.HelloWorld.Extensions;
+using Application.EmbeddedConfig.Extensions;
 using Application.Shared.Extensions;
+using Application.WeatherForecast.Extensions;
 using ApplicationBuilderHelpers;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -14,8 +14,8 @@ public class Application : ApplicationDependency
         base.AddServices(applicationBuilder, services);
 
         services.AddAppEnvironmentServices();
-        services.AddCredentialServices();
+        services.AddEmbeddedConfigServices();
         services.AddSharedServices();
-        services.AddHelloWorldServices();
+        services.AddWeatherForecastServices();
     }
 }

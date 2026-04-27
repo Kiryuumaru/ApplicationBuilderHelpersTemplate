@@ -3,17 +3,20 @@ using Microsoft.Extensions.Configuration;
 
 namespace Application.AppEnvironment.Extensions;
 
+/// <summary>
+/// Configuration extensions for application environment tag override.
+/// Supports @ref: reference chains via GetRefValueOrDefault.
+/// </summary>
 public static class AppEnvironmentConfigurationExtensions
 {
     private const string AppTagOverrideKey = "RUNTIME_APP_TAG_OVERRIDE";
 
-    public static string? GetAppTagOverride(this IConfiguration configuration)
+    extension(IConfiguration configuration)
     {
-        return configuration.GetRefValueOrDefault(AppTagOverrideKey);
-    }
-
-    public static void SetAppTagOverride(this IConfiguration configuration, string appTag)
-    {
-        configuration[AppTagOverrideKey] = appTag;
+        public string? AppTagOverride
+        {
+            get => configuration.GetRefValueOrDefault(AppTagOverrideKey);
+            set => configuration[AppTagOverrideKey] = value;
+        }
     }
 }

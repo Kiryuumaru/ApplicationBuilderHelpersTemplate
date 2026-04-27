@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -38,8 +39,13 @@ public sealed class BuildConstantsGenerator : IIncrementalGenerator
             var appTag = GetRequiredProperty(options, errors, "AppTag");
 
             var baseCommandType = GetOptionalProperty(options, "BaseCommandType");
+            var embeddedConfigFileName = GetOptionalProperty(options, "EmbeddedConfigFileName");
+            if (embeddedConfigFileName.Length == 0)
+            {
+                embeddedConfigFileName = "embedded-config.json";
+            }
 
-            if (!TryReadBuildPayload(files, out var buildPayload, out var payloadError))
+            if (!TryReadRawPayload(files, embeddedConfigFileName, out var rawPayload, out var payloadError))
             {
                 errors.Add(payloadError);
             }
@@ -51,6 +57,8 @@ public sealed class BuildConstantsGenerator : IIncrementalGenerator
                 spc.AddSource("BuildConstants.Generated.g.cs", EmitFallbackBuildConstants(baseCommandType));
                 return;
             }
+
+            var buildPayload = EncryptPayload(rawPayload, appName, version, appTag);
 
             var source = EmitBuildConstants(
                 appName: appName,
@@ -107,7 +115,15 @@ public sealed class BuildConstantsGenerator : IIncrementalGenerator
         return value ?? string.Empty;
     }
 
-    private static bool TryReadBuildPayload(ImmutableArray<AdditionalText> files, out string buildPayload, out string error)
+    private static readonly byte[] PayloadEncryptionSalt =
+    {
+        0x4A, 0x97, 0xB2, 0x3E, 0xC1, 0x58, 0xD6, 0x7F,
+        0xA3, 0x0E, 0x91, 0x42, 0xF5, 0x8B, 0x64, 0xD0
+    };
+
+    private const int PayloadEncryptionIterations = 10000;
+
+    private static bool TryReadRawPayload(ImmutableArray<AdditionalText> files, string configFileName, out string rawPayload, out string error)
     {
         for (var i = 0; i < files.Length; i++)
         {
@@ -119,7 +135,7 @@ public sealed class BuildConstantsGenerator : IIncrementalGenerator
                 continue;
             }
 
-            if (!path.EndsWith("creds.json", StringComparison.OrdinalIgnoreCase))
+            if (!path.EndsWith(configFileName, StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }
@@ -131,27 +147,59 @@ public sealed class BuildConstantsGenerator : IIncrementalGenerator
             }
             catch (Exception ex)
             {
-                buildPayload = string.Empty;
-                error = "Build constants generation failed to read creds.json AdditionalFile: " + ex.Message;
+                rawPayload = string.Empty;
+                error = "Build constants generation failed to read " + configFileName + " AdditionalFile: " + ex.Message;
                 return false;
             }
 
             if (text is null)
             {
-                buildPayload = string.Empty;
-                error = "Build constants generation requires creds.json to be readable as an MSBuild AdditionalFile.";
+                rawPayload = string.Empty;
+                error = "Build constants generation requires " + configFileName + " to be readable as an MSBuild AdditionalFile.";
                 return false;
             }
 
-            buildPayload = text.ToString();
-            buildPayload = Convert.ToBase64String(Encoding.UTF8.GetBytes(buildPayload));
+            rawPayload = text.ToString();
             error = string.Empty;
             return true;
         }
 
-        buildPayload = string.Empty;
-        error = "Build constants generation requires creds.json to be included as an MSBuild AdditionalFile. Ensure GenerateBuildConstants=true and CredsJsonPath points to creds.json.";
+        rawPayload = string.Empty;
+        error = "Build constants generation requires " + configFileName + " to be included as an MSBuild AdditionalFile. Ensure GenerateBuildConstants=true and EmbeddedConfigPath points to " + configFileName + ".";
         return false;
+    }
+
+    private static string EncryptPayload(string plaintext, string appName, string version, string appTag)
+    {
+        var password = appName + "|" + version + "|" + appTag;
+        var plaintextBytes = Encoding.UTF8.GetBytes(plaintext);
+
+#pragma warning disable CA5379 // Rfc2898DeriveBytes SHA1 - acceptable for build payload obfuscation (netstandard2.0 constraint)
+        using (var deriveBytes = new Rfc2898DeriveBytes(password, PayloadEncryptionSalt, PayloadEncryptionIterations))
+        {
+            var key = deriveBytes.GetBytes(32);
+            var iv = deriveBytes.GetBytes(16);
+
+            using (var aes = Aes.Create())
+            {
+                aes.Key = key;
+                aes.IV = iv;
+                aes.Mode = CipherMode.CBC;
+                aes.Padding = PaddingMode.PKCS7;
+
+                using (var encryptor = aes.CreateEncryptor())
+                {
+                    var ciphertext = encryptor.TransformFinalBlock(plaintextBytes, 0, plaintextBytes.Length);
+
+                    var result = new byte[iv.Length + ciphertext.Length];
+                    Buffer.BlockCopy(iv, 0, result, 0, iv.Length);
+                    Buffer.BlockCopy(ciphertext, 0, result, iv.Length, ciphertext.Length);
+
+                    return Convert.ToBase64String(result);
+                }
+            }
+        }
+#pragma warning restore CA5379
     }
 
     private static SourceText EmitFallbackBuildConstants(string baseCommandType)

@@ -11,15 +11,15 @@ public static class AppEnvironments
     public static Models.AppEnvironment Development { get; } = new()
     {
         Tag = "prerelease",
-        Environment = "Development",
-        EnvironmentShort = "pre"
+        Full = "Development",
+        Short = "pre"
     };
 
     public static Models.AppEnvironment Production { get; } = new()
     {
         Tag = "master",
-        Environment = "Production",
-        EnvironmentShort = "prod"
+        Full = "Production",
+        Short = "prod"
     };
 
     /// <summary>
@@ -34,7 +34,7 @@ public static class AppEnvironments
 
     public static bool IsValidEnvironment(string environment)
     {
-        return AllValues.Any(x => x.Environment.Equals(environment, StringComparison.InvariantCultureIgnoreCase));
+        return AllValues.Any(x => x.Full.Equals(environment, StringComparison.InvariantCultureIgnoreCase));
     }
 
     public static Models.AppEnvironment GetByTag(string tag)
@@ -45,7 +45,7 @@ public static class AppEnvironments
 
     public static Models.AppEnvironment GetByEnvironment(string environment)
     {
-        return AllValues.FirstOrDefault(x => x.Environment.Equals(environment, StringComparison.InvariantCultureIgnoreCase))
+        return AllValues.FirstOrDefault(x => x.Full.Equals(environment, StringComparison.InvariantCultureIgnoreCase))
             ?? throw new ArgumentException($"Invalid environment: {environment}");
     }
 }

@@ -1,5 +1,5 @@
 using System.Text.Json.Serialization;
-using Application.HelloWorld.Models;
+using Application.WeatherForecast.Models;
 
 namespace Application.Serialization;
 
@@ -11,8 +11,7 @@ namespace Application.Serialization;
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     GenerationMode = JsonSourceGenerationMode.Metadata)]
-// HelloWorld Feature
-[JsonSerializable(typeof(HelloWorldResult))]
+[JsonSerializable(typeof(WeatherForecastResult))]
 public partial class ApplicationJsonContext : JsonSerializerContext
 {
 }

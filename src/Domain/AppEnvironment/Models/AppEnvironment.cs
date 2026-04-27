@@ -15,7 +15,7 @@ public class AppEnvironment
     /// <remarks>
     /// Standard environment names: "Development", "Production"
     /// </remarks>
-    public required string Environment { get; init; }
+    public required string Full { get; init; }
 
     /// <summary>
     /// Gets the abbreviated short name for the deployment environment.
@@ -23,7 +23,7 @@ public class AppEnvironment
     /// <remarks>
     /// Standard short names: "pre", "prod"
     /// </remarks>
-    public required string EnvironmentShort { get; init; }
+    public required string Short { get; init; }
 
     /// <summary>
     /// Gets the environment tag used for deployment identification and version management.

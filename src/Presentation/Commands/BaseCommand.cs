@@ -1,3 +1,4 @@
+using Application.EmbeddedConfig.Extensions;
 using Application.Logger.Extensions;
 using Application.Shared.Interfaces.Inbound;
 using ApplicationBuilderHelpers;
@@ -25,6 +26,7 @@ public abstract class BaseCommand<[DynamicallyAccessedMembers(DynamicallyAccesse
     {
         base.AddConfigurations(applicationBuilder, configuration);
 
+        configuration.LoadEncryptedEmbeddedConfig(ApplicationConstants);
         configuration.LoggerLevel = LogLevel;
     }
 

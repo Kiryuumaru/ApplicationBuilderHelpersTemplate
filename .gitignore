@@ -232,5 +232,5 @@ FodyWeavers.xsd
 # Temp files
 **/tmpclaude-*
 
-# Credentials
-creds.json
+# Embedded Config
+embedded-config.json

@@ -11,7 +11,7 @@ internal sealed class AppEnvironmentService(
 {
     public Task<Domain.AppEnvironment.Models.AppEnvironment> GetEnvironment(CancellationToken cancellationToken = default)
     {
-        string? appTag = configuration.GetAppTagOverride();
+        string? appTag = configuration.AppTagOverride;
         if (string.IsNullOrEmpty(appTag))
         {
             appTag = applicationConstants.AppTag;

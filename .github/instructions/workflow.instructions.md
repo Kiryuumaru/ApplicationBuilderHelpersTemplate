@@ -9,7 +9,7 @@ applyTo: '**'
 
 | Command | Description |
 |---------|-------------|
-| `.\build.ps1 init` | Generate `creds.json` |
+| `.\.build.ps1 init` | Generate `embedded-config.json` |
 | `.\build.ps1 clean` | Clean build artifacts (bin, obj, .vs) |
 | `.\build.ps1 githubworkflow` | Generate GitHub Actions workflows |
 
@@ -54,7 +54,7 @@ Get-Process sampleapp -ErrorAction SilentlyContinue | Stop-Process -Force
 
 ### First-Time Setup
 
-1. `.\build.ps1 init` - Generate credentials
+1. `.\build.ps1 init` - Generate embedded config
 2. `dotnet build` - Build solution
 
 ### Environment Configuration

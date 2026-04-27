@@ -10,13 +10,14 @@
 		<FullVersion Condition="'$(FullVersion)' == ''">0.0.0-prerelease.0+build.local</FullVersion>
 		<InformationalVersion Condition="'$(InformationalVersion)' == ''">$(FullVersion)</InformationalVersion>
 		<AppTag Condition="'$(AppTag)' == ''">prerelease</AppTag>
-		<CredsJsonPath Condition="'$(CredsJsonPath)' == ''">$(MSBuildThisFileDirectory)creds.json</CredsJsonPath>
+		<EmbeddedConfigFileName Condition="'$(EmbeddedConfigFileName)' == ''">embedded-config.json</EmbeddedConfigFileName>
+		<EmbeddedConfigPath Condition="'$(EmbeddedConfigPath)' == ''">$(MSBuildThisFileDirectory)$(EmbeddedConfigFileName)</EmbeddedConfigPath>
 		<BaseCommandType Condition="'$(BaseCommandType)' == ''"></BaseCommandType>
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(GenerateBuildConstants)' == 'true'">
 		<ProjectReference Include="$(MSBuildThisFileDirectory)src\Domain.SourceGenerators\Domain.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-		<AdditionalFiles Include="$(CredsJsonPath)" />
+		<AdditionalFiles Include="$(EmbeddedConfigPath)" />
 		<CompilerVisibleProperty Include="GenerateBuildConstants" />
 		<CompilerVisibleProperty Include="BaseCommandType" />
 		<CompilerVisibleProperty Include="AssemblyName" />
@@ -24,6 +25,7 @@
 		<CompilerVisibleProperty Include="Description" />
 		<CompilerVisibleProperty Include="FullVersion" />
 		<CompilerVisibleProperty Include="AppTag" />
+		<CompilerVisibleProperty Include="EmbeddedConfigFileName" />
 	</ItemGroup>
 
 	<!-- NsDepCop Configuration - exclude SourceGenerators and tests -->

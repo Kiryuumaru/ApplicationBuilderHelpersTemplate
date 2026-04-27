@@ -1,5 +1,8 @@
 namespace Domain.Shared.Extensions;
 
+/// <summary>
+/// Extension methods for nullable type inspection and underlying type extraction.
+/// </summary>
 public static class TypeExtensions
 {
     public static bool IsNullable(this Type type)

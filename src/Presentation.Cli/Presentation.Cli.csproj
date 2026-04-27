@@ -10,7 +10,7 @@
 		<Company>Sample Company</Company>
 		<AssemblyTitle>Plain CLI Template</AssemblyTitle>
 		<AssemblyName>sampleapp</AssemblyName>
-		<Description>A simple CLI application template demonstrating DDD domain events with clean architecture.</Description>
+		<Description>A CLI application template demonstrating clean architecture with weather forecasts, DDD domain events, value objects, and aggregate roots.</Description>
 	</PropertyGroup>
 
 	<ItemGroup>

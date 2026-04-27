@@ -42,35 +42,42 @@ partial class Build
     Target Init => _ => _
         .Executes(() =>
         {
-            GenerateCredsJson();
+            GenerateEmbeddedConfig();
         });
 
     // ─────────────────────────────────────────────────────────────
-    // creds.json Generation
+    // embedded-config.json Generation
     // ─────────────────────────────────────────────────────────────
 
-    void GenerateCredsJson()
+    void GenerateEmbeddedConfig()
     {
-        var credsPath = RootDirectory / "creds.json";
+        var configPath = RootDirectory / "embedded-config.json";
 
-        if (File.Exists(credsPath))
+        if (File.Exists(configPath))
         {
-            Log.Information("creds.json already exists at {path}", credsPath);
+            Log.Information("embedded-config.json already exists at {path}", configPath);
             return;
         }
 
-        Log.Information("Generating creds.json at {path}", credsPath);
+        Log.Information("Generating embedded-config.json at {path}", configPath);
 
-        var credsEnvObject = new JsonObject();
-        var credsObject = new JsonObject()
+        var envObject = new JsonObject();
+        var configObject = new JsonObject()
         {
-            ["shared"] = new JsonObject(),
-            ["environments"] = credsEnvObject,
+            ["shared"] = new JsonObject
+            {
+                ["weather_api_url"] = "https://api.weather.example.com/v1",
+                ["default_location"] = "New York",
+            },
+            ["environments"] = envObject,
         };
 
         foreach (var env in AppEnvironments.AllValues)
         {
-            credsEnvObject[env.Tag] = new JsonObject();
+            envObject[env.Tag] = new JsonObject
+            {
+                ["weather_api_key"] = $"{env.Short}-key-change-me",
+            };
         }
 
         var options = new JsonSerializerOptions
@@ -78,8 +85,8 @@ partial class Build
             WriteIndented = true
         };
 
-        File.WriteAllText(credsPath, credsObject.ToJsonString(options));
+        File.WriteAllText(configPath, configObject.ToJsonString(options));
 
-        Log.Information("creds.json generated successfully with branches: {branches}", string.Join(", ", AppEnvironments.AllValues.Select(e => e.Tag)));
+        Log.Information("embedded-config.json generated successfully with branches: {branches}", string.Join(", ", AppEnvironments.AllValues.Select(e => e.Tag)));
     }
 }

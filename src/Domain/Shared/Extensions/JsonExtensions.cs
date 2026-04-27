@@ -4,6 +4,9 @@ using System.Text.Json.Nodes;
 
 namespace Domain.Shared.Extensions;
 
+/// <summary>
+/// Extension methods for navigating and extracting values from JSON documents.
+/// </summary>
 public static class JsonExtensions
 {
     public static JsonNode GetJsonNodeOrThrow(this JsonNode node, params string[] propertyNames)

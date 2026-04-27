@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
-using Domain.HelloWorld.Entities;
-using Domain.HelloWorld.Events;
+using Domain.WeatherForecast.Entities;
+using Domain.WeatherForecast.Events;
 
 namespace Domain.Serialization;
 
@@ -12,9 +12,8 @@ namespace Domain.Serialization;
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     GenerationMode = JsonSourceGenerationMode.Metadata)]
-// HelloWorld Feature
-[JsonSerializable(typeof(HelloWorldEntity))]
-[JsonSerializable(typeof(HelloWorldCreatedEvent))]
+[JsonSerializable(typeof(WeatherForecastEntity))]
+[JsonSerializable(typeof(WeatherForecastCreatedEvent))]
 public partial class DomainJsonContext : JsonSerializerContext
 {
 }
