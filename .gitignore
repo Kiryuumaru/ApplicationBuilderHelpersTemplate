@@ -382,3 +382,7 @@ FodyWeavers.xsd
 /webapi+webapp/src/Presentation.WebApp.Client/package-lock.json
 /webapi+webapp/src/Presentation.WebApp.Client/wwwroot/css/tailwind.generated.css
 /plain/creds.json
+
+# Agent prompts and memory
+.prompts/
+.memory/
