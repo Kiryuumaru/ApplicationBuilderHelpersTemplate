@@ -394,7 +394,7 @@ Interfaces/Outbound:
 Interfaces (without subfolder):
 - Are internal abstractions within Application layer
 - Are implemented by Application* services
-- MAY be called by Application* only
+- MAY be called by Application* and Infrastructure* only
 - MUST NOT be called by Presentation
 - Examples: `IDomainEventDispatcher`, `IDomainEventHandler`, `IOfflineSyncManager`
 
