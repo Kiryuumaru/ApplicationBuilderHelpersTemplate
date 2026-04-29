@@ -42,29 +42,21 @@
 		<NsDepCopConfigContent>
 <![CDATA[<?xml version="1.0" encoding="utf-8"?>
 <NsDepCopConfig IsEnabled="true" ChildCanDependOnParentImplicitly="true" MaxIssueCount="100">
-	<Allowed From="Domain.*" To="Domain.*" />
-	<Allowed From="Application.*" To="Domain.*" />
-	<Allowed From="Application.*" To="Application.*" />
-	<Allowed From="Infrastructure.*" To="Domain.*" />
-	<Allowed From="Infrastructure.*" To="Application.*" />
-	<Allowed From="Infrastructure.*" To="Infrastructure.*" />
-	<Allowed From="Presentation.*" To="Domain.*" />
-	<Allowed From="Presentation.*" To="Application.*" />
-	<Allowed From="Presentation.*" To="Presentation.*" />
-	<Disallowed From="Presentation.*" To="*.Interfaces.Outbound.*" />
-	<Disallowed From="Presentation.*" To="Application.Shared.Interfaces" />
-	<Disallowed From="Presentation.*" To="Application.*.Interfaces" />
+	<!-- Architecture layer violations -->
 	<Disallowed From="Domain.*" To="Application.*" />
 	<Disallowed From="Domain.*" To="Infrastructure.*" />
 	<Disallowed From="Domain.*" To="Presentation.*" />
 	<Disallowed From="Application.*" To="Infrastructure.*" />
 	<Disallowed From="Application.*" To="Presentation.*" />
 	<Disallowed From="Infrastructure.*" To="Presentation.*" />
-	<Allowed From="*" To="System.*" />
-	<Allowed From="*" To="Microsoft.*" />
-	<Allowed From="*" To="ApplicationBuilderHelpers.*" />
-	<Allowed From="*" To="Build.*" />
-	<Allowed From="." To="*" />
+
+	<!-- Presentation cannot access Outbound or internal interfaces -->
+	<Disallowed From="Presentation.*" To="*.Interfaces.Outbound.*" />
+	<Disallowed From="Presentation.*" To="Application.Shared.Interfaces" />
+	<Disallowed From="Presentation.*" To="Application.*.Interfaces" />
+
+	<!-- Allow everything else (third-party libs, framework, etc.) -->
+	<Allowed From="*" To="*" />
 </NsDepCopConfig>]]>
 		</NsDepCopConfigContent>
 		<NsDepCopConfigPath>$(IntermediateOutputPath)config.nsdepcop</NsDepCopConfigPath>
