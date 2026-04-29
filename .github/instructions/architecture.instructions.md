@@ -394,7 +394,7 @@ Interfaces/Outbound:
 Interfaces (without subfolder):
 - Are internal abstractions within Application layer
 - Are implemented by Application* services
-- MAY be called by Application* only
+- MAY be called by Application* and Infrastructure* only
 - MUST NOT be called by Presentation
 - Examples: `IDomainEventDispatcher`, `IDomainEventHandler`, `IOfflineSyncManager`
 
@@ -1196,6 +1196,7 @@ A: No. Presentation calls Interfaces/Inbound only. Create a service in Applicati
 - NEVER use static service locator patterns
 - NEVER hardcode connection strings or URLs in Application
 - NEVER use `if (type == X)` branching in Application layer
+- NEVER define public interfaces in Infrastructure layer that other layers depend on
 - NEVER implement Interfaces/Inbound in Infrastructure layer
 - NEVER implement Interfaces/Outbound in Application layer
 - NEVER call Interfaces/Outbound directly from Presentation layer
