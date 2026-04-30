@@ -359,6 +359,12 @@ Test project rules:
 - MUST use mocks for Infrastructure dependencies in unit tests
 - MAY use real Infrastructure in integration tests
 
+Source ignorance of tests:
+- `src/` MUST be completely ignorant of `tests/`
+- `src/` MUST NOT contain code that exists solely for testing purposes
+- Tests MUST exercise `src/` code as-is, constructing their own test data using public APIs
+- Tests MAY build custom permission trees or domain objects using public DSL utilities
+
 | Test Type | Project Name | Tests Against |
 |-----------|--------------|---------------|
 | Unit | `Domain.UnitTests` | Entities, value objects, domain services |
@@ -1196,7 +1202,6 @@ A: No. Presentation calls Interfaces/Inbound only. Create a service in Applicati
 - NEVER use static service locator patterns
 - NEVER hardcode connection strings or URLs in Application
 - NEVER use `if (type == X)` branching in Application layer
-- NEVER define public interfaces in Infrastructure layer that other layers depend on
 - NEVER implement Interfaces/Inbound in Infrastructure layer
 - NEVER implement Interfaces/Outbound in Application layer
 - NEVER call Interfaces/Outbound directly from Presentation layer
