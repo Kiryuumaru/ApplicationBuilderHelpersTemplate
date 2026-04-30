@@ -15,7 +15,7 @@
 
   <ItemGroup>
 
-    <PackageReference Include="DisposableHelpers" Version="1.2.176" />
+    <PackageReference Include="DisposableHelpers" Version="1.2.177" />
     <PackageReference Include="Nuke.Common" Version="10.1.0" />
     <PackageReference Include="NukeBuildHelpers" Version="9.0.19" />
     <PackageReference Include="NuGet.Packaging" Version="6.13.1" />
