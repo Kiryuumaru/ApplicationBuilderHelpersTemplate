@@ -18,7 +18,7 @@ jobs:
     runs-on:
       labels: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0
         fetch-tags: true
@@ -91,19 +91,19 @@ jobs:
     name: Build - sample_app (BuildEntry)
     runs-on: ${{ fromJson(needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_BUILDENTRY_RUNS_ON) }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_BUILDENTRY_CHECKOUT_FETCH_DEPTH }}
         fetch-tags: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_BUILDENTRY_CHECKOUT_FETCH_TAGS }}
         submodules: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_BUILDENTRY_CHECKOUT_SUBMODULES }}
         persist-credentials: true
     - name: Download sample_app pre_test artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         path: ./.nuke/temp/artifacts-download
         pattern: pre_test___sample_app___*
     - name: Cache Run
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ./.nuke/temp/cache
         key: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_BUILDENTRY_CACHE_KEY }}
@@ -114,14 +114,14 @@ jobs:
       name: Run Nuke BuildEntry
       run: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_BUILDENTRY_RUN_SCRIPT }} Run --args "BuildEntry"
     - name: Upload sample_app build artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: build___sample_app___BUILDENTRY
         path: ./.nuke/temp/artifacts-upload/sample_app/*
         if-no-files-found: error
         retention-days: 1
     - name: Upload common build artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: build___$common___BUILDENTRY
         path: ./.nuke/temp/artifacts-upload/$common/*
@@ -136,24 +136,24 @@ jobs:
     name: Test Domain.UnitTests on windows-2022
     runs-on: ${{ fromJson(needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_RUNS_ON) }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_CHECKOUT_FETCH_DEPTH }}
         fetch-tags: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_CHECKOUT_FETCH_TAGS }}
         submodules: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_CHECKOUT_SUBMODULES }}
         persist-credentials: true
     - name: Download sample_app pre_test artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         path: ./.nuke/temp/artifacts-download
         pattern: pre_test___sample_app___*
     - name: Download sample_app build artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         path: ./.nuke/temp/artifacts-download
         pattern: build___sample_app___*
     - name: Cache Run
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ./.nuke/temp/cache
         key: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_CACHE_KEY }}
@@ -164,14 +164,14 @@ jobs:
       name: Run Nuke test_windows_2022_domain_unittests
       run: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_DOMAIN_UNITTESTS_RUN_SCRIPT }} Run --args "test_windows_2022_domain_unittests"
     - name: Upload sample_app post_test artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: post_test___sample_app___TEST_WINDOWS_2022_DOMAIN_UNITTESTS
         path: ./.nuke/temp/artifacts-upload/sample_app/*
         if-no-files-found: error
         retention-days: 1
     - name: Upload common post_test artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: post_test___$common___TEST_WINDOWS_2022_DOMAIN_UNITTESTS
         path: ./.nuke/temp/artifacts-upload/$common/*
@@ -187,24 +187,24 @@ jobs:
     name: Test Application.UnitTests on windows-2022
     runs-on: ${{ fromJson(needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_RUNS_ON) }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_CHECKOUT_FETCH_DEPTH }}
         fetch-tags: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_CHECKOUT_FETCH_TAGS }}
         submodules: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_CHECKOUT_SUBMODULES }}
         persist-credentials: true
     - name: Download sample_app pre_test artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         path: ./.nuke/temp/artifacts-download
         pattern: pre_test___sample_app___*
     - name: Download sample_app build artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         path: ./.nuke/temp/artifacts-download
         pattern: build___sample_app___*
     - name: Cache Run
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ./.nuke/temp/cache
         key: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_CACHE_KEY }}
@@ -215,14 +215,14 @@ jobs:
       name: Run Nuke test_windows_2022_application_unittests
       run: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_WINDOWS_2022_APPLICATION_UNITTESTS_RUN_SCRIPT }} Run --args "test_windows_2022_application_unittests"
     - name: Upload sample_app post_test artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: post_test___sample_app___TEST_WINDOWS_2022_APPLICATION_UNITTESTS
         path: ./.nuke/temp/artifacts-upload/sample_app/*
         if-no-files-found: error
         retention-days: 1
     - name: Upload common post_test artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: post_test___$common___TEST_WINDOWS_2022_APPLICATION_UNITTESTS
         path: ./.nuke/temp/artifacts-upload/$common/*
@@ -238,24 +238,24 @@ jobs:
     name: Test Domain.UnitTests on ubuntu-22.04
     runs-on: ${{ fromJson(needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_RUNS_ON) }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_CHECKOUT_FETCH_DEPTH }}
         fetch-tags: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_CHECKOUT_FETCH_TAGS }}
         submodules: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_CHECKOUT_SUBMODULES }}
         persist-credentials: true
     - name: Download sample_app pre_test artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         path: ./.nuke/temp/artifacts-download
         pattern: pre_test___sample_app___*
     - name: Download sample_app build artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         path: ./.nuke/temp/artifacts-download
         pattern: build___sample_app___*
     - name: Cache Run
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ./.nuke/temp/cache
         key: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_CACHE_KEY }}
@@ -266,14 +266,14 @@ jobs:
       name: Run Nuke test_ubuntu_22_04_domain_unittests
       run: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_DOMAIN_UNITTESTS_RUN_SCRIPT }} Run --args "test_ubuntu_22_04_domain_unittests"
     - name: Upload sample_app post_test artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: post_test___sample_app___TEST_UBUNTU_22_04_DOMAIN_UNITTESTS
         path: ./.nuke/temp/artifacts-upload/sample_app/*
         if-no-files-found: error
         retention-days: 1
     - name: Upload common post_test artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: post_test___$common___TEST_UBUNTU_22_04_DOMAIN_UNITTESTS
         path: ./.nuke/temp/artifacts-upload/$common/*
@@ -289,24 +289,24 @@ jobs:
     name: Test Application.UnitTests on ubuntu-22.04
     runs-on: ${{ fromJson(needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_RUNS_ON) }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_CHECKOUT_FETCH_DEPTH }}
         fetch-tags: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_CHECKOUT_FETCH_TAGS }}
         submodules: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_CHECKOUT_SUBMODULES }}
         persist-credentials: true
     - name: Download sample_app pre_test artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         path: ./.nuke/temp/artifacts-download
         pattern: pre_test___sample_app___*
     - name: Download sample_app build artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         path: ./.nuke/temp/artifacts-download
         pattern: build___sample_app___*
     - name: Cache Run
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ./.nuke/temp/cache
         key: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_CACHE_KEY }}
@@ -317,14 +317,14 @@ jobs:
       name: Run Nuke test_ubuntu_22_04_application_unittests
       run: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_TEST_UBUNTU_22_04_APPLICATION_UNITTESTS_RUN_SCRIPT }} Run --args "test_ubuntu_22_04_application_unittests"
     - name: Upload sample_app post_test artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: post_test___sample_app___TEST_UBUNTU_22_04_APPLICATION_UNITTESTS
         path: ./.nuke/temp/artifacts-upload/sample_app/*
         if-no-files-found: error
         retention-days: 1
     - name: Upload common post_test artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: post_test___$common___TEST_UBUNTU_22_04_APPLICATION_UNITTESTS
         path: ./.nuke/temp/artifacts-upload/$common/*
@@ -340,29 +340,29 @@ jobs:
     name: Publish - sample_app (PublishEntry)
     runs-on: ${{ fromJson(needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_PUBLISHENTRY_RUNS_ON) }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_PUBLISHENTRY_CHECKOUT_FETCH_DEPTH }}
         fetch-tags: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_PUBLISHENTRY_CHECKOUT_FETCH_TAGS }}
         submodules: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_PUBLISHENTRY_CHECKOUT_SUBMODULES }}
         persist-credentials: true
     - name: Download sample_app pre_test artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         path: ./.nuke/temp/artifacts-download
         pattern: pre_test___sample_app___*
     - name: Download sample_app build artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         path: ./.nuke/temp/artifacts-download
         pattern: build___sample_app___*
     - name: Download sample_app post_test artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         path: ./.nuke/temp/artifacts-download
         pattern: post_test___sample_app___*
     - name: Cache Run
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ./.nuke/temp/cache
         key: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_PUBLISHENTRY_CACHE_KEY }}
@@ -373,7 +373,7 @@ jobs:
       name: Run Nuke PublishEntry
       run: ${{ needs.PRE_SETUP.outputs.NUKE_PRE_SETUP_PUBLISHENTRY_RUN_SCRIPT }} Run --args "PublishEntry"
     - name: Upload common publish artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: publish___$common___PUBLISHENTRY
         path: ./.nuke/temp/artifacts-upload/$common/*
@@ -394,14 +394,14 @@ jobs:
     runs-on:
       labels: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0
         fetch-tags: true
         submodules: recursive
         persist-credentials: true
     - name: Download artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         path: ./.nuke/temp/artifacts-download
         pattern: '*___*'
