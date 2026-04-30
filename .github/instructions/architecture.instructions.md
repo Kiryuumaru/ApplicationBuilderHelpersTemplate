@@ -1232,7 +1232,6 @@ A: No. Presentation calls Interfaces/Inbound only. Create a service in Applicati
 - NEVER add logic in constructors
 - NEVER add `Id` to `ValueObject`
 - NEVER use mutable properties in `ValueObject`
-- NEVER add test-only code (`#if DEBUG`, test hooks, test seams) in `src/`
 
 ---
 
