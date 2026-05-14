@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<ItemGroup>
-		<PackageReference Include="ApplicationBuilderHelpers" Version="4.1.65" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.7" />
+		<PackageReference Include="ApplicationBuilderHelpers" Version="4.1.66" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />
 	</ItemGroup>
 
 	<ItemGroup>
