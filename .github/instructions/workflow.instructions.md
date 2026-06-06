@@ -58,6 +58,45 @@ Environments configured in `src/Domain/AppEnvironment/Constants/AppEnvironments.
 
 ---
 
+## Pre-Session Data Flow Mapping
+
+Before any session starts — before planning, before coding, before implementation — the agent MUST map the data flow. This is the foundation that prevents AI from guessing and creating technical debt.
+
+### Why
+
+AI has no map of how data moves through the app. Without it, AI guesses. Those guesses become technical debt — duplicate entities, leaked state, broken flows. Real speed is not generating 500 lines in 10 seconds, it's not spending 3 hours deleting wrong code.
+
+### What to Map
+
+For every session, start by producing a brief data flow outline covering:
+
+1. **Main entities** — What domain objects are involved? (e.g., `OrderEntity`, `PaymentEntity`)
+2. **Data sources** — Where does data come from? (HTTP request, CLI input, background worker, external API, database)
+3. **Data destinations** — Where does data go? (Database table, response body, notification, cache, message queue)
+4. **What changes** — What state transitions happen? (e.g., `OrderCreated → PaymentProcessed → OrderCompleted`)
+
+### How to Produce It
+
+- Read the relevant architecture docs first (`architecture.instructions.md`)
+- Scan the existing codebase for related entities, services, and repositories
+- Write a **short** outline (5-10 lines max) — not a giant architecture doc
+- Paste it as the first output of the session
+
+Example:
+
+    Data Flow: User creates order
+    1. Entities: OrderEntity, OrderItemEntity
+    2. Source: HTTP POST /api/orders (Presentation.WebApi)
+    3. Flow: OrderController → IOrderService.CreateAsync → OrderEntity.Create → IOrderRepository.AddAsync → DbContext.SaveChangesAsync
+    4. Destination: Orders table (EF Core), OrderCreatedEvent dispatched
+    5. Changes: OrderEntity state: Created → PendingPayment
+
+### When to Skip
+
+NEVER skip this step. It applies to every session regardless of scope — bug fix, new feature, refactoring, documentation update. The map may be tiny for small changes, but it grounds the AI.
+
+---
+
 ## Pre-Commit Verification
 
 Before every commit:
