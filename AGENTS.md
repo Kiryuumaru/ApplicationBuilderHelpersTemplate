@@ -16,6 +16,11 @@ When updating process docs, update the `.github/instructions/*` files instead of
 - UI test practices: `.github/instructions/ui-test-practices.instructions.md`
 - Rule style: `.github/instructions/rule-style.instructions.md`
 
+## Session Guides
+
+- New project initialization: `AGENT_INIT.md`
+- Existing project conversion: `AGENT_RESUME.md`
+
 ## Quick Links
 
 - Build entrypoints: `build.ps1`, `build.cmd`, `build.sh`
